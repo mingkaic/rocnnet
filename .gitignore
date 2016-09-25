@@ -47,3 +47,6 @@ Thumbs.db
 venv
 node_modules
 .sass-cache
+
+# Application specific folder structure
+bin/*.exe

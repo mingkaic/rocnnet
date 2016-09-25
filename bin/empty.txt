@@ -1,0 +1,2 @@
+this file is just to ensure bin directory is committed to ensure working
+directory structure for makefile
