@@ -17,7 +17,7 @@ void tensor<T>::copy (tensor<T> const & other) {
     if (nullptr == other.alloc) {
         alloc = nullptr;
     } else {
-        alloc = other.alloc->copy();
+        alloc = other.alloc->clone();
     }
     size_t nelem = other.n_elems();
     allowed_shape = other.allowed_shape;
@@ -40,13 +40,13 @@ tensor<T>::tensor (tensor_shape const & shape)
 : allowed_shape(shape) {}
 
 template <typename T>
-tensor<T>::tensor (allocator& a,
+tensor<T>::tensor (iallocator& a,
     tensor_shape const & shape,
     alloc_attrib const & attrib)
     : allowed_shape(shape), alloc() {
     shape.assert_is_fully_defined();
     this->alloc_shape = shape;
-    alloc = a.copy();
+    alloc = a.clone();
     this->raw_data = alloc->allocate<T>(this->alloc_shape.n_elems(), attrib);
 }
 
@@ -78,23 +78,23 @@ tensor<T> & tensor<T>::operator = (tensor<T> const & other) {
 }
 
 template <typename T>
-void tensor<T>::allocate (allocator& allocer) {
+void tensor<T>::allocate (iallocator& allocer) {
     allocate(allocer, default_attr);
 }
 
 template <typename T>
-void tensor<T>::allocate (allocator& allocer, alloc_attrib const & attrib) {
+void tensor<T>::allocate (iallocator& allocer, alloc_attrib const & attrib) {
     allowed_shape.assert_is_fully_defined();
     allocate(allocer, allowed_shape, attrib);
 }
 
 template <typename T>
-void tensor<T>::allocate (allocator& allocer, tensor_shape const & shape) {
+void tensor<T>::allocate (iallocator& allocer, tensor_shape const & shape) {
     allocate(allocer, shape, default_attr);
 }
 
 template <typename T>
-void tensor<T>::allocate (allocator& allocer, tensor_shape const & shape,
+void tensor<T>::allocate (iallocator& allocer, tensor_shape const & shape,
     alloc_attrib const & attrib) {
     assert(shape.is_compatible_with(allowed_shape));
     shape.assert_is_fully_defined();
@@ -105,7 +105,7 @@ void tensor<T>::allocate (allocator& allocer, tensor_shape const & shape,
     }
 
     alloc_shape = shape;
-    alloc = allocer.copy();
+    alloc = allocer.clone();
     raw_data = alloc->allocate<T>(this->alloc_shape.n_elems(), attrib);
 }
 
@@ -205,7 +205,7 @@ tensor<T> tensor<T>::slice (size_t dim_start, size_t limit) {
 
 // bool from_proto (tensorproto const & other);
 
-// bool from_proto (allocator* a, tensorproto const & other);
+// bool from_proto (iallocator* a, tensorproto const & other);
 
 }
 

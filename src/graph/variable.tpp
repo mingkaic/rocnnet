@@ -33,9 +33,14 @@ void random_uniform<T>::operator () (tensor<T>& in) {
 // variable interface
 
 template <typename T>
-void ivariable<T>::copy (ivariable<T> const & other) {
+void ivariable<T>::copy (
+	ivariable<T> const & other,
+	std::string name) {
 	out = other.out;
-	name = other.name+"_cpy";
+	if (0 == name.size()) {
+		name = other.name+"_cpy";
+	}
+	this->name = name;
 }
 
 template <typename T>
@@ -62,9 +67,16 @@ tensor<T>* ivariable<T>::derive (ivariable<T>* over) const {
 // variable implementation
 
 template <typename T>
-void variable<T>::copy (variable<T> const & other) {
+void variable<T>::copy (
+	variable<T> const & other,
+	std::string name) {
 	init = other.init->copy();
-	ivariable<T>::copy(other);
+	ivariable<T>::copy(other, name);
+}
+
+template <typename T>
+variable<T>::variable (variable<T> const & other, std::string name) {
+	copy(other, name);
 }
 
 template <typename T>
@@ -85,14 +97,19 @@ variable<T>::variable (
 }
 
 template <typename T>
-variable<T>::variable (
-	variable<T> const & other,
-	std::string name) {
-	copy(other);
-	if (false == name.empty()) {
-		this->name = name;
-	}
+variable<T>* variable<T>::clone (std::string name) {
+	return new variable(*this, name);
 }
+
+// template <typename T>
+// variable<T>::variable (
+// 	variable<T> const & other,
+// 	std::string name) {
+// 	copy(other);
+// 	if (false == name.empty()) {
+// 		this->name = name;
+// 	}
+// }
 
 template <typename T>
 variable<T>::~variable (void) {
@@ -104,6 +121,10 @@ variable<T>::~variable (void) {
 template <typename T>
 variable<T>& variable<T>::operator = (ivariable<T> const & other) {
 	if (this != &other) {
+		if (nullptr != this->init) {
+			delete this->init;
+		}
+		
 		if (const variable<T>* vptr = dynamic_cast<const variable<T>*>(&other)) {
 			copy(*vptr);
 		} else {

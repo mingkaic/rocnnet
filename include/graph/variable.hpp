@@ -75,14 +75,16 @@ class ivariable {
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const {
 			return nullptr;
 		}
+		void copy (
+			ivariable<T> const & other,
+			std::string name = "");
 		// protected members need to be accessed by other operations
 		friend class ioperation<T>;
 
-		void copy (ivariable<T> const & other);
-
 	public:
-		virtual ivariable<T>& operator = (ivariable<T> const & other);
+		virtual ivariable<T>* clone (std::string name = "") = 0;
 		virtual ~ivariable (void) {}
+		virtual ivariable<T>& operator = (ivariable<T> const & other);
 
 		std::string get_name (void) const { return name; }
 		tensor_shape get_shape (void) const { return this->out.get_shape(); }
@@ -102,11 +104,13 @@ template <typename T>
 class variable : public ivariable<T> {
 	private:
 		// Graph graph; // variable manager
-		void copy (variable<T> const & other);
 
 	protected:
 		bool is_init = false;
 		initializer<T>* init = nullptr;
+
+		void copy (variable<T> const & other, std::string name="");
+		variable (variable<T> const & other, std::string name);
 
 		// track all variables and placeholders for
 		// static/singleton function initialize all
@@ -116,7 +120,8 @@ class variable : public ivariable<T> {
 		variable (tensor_shape const & shape, std::string name = "");
 		variable (tensor_shape const & shape,
 			initializer<T>& init, std::string name = "");
-		variable (variable<T> const & other, std::string name="");
+		virtual variable<T>* clone (std::string name = "");
+		// variable (variable<T> const & other, std::string name="");
 		virtual ~variable (void);
 		virtual variable<T>& operator = (ivariable<T> const & other);
 

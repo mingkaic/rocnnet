@@ -28,6 +28,8 @@ namespace nnet {
 #define V_MATRIX std::vector<std::vector<double> > // replace with tensor
 #define VECS std::pair<std::vector<double>, std::vector<double> >
 
+#define WB_PAIR std::pair<variable<double>*, variable<double>*>
+
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
 
@@ -51,22 +53,10 @@ class layer_perceptron {
 
 		void clear_ownership (void);
 
-		// DEPRECATED
-		V_MATRIX* raw_weights;
-		double* raw_bias;
-
 	public:
-		adhoc_operation op;
-
 		layer_perceptron (
 			size_t n_input,
 			size_t n_output,
-			std::string scope="");
-
-		layer_perceptron (
-			size_t n_input,
-			size_t n_output,
-			adhoc_operation op,
 			std::string scope="");
 
 		layer_perceptron (
@@ -79,18 +69,26 @@ class layer_perceptron {
 
 		ivariable<double>* operator () (ivariable<double> & input);
 
+		size_t get_n_input (void) const { return n_input; }
+		size_t get_n_output (void) const { return n_output; }
+		WB_PAIR get_variables (void) const { return WB_PAIR(weights, bias); }
+
+		// DEPRECATED
+		V_MATRIX* raw_weights;
+		double* raw_bias;
+		adhoc_operation op;
+		layer_perceptron (
+			size_t n_input,
+			size_t n_output,
+			adhoc_operation op,
+			std::string scope="");
 		std::vector<double> operator () (std::vector<double> const & input);
-
 		std::vector<double> hypothesis (std::vector<double> const & input);
-
 		// expose raw_weights and raw_bias
 		// TODO: replace array with tensors
-		std::pair<V_MATRIX&, double*> get_variables (void) {
+		std::pair<V_MATRIX&, double*> get_vars (void) {
 			return std::pair<V_MATRIX&, double*>(*raw_weights, raw_bias);
 		}
-
-		size_t get_n_input (void) { return n_input; }
-		size_t get_n_output (void) { return n_output; }
 };
 
 #define IN_PAIR std::pair<size_t, univar_func<double>*>
@@ -99,8 +97,11 @@ class layer_perceptron {
 class ml_perceptron {
 	private:
 		std::string scope;
-		std::vector<layer_perceptron*> raw_layers;
 		std::vector<HID_PAIR> layers;
+
+		void copy (
+			ml_perceptron const & other,
+			std::string scope);
 
 	public:
 		// trust that passed in operations are unconnected
@@ -110,33 +111,29 @@ class ml_perceptron {
 			std::string scope = "MLP");
 
 		ml_perceptron (
+			ml_perceptron const & other,
+			std::string scope="");
+
+		virtual ~ml_perceptron (void);
+
+		ml_perceptron& operator = (ml_perceptron const & other);
+
+		// def get_var(self):
+		// 	# return the ultimate layer value
+		// 	res = self.input_layer.get_var()
+		// 	for inner in self.layers:
+		// 		res.extend(inner.get_var())
+		// 	return res
+
+		// DEPRECATED
+		std::vector<layer_perceptron*> raw_layers;
+		ml_perceptron (
 			size_t n_input,
 			std::vector<std::pair<size_t,
 			adhoc_operation> > hiddens,
 			std::string scope = "MLP");
-
-		ml_perceptron (
-			ml_perceptron const & other,
-			std::string scope="");
-
-		virtual ~ml_perceptron (void) {
-			for (layer_perceptron* pl : raw_layers) {
-				delete pl;
-			}
-		}
-
-		ml_perceptron& operator = (ml_perceptron const & other);
-
 		std::vector<double> operator () (std::vector<double> const & input);
-
-		// def get_variable(self):
-		// 	# return the ultimate layer value
-		// 	res = self.input_layer.get_variable()
-		// 	for inner in self.layers:
-		// 		res.extend(inner.get_variable())
-		// 	return res
-
-		std::vector<layer_perceptron*> get_variables (void) {
+		std::vector<layer_perceptron*> get_vars (void) {
 			return raw_layers;
 		}
 };

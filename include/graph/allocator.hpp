@@ -6,12 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <algorithm>
+#include <complex>
+
 #pragma once
 #ifndef allocator_hpp
 #define allocator_hpp
-
-#include <algorithm>
-#include <complex>
 
 namespace nnet {
 
@@ -19,7 +19,7 @@ struct alloc_attrib {
 
 };
 
-class allocator {
+class iallocator {
     private:
         // allow floats and doubles: is_trivial
         // allow complex
@@ -32,10 +32,9 @@ class allocator {
             std::is_same<T, std::complex<double> >::value;
         };
 
-        virtual void* get_raw (size_t alignment,
-            size_t num_bytes) {
-            return get_raw(alignment, num_bytes, alloc_attrib());
-        }
+        virtual void* get_raw (
+            size_t alignment,
+            size_t num_bytes);
 
     protected:
         virtual void* get_raw (size_t alignment,
@@ -47,9 +46,9 @@ class allocator {
     public:
         static constexpr size_t alloc_alignment = 32;
 
-        virtual ~allocator (void) {}
+        virtual iallocator* clone (void) = 0;
 
-        virtual allocator* copy (void) = 0;
+        virtual ~iallocator (void) {}
 
         virtual size_t id (void) = 0; // update to boost uuid
 
@@ -83,16 +82,10 @@ class allocator {
 
         // does the implementation of allocator track the allocated size
         virtual bool tracks_size (void) { return false; }
-
         // requires empty tensors to allocate
         virtual bool alloc_empty (void) { return false; }
-
         // gets allocated size if tracking enabled
-        virtual size_t requested_size (void* ptr) {
-            throw std::bad_function_call();
-            return 0;
-        }
-
+        virtual size_t requested_size (void* ptr);
         // alloc id if tracking enabled
         // 0 otherwise
         virtual size_t alloc_id (void* ptr) { return 0; }
@@ -109,26 +102,15 @@ class allocator {
 
 };
 
-class memory_alloc : public allocator {
+class memory_alloc : public iallocator {
     protected:
         virtual void* get_raw (size_t alignment,
             size_t num_bytes,
-            alloc_attrib const & attrib) {
-            // str8 2 memory, ignore attributes
-            void* ptr = malloc(num_bytes);
-            return ptr;
-        }
-
-        virtual void del_raw (void* ptr) {
-            // str8 from memory
-            free (ptr);
-        }
+            alloc_attrib const & attrib);
+        virtual void del_raw (void* ptr);
 
     public:
-        virtual allocator* copy (void) {
-            return new memory_alloc();
-        }
-
+        virtual memory_alloc* clone (void);
         virtual size_t id (void) { return 0; } // update to boost uuid
 };
 

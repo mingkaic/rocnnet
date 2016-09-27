@@ -120,8 +120,6 @@ tensor<T>* ioperation<T>::util_op (
     return ans;
 }
 
-// DIMENSIONAL OPERATIONS
-
 template <typename T>
 tensor<T>* ioperation<T>::transpose_op (
     tensor<T> const & in) const {
@@ -199,9 +197,38 @@ tensor<T>* ioperation<T>::matmul_op (
 // FUNCTION WRAPPER IMPLEMENTATION
 
 template <typename T>
+void univar_func<T>::clear (void) {
+    for (ioperation<T>* ptrs : ownout) {
+        delete ptrs;
+    }
+    fanin = fanout = nullptr;
+}
+
+template <typename T>
+void univar_func<T>::copy (
+    univar_func<T> const & other,
+    std::string name) {
+    // shallow copy
+    // no ownership
+    fanout = other.fanout;
+    fanin = other.fanin;
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
+univar_func<T>::univar_func (univar_func<T> const & other, std::string name) {
+    copy(other, name);
+}
+
+template <typename T>
 univar_func<T>::univar_func (
     std::function<void(ioperation<T>*)> declare) {
     declare(fanout);
+}
+
+template <typename T>
+univar_func<T>* univar_func<T>::clone (std::string name) {
+    return new univar_func<T>(*this, name);
 }
 
 template <typename T>
@@ -244,11 +271,12 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
 template <typename T>
 univar_func<T>& univar_func<T>::operator = (ivariable<T> const & other) {
     if (this != &other) {
+        clear();
         if (const unar_ops<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
-            fanin = uptr->fanin;
-            fanout = uptr->fanout;
+            copy(*uptr);
+        } else {
+            ivariable<T>::copy(other);
         }
-        ivariable<T>::copy(other);
     }
     return *this;
 }
@@ -277,7 +305,7 @@ sigmoid<T>::sigmoid (void) : univar_func<T>([this](ioperation<T>* outop) {
     ioperation<T>* expres = new exp<T>(negres);
     ioperation<T>* denom = new add<T>(1, expres);
     outop = new div<T>(1, denom);
-    ownout = { negres, expres, denom, outop };
+    this->ownout = { negres, expres, denom, outop };
 }) {}
 
 template <typename T>
@@ -288,7 +316,7 @@ tanh<T>::tanh (void) : univar_func<T>([this](ioperation<T>* outop) {
     ioperation<T>* numer = new sub<T>(expres, 1);
     ioperation<T>* denom = new add<T>(expres, 1);
     outop = new div<T>(numer, denom);
-    ownout = { pres, expres, numer, denom, outop };
+    this->ownout = { pres, expres, numer, denom, outop };
 }) {}
 
 // SCALAR IMPLEMENTATION
@@ -344,6 +372,11 @@ tensor<T>* scalar<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
+scalar<T>::scalar (scalar<T> const & other, std::string name) {
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
 scalar<T>::scalar (T value) {
 	memory_alloc all;
 	const_init<T> init(value);
@@ -353,6 +386,11 @@ scalar<T>::scalar (T value) {
 	std::stringstream namestream;
 	namestream << value;
 	this->name = namestream.str();
+}
+
+template <typename T>
+scalar<T>* scalar<T>::clone (std::string name) {
+    return new scalar<T>(*this, name);
 }
 
 // UNARY OPERATIONS
@@ -367,8 +405,20 @@ void unar_ops<T>::init (std::string op, ivariable<T>& var) {
 }
 
 template <typename T>
+unar_ops<T>::unar_ops (unar_ops<T> const & other, std::string name) {
+    var = other.var;
+    op = other.op;
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
 tensor<T>* unar_ops<T>::calc_derive (ivariable<T>* over) const {
     return this->var->derive(over);
+}
+
+template <typename T>
+ unar_ops<T>* unar_ops<T>::clone (std::string name) {
+    return new unar_ops(*this, name);
 }
 
 template <typename T>
@@ -394,6 +444,19 @@ const tensor<T>& unar_ops<T>::eval (void) {
 }
 
 // BINARY OPERATIONS
+
+template <typename T>
+bin_ops<T>::bin_ops (bin_ops<T> const & other, std::string name) {
+    a = other.a;
+    b = other.b;
+    op = other.op;
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
+bin_ops<T>* bin_ops<T>::clone (std::string name) {
+    return new bin_ops(*this, name);
+}
 
 template <typename T>
 void bin_ops<T>::init (std::string op, ivariable<T>& a, ivariable<T>& b) {
@@ -454,8 +517,19 @@ tensor<T>* transpose<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
+transpose<T>::transpose (transpose<T> const & other, std::string name) {
+    this->var = other.var;
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
 transpose<T>::transpose (ivariable<T>& in) {
     (*this)(in);
+}
+
+template <typename T>
+transpose<T>* transpose<T>::clone (std::string name) {
+    return new transpose<T>(*this, name);
 }
 
 template <typename T>
@@ -497,12 +571,26 @@ tensor<T>* matmul<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
+matmul<T>::matmul (matmul<T> const & other, std::string name) {
+    a = other.a;
+    b = other.b;
+    transposeA = other.transposeA;
+    transposeB = other.transposeB;
+    ivariable<T>::copy(other, name);
+}
+
+template <typename T>
 matmul<T>::matmul (
     ivariable<T>& a,
     ivariable<T>& b,
     bool transposeA,
     bool transposeB) {
     (*this)(a, b, transposeA, transposeB);
+}
+
+template <typename T>
+matmul<T>* matmul<T>::clone (std::string name) {
+    return new matmul<T>(*this, name);
 }
 
 template <typename T>

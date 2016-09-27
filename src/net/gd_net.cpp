@@ -16,7 +16,7 @@ namespace nnet {
 // prone to overfitting
 void gd_net::train (std::vector<VECS> sample) {
 	if (NULL == mlp) return;
-	std::vector<layer_perceptron* > layers = mlp->get_variables();
+	std::vector<layer_perceptron* > layers = mlp->get_vars();
 	std::vector<std::pair<V_MATRIX, std::vector<double> > > storage;
 	for (layer_perceptron* lp : layers) {
 		size_t n_input = lp->get_n_input();
@@ -55,7 +55,7 @@ void gd_net::train (std::vector<VECS> sample) {
 			dzs.pop();
 
 			// err_i = matmul(transpose(weight_i), err_i+1)*f'(z_i)
-			std::pair<V_MATRIX&, double*> Wb_pair = (*rit)->get_variables();
+			std::pair<V_MATRIX&, double*> Wb_pair = (*rit)->get_vars();
 			std::vector<double> diff;
 			for (size_t x = 0; x < dz.size(); x++) {
 				diff.push_back(0);
@@ -88,7 +88,7 @@ void gd_net::train (std::vector<VECS> sample) {
 	for (size_t i = 0; i < layers.size(); i++) {
 		size_t n_input = layers[i]->get_n_input();
 		size_t n_output = layers[i]->get_n_output();
-		std::pair<V_MATRIX&, double*> Wb_pair = layers[i]->get_variables();
+		std::pair<V_MATRIX&, double*> Wb_pair = layers[i]->get_vars();
 		for (size_t y = 0; y < n_output; y++) {
 			for (size_t x = 0; x < n_input; x++) {
 				Wb_pair.first[x][y] -= storage[i].first[x][y];

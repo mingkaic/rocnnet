@@ -79,6 +79,7 @@ class ioperation : public ivariable<T> {
 			food.consumers.push_back(this);
 		}
 	public:
+		// clone remains abstract
 		virtual ~ioperation (void) {}
 		// eval remains abstract
 };
@@ -91,11 +92,21 @@ class univar_func : ioperation<T> {
 		// do not own fanin or out
 		ivariable<T>* fanin = nullptr;
 		ioperation<T>* fanout = nullptr;
+		// no longer need if use sharedptr
+
+		void clear (void);
+		void copy (univar_func<T> const & other, std::string name = "");
+		univar_func (univar_func<T> const & other, std::string name);
+
+	protected:
+		std::vector<ioperation<T>*> ownout;
 
 	public:
 		// declare
 		univar_func (std::function<void(ioperation<T>*)> declare);
-		virtual ~univar_func (void) {}
+		// shallow copy
+		virtual univar_func<T>* clone (std::string name = "");
+		virtual ~univar_func (void) { clear(); }
 		// connect input to fanin ivariables according
 		// to declared equation ordered by function parameters
 		virtual ivariable<T>& operator () (ivariable<T>* input);
@@ -112,29 +123,14 @@ class univar_func : ioperation<T> {
 
 template <typename T>
 class sigmoid : univar_func<T> {
-	private:
-		// no longer need if use sharedptr
-		std::vector<ioperation<T>*> ownout;
 	public:
 		sigmoid (void);
-		~sigmoid (void) {
-			for (ioperation<T>* ptrs : ownout) {
-				delete ptrs;
-			}
-		}
 };
 
 template <typename T>
 class tanh : univar_func<T> {
-	private:
-		std::vector<ioperation<T>*> ownout;
 	public:
 		tanh (void);
-		~tanh (void) {
-			for (ioperation<T>* ptrs : ownout) {
-				delete ptrs;
-			}
-		}
 };
 
 // SCALAR using operation functions
@@ -148,8 +144,11 @@ class scalar : public ioperation<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 
+		scalar (scalar<T> const & other, std::string name);
+
 	public:
 		scalar (T value);
+		virtual scalar<T>* clone (std::string name = "");
 		virtual ~scalar (void) {}
 		virtual const tensor<T>& eval (void) { return this->out; }
 };
@@ -167,11 +166,15 @@ class unar_ops : public ioperation<T> {
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 
+		unar_ops (void) { /* default construction propagates to ioperation */ }
+		unar_ops (unar_ops<T> const & other, std::string name);
+
 		friend class univar_func<T>;
 
 	public:
 		virtual ~unar_ops (void) {}
-		virtual ivariable<T>& operator () (ivariable<T>& in) = 0;
+		virtual unar_ops<T>* clone (std::string name = "");
+		virtual ivariable<T>& operator () (ivariable<T>& in) { return *this; }
 		virtual unar_ops<T>& operator = (ivariable<T> const & other);
 
 		virtual const tensor<T>& eval (void);
@@ -191,13 +194,17 @@ class bin_ops : public ioperation<T> {
 		virtual void init (std::string op, T a, ivariable<T>& b);
 		// calc_derive remains abstract
 
+		bin_ops (void) { /* default construction propagates to ioperation */ }
+		bin_ops (bin_ops<T> const & other, std::string name);
+
 		friend class univar_func<T>;
 
 	public:
+		virtual bin_ops<T>* clone (std::string name = "");
 		virtual ~bin_ops (void) {}
-		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b) = 0;
-		virtual ivariable<T>& operator () (ivariable<T>& a, T b) = 0;
-		virtual ivariable<T>& operator () (T a, ivariable<T>& b) = 0;
+		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b) { return *this; }
+		virtual ivariable<T>& operator () (ivariable<T>& a, T b) { return *this; }
+		virtual ivariable<T>& operator () (T a, ivariable<T>& b) { return *this; }
 		virtual bin_ops<T>& operator = (ivariable<T> const & other);
 
 		virtual const tensor<T>& eval (void);
@@ -219,9 +226,12 @@ class transpose : public ioperation<T> {
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 
+		transpose (transpose<T> const & other, std::string name);
+
 	public:
 		transpose (void) {}
 		transpose (ivariable<T>& in);
+		virtual transpose<T>* clone (std::string name = "");
 		virtual ivariable<T>& operator () (ivariable<T>& in);
 		virtual ~transpose (void) {}
 		virtual transpose<T>& operator = (ivariable<T> const & other);
@@ -243,6 +253,8 @@ class matmul : public ioperation<T> {
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 
+		matmul (matmul<T> const & other, std::string name);
+
 	public:
 		matmul (void) : transposeA(false), transposeB(false) {}
 		matmul (
@@ -250,6 +262,7 @@ class matmul : public ioperation<T> {
 			ivariable<T>& b,
 			bool transposeA = false,
 			bool transposeB = false);
+		virtual matmul<T>* clone (std::string name = "");
 		virtual ivariable<T>& operator () (
 			ivariable<T>& a,
 			ivariable<T>& b,
@@ -305,6 +318,9 @@ class sin : public unar_ops<T> {
 
 	public:
 		sin (void) {}
+		virtual sin<T>* clone (std::string name = "") {
+			return dynamic_cast<sin<T>*>(unar_ops<T>::clone(name));
+		}
 		sin (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -318,6 +334,9 @@ class cos : public unar_ops<T> {
 
 	public:
 		cos (void) {}
+		virtual cos<T>* clone (std::string name = "") {
+			return dynamic_cast<cos<T>*>(unar_ops<T>::clone(name));
+		}
 		cos (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -331,6 +350,9 @@ class tan : public unar_ops<T> {
 
 	public:
 		tan (void) {}
+		virtual tan<T>* clone (std::string name = "") {
+			return dynamic_cast<tan<T>*>(unar_ops<T>::clone(name));
+		}
 		tan (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -344,6 +366,9 @@ class csc : public unar_ops<T> {
 
 	public:
 		csc (void) {}
+		virtual csc<T>* clone (std::string name = "") {
+			return dynamic_cast<csc<T>*>(unar_ops<T>::clone(name));
+		}
 		csc (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -357,6 +382,9 @@ class sec : public unar_ops<T> {
 
 	public:
 		sec (void) {}
+		virtual sec<T>* clone (std::string name = "") {
+			return dynamic_cast<sec<T>*>(unar_ops<T>::clone(name));
+		}
 		sec (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -370,6 +398,9 @@ class cot : public unar_ops<T> {
 
 	public:
 		cot (void) {}
+		virtual cot<T>* clone (std::string name = "") {
+			return dynamic_cast<cot<T>*>(unar_ops<T>::clone(name));
+		}
 		cot (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -383,6 +414,9 @@ class exp : public unar_ops<T> {
 
 	public:
 		exp (void) {}
+		virtual exp<T>* clone (std::string name = "") {
+			return dynamic_cast<exp<T>*>(unar_ops<T>::clone(name));
+		}
 		exp (ivariable<T>& var) { (*this)(var); }
 		ivariable<T>& operator () (ivariable<T>& in);
 };
@@ -397,7 +431,9 @@ class add : public bin_ops<T> {
 
 	public:
 		add (void) {}
-
+		virtual add<T>* clone (std::string name = "") {
+			return dynamic_cast<add<T>*>(bin_ops<T>::clone(name));
+		}
 		add (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		add (ivariable<T>& a, T b) { (*this)(a, b); }
 		add (T a, ivariable<T>& b) { (*this)(a, b); }
@@ -417,7 +453,9 @@ class sub : public bin_ops<T> {
 
 	public:
 		sub (void) {}
-
+		virtual sub<T>* clone (std::string name = "") {
+			return dynamic_cast<sub<T>*>(bin_ops<T>::clone(name));
+		}
 		sub (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		sub (ivariable<T>& a, const T b) { (*this)(a, b); }
 		sub (const T a, ivariable<T>& b) { (*this)(a, b); }
@@ -436,7 +474,9 @@ class mul : public bin_ops<T> {
 
 	public:
 		mul (void) {}
-
+		virtual mul<T>* clone (std::string name = "") {
+			return dynamic_cast<mul<T>*>(bin_ops<T>::clone(name));
+		}
 		mul (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		mul (ivariable<T>& a, const T b) { (*this)(a, b); }
 		mul (const T a, ivariable<T>& b) { (*this)(a, b); }
@@ -455,7 +495,9 @@ class div : public bin_ops<T> {
 
 	public:
 		div (void) {}
-
+		virtual div<T>* clone (std::string name = "") {
+			return dynamic_cast<div<T>*>(bin_ops<T>::clone(name));
+		}
 		div (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		div (ivariable<T>& a, const T b) { (*this)(a, b); }
 		div (const T a, ivariable<T>& b) { (*this)(a, b); }

@@ -13,6 +13,8 @@
 
 namespace nnet {
 
+// LAYER PERCEPTRON IMPLEMENTATION
+
 random_uniform<double> layer_perceptron::rinit(-1, 1);
 const_init<double> layer_perceptron::zinit(0);
 const_init<double> layer_perceptron::oinit(1);
@@ -27,8 +29,8 @@ void layer_perceptron::copy (
 		scope = other.scope + "_cpy";
 	}
 	this->scope = scope;
-	weights = new variable<double>(*other.weights, scope + "_weights");
-	bias = new variable<double>(*other.bias, scope + "_bias");
+	weights = other.weights->clone(scope);
+	bias = other.bias->clone(scope);
 }
 
 void layer_perceptron::clear_ownership (void) {
@@ -55,9 +57,9 @@ void layer_perceptron::clear_ownership (void) {
 // 			wname = "weight%d" % (idx,)
 // 			# rand engine
 // 			winit = tf.random_uniform_initializer(-1.0 / math.sqrt(n_input), 1.0 / math.sqrt(n_input))
-// 			self.weights.append(tf.get_variable(wname, (n_input, n_output), initializer=winit))
+// 			self.weights.append(tf.get_var(wname, (n_input, n_output), initializer=winit))
 // 		# create a bias
-// 		self.bias = tf.get_variable("bias", (n_output,), initializer=tf.constant_initializer(0))
+// 		self.bias = tf.get_var("bias", (n_output,), initializer=tf.constant_initializer(0))
 
 layer_perceptron::layer_perceptron (
 	size_t n_input,
@@ -70,29 +72,6 @@ layer_perceptron::layer_perceptron (
 	bias = new variable<double>(
 		std::vector<size_t>{n_output},
 		zinit, scope+"_bias");
-}
-
-// DEPRECATED
-layer_perceptron::layer_perceptron (
-	size_t n_input,
-	size_t n_output,
-	adhoc_operation op,
-	std::string scope)
-	: n_input(n_input), n_output(n_output), scope(scope) {
-	this->op = op;
-	raw_weights = new V_MATRIX();
-	raw_bias = new double[n_output];
-
-	std::random_device generator;
-	std::uniform_real_distribution<double> distribution(0.0,1.0);
-
-	for (size_t x = 0; x < n_input; x++) {
-		raw_weights->push_back(std::vector<double>());
-		for (size_t y = 0; y < n_output; y++) {
-			(*raw_weights)[x].push_back(distribution(generator));
-		}
-	}
-	memset(raw_bias, 0, n_output*sizeof(double));
 }
 
 layer_perceptron::layer_perceptron (
@@ -170,6 +149,29 @@ ivariable<double>* layer_perceptron::operator () (
 	return res;
 }
 
+// DEPRECATED
+layer_perceptron::layer_perceptron (
+	size_t n_input,
+	size_t n_output,
+	adhoc_operation op,
+	std::string scope)
+	: n_input(n_input), n_output(n_output), scope(scope) {
+	this->op = op;
+	raw_weights = new V_MATRIX();
+	raw_bias = new double[n_output];
+
+	std::random_device generator;
+	std::uniform_real_distribution<double> distribution(0.0,1.0);
+
+	for (size_t x = 0; x < n_input; x++) {
+		raw_weights->push_back(std::vector<double>());
+		for (size_t y = 0; y < n_output; y++) {
+			(*raw_weights)[x].push_back(distribution(generator));
+		}
+	}
+	memset(raw_bias, 0, n_output*sizeof(double));
+}
+
 std::vector<double> layer_perceptron::operator () (
 	std::vector<double> const & input) {
 	std::vector<double> output;
@@ -194,6 +196,24 @@ std::vector<double> layer_perceptron::hypothesis (
 		output[out] += raw_bias[out];
 	}
 	return output;
+}
+
+// MULTILAYER PERCEPTRON IMPLEMENTATION
+
+void ml_perceptron::copy (
+	ml_perceptron const & other,
+	std::string scope) {
+	if (0 == scope.size()) {
+		scope = other.scope + "_cpy";
+	}
+	this->scope = scope;
+	size_t level = 0;
+	for (HID_PAIR hp : other.layers) {
+		std::string layername =
+			nnutils::formatter() << scope << "/hiddens_" << level++;
+		layers.push_back(
+			HID_PAIR(new layer_perceptron(*hp.first, layername), hp.second));
+	}
 }
 
 // def __init__ (self, n_input_arr, hiddens, activations, scope="MLP", copy_layers=None):
@@ -238,21 +258,6 @@ ml_perceptron::ml_perceptron (
 	}
 }
 
-ml_perceptron::ml_perceptron (
-	size_t n_input,
-	std::vector<std::pair<size_t, adhoc_operation> > hiddens,
-	std::string scope) : scope(scope) {
-	size_t n_output;
-	size_t layerlvl = 0;
-	for (auto pl : hiddens) {
-		n_output = pl.first;
-		raw_layers.push_back(
-			new layer_perceptron(n_input, n_output, pl.second,
-				nnutils::formatter() << scope << "/hidden_" << layerlvl++));
-		n_input = n_output;
-	}
-}
-
 // def copy(self, scope=None):
 // 	if (None == scope):
 // 		scope = self.scope + "_copy"
@@ -262,12 +267,16 @@ ml_perceptron::ml_perceptron (
 
 ml_perceptron::ml_perceptron (
 	ml_perceptron const & other,
-	std::string scope) : scope(scope) {
-	size_t layerlvl = 0;
-	for (layer_perceptron* lp : other.raw_layers) {
-		raw_layers.push_back(
-			new layer_perceptron(*lp, nnutils::formatter() <<
-				scope << "/hiddens_" << layerlvl++));
+	std::string scope) {
+	copy(other, scope);
+}
+
+ml_perceptron::~ml_perceptron (void) {
+
+
+	// DEPRECATED
+	for (layer_perceptron* pl : raw_layers) {
+		delete pl;
 	}
 }
 
@@ -276,13 +285,7 @@ ml_perceptron& ml_perceptron::operator = (ml_perceptron const & other) {
 		for (layer_perceptron* pl : raw_layers) {
 			delete pl;
 		}
-
-		size_t layerlvl = 0;
-		for (layer_perceptron* lp : other.raw_layers) {
-			raw_layers.push_back(
-				new layer_perceptron(*lp, nnutils::formatter() <<
-					scope << "/hiddens_" << layerlvl++));
-		}
+		copy(other, scope);
 	}
 	return *this;
 }
@@ -298,6 +301,22 @@ ml_perceptron& ml_perceptron::operator = (ml_perceptron const & other) {
 // 			# activate layer call for x_s = last layer's result
 // 			hidden = activation(inner(hidden))
 // 		return hidden
+
+// DEPRECATED
+ml_perceptron::ml_perceptron (
+	size_t n_input,
+	std::vector<std::pair<size_t, adhoc_operation> > hiddens,
+	std::string scope) : scope(scope) {
+	size_t n_output;
+	size_t layerlvl = 0;
+	for (auto pl : hiddens) {
+		n_output = pl.first;
+		raw_layers.push_back(
+			new layer_perceptron(n_input, n_output, pl.second,
+				nnutils::formatter() << scope << "/hidden_" << layerlvl++));
+		n_input = n_output;
+	}
+}
 
 std::vector<double> ml_perceptron::operator () (std::vector<double> const & input) {
 	std::vector<double> output = input;

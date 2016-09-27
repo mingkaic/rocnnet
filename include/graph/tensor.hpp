@@ -40,7 +40,7 @@ class tensor {
 		void copy (tensor<T> const & other);
 
 	protected:
-		allocator* alloc = nullptr;
+		iallocator* alloc = nullptr;
 		T* raw_data = nullptr;
 
 		friend class initializer<T>;
@@ -53,9 +53,9 @@ class tensor {
 		// creates a rank 0 tensor
 		tensor (void);
 		tensor (tensor_shape const & shape);
-		tensor (allocator& a, tensor_shape const & shape)
+		tensor (iallocator& a, tensor_shape const & shape)
 		: tensor(a, shape, default_attr) {}
-		tensor (allocator& a,
+		tensor (iallocator& a,
 			tensor_shape const & shape,
 			alloc_attrib const & attrib);
 
@@ -66,10 +66,10 @@ class tensor {
 
 		// allocate
 		// reallocation clear raw data
-		void allocate (allocator& allocer);
-		void allocate (allocator& allocer, alloc_attrib const & attrib);
-		void allocate (allocator& allocer, tensor_shape const & shape);
-		void allocate (allocator& allocer, tensor_shape const & shape,
+		void allocate (iallocator& allocer);
+		void allocate (iallocator& allocer, alloc_attrib const & attrib);
+		void allocate (iallocator& allocer, tensor_shape const & shape);
+		void allocate (iallocator& allocer, tensor_shape const & shape,
 			alloc_attrib const & attrib);
 
 		// shape info getters
@@ -107,7 +107,7 @@ class tensor {
 		// bool shares_buffer_with (tensor const & other) const;
 		// size_t buffer_hash (void) const;
 		// bool from_proto (tensorproto const & other);
-		// bool from_proto (allocator* a, tensorproto const & other);
+		// bool from_proto (iallocator* a, tensorproto const & other);
 };
 
 }

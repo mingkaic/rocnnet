@@ -49,6 +49,9 @@ TEST(VARIABLE, tensor_construct) {
 }
 
 
+// TODO variable clone tester (test for deep copy)
+
+
 TEST(VARIABLE, tensor_allocate) {
     // unknown
     nnet::tensor<double> liberal((nnet::tensor_shape()));

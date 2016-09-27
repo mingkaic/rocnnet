@@ -73,7 +73,7 @@ namespace nnet {
 // 	# UPDATE TARGET NETWORK
 // 	with tf.name_scope("target_network_update"):
 // 		self.target_network_update = []
-// 		for v_source, v_target in zip(self.q_network.get_variable(), self.target_q_network.get_variable()):
+// 		for v_source, v_target in zip(self.q_network.get_variables(), self.target_q_network.get_variables()):
 // 			# this is equivalent to target = (1-alpha) * target + alpha * source
 // 			update_op = v_target.assign_sub(self.t_net_update_rate * (v_target - v_source))
 // 			self.target_network_update.append(update_op)
