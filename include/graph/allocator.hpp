@@ -27,9 +27,9 @@ class iallocator {
         template <typename T>
         struct is_allowed {
             static constexpr bool value =
-            std::is_trivial<T>::value ||
-            std::is_same<T, std::complex<size_t> >::value ||
-            std::is_same<T, std::complex<double> >::value;
+                std::is_trivial<T>::value ||
+                std::is_same<T, std::complex<size_t> >::value ||
+                std::is_same<T, std::complex<double> >::value;
         };
 
         virtual void* get_raw (

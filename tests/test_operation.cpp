@@ -479,6 +479,8 @@ TEST(OPERATION, contraction) {
 
 }
 
+// DERIVATIVES
+
 TEST(DERIV, unary) {
 	const size_t limit = 523;
 	const size_t edge = 10;
@@ -627,3 +629,6 @@ TEST(DERIV, complex) {
 		EXPECT_EQ(r1[i], dp2[i]);
     }
 }
+
+
+// TODO test function wrappers

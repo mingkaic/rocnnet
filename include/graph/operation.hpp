@@ -104,7 +104,8 @@ class univar_func : ioperation<T> {
 	public:
 		// declare
 		univar_func (std::function<void(ioperation<T>*)> declare);
-		// shallow copy
+		// currently shallow copy
+		// TODO implement graph object manager for deep copy cloner
 		virtual univar_func<T>* clone (std::string name = "");
 		virtual ~univar_func (void) { clear(); }
 		// connect input to fanin ivariables according

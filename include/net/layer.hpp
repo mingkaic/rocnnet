@@ -29,6 +29,8 @@ namespace nnet {
 #define VECS std::pair<std::vector<double>, std::vector<double> >
 
 #define WB_PAIR std::pair<variable<double>*, variable<double>*>
+#define IN_PAIR std::pair<size_t, univar_func<double>*>
+#define HID_PAIR std::pair<layer_perceptron*, univar_func<double>*>
 
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
@@ -91,9 +93,6 @@ class layer_perceptron {
 		}
 };
 
-#define IN_PAIR std::pair<size_t, univar_func<double>*>
-#define HID_PAIR std::pair<layer_perceptron*, univar_func<double>*>
-
 class ml_perceptron {
 	private:
 		std::string scope;
@@ -109,14 +108,14 @@ class ml_perceptron {
 			size_t n_input,
 			std::vector<IN_PAIR> hiddens,
 			std::string scope = "MLP");
-
 		ml_perceptron (
 			ml_perceptron const & other,
 			std::string scope="");
-
 		virtual ~ml_perceptron (void);
-
 		ml_perceptron& operator = (ml_perceptron const & other);
+
+		ivariable<double>* operator () (ivariable<double> & input);
+		std::vector<WB_PAIR> get_variables (void);
 
 		// def get_var(self):
 		// 	# return the ultimate layer value

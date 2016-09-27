@@ -244,14 +244,14 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
 
             if (unar_ops<T>* uptr = dynamic_cast<unar_ops<T>*>(buffer)) {
                 if (nullptr == uptr->var) {
-                    (*uptr)(input);
+                    (*uptr)(*input);
                 } else if (ioperation<T>* inptr =
                     dynamic_cast<ioperation<T>*>(uptr->var)) {
                     q.push(inptr);
                 }
             } else if (bin_ops<T>* bptr = dynamic_cast<bin_ops<T>*>(buffer)) {
                 if (nullptr == bptr->a && nullptr == bptr->b) {
-                    (*bptr)(input, input);
+                    (*bptr)(*input, *input);
                 } else {
                     if (ioperation<T>* ptr1 =
                         dynamic_cast<ioperation<T>*>(bptr->a)) {
@@ -266,13 +266,14 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
         }
         fanin = input;
     }
+    return *this;
 }
 
 template <typename T>
 univar_func<T>& univar_func<T>::operator = (ivariable<T> const & other) {
     if (this != &other) {
         clear();
-        if (const unar_ops<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
+        if (const univar_func<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
             copy(*uptr);
         } else {
             ivariable<T>::copy(other);

@@ -129,12 +129,14 @@ layer_perceptron& layer_perceptron::operator = (layer_perceptron const & other) 
 // 		return sum([tf.matmul(x, weight) for x, weight in zip(in_x, self.weights)]) + self.bias
 
 // returned variable ownership is retained by layer_perceptron instance
-// destroys passed out variable from previous calls (use with care until smartpointers...)
+// destroys passed out variable from previous calls
+// (use with care until smartpointers...)
 ivariable<double>* layer_perceptron::operator () (
 	ivariable<double>& input) {
 	std::vector<size_t> ts = input.get_shape().as_list();
 	// input are expected to be batch_size by n_input or n_input by batch_size
-	// weights are n_output column by n_input rows, so if ts[0] == n_output then transpose input
+	// weights are n_output column by n_input rows,
+	// so if ts[0] == n_output then transpose input
 	bool transposeA = ts[0] == n_input;
 	size_t batch_size = transposeA ? ts[1] : ts[0];
 	ivariable<double>* mres = new matmul<double>(input, *weights, transposeA);
@@ -211,8 +213,9 @@ void ml_perceptron::copy (
 	for (HID_PAIR hp : other.layers) {
 		std::string layername =
 			nnutils::formatter() << scope << "/hiddens_" << level++;
-		layers.push_back(
-			HID_PAIR(new layer_perceptron(*hp.first, layername), hp.second));
+		layers.push_back(HID_PAIR(
+			new layer_perceptron(*hp.first, layername),
+			hp.second->clone()));
 	}
 }
 
@@ -272,7 +275,10 @@ ml_perceptron::ml_perceptron (
 }
 
 ml_perceptron::~ml_perceptron (void) {
-
+	for (HID_PAIR hp : layers) {
+		delete hp.first;
+		delete hp.second;
+	}
 
 	// DEPRECATED
 	for (layer_perceptron* pl : raw_layers) {
@@ -282,12 +288,38 @@ ml_perceptron::~ml_perceptron (void) {
 
 ml_perceptron& ml_perceptron::operator = (ml_perceptron const & other) {
 	if (&other != this) {
+		for (HID_PAIR hp : layers) {
+			delete hp.first;
+			delete hp.second;
+		}
+		copy(other, scope);
+
+		// DEPRECATED
 		for (layer_perceptron* pl : raw_layers) {
 			delete pl;
 		}
-		copy(other, scope);
 	}
 	return *this;
+}
+
+ivariable<double>* ml_perceptron::operator () (ivariable<double> & input) {
+	// input are expected to be batch_size by n_input or n_input by batch_size
+	// output of one layer's dimensions is expected to be matched by
+	// the layer_perceptron of the next layer
+	ivariable<double>* output = &input;
+	for (HID_PAIR hp : layers) {
+		ivariable<double>* hypothesis = (*hp.first)(*output);
+		output = &(*hp.second)(hypothesis);
+	}
+	return output;
+}
+
+std::vector<WB_PAIR> ml_perceptron::get_variables (void) {
+	std::vector<WB_PAIR> wb_vec;
+	for (HID_PAIR hp : layers) {
+		wb_vec.push_back(hp.first->get_variables());
+	}
+	return wb_vec;
 }
 
 // def __call__(self, in_x):

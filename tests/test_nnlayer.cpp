@@ -20,7 +20,10 @@ static double grad_sig (double in) {
 
 static double identity (double in) { return in; }
 
-static void fill_binary_samples(std::vector<VECS>& samples, size_t n_input, size_t batch_size) {
+static void fill_binary_samples(
+	std::vector<VECS>& samples,
+	size_t n_input,
+	size_t batch_size) {
 	for (size_t i = 0; i < batch_size; i++) {
 		std::vector<double> a;
 		std::vector<double> b;
@@ -42,7 +45,7 @@ static void fill_binary_samples(std::vector<VECS>& samples, size_t n_input, size
 nnet::adhoc_operation sig(sigmoid, grad_sig);
 nnet::adhoc_operation same(identity, identity);
 
-TEST(PERCEPTRON, layer_action) {
+TEST(PERCEPTRON, layer_action1) {
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	size_t n_out = 3;
 	nnet::layer_perceptron lp(vin.size(), n_out, same);
@@ -50,6 +53,19 @@ TEST(PERCEPTRON, layer_action) {
 	ASSERT_EQ(vout.size(), n_out);
 }
 
+TEST(PERCEPTRON, layer_action) {
+	// std::vector<double> vin = {1, 2, 3, 4, 5};
+	// std::vector<double> exout = {1, 2, 3};
+	// nnet::layer_perceptron layer(vin.size(), exout.size());
+	// nnet::placeholder<double> var({5});
+	// // don't own res
+	// nnet::ivariable<double>* res = layer(var);
+	// ASSERT_FALSE(res, nullptr);
+	// nnet::expose<double> ex(*res);
+	// // initialize variables
+	// std::vector<double> raw = ex->get_raw();
+	// ASSERT_EQ(raw.size(), exout.size());
+}
 
 TEST(PERCEPTRON, mlp_action) {
 	assert(sigmoid(0) == 0.5);
