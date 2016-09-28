@@ -153,27 +153,31 @@ tensor<T>* ioperation<T>::matmul_op (
     // restrict shapes
     tensor_shape as = a.get_shape();
     tensor_shape bs = b.get_shape();
-    assert(as.n_dims() == 2);
-    assert(bs.n_dims() == 2);
+    assert(2 >= as.n_dims());
+    assert(2 >= bs.n_dims());
     std::vector<size_t> al = as.as_list();
     std::vector<size_t> bl = bs.as_list();
+    size_t ax = as.n_dims() ? al[0] : 0;
+    size_t ay = as.n_dims() > 1 ? al[1] : 1;
+    size_t bx = bs.n_dims() ? bl[0] : 0;
+    size_t by = bs.n_dims() > 1 ? bl[1] : 1;
     size_t dimX, dimY, dimZ;
     if (transposeA && transposeB) {
-        assert(al[1] == bl[0]);
-        dimZ = al[1];
-        dimX = bl[1]; dimY = al[0];
+        assert(ay == bx);
+        dimZ = ay;
+        dimX = by; dimY = ax;
     } else if (transposeA) {
-        assert(al[1] == bl[1]);
-        dimZ = al[1];
-        dimX = bl[0]; dimY = al[0];
+        assert(ay == by);
+        dimZ = ay;
+        dimX = bx; dimY = ax;
     } else if (transposeB) {
-        assert(al[0] == bl[0]);
-        dimZ = al[0];
-        dimX = bl[1]; dimY = al[1];
+        assert(ax == bx);
+        dimZ = ax;
+        dimX = by; dimY = ay;
     } else { // !(transposeA || transposeB)
-        assert(al[0] == bl[1]);
-        dimZ = al[0];
-        dimX = bl[0]; dimY = al[1];
+        assert(ax == by);
+        dimZ = ax;
+        dimX = bx; dimY = ay;
     }
     memory_alloc all;
     tensor<T>* ans = new tensor<T>(std::vector<size_t>({dimX, dimY}));
@@ -185,8 +189,8 @@ tensor<T>* ioperation<T>::matmul_op (
         for (size_t x = 0; x < dimX; x++) {
             rawr[x+y*dimX] = 0;
             for (size_t z = 0; z < dimZ; z++) {
-                size_t aidx = transposeA ? y+z*al[0] : z+y*al[0];
-                size_t bidx = transposeB ? z+x*bl[0] : x+z*bl[0];
+                size_t aidx = transposeA ? y+z*ax : z+y*ax;
+                size_t bidx = transposeB ? z+x*bx : x+z*bx;
                 rawr[x+y*dimX] += rawa[aidx] * rawb[bidx];
             }
         }

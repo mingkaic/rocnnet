@@ -12,7 +12,7 @@
 
 namespace nnet {
 
-const session & session::get_instance (void) {
+session & session::get_instance (void) {
     static session my_instance;
     return my_instance;
 }

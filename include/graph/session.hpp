@@ -8,7 +8,6 @@
 
 // #include <any> // since 2017
 #include <unordered_set>
-#include "variable.hpp"
 
 #pragma once
 #ifndef session_hpp
@@ -16,10 +15,16 @@
 
 namespace nnet {
 
+template <typename T>
+class ivariable;
+
+template <typename T>
+class variable;
+
 // singleton object controller
 class session {
     private:
-        // std::set<ivariable<std::any>*> registry;
+        // std::set<std::any> registry;
         std::unordered_set<void*> registry;
 
     protected:
@@ -27,7 +32,7 @@ class session {
         ~session (void) {}
 
     public:
-        const session & get_instance (void);
+        static session & get_instance (void);
 
         // delete all copiers
         session (session const&) = delete;
@@ -44,11 +49,19 @@ class session {
         }
 
         template <typename T>
+        void unregister_obj (ivariable<T>& obj) {
+            registry.erase(&obj);
+        }
+
+        template <typename T>
         void initialize_all (void) {
             // replace void* with ivariable<T>*
             for (void* ivar : registry) {
-                variable<T>* var = dynamic_cast<variable<T>*>(ivar);
-                var->initialize();
+                variable<T>* var =
+                    dynamic_cast<variable<T>*>((ivariable<T>*) ivar);
+                if (nullptr != var && var->can_init()) {
+                    var->initialize();
+                }
             }
         }
 

@@ -11,6 +11,7 @@
 #include <random>
 #include <new>
 
+#include "session.hpp"
 #include "tensor.hpp"
 
 #pragma once
@@ -82,8 +83,15 @@ class ivariable {
 		friend class ioperation<T>;
 
 	public:
+		ivariable (void) {
+			session& sess = session::get_instance();
+			sess.register_obj(*this);
+		}
 		virtual ivariable<T>* clone (std::string name = "") = 0;
-		virtual ~ivariable (void) {}
+		virtual ~ivariable (void) {
+			session& sess = session::get_instance();
+			sess.unregister_obj(*this);
+		}
 		virtual ivariable<T>& operator = (ivariable<T> const & other);
 
 		std::string get_name (void) const { return name; }
@@ -125,10 +133,12 @@ class variable : public ivariable<T> {
 		virtual ~variable (void);
 		virtual variable<T>& operator = (ivariable<T> const & other);
 
+		bool can_init (void) const { return init != nullptr; }
+
 		// required by variables using initializer (not by placeholder)
 		// calls initializer can call multiple times to reset
-		tensor<T>& initialize (void);
-		tensor<T>& initialize (tensor_shape alloc_shape);
+		virtual tensor<T>& initialize (void);
+		virtual tensor<T>& initialize (tensor_shape alloc_shape);
 		virtual const tensor<T>& eval (void);
 
 		// tensor<T> scatter_sub (IndexedSlices sparse_delta, use_locking = false);
@@ -150,6 +160,10 @@ class placeholder : public variable<T> {
 		// assign raw data according to 1 dimension representation of inner tensor
 		virtual variable<T>& operator = (std::vector<T> data);
 		virtual variable<T>& operator = (tensor<T> const & data);
+
+		// initialize does nothing
+		virtual tensor<T>& initialize (void) { return this->out; }
+		virtual tensor<T>& initialize (tensor_shape alloc_shape) { return this->out; }
 };
 
 }

@@ -96,8 +96,10 @@ layer_perceptron::~layer_perceptron (void) {
 	clear_ownership();
 
 	// DEPRECATED
-	delete raw_weights;
-	delete[] raw_bias;
+	if (raw_weights) {
+		delete raw_weights;
+		delete[] raw_bias;
+	}
 }
 
 layer_perceptron& layer_perceptron::operator = (layer_perceptron const & other) {
@@ -134,11 +136,15 @@ layer_perceptron& layer_perceptron::operator = (layer_perceptron const & other) 
 ivariable<double>* layer_perceptron::operator () (
 	ivariable<double>& input) {
 	std::vector<size_t> ts = input.get_shape().as_list();
+	assert(ts.size() <= 2);
 	// input are expected to be batch_size by n_input or n_input by batch_size
 	// weights are n_output column by n_input rows,
 	// so if ts[0] == n_output then transpose input
 	bool transposeA = ts[0] == n_input;
-	size_t batch_size = transposeA ? ts[1] : ts[0];
+	size_t batch_size = 1;
+	if (2 == ts.size()) {
+		batch_size = transposeA ? ts[1] : ts[0];
+	}
 	ivariable<double>* mres = new matmul<double>(input, *weights, transposeA);
 	// mres is n_output column by batch_size rows (extend bias to fit)
 	variable<double>* extension =

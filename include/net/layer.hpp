@@ -76,8 +76,8 @@ class layer_perceptron {
 		WB_PAIR get_variables (void) const { return WB_PAIR(weights, bias); }
 
 		// DEPRECATED
-		V_MATRIX* raw_weights;
-		double* raw_bias;
+		V_MATRIX* raw_weights = nullptr;
+		double* raw_bias = nullptr;
 		adhoc_operation op;
 		layer_perceptron (
 			size_t n_input,

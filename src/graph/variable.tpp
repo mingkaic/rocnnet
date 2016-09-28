@@ -138,6 +138,7 @@ template <typename T>
 tensor<T>& variable<T>::initialize (void) {
 	memory_alloc all;
 	this->out.allocate(all);
+	assert(init != nullptr);
 	(*init)(this->out);
 	is_init = true;
 	return this->out;

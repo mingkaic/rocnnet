@@ -54,17 +54,20 @@ TEST(PERCEPTRON, layer_action1) {
 }
 
 TEST(PERCEPTRON, layer_action) {
-	// std::vector<double> vin = {1, 2, 3, 4, 5};
-	// std::vector<double> exout = {1, 2, 3};
-	// nnet::layer_perceptron layer(vin.size(), exout.size());
-	// nnet::placeholder<double> var({5});
-	// // don't own res
-	// nnet::ivariable<double>* res = layer(var);
-	// ASSERT_FALSE(res, nullptr);
-	// nnet::expose<double> ex(*res);
-	// // initialize variables
-	// std::vector<double> raw = ex->get_raw();
-	// ASSERT_EQ(raw.size(), exout.size());
+	nnet::session& sess = nnet::session::get_instance();
+	std::vector<double> vin = {1, 2, 3, 4, 5};
+	std::vector<double> exout = {1, 2, 3};
+	nnet::layer_perceptron layer(vin.size(), exout.size());
+	nnet::placeholder<double> var(std::vector<size_t>{5});
+	// don't own res
+	nnet::ivariable<double>* res = layer(var);
+	ASSERT_NE(res, nullptr);
+	nnet::expose<double> ex(*res);
+	// initialize variables
+	sess.initialize_all<double>();
+	var = vin;
+	std::vector<double> raw = ex.get_raw();
+	ASSERT_EQ(raw.size(), exout.size());
 }
 
 TEST(PERCEPTRON, mlp_action) {
