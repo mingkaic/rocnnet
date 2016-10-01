@@ -70,7 +70,8 @@ TEST(PERCEPTRON, layer_action) {
 	ASSERT_EQ(raw.size(), exout.size());
 }
 
-TEST(PERCEPTRON, mlp_action) {
+
+TEST(PERCEPTRON, mlp_action1) {
 	assert(sigmoid(0) == 0.5);
 	size_t n_out = 5;
 	size_t n_hidden = 4;
@@ -90,6 +91,37 @@ TEST(PERCEPTRON, mlp_action) {
 		EXPECT_GE(o, 0);
 	}
 }
+
+
+TEST(PERCEPTRON, mlp_action) {
+	nnet::session& sess = nnet::session::get_instance();
+	size_t n_out = 3;
+	size_t n_hidden = 4;
+	std::vector<double> vin = {1, 2, 3, 4, 5};
+	std::vector<IN_PAIR> hiddens = {
+		// use same sigmoid in static memory once deep copy is established
+		IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
+		IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
+		IN_PAIR(n_out, new nnet::sigmoid<double>()),
+	};
+	// mlp has ownership of activations
+	nnet::ml_perceptron mlp =
+		nnet::ml_perceptron(vin.size(), hiddens);
+
+	nnet::placeholder<double> var(std::vector<size_t>{5});
+	// don't own res
+	nnet::ivariable<double>* res = mlp(var);
+	nnet::expose<double> ex(*res);
+	sess.initialize_all<double>();
+	var = vin;
+	std::vector<double> raw = ex.get_raw();
+	ASSERT_EQ(raw.size(), n_out);
+	for (double o : raw) {
+		EXPECT_LE(o, 1);
+		EXPECT_GE(o, 0);
+	}
+}
+
 
 // test with gradient descent
 TEST(PERCEPTRON, gd_train) {
@@ -133,6 +165,7 @@ TEST(PERCEPTRON, gd_train) {
 	std::cout << "average err: " << err << std::endl;
 	std::cout << "success rate: " << successrate << std::endl;
 }
+
 
 // test with batch gradient descent
 TEST(PERCEPTRON, bgd_train) {

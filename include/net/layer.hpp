@@ -29,7 +29,7 @@ namespace nnet {
 #define VECS std::pair<std::vector<double>, std::vector<double> >
 
 #define WB_PAIR std::pair<variable<double>*, variable<double>*>
-#define IN_PAIR std::pair<size_t, univar_func<double>*>
+#define IN_PAIR std::pair<size_t, nnet::univar_func<double>*>
 #define HID_PAIR std::pair<layer_perceptron*, univar_func<double>*>
 
 // CONSTRAINTS: without tensors, all features are fed by vectors

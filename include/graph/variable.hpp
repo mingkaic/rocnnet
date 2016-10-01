@@ -95,7 +95,8 @@ class ivariable {
 		virtual ivariable<T>& operator = (ivariable<T> const & other);
 
 		std::string get_name (void) const { return name; }
-		tensor_shape get_shape (void) const { return this->out.get_shape(); }
+		virtual tensor_shape get_shape (void) const
+			{ return this->out.get_shape(); }
 
 		std::list<ioperation<T>*> get_consumers (void) { return consumers; }
 		// calculate the derivative over input variable given values

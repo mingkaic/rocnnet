@@ -79,8 +79,8 @@ void binaryElemTest (
 	bad = rbad;
 
 	// delayed evaluation
-	EXPECT_THROW({ trouble1.eval(); }, std::invalid_argument);
-	EXPECT_THROW({ trouble2.eval(); }, std::invalid_argument);
+	EXPECT_DEATH({ trouble1.eval(); }, ".*");
+	EXPECT_DEATH({ trouble2.eval(); }, ".*");
 
 	nnet::expose<double> ex(res);
 	nnet::expose<double> ex1(res1);
@@ -369,7 +369,6 @@ TEST(OPERATION, matmul2) {
 			EXPECT_EQ(ex2[y][x], t2.get({x, y}));
 		}
     }
-	std::cout << res.str();
 
     nnet::tensor<double> t3 = res3.eval();
 	nnet::tensor_shape s3 = t3.get_shape();

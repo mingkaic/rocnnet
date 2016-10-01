@@ -53,10 +53,64 @@ static inline T op_div (T a, T b) { return a / b; }
 // OPERATION INTERFACE UTILITY FUNCTIONS
 
 template <typename T>
+tensor_shape ioperation<T>::get_element_shape (
+    const tensor<T>& a,
+    const tensor<T>& b) const {
+    tensor_shape ts_out;
+    if (1 == a.n_dims()) {
+        ts_out = b.get_shape();
+    } else if (1 == b.n_dims() || a.is_same_size(b)){
+        ts_out = a.get_shape();
+    }
+    return ts_out;
+}
+
+template <typename T>
+tensor_shape ioperation<T>::get_matrix_shape (
+    const tensor<T>& t1, const tensor<T>& t2,
+    bool transposeA, bool transposeB,
+    size_t& common_dim) const {
+    tensor_shape ts_out;
+    tensor_shape t1s = t1.get_shape();
+    tensor_shape t2s = t2.get_shape();
+    if (2 >= t1s.n_dims() &&
+        2 >= t2s.n_dims()) {
+        std::vector<size_t> al = t1s.as_list();
+        std::vector<size_t> bl = t2s.as_list();
+        size_t ax = t1s.n_dims() ? al[0] : 0;
+        size_t ay = t1s.n_dims() > 1 ? al[1] : 1;
+        size_t bx = t2s.n_dims() ? bl[0] : 0;
+        size_t by = t2s.n_dims() > 1 ? bl[1] : 1;
+        size_t dimX, dimY, dimZ;
+        if (transposeA && transposeB) {
+            if (ay == bx) {
+                common_dim = ay;
+                ts_out = std::vector<size_t>{by, ax};
+            }
+        } else if (transposeA) {
+            if (ay == by) {
+                common_dim = ay;
+                ts_out = std::vector<size_t>{bx, ax};
+            }
+        } else if (transposeB) {
+            if (ax == bx) {
+                common_dim = ax;
+                ts_out = std::vector<size_t>{by, ay};
+            }
+        } else { // !(transposeA || transposeB)
+            if (ax == by) {
+                common_dim = ax;
+                ts_out = std::vector<size_t>{bx, ay};
+            }
+        }
+    }
+    return ts_out;
+}
+
+template <typename T>
 template <typename U>
 void ioperation<T>::util_op (
-    U& out,
-    tensor<T> const & in,
+    U& out, const tensor<T>& in,
     std::function<void(U&, T)> op) const {
     T* inraw = in.raw_data;
     for (size_t i = 0; i < in.n_elems(); i++) {
@@ -66,7 +120,7 @@ void ioperation<T>::util_op (
 
 template <typename T>
 tensor<T>* ioperation<T>::util_op (
-    tensor<T> const & in,
+    const tensor<T>& in,
     std::function<T(T)> op) const {
     memory_alloc alloc;
     tensor<T>* ans = new tensor<T>(in.get_shape());
@@ -81,14 +135,17 @@ tensor<T>* ioperation<T>::util_op (
 
 template <typename T>
 tensor<T>* ioperation<T>::util_op (
-    tensor<T> const & a,
-    tensor<T> const & b,
+    const tensor<T>& a,
+    const tensor<T>& b,
     std::function<T(T, T)> op) const {
+    tensor_shape ts = get_element_shape(a, b);
+    assert(0 < ts.n_dims());
     memory_alloc alloc;
     tensor<T>* ans;
+    ans = new tensor<T>(ts);
+    ans->allocate(alloc);
+
     if (1 == a.n_elems()) {
-        ans = new tensor<T>(b.get_shape());
-        ans->allocate(alloc);
         T scalar = a.get({0});
         T* in = b.raw_data;
         T* out = ans->raw_data;
@@ -96,8 +153,6 @@ tensor<T>* ioperation<T>::util_op (
             out[i] = op(scalar, in[i]);
         }
     } else if (1 == b.n_elems()) {
-        ans = new tensor<T>(a.get_shape());
-        ans->allocate(alloc);
         T* in = a.raw_data;
         T scalar = b.get({0});
         T* out = ans->raw_data;
@@ -105,8 +160,6 @@ tensor<T>* ioperation<T>::util_op (
             out[i] = op(in[i], scalar);
         }
     } else if (a.is_same_size(b)) {
-        ans = new tensor<T>(a.get_shape());
-        ans->allocate(alloc);
         T* ina = a.raw_data;
         T* inb = b.raw_data;
         T* out = ans->raw_data;
@@ -150,35 +203,12 @@ tensor<T>* ioperation<T>::matmul_op (
     tensor<T> const & b,
     bool transposeA,
     bool transposeB) const {
-    // restrict shapes
-    tensor_shape as = a.get_shape();
-    tensor_shape bs = b.get_shape();
-    assert(2 >= as.n_dims());
-    assert(2 >= bs.n_dims());
-    std::vector<size_t> al = as.as_list();
-    std::vector<size_t> bl = bs.as_list();
-    size_t ax = as.n_dims() ? al[0] : 0;
-    size_t ay = as.n_dims() > 1 ? al[1] : 1;
-    size_t bx = bs.n_dims() ? bl[0] : 0;
-    size_t by = bs.n_dims() > 1 ? bl[1] : 1;
-    size_t dimX, dimY, dimZ;
-    if (transposeA && transposeB) {
-        assert(ay == bx);
-        dimZ = ay;
-        dimX = by; dimY = ax;
-    } else if (transposeA) {
-        assert(ay == by);
-        dimZ = ay;
-        dimX = bx; dimY = ax;
-    } else if (transposeB) {
-        assert(ax == bx);
-        dimZ = ax;
-        dimX = by; dimY = ay;
-    } else { // !(transposeA || transposeB)
-        assert(ax == by);
-        dimZ = ax;
-        dimX = bx; dimY = ay;
-    }
+    size_t dimZ;
+    tensor_shape ts = get_matrix_shape(a, b, transposeA, transposeB, dimZ);
+    assert(ts.n_dims() > 0);
+    std::vector<size_t> dims = ts.as_list();
+    size_t dimX = dims[0];
+    size_t dimY = dims[1];
     memory_alloc all;
     tensor<T>* ans = new tensor<T>(std::vector<size_t>({dimX, dimY}));
     ans->allocate(all);
@@ -189,13 +219,25 @@ tensor<T>* ioperation<T>::matmul_op (
         for (size_t x = 0; x < dimX; x++) {
             rawr[x+y*dimX] = 0;
             for (size_t z = 0; z < dimZ; z++) {
-                size_t aidx = transposeA ? y+z*ax : z+y*ax;
-                size_t bidx = transposeB ? z+x*bx : x+z*bx;
+                size_t aidx = transposeA ? y+z*dimY : z+y*dimZ;
+                size_t bidx = transposeB ? z+x*dimZ : x+z*dimX;
                 rawr[x+y*dimX] += rawa[aidx] * rawb[bidx];
             }
         }
     }
     return ans;
+}
+
+template <typename T>
+void ioperation<T>::update (tensor_shape candidate_shape) {
+    // no point in propagating if the shape is undefined
+    if (0 != candidate_shape.n_dims()) {
+        this->out.set_shape(candidate_shape);
+        // propagate to consumers
+        for (ioperation<T>* consumer : this->consumers) {
+            consumer->shape_eval();
+        }
+    }
 }
 
 // FUNCTION WRAPPER IMPLEMENTATION
@@ -209,24 +251,32 @@ void univar_func<T>::clear (void) {
 }
 
 template <typename T>
-void univar_func<T>::copy (
-    univar_func<T> const & other,
-    std::string name) {
-    // shallow copy
-    // no ownership
-    fanout = other.fanout;
-    fanin = other.fanin;
+void univar_func<T>::copy (ivariable<T> const & other, std::string name) {
+    if (const univar_func<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
+        // shallow copy
+        // no ownership
+        fanout = uptr->fanout;
+        fanin = uptr->fanin;
+    }
     ivariable<T>::copy(other, name);
 }
 
 template <typename T>
-univar_func<T>::univar_func (univar_func<T> const & other, std::string name) {
+univar_func<T>::univar_func (const univar_func& other, std::string name) {
     copy(other, name);
 }
 
 template <typename T>
+void univar_func<T>::shape_eval (void) {
+    tensor_shape ts = fanout->get_shape();
+    if (ts.is_fully_defined()) {
+        this->update(ts);
+    }
+}
+
+template <typename T>
 univar_func<T>::univar_func (
-    std::function<void(ioperation<T>*)> declare) {
+    std::function<void(ioperation<T>*&)> declare) {
     declare(fanout);
 }
 
@@ -270,6 +320,7 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
         }
         fanin = input;
     }
+    shape_eval();
     return *this;
 }
 
@@ -277,11 +328,7 @@ template <typename T>
 univar_func<T>& univar_func<T>::operator = (ivariable<T> const & other) {
     if (this != &other) {
         clear();
-        if (const univar_func<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
-            copy(*uptr);
-        } else {
-            ivariable<T>::copy(other);
-        }
+        copy(other);
     }
     return *this;
 }
@@ -304,23 +351,23 @@ const tensor<T>& univar_func<T>::eval (void) {
 // ACTIVATION FUNCTION
 
 template <typename T>
-sigmoid<T>::sigmoid (void) : univar_func<T>([this](ioperation<T>* outop) {
+sigmoid<T>::sigmoid (void) : univar_func<T>([this](ioperation<T>*& outop) {
     // f(x) = 1/(1+e^-x)
     ioperation<T>* negres = new neg<T>();
-    ioperation<T>* expres = new exp<T>(negres);
-    ioperation<T>* denom = new add<T>(1, expres);
-    outop = new div<T>(1, denom);
+    ioperation<T>* expres = new exp<T>(*negres);
+    ioperation<T>* denom = new add<T>(1, *expres);
+    outop = new div<T>(1, *denom);
     this->ownout = { negres, expres, denom, outop };
 }) {}
 
 template <typename T>
-tanh<T>::tanh (void) : univar_func<T>([this](ioperation<T>* outop) {
+tanh<T>::tanh (void) : univar_func<T>([this](ioperation<T>*& outop) {
     // f(x) = (e^(2*x)+1)/(e^(2*x)-1)
     ioperation<T>* pres = new add<T>(); // 2*x
-    ioperation<T>* expres = new exp<T>(pres);
-    ioperation<T>* numer = new sub<T>(expres, 1);
-    ioperation<T>* denom = new add<T>(expres, 1);
-    outop = new div<T>(numer, denom);
+    ioperation<T>* expres = new exp<T>(*pres);
+    ioperation<T>* numer = new sub<T>(*expres, 1);
+    ioperation<T>* denom = new add<T>(*expres, 1);
+    outop = new div<T>(*numer, *denom);
     this->ownout = { pres, expres, numer, denom, outop };
 }) {}
 
@@ -401,18 +448,10 @@ scalar<T>* scalar<T>::clone (std::string name) {
 // UNARY OPERATIONS
 
 template <typename T>
-void unar_ops<T>::init (std::string op, ivariable<T>& var) {
-    std::stringstream ns;
-    ns << "<" << op << ">(" << var.get_name() << ")";
-    this->name = ns.str();
-    this->consume(var);
-    this->var = &var;
-}
-
-template <typename T>
-unar_ops<T>::unar_ops (unar_ops<T> const & other, std::string name) {
-    var = other.var;
-    op = other.op;
+void unar_ops<T>::copy (const ivariable<T>& other, std::string name) {
+    if (const unar_ops<T>* uptr = dynamic_cast<const unar_ops<T>*>(&other)) {
+        var = uptr->var;
+    }
     ivariable<T>::copy(other, name);
 }
 
@@ -422,18 +461,28 @@ tensor<T>* unar_ops<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
- unar_ops<T>* unar_ops<T>::clone (std::string name) {
-    return new unar_ops(*this, name);
+void unar_ops<T>::shape_eval (void) {
+    tensor_shape ts = var->get_shape();
+    if (ts.is_fully_defined()) {
+        this->update(ts);
+    }
+}
+
+template <typename T>
+ivariable<T>& unar_ops<T>::operator () (ivariable<T>& var) {
+    std::stringstream ns;
+    ns << "<" << get_symb() << ">(" << var.get_name() << ")";
+    this->name = ns.str();
+    this->consume(var);
+    this->var = &var;
+    shape_eval();
+    return *this;
 }
 
 template <typename T>
 unar_ops<T>& unar_ops<T>::operator = (ivariable<T> const & other) {
     if (this != &other) {
-        if (const unar_ops<T>* uptr = dynamic_cast<const unar_ops<T>*>(&other)) {
-            var = uptr->var;
-            op = uptr->op;
-        }
-        ivariable<T>::copy(other);
+        copy(other);
     }
     return *this;
 }
@@ -442,7 +491,7 @@ template <typename T>
 const tensor<T>& unar_ops<T>::eval (void) {
     assert(nullptr != var);
     const tensor<T>& evar = var->eval();
-    tensor<T>* eptr = this->util_op(evar, op);
+    tensor<T>* eptr = this->util_op(evar, get_op());
     this->out = *eptr;
     delete eptr;
     return this->out;
@@ -451,54 +500,67 @@ const tensor<T>& unar_ops<T>::eval (void) {
 // BINARY OPERATIONS
 
 template <typename T>
-bin_ops<T>::bin_ops (bin_ops<T> const & other, std::string name) {
-    a = other.a;
-    b = other.b;
-    op = other.op;
+void bin_ops<T>::copy (const ivariable<T>& other, std::string name) {
+    if (const bin_ops<T>* bptr = dynamic_cast<const bin_ops<T>*>(&other)) {
+        if (own) delete own;
+
+        a = bptr->a;
+        b = bptr->b;
+        own = bptr->own;
+    }
     ivariable<T>::copy(other, name);
 }
 
 template <typename T>
-bin_ops<T>* bin_ops<T>::clone (std::string name) {
-    return new bin_ops(*this, name);
+void bin_ops<T>::shape_eval (void) {
+    if (a->get_shape().is_fully_defined() &&
+        b->get_shape().is_fully_defined()) {
+        this->update(
+            this->get_element_shape(
+                this->get_eval(*a),
+                this->get_eval(*b)));
+    }
 }
 
 template <typename T>
-void bin_ops<T>::init (std::string op, ivariable<T>& a, ivariable<T>& b) {
+ivariable<T>& bin_ops<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
     std::stringstream ns;
-    ns << a.get_name() << op << b.get_name();
+    ns << a.get_name() << get_symb() << b.get_name();
     this->name = ns.str();
     this->consume(a); this->consume(b);
     this->a = &a; this->b = &b;
+    shape_eval();
+    return *this;
 }
 
 template <typename T>
-void bin_ops<T>::init (std::string op, ivariable<T>& a, T b) {
+ivariable<T>& bin_ops<T>::operator () (ivariable<T>& a, T b) {
     std::stringstream ns;
-    ns << a.get_name() << op << b;
+    ns << a.get_name() << get_symb() << b;
     this->name = ns.str();
     this->consume(a);
-    this->a = &a; this->b = new scalar<T>(b); // need smart pointer
+    this->a = &a;
+    own = this->b = new scalar<T>(b); // need smart pointer
+    shape_eval();
+    return *this;
 }
 
 template <typename T>
-void bin_ops<T>::init (std::string op, T a, ivariable<T>& b) {
+ivariable<T>& bin_ops<T>::operator () (T a, ivariable<T>& b) {
     std::stringstream ns;
-    ns << a << op << b.get_name();
+    ns << a << get_symb() << b.get_name();
     this->name = ns.str();
     this->consume(b);
-    this->a = new scalar<T>(a); this->b = &b;
+    own = this->a = new scalar<T>(a);
+    this->b = &b;
+    shape_eval();
+    return *this;
 }
 
 template <typename T>
 bin_ops<T>& bin_ops<T>::operator = (ivariable<T> const & other) {
     if (this != &other) {
-        if (const bin_ops<T>* bptr = dynamic_cast<const bin_ops<T>*>(&other)) {
-            a = bptr->a;
-            b = bptr->b;
-            op = bptr->op;
-        }
-        ivariable<T>::copy(other);
+        copy(other);
     }
     return *this;
 }
@@ -508,7 +570,7 @@ const tensor<T>& bin_ops<T>::eval (void) {
     assert(nullptr != a && nullptr != b);
     const tensor<T>& at = a->eval();
     const tensor<T>& bt = b->eval();
-    tensor<T>* eptr = this->util_op(at, bt, op);
+    tensor<T>* eptr = this->util_op(at, bt, get_op());
     this->out = *eptr;
     delete eptr;
     return this->out;
@@ -519,6 +581,14 @@ const tensor<T>& bin_ops<T>::eval (void) {
 template <typename T>
 tensor<T>* transpose<T>::calc_derive (ivariable<T>* over) const {
     return nullptr;
+}
+
+template <typename T>
+void transpose<T>::shape_eval (void) {
+    tensor_shape ts = var->get_shape();
+    if (ts.is_fully_defined()) {
+        this->update(ts);
+    }
 }
 
 template <typename T>
@@ -544,6 +614,7 @@ ivariable<T>& transpose<T>::operator () (ivariable<T>& in) {
     this->name = ns.str();
     this->consume(in);
     this->var = &in;
+    shape_eval();
     return *this;
 }
 
@@ -573,6 +644,19 @@ const tensor<T>& transpose<T>::eval (void) {
 template <typename T>
 tensor<T>* matmul<T>::calc_derive (ivariable<T>* over) const {
     return nullptr;
+}
+
+template <typename T>
+void matmul<T>::shape_eval (void) {
+    if (a->get_shape().is_fully_defined() &&
+        b->get_shape().is_fully_defined()) {
+        size_t common_dim;
+        this->update(
+            this->get_matrix_shape(
+                this->get_eval(*this->a),
+                this->get_eval(*this->b),
+                transposeA, transposeB, common_dim));
+    }
 }
 
 template <typename T>
@@ -613,6 +697,8 @@ ivariable<T>& matmul<T>::operator () (
     this->b = &b;
     this->transposeA = transposeA;
     this->transposeB = transposeB;
+    size_t common_dim;
+    shape_eval();
     return *this;
 }
 
@@ -644,10 +730,11 @@ const tensor<T>& matmul<T>::eval (void) {
 // OUT NODE
 
 template <typename T>
-ivariable<T>& expose<T>::operator () (ivariable<T>& in) {
-    this->op = identity<T>;
-    this->init("expose", in);
-    return *this;
+std::function<T(T)> expose<T>::get_op (void) { return identity<T>; }
+
+template <typename T>
+expose<T>* expose<T>::clone (std::string name) {
+    return new expose<T>(*this, name);
 }
 
 template <typename T>
@@ -670,6 +757,9 @@ std::vector<T> expose<T>::get_derive (ivariable<T>& over) const {
 // NEGATION
 
 template <typename T>
+std::function<T(T)> neg<T>::get_op (void) { return op_neg<T>; }
+
+template <typename T>
 tensor<T>* neg<T>::calc_derive (ivariable<T>* over) const {
     tensor<T>* deriv = this->var->derive(over);
     if (nullptr != deriv) {
@@ -682,13 +772,14 @@ tensor<T>* neg<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& neg<T>::operator () (ivariable<T>& in) {
-    this->op = op_neg<T>;
-    this->init("-", in);
-    return *this;
+neg<T>* neg<T>::clone (std::string name) {
+    return new neg<T>(*this, name);
 }
 
 // SINE
+
+template <typename T>
+std::function<T(T)> sin<T>::get_op (void) { return op_sin<T>; }
 
 template <typename T>
 tensor<T>* sin<T>::calc_derive (ivariable<T>* over) const {
@@ -705,13 +796,14 @@ tensor<T>* sin<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& sin<T>::operator () (ivariable<T>& in) {
-    this->op = op_sin<T>;
-    this->init("sin", in);
-    return *this;
+sin<T>* sin<T>::clone (std::string name) {
+    return new sin<T>(*this, name);
 }
 
 // COSINE
+
+template <typename T>
+std::function<T(T)> cos<T>::get_op (void) { return op_cos<T>; }
 
 template <typename T>
 tensor<T>* cos<T>::calc_derive (ivariable<T>* over) const {
@@ -730,13 +822,14 @@ tensor<T>* cos<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& cos<T>::operator () (ivariable<T>& in) {
-    this->op = op_cos<T>;
-    this->init("cos", in);
-    return *this;
+cos<T>* cos<T>::clone (std::string name) {
+    return new cos<T>(*this, name);
 }
 
 // TANGENT
+
+template <typename T>
+std::function<T(T)> tan<T>::get_op (void) { return op_tan<T>; }
 
 template <typename T>
 tensor<T>* tan<T>::calc_derive (ivariable<T>* over) const {
@@ -756,13 +849,14 @@ tensor<T>* tan<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& tan<T>::operator () (ivariable<T>& in) {
-    this->op = op_tan<T>;
-    this->init("tan", in);
-    return *this;
+tan<T>* tan<T>::clone (std::string name) {
+    return new tan<T>(*this, name);
 }
 
 // COSECANT
+
+template <typename T>
+std::function<T(T)> csc<T>::get_op (void) { return op_csc<T>; }
 
 template <typename T>
 tensor<T>* csc<T>::calc_derive (ivariable<T>* over) const {
@@ -788,13 +882,14 @@ tensor<T>* csc<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& csc<T>::operator () (ivariable<T>& in) {
-    this->op = op_csc<T>;
-    this->init("csc", in);
-    return *this;
+csc<T>* csc<T>::clone (std::string name) {
+    return new csc<T>(*this, name);
 }
 
 // SECANT
+
+template <typename T>
+std::function<T(T)> sec<T>::get_op (void) { return op_sec<T>; }
 
 template <typename T>
 tensor<T>* sec<T>::calc_derive (ivariable<T>* over) const {
@@ -818,13 +913,14 @@ tensor<T>* sec<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& sec<T>::operator () (ivariable<T>& in) {
-    this->op = op_sec<T>;
-    this->init("sec", in);
-    return *this;
+sec<T>* sec<T>::clone (std::string name) {
+    return new sec<T>(*this, name);
 }
 
 // COTANGENT
+
+template <typename T>
+std::function<T(T)> cot<T>::get_op (void) { return op_cot<T>; }
 
 template <typename T>
 tensor<T>* cot<T>::calc_derive (ivariable<T>* over) const {
@@ -845,13 +941,14 @@ tensor<T>* cot<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& cot<T>::operator () (ivariable<T>& in) {
-    this->op = op_cot<T>;
-    this->init("cot", in);
-    return *this;
+cot<T>* cot<T>::clone (std::string name) {
+    return new cot<T>(*this, name);
 }
 
 // EXPONENT OF E
+
+template <typename T>
+std::function<T(T)> exp<T>::get_op (void) { return op_exp<T>; }
 
 template <typename T>
 tensor<T>* exp<T>::calc_derive (ivariable<T>* over) const {
@@ -868,13 +965,14 @@ tensor<T>* exp<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& exp<T>::operator () (ivariable<T>& in) {
-    this->op = op_exp<T>;
-    this->init("exp", in);
-    return *this;
+exp<T>* exp<T>::clone (std::string name) {
+    return new exp<T>(*this, name);
 }
 
 // ADDITION
+
+template <typename T>
+std::function<T(T, T)> add<T>::get_op (void) { return op_add<T>; }
 
 template <typename T>
 tensor<T>* add<T>::calc_derive (ivariable<T>* over) const {
@@ -893,27 +991,14 @@ tensor<T>* add<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& add<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
-    this->op = op_add<T>;
-    this->init("+", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& add<T>::operator () (ivariable<T>& a, T b) {
-    this->op = op_add<T>;
-    this->init("+", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& add<T>::operator () (T a, ivariable<T>& b) {
-    this->op = op_add<T>;
-    this->init("+", a, b);
-    return *this;
+add<T>* add<T>::clone (std::string name) {
+    return new add<T>(*this, name);
 }
 
 // SUBTRACTION
+
+template <typename T>
+std::function<T(T, T)> sub<T>::get_op (void) { return op_sub<T>; }
 
 template <typename T>
 tensor<T>* sub<T>::calc_derive (ivariable<T>* over) const {
@@ -934,27 +1019,14 @@ tensor<T>* sub<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& sub<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
-    this->op = op_sub<T>;
-    this->init("-", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& sub<T>::operator () (ivariable<T>& a, T b) {
-    this->op = op_sub<T>;
-    this->init("-", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& sub<T>::operator () (T a, ivariable<T>& b) {
-    this->op = op_sub<T>;
-    this->init("-", a, b);
-    return *this;
+sub<T>* sub<T>::clone (std::string name) {
+    return new sub<T>(*this, name);
 }
 
 // MULTIPLICATION
+
+template <typename T>
+std::function<T(T, T)> mul<T>::get_op (void) { return op_mul<T>; }
 
 template <typename T>
 tensor<T>* mul<T>::calc_derive (ivariable<T>* over) const {
@@ -985,27 +1057,14 @@ tensor<T>* mul<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& mul<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
-    this->op = op_mul<T>;
-    this->init("*", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& mul<T>::operator () (ivariable<T>& a, T b) {
-    this->op = op_mul<T>;
-    this->init("*", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& mul<T>::operator () (T a, ivariable<T>& b) {
-    this->op = op_mul<T>;
-    this->init("*", a, b);
-    return *this;
+mul<T>* mul<T>::clone (std::string name) {
+    return new mul<T>(*this, name);
 }
 
 // DIVISION
+
+template <typename T>
+std::function<T(T, T)> div<T>::get_op (void) { return op_div<T>; }
 
 template <typename T>
 tensor<T>* div<T>::calc_derive (ivariable<T>* over) const {
@@ -1051,24 +1110,8 @@ tensor<T>* div<T>::calc_derive (ivariable<T>* over) const {
 }
 
 template <typename T>
-ivariable<T>& div<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
-    this->op = op_div<T>;
-    this->init("/", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& div<T>::operator () (ivariable<T>& a, T b) {
-    this->op = op_div<T>;
-    this->init("/", a, b);
-    return *this;
-}
-
-template <typename T>
-ivariable<T>& div<T>::operator () (T a, ivariable<T>& b) {
-    this->op = op_div<T>;
-    this->init("/", a, b);
-    return *this;
+div<T>* div<T>::clone (std::string name) {
+    return new div<T>(*this, name);
 }
 
 }

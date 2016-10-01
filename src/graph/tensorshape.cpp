@@ -32,11 +32,28 @@ void dimension::assert_is_compatible_with (dimension const & other) const {
 	assert(value == other.value || 0 == value || 0 == other.value);
 }
 
+tensor_shape::tensor_shape (std::vector<size_t> const & dims) {
+	for (size_t d : dims) {
+		dimensions.push_back(dimension(d));
+	}
+}
+
+tensor_shape::tensor_shape (std::vector<dimension> const & dims) {
+	dimensions.assign(dims.begin(), dims.end());
+}
+
+tensor_shape& tensor_shape::operator = (std::vector<size_t> const & dims) {
+	for (size_t d : dims) {
+		dimensions.push_back(d);
+	}
+	return *this;
+}
+
 tensor_shape tensor_shape::merge_with (tensor_shape const & other) {
-	if (incomplete) {
+	if (dimensions.empty()) {
 		return other;
 	}
-	if (other.incomplete) {
+	if (other.dimensions.empty()) {
 		return *this;
 	}
 	if (dimensions.size() != other.dimensions.size()) {
@@ -56,7 +73,7 @@ tensor_shape tensor_shape::merge_with (tensor_shape const & other) {
 }
 
 tensor_shape tensor_shape::concatenate (tensor_shape const & other) {
-	if (incomplete || other.incomplete) {
+	if (dimensions.empty() || other.dimensions.empty()) {
 		return tensor_shape();
 	}
 	std::vector<dimension> ds = dimensions;
@@ -65,7 +82,7 @@ tensor_shape tensor_shape::concatenate (tensor_shape const & other) {
 }
 
 tensor_shape tensor_shape::with_rank (size_t rank) {
-	if (incomplete) {
+	if (dimensions.empty()) {
 		std::vector<dimension> ds;
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensor_shape(ds);
@@ -77,7 +94,7 @@ tensor_shape tensor_shape::with_rank (size_t rank) {
 }
 
 tensor_shape tensor_shape::with_rank_at_least (size_t rank) {
-	if (incomplete) {
+	if (dimensions.empty()) {
 		std::vector<dimension> ds;
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensor_shape(ds);
@@ -89,7 +106,7 @@ tensor_shape tensor_shape::with_rank_at_least (size_t rank) {
 }
 
 tensor_shape tensor_shape::with_rank_at_most (size_t rank) {
-	if (incomplete) {
+	if (dimensions.empty()) {
 		std::vector<dimension> ds;
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensor_shape(ds);
@@ -98,6 +115,14 @@ tensor_shape tensor_shape::with_rank_at_most (size_t rank) {
 		throw std::logic_error(nnutils::formatter() << "shape does not have rank at most " << rank);
 	}
 	return *this;
+}
+
+size_t tensor_shape::n_elems (void) const {
+	size_t nelem = 1;
+	for (dimension d : dimensions) {
+		nelem *= d.value;
+	}
+	return nelem;
 }
 
 size_t tensor_shape::n_dims (void) const {
@@ -120,7 +145,7 @@ std::vector<size_t> tensor_shape::as_list (void) const {
 
 bool tensor_shape::is_compatible_with (tensor_shape const & other) const {
 	bool incap = true;
-	if (!incomplete && !other.incomplete) {
+	if (!dimensions.empty() && !other.dimensions.empty()) {
 		if (other.dimensions.size() == dimensions.size()) {
 			for (size_t i = 0; i < dimensions.size(); i++) {
 				incap = incap && other.dimensions[i].is_compatible_with(dimensions[i]);
@@ -133,11 +158,11 @@ bool tensor_shape::is_compatible_with (tensor_shape const & other) const {
 }
 
 bool tensor_shape::is_part_defined (void) const {
-	return !incomplete;
+	return !dimensions.empty();
 }
 
 bool tensor_shape::is_fully_defined (void) const {
-	if (incomplete) {
+	if (dimensions.empty()) {
 		return false;
 	}
 	bool known = true;
@@ -148,11 +173,11 @@ bool tensor_shape::is_fully_defined (void) const {
 }
 
 void tensor_shape::assert_has_rank (size_t rank) const {
-	assert(incomplete || rank == dimensions.size());
+	assert(dimensions.empty() || rank == dimensions.size());
 }
 
 void tensor_shape::assert_same_rank (tensor_shape const & other) const {
-	assert(incomplete || other.incomplete || other.dimensions.size() == dimensions.size());
+	assert(dimensions.empty() || other.dimensions.empty() || other.dimensions.size() == dimensions.size());
 }
 
 }

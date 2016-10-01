@@ -7,7 +7,6 @@
 //
 
 #include "../../include/nnet.hpp"
-#include <iostream>
 
 #ifdef layer_hpp
 
@@ -135,17 +134,13 @@ layer_perceptron& layer_perceptron::operator = (layer_perceptron const & other) 
 // (use with care until smartpointers...)
 ivariable<double>* layer_perceptron::operator () (
 	ivariable<double>& input) {
-	std::vector<size_t> ts = input.get_shape().as_list();
-	assert(ts.size() <= 2);
-	// input are expected to be batch_size by n_input or n_input by batch_size
-	// weights are n_output column by n_input rows,
-	// so if ts[0] == n_output then transpose input
-	bool transposeA = ts[0] == n_input;
-	size_t batch_size = 1;
-	if (2 == ts.size()) {
-		batch_size = transposeA ? ts[1] : ts[0];
-	}
-	ivariable<double>* mres = new matmul<double>(input, *weights, transposeA);
+	// input are expected to be n_input by batch_size
+	// weights are n_output column by n_input rows
+	tensor_shape ts = input.get_shape();
+	assert(2 >= ts.n_dims() && ts.is_fully_defined());
+	// batch size is 1 if tensor is only vector
+	size_t batch_size = 1 == ts.n_dims() ? 1 : ts.as_list()[1];
+	ivariable<double>* mres = new matmul<double>(input, *weights);
 	// mres is n_output column by batch_size rows (extend bias to fit)
 	variable<double>* extension =
 		new variable<double>(std::vector<size_t>{1, batch_size}, oinit);
@@ -313,6 +308,7 @@ ivariable<double>* ml_perceptron::operator () (ivariable<double> & input) {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
 	ivariable<double>* output = &input;
+	size_t i = 0;
 	for (HID_PAIR hp : layers) {
 		ivariable<double>* hypothesis = (*hp.first)(*output);
 		output = &(*hp.second)(hypothesis);

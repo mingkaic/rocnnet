@@ -21,7 +21,7 @@
 
 namespace nnet {
 
-// DEPRECATED (todo: replace with ioperation)
+// DEPRECATED (TODO: replace with ioperation)
 struct adhoc_operation {
 	std::function<double(double)> act;
 	std::function<double(double)> grad;
@@ -43,19 +43,27 @@ class ioperation : public ivariable<T> {
 		// operator wrapper functions that handle variable scalar and shape
 		// differences. returned tensor's ownership transfers to caller
 		// reduce/filter functional
+		tensor_shape get_element_shape (
+			const tensor<T>& t1,
+			const tensor<T>& t2) const;
+
+		tensor_shape get_matrix_shape (
+			const tensor<T>& t1, const tensor<T>& t2,
+			bool transposeA, bool transposeB,
+			size_t& common_dim) const;
+
 		template <typename U>
 		void util_op (
-			U& out,
-			tensor<T> const & in,
+			U& out, const tensor<T>& in,
 			std::function<void(U&, T)> op) const;
 		// 1 to 1 map functional
 		tensor<T>* util_op (
-			tensor<T> const & in,
+			const tensor<T>& in,
 			std::function<T(T)> op) const;
 		// 2 to 1 map functional
 		tensor<T>* util_op (
-			tensor<T> const & a,
-			tensor<T> const & b,
+			const tensor<T>& a,
+			const tensor<T>& b,
 			std::function<T(T, T)> op) const;
 		// operator wrapper functions that restricts shapes to matrices and
 		// retrieve raw value
@@ -78,6 +86,13 @@ class ioperation : public ivariable<T> {
 		void consume (ivariable<T>& food) {
 			food.consumers.push_back(this);
 		}
+		// check if candidate_shape is worth propagating to consumers
+		// before assigning consumers with new shapes to consume
+		void update (tensor_shape candidate_shape);
+		// implement unique method of consuming input variables
+		// to extract shape info
+		virtual void shape_eval (void) = 0;
+
 	public:
 		// clone remains abstract
 		virtual ~ioperation (void) {}
@@ -95,15 +110,17 @@ class univar_func : ioperation<T> {
 		// no longer need if use sharedptr
 
 		void clear (void);
-		void copy (univar_func<T> const & other, std::string name = "");
-		univar_func (univar_func<T> const & other, std::string name);
+		void copy (ivariable<T> const & other, std::string name = "");
 
 	protected:
 		std::vector<ioperation<T>*> ownout;
+		virtual void shape_eval (void);
+
+		univar_func (const univar_func<T>& other, std::string name);
 
 	public:
 		// declare
-		univar_func (std::function<void(ioperation<T>*)> declare);
+		univar_func (std::function<void(ioperation<T>*&)> declare);
 		// currently shallow copy
 		// TODO implement graph object manager for deep copy cloner
 		virtual univar_func<T>* clone (std::string name = "");
@@ -123,19 +140,19 @@ class univar_func : ioperation<T> {
 // ACTIVATION FUNCTIONS
 
 template <typename T>
-class sigmoid : univar_func<T> {
+class sigmoid : public univar_func<T> {
 	public:
 		sigmoid (void);
 };
 
 template <typename T>
-class tanh : univar_func<T> {
+class tanh : public univar_func<T> {
 	public:
 		tanh (void);
 };
 
 // SCALAR using operation functions
-
+// TODO change base class to ivariable
 template <typename T>
 class scalar : public ioperation<T> {
 	private:
@@ -146,6 +163,7 @@ class scalar : public ioperation<T> {
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 
 		scalar (scalar<T> const & other, std::string name);
+		virtual void shape_eval (void) { /* do nothing */ }
 
 	public:
 		scalar (T value);
@@ -161,21 +179,21 @@ class unar_ops : public ioperation<T> {
 	protected:
 		// avoid calling ivariable's assignment multiple time
 		ivariable<T>* var = nullptr;
-		std::function<T(T)> op;
 
-		virtual void init (std::string op, ivariable<T>& var);
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		void copy (const ivariable<T>& other, std::string name = "");
+		virtual void shape_eval (void);
 
-		unar_ops (void) { /* default construction propagates to ioperation */ }
-		unar_ops (unar_ops<T> const & other, std::string name);
+		// operator () getters
+		virtual std::string get_symb (void) = 0;
+		virtual std::function<T(T)> get_op (void) = 0;
 
 		friend class univar_func<T>;
 
 	public:
 		virtual ~unar_ops (void) {}
-		virtual unar_ops<T>* clone (std::string name = "");
-		virtual ivariable<T>& operator () (ivariable<T>& in) { return *this; }
+		virtual ivariable<T>& operator () (ivariable<T>& in);
 		virtual unar_ops<T>& operator = (ivariable<T> const & other);
 
 		virtual const tensor<T>& eval (void);
@@ -188,24 +206,23 @@ class bin_ops : public ioperation<T> {
 	protected:
 		ivariable<T>* a = nullptr;
 		ivariable<T>* b = nullptr;
-		std::function<T(T, T)> op;
+		ivariable<T>* own = nullptr;
 
-		virtual void init (std::string op, ivariable<T>& a, ivariable<T>& b);
-		virtual void init (std::string op, ivariable<T>& a, T b);
-		virtual void init (std::string op, T a, ivariable<T>& b);
 		// calc_derive remains abstract
+		void copy (const ivariable<T>& other, std::string name = "");
+		virtual void shape_eval (void);
 
-		bin_ops (void) { /* default construction propagates to ioperation */ }
-		bin_ops (bin_ops<T> const & other, std::string name);
+		// operator () getters
+		virtual std::string get_symb (void) = 0;
+		virtual std::function<T(T, T)> get_op (void) = 0;
 
 		friend class univar_func<T>;
 
 	public:
-		virtual bin_ops<T>* clone (std::string name = "");
-		virtual ~bin_ops (void) {}
-		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b) { return *this; }
-		virtual ivariable<T>& operator () (ivariable<T>& a, T b) { return *this; }
-		virtual ivariable<T>& operator () (T a, ivariable<T>& b) { return *this; }
+		virtual ~bin_ops (void) { if (own) delete own; }
+		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
+		virtual ivariable<T>& operator () (ivariable<T>& a, T b);
+		virtual ivariable<T>& operator () (T a, ivariable<T>& b);
 		virtual bin_ops<T>& operator = (ivariable<T> const & other);
 
 		virtual const tensor<T>& eval (void);
@@ -226,6 +243,7 @@ class transpose : public ioperation<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual void shape_eval (void);
 
 		transpose (transpose<T> const & other, std::string name);
 
@@ -253,6 +271,7 @@ class matmul : public ioperation<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual void shape_eval (void);
 
 		matmul (matmul<T> const & other, std::string name);
 
@@ -281,11 +300,15 @@ template <typename T>
 class expose : public unar_ops<T> {
 	protected:
 		// inherits calc_derive from unar_ops
+		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "expose"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		expose (void) {}
 		expose (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual expose<T>* clone (std::string name = "");
 
 		virtual const tensor<T>& eval (void) { return this->var->eval(); }
 
@@ -303,11 +326,15 @@ template <typename T>
 class neg : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		neg (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "-"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		neg (void) {}
 		neg (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual neg<T>* clone (std::string name = "");
 };
 
 // SINE
@@ -316,14 +343,15 @@ template <typename T>
 class sin : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		sin (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "sin"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		sin (void) {}
-		virtual sin<T>* clone (std::string name = "") {
-			return dynamic_cast<sin<T>*>(unar_ops<T>::clone(name));
-		}
 		sin (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual sin<T>* clone (std::string name = "");
 };
 
 // COSINE
@@ -332,14 +360,15 @@ template <typename T>
 class cos : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		cos (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "cos"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		cos (void) {}
-		virtual cos<T>* clone (std::string name = "") {
-			return dynamic_cast<cos<T>*>(unar_ops<T>::clone(name));
-		}
 		cos (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual cos<T>* clone (std::string name = "");
 };
 
 // TANGENT
@@ -348,14 +377,15 @@ template <typename T>
 class tan : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		tan (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "tan"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		tan (void) {}
-		virtual tan<T>* clone (std::string name = "") {
-			return dynamic_cast<tan<T>*>(unar_ops<T>::clone(name));
-		}
 		tan (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual tan<T>* clone (std::string name = "");
 };
 
 // COSECANT
@@ -364,14 +394,15 @@ template <typename T>
 class csc : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		csc (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "csc"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		csc (void) {}
-		virtual csc<T>* clone (std::string name = "") {
-			return dynamic_cast<csc<T>*>(unar_ops<T>::clone(name));
-		}
 		csc (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual csc<T>* clone (std::string name = "");
 };
 
 // SECANT
@@ -380,14 +411,15 @@ template <typename T>
 class sec : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		sec (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "sec"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		sec (void) {}
-		virtual sec<T>* clone (std::string name = "") {
-			return dynamic_cast<sec<T>*>(unar_ops<T>::clone(name));
-		}
 		sec (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual sec<T>* clone (std::string name = "");
 };
 
 // COTANGENT
@@ -396,14 +428,15 @@ template <typename T>
 class cot : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		cot (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "cot"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		cot (void) {}
-		virtual cot<T>* clone (std::string name = "") {
-			return dynamic_cast<cot<T>*>(unar_ops<T>::clone(name));
-		}
 		cot (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual cot<T>* clone (std::string name = "");
 };
 
 // EXPONENT OF E
@@ -412,14 +445,15 @@ template <typename T>
 class exp : public unar_ops<T> {
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		exp (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "exp"; }
+		std::function<T(T)> get_op (void);
 
 	public:
 		exp (void) {}
-		virtual exp<T>* clone (std::string name = "") {
-			return dynamic_cast<exp<T>*>(unar_ops<T>::clone(name));
-		}
 		exp (ivariable<T>& var) { (*this)(var); }
-		ivariable<T>& operator () (ivariable<T>& in);
+		virtual exp<T>* clone (std::string name = "");
 };
 
 // ADDITION
@@ -429,19 +463,17 @@ class add : public bin_ops<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		add (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "+"; }
+		std::function<T(T, T)> get_op (void);
 
 	public:
 		add (void) {}
-		virtual add<T>* clone (std::string name = "") {
-			return dynamic_cast<add<T>*>(bin_ops<T>::clone(name));
-		}
 		add (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		add (ivariable<T>& a, T b) { (*this)(a, b); }
 		add (T a, ivariable<T>& b) { (*this)(a, b); }
-
-		ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
-		ivariable<T>& operator () (ivariable<T>& a, T b);
-		ivariable<T>& operator () (T a, ivariable<T>& b);
+		virtual add<T>* clone (std::string name = "");
 };
 
 // SUBTRACTION
@@ -451,19 +483,17 @@ class sub : public bin_ops<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		sub (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "-"; }
+		std::function<T(T, T)> get_op (void);
 
 	public:
 		sub (void) {}
-		virtual sub<T>* clone (std::string name = "") {
-			return dynamic_cast<sub<T>*>(bin_ops<T>::clone(name));
-		}
 		sub (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		sub (ivariable<T>& a, const T b) { (*this)(a, b); }
 		sub (const T a, ivariable<T>& b) { (*this)(a, b); }
-
-		ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
-		ivariable<T>& operator () (ivariable<T>& a, T b);
-		ivariable<T>& operator () (T a, ivariable<T>& b);
+		virtual sub<T>* clone (std::string name = "");
 };
 
 // element wise multiplication
@@ -472,19 +502,17 @@ class mul : public bin_ops<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		mul (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "*"; }
+		std::function<T(T, T)> get_op (void);
 
 	public:
 		mul (void) {}
-		virtual mul<T>* clone (std::string name = "") {
-			return dynamic_cast<mul<T>*>(bin_ops<T>::clone(name));
-		}
 		mul (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		mul (ivariable<T>& a, const T b) { (*this)(a, b); }
 		mul (const T a, ivariable<T>& b) { (*this)(a, b); }
-
-		ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
-		ivariable<T>& operator () (ivariable<T>& a, T b);
-		ivariable<T>& operator () (T a, ivariable<T>& b);
+		virtual mul<T>* clone (std::string name = "");
 };
 
 // element wise division
@@ -493,19 +521,17 @@ class div : public bin_ops<T> {
 	protected:
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		div (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "/"; }
+		std::function<T(T, T)> get_op (void);
 
 	public:
 		div (void) {}
-		virtual div<T>* clone (std::string name = "") {
-			return dynamic_cast<div<T>*>(bin_ops<T>::clone(name));
-		}
 		div (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
 		div (ivariable<T>& a, const T b) { (*this)(a, b); }
 		div (const T a, ivariable<T>& b) { (*this)(a, b); }
-
-		ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
-		ivariable<T>& operator () (ivariable<T>& a, T b);
-		ivariable<T>& operator () (T a, ivariable<T>& b);
+		virtual div<T>* clone (std::string name = "");
 };
 
 template <typename T>
