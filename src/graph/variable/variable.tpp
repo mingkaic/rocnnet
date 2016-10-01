@@ -10,8 +10,6 @@
 
 namespace nnet {
 
-static std::default_random_engine generator(time(NULL));
-
 // initializers
 
 template <typename T>
@@ -25,7 +23,7 @@ template <typename T>
 void random_uniform<T>::operator () (tensor<T>& in) {
 	this->delegate_task(in, [this](T* raw_data, size_t size) {
 		for (size_t i = 0; i < size; i++) {
-			raw_data[i] = distribution(generator);
+			raw_data[i] = distribution(session::get_generator());
 		}
 	});
 }
@@ -44,7 +42,7 @@ void ivariable<T>::copy (
 }
 
 template <typename T>
-ivariable<T>& ivariable<T>::operator = (ivariable<T> const & other) {
+ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 	if (this != &other) {
 		copy(other);
 	}
@@ -75,7 +73,7 @@ void variable<T>::copy (
 }
 
 template <typename T>
-variable<T>::variable (variable<T> const & other, std::string name) {
+variable<T>::variable (const variable<T>& other, std::string name) {
 	copy(other, name);
 }
 
@@ -119,12 +117,12 @@ variable<T>::~variable (void) {
 }
 
 template <typename T>
-variable<T>& variable<T>::operator = (ivariable<T> const & other) {
+variable<T>& variable<T>::operator = (const ivariable<T>& other) {
 	if (this != &other) {
 		if (nullptr != this->init) {
 			delete this->init;
 		}
-		
+
 		if (const variable<T>* vptr = dynamic_cast<const variable<T>*>(&other)) {
 			copy(*vptr);
 		} else {
@@ -175,7 +173,7 @@ struct placeholder<T>::open_init : public initializer<T> {
 };
 
 template <typename T>
-placeholder<T>::placeholder (tensor_shape const & shape, std::string name)
+placeholder<T>::placeholder (const tensor_shape& shape, std::string name)
 	: variable<T>(shape, name) {
 	memory_alloc all;
 	this->out.allocate(all);
@@ -196,7 +194,7 @@ variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 }
 
 template <typename T>
-variable<T>& placeholder<T>::operator = (tensor<T> const & data) {
+variable<T>& placeholder<T>::operator = (const tensor<T>& data) {
 	this->out = data;
 	return *this;
 }

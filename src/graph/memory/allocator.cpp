@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../../include/graph/allocator.hpp"
+#include "../../../include/graph/memory/allocator.hpp"
 
 #ifdef allocator_hpp
 

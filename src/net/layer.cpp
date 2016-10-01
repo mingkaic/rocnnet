@@ -101,7 +101,7 @@ layer_perceptron::~layer_perceptron (void) {
 	}
 }
 
-layer_perceptron& layer_perceptron::operator = (layer_perceptron const & other) {
+layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 	if (&other != this) {
 		if (weights) {
 			delete weights;
@@ -287,7 +287,7 @@ ml_perceptron::~ml_perceptron (void) {
 	}
 }
 
-ml_perceptron& ml_perceptron::operator = (ml_perceptron const & other) {
+ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 	if (&other != this) {
 		for (HID_PAIR hp : layers) {
 			delete hp.first;
@@ -352,7 +352,7 @@ ml_perceptron::ml_perceptron (
 	}
 }
 
-std::vector<double> ml_perceptron::operator () (std::vector<double> const & input) {
+std::vector<double> ml_perceptron::operator () (const std::vector<double>& input) {
 	std::vector<double> output = input;
 	for (layer_perceptron* lp : raw_layers) {
 		output = (*lp)(output);

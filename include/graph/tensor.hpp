@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "tensorshape.hpp"
-#include "allocator.hpp"
+#include "memory/allocator.hpp"
 
 #pragma once
 #ifndef tensor_hpp
@@ -37,7 +37,7 @@ class tensor {
 		tensor_shape allowed_shape;
 		tensor_shape alloc_shape;
 
-		void copy (tensor<T> const & other);
+		void copy (const tensor<T>& other);
 
 	protected:
 		iallocator* alloc = nullptr;
@@ -52,24 +52,24 @@ class tensor {
 
 		// creates a rank 0 tensor
 		tensor (void);
-		tensor (tensor_shape const & shape);
-		tensor (iallocator& a, tensor_shape const & shape)
+		tensor (const tensor_shape& shape);
+		tensor (iallocator& a, const tensor_shape& shape)
 		: tensor(a, shape, default_attr) {}
 		tensor (iallocator& a,
 			tensor_shape const & shape,
 			alloc_attrib const & attrib);
 
 		// rule of three
-		tensor (tensor<T> const & other);
+		tensor (const tensor<T>& other);
 		virtual ~tensor (void);
-		tensor<T> & operator = (tensor<T> const & other);
+		tensor<T> & operator = (const tensor<T>& other);
 
 		// allocate
 		// reallocation clear raw data
 		void allocate (iallocator& allocer);
-		void allocate (iallocator& allocer, alloc_attrib const & attrib);
-		void allocate (iallocator& allocer, tensor_shape const & shape);
-		void allocate (iallocator& allocer, tensor_shape const & shape,
+		void allocate (iallocator& allocer, const alloc_attrib& attrib);
+		void allocate (iallocator& allocer, const tensor_shape& shape);
+		void allocate (iallocator& allocer, const tensor_shape& shape,
 			alloc_attrib const & attrib);
 
 		// shape info getters
@@ -85,7 +85,7 @@ class tensor {
 		// (e.g.: same number of column for each row)
 		bool is_aligned (void) const;
 		// checks if input tensor has a compatible allowed tensor_shape
-		bool is_same_size (tensor<T> const & other) const;
+		bool is_same_size (const tensor<T>& other) const;
 
 		// memory info getter
 		// check if memory is allocated
@@ -100,14 +100,14 @@ class tensor {
 		void set_shape (tensor_shape shape);
 
 		// TODO: unimplemented
-		bool copy_from (tensor const & other, tensor_shape const & shape);
+		bool copy_from (const tensor& other, const tensor_shape& shape);
 		// slice along the first dimension
 		tensor slice (size_t dim_start, size_t limit);
 
-		// bool shares_buffer_with (tensor const & other) const;
+		// bool shares_buffer_with (const tensor& other) const;
 		// size_t buffer_hash (void) const;
-		// bool from_proto (tensorproto const & other);
-		// bool from_proto (iallocator* a, tensorproto const & other);
+		// bool from_proto (const tensorproto& other);
+		// bool from_proto (iallocator* a, const tensorproto& other);
 };
 
 }

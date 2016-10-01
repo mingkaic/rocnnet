@@ -23,9 +23,9 @@ struct dimension {
 	dimension (size_t value) : value(value) {}
 	explicit operator size_t() { return value; }
 
-	dimension merge_with (dimension const & other) const;
-	bool is_compatible_with (dimension const & other) const;
-	void assert_is_compatible_with (dimension const & other) const;
+	dimension merge_with (const dimension& other) const;
+	bool is_compatible_with (const dimension& other) const;
+	void assert_is_compatible_with (const dimension& other) const;
 };
 
 class tensor_shape {
@@ -34,11 +34,11 @@ class tensor_shape {
 
 	public:
 		tensor_shape (void) {}
-		tensor_shape (std::vector<size_t> const & dims);
-		tensor_shape (std::vector<dimension> const & dims);
-		tensor_shape& operator = (std::vector<size_t> const & dims);
-		tensor_shape merge_with (tensor_shape const & other);
-		tensor_shape concatenate (tensor_shape const & other);
+		tensor_shape (const std::vector<size_t>& dims);
+		tensor_shape (const std::vector<dimension>& dims);
+		tensor_shape& operator = (const std::vector<size_t>& dims);
+		tensor_shape merge_with (const tensor_shape& other);
+		tensor_shape concatenate (const tensor_shape& other);
 		tensor_shape with_rank (size_t rank);
 		tensor_shape with_rank_at_least (size_t rank);
 		tensor_shape with_rank_at_most (size_t rank);
@@ -51,7 +51,7 @@ class tensor_shape {
 
 		// tensor_shape_proto* as_proto (void) const; // serialize
 
-		bool is_compatible_with (tensor_shape const & other) const;
+		bool is_compatible_with (const tensor_shape& other) const;
 		// partially defined if complete
 		// (all fully defined are at least partially defined)
 		bool is_part_defined (void) const;
@@ -60,7 +60,7 @@ class tensor_shape {
 
 		// assertions
 		void assert_has_rank (size_t rank) const;
-		void assert_same_rank (tensor_shape const & other) const;
+		void assert_same_rank (const tensor_shape& other) const;
 		void assert_is_fully_defined (void) const { assert(is_fully_defined()); }
 };
 

@@ -22,7 +22,7 @@ struct gd_net {
 
 	~gd_net (void) { if (mlp) delete mlp; }
 
-	std::vector<double> operator () (std::vector<double> const & input) {
+	std::vector<double> operator () (const std::vector<double>& input) {
 		if (NULL == mlp) return std::vector<double>();
 		return (*mlp)(input);
 	}

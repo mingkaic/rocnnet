@@ -8,6 +8,8 @@
 
 // #include <any> // since 2017
 #include <unordered_set>
+#include <random>
+#include <ctime>
 
 #pragma once
 #ifndef session_hpp
@@ -26,19 +28,24 @@ class session {
     private:
         // std::set<std::any> registry;
         std::unordered_set<void*> registry;
+        std::default_random_engine generator;
 
     protected:
-        session (void) {}
+        session (void) : generator(std::time(NULL)){}
         ~session (void) {}
 
     public:
-        static session & get_instance (void);
+        static session& get_instance (void);
+        static std::default_random_engine& get_generator (void);
 
         // delete all copiers
         session (session const&) = delete;
         session (session&&) = delete;
         session& operator = (session const&) = delete;
         session& operator = (session &&) = delete;
+
+        // member getter
+        std::default_random_engine& get_rand_generator (void) { return generator; }
 
         // object management
         // void register_obj (ivariable<std::any>& obj);

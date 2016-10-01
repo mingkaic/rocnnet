@@ -3,7 +3,7 @@ CC = g++ -std=c++11
 DEBUG = -g
 TESTFLAG = -lgtest
 DEPLOY_FOLDER = bin/
-FILES = main.cpp src/graph/*.cpp src/net/*.cpp
+FILES = main.cpp src/*/*.cpp src/*/*/*.cpp
 
 ## python and threading
 PYFLAG = -framework Python

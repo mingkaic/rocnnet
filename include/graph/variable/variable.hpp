@@ -11,8 +11,8 @@
 #include <random>
 #include <new>
 
-#include "session.hpp"
-#include "tensor.hpp"
+#include "../memory/session.hpp"
+#include "../tensor.hpp"
 
 #pragma once
 #ifndef variable_hpp
@@ -92,7 +92,7 @@ class ivariable {
 			session& sess = session::get_instance();
 			sess.unregister_obj(*this);
 		}
-		virtual ivariable<T>& operator = (ivariable<T> const & other);
+		virtual ivariable<T>& operator = (const ivariable<T>& other);
 
 		std::string get_name (void) const { return name; }
 		virtual tensor_shape get_shape (void) const
@@ -118,21 +118,21 @@ class variable : public ivariable<T> {
 		bool is_init = false;
 		initializer<T>* init = nullptr;
 
-		void copy (variable<T> const & other, std::string name="");
-		variable (variable<T> const & other, std::string name);
+		void copy (const variable<T>& other, std::string name="");
+		variable (const variable<T>& other, std::string name);
 
 		// track all variables and placeholders for
 		// static/singleton function initialize all
 		// static session_manager manager;
 
 	public:
-		variable (tensor_shape const & shape, std::string name = "");
-		variable (tensor_shape const & shape,
+		variable (const tensor_shape& shape, std::string name = "");
+		variable (const tensor_shape& shape,
 			initializer<T>& init, std::string name = "");
 		virtual variable<T>* clone (std::string name = "");
-		// variable (variable<T> const & other, std::string name="");
+		// variable (const variable<T>& other, std::string name="");
 		virtual ~variable (void);
-		virtual variable<T>& operator = (ivariable<T> const & other);
+		virtual variable<T>& operator = (const ivariable<T>& other);
 
 		bool can_init (void) const { return init != nullptr; }
 
@@ -156,11 +156,11 @@ class placeholder : public variable<T> {
 		struct open_init;
 
 	public:
-		placeholder (tensor_shape const & shape, std::string name = "");
+		placeholder (const tensor_shape& shape, std::string name = "");
 
 		// assign raw data according to 1 dimension representation of inner tensor
 		virtual variable<T>& operator = (std::vector<T> data);
-		virtual variable<T>& operator = (tensor<T> const & data);
+		virtual variable<T>& operator = (const tensor<T>& data);
 
 		// initialize does nothing
 		virtual tensor<T>& initialize (void) { return this->out; }
@@ -169,6 +169,6 @@ class placeholder : public variable<T> {
 
 }
 
-#include "../../src/graph/variable.tpp"
+#include "../../../src/graph/variable/variable.tpp"
 
 #endif /* variable_hpp */

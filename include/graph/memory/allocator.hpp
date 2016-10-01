@@ -59,7 +59,7 @@ class iallocator {
         }
 
         template <typename T>
-        T* allocate (size_t num_elements, alloc_attrib const & attrib) {
+        T* allocate (size_t num_elements, const alloc_attrib& attrib) {
             static_assert(is_allowed<T>::value, "T is not an allowed type.");
 
             if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T))) {

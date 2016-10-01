@@ -13,7 +13,7 @@
 
 namespace nnet {
 
-dimension dimension::merge_with (dimension const & other) const {
+dimension dimension::merge_with (const dimension& other) const {
 	if (value == other.value) {
 		return dimension(value);
 	} else {
@@ -24,32 +24,32 @@ dimension dimension::merge_with (dimension const & other) const {
 	}
 }
 
-bool dimension::is_compatible_with (dimension const & other) const {
+bool dimension::is_compatible_with (const dimension& other) const {
 	return value == other.value || 0 == (value && other.value);
 }
 
-void dimension::assert_is_compatible_with (dimension const & other) const {
+void dimension::assert_is_compatible_with (const dimension& other) const {
 	assert(value == other.value || 0 == value || 0 == other.value);
 }
 
-tensor_shape::tensor_shape (std::vector<size_t> const & dims) {
+tensor_shape::tensor_shape (const std::vector<size_t>& dims) {
 	for (size_t d : dims) {
 		dimensions.push_back(dimension(d));
 	}
 }
 
-tensor_shape::tensor_shape (std::vector<dimension> const & dims) {
+tensor_shape::tensor_shape (const std::vector<dimension>& dims) {
 	dimensions.assign(dims.begin(), dims.end());
 }
 
-tensor_shape& tensor_shape::operator = (std::vector<size_t> const & dims) {
+tensor_shape& tensor_shape::operator = (const std::vector<size_t>& dims) {
 	for (size_t d : dims) {
 		dimensions.push_back(d);
 	}
 	return *this;
 }
 
-tensor_shape tensor_shape::merge_with (tensor_shape const & other) {
+tensor_shape tensor_shape::merge_with (const tensor_shape& other) {
 	if (dimensions.empty()) {
 		return other;
 	}
@@ -65,14 +65,14 @@ tensor_shape tensor_shape::merge_with (tensor_shape const & other) {
 	for (size_t i = 0; i < dimensions.size(); i++) {
 		try {
 			ds.push_back(dimensions[i].merge_with(other.dimensions[i]));
-		} catch (std::logic_error const & le) {
+		} catch (const std::logic_error& le) {
 			throw le;
 		}
 	}
 	return tensor_shape(ds);
 }
 
-tensor_shape tensor_shape::concatenate (tensor_shape const & other) {
+tensor_shape tensor_shape::concatenate (const tensor_shape& other) {
 	if (dimensions.empty() || other.dimensions.empty()) {
 		return tensor_shape();
 	}
@@ -143,7 +143,7 @@ std::vector<size_t> tensor_shape::as_list (void) const {
 
 // tensor_shape_proto* tensor_shape::as_proto (void) const;
 
-bool tensor_shape::is_compatible_with (tensor_shape const & other) const {
+bool tensor_shape::is_compatible_with (const tensor_shape& other) const {
 	bool incap = true;
 	if (!dimensions.empty() && !other.dimensions.empty()) {
 		if (other.dimensions.size() == dimensions.size()) {
@@ -176,7 +176,7 @@ void tensor_shape::assert_has_rank (size_t rank) const {
 	assert(dimensions.empty() || rank == dimensions.size());
 }
 
-void tensor_shape::assert_same_rank (tensor_shape const & other) const {
+void tensor_shape::assert_same_rank (const tensor_shape& other) const {
 	assert(dimensions.empty() || other.dimensions.empty() || other.dimensions.size() == dimensions.size());
 }
 

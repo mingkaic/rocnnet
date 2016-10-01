@@ -45,13 +45,6 @@ static void fill_binary_samples(
 nnet::adhoc_operation sig(sigmoid, grad_sig);
 nnet::adhoc_operation same(identity, identity);
 
-TEST(PERCEPTRON, layer_action1) {
-	std::vector<double> vin = {1, 2, 3, 4, 5};
-	size_t n_out = 3;
-	nnet::layer_perceptron lp(vin.size(), n_out, same);
-	std::vector<double> vout = lp(vin);
-	ASSERT_EQ(vout.size(), n_out);
-}
 
 TEST(PERCEPTRON, layer_action) {
 	nnet::session& sess = nnet::session::get_instance();
@@ -68,28 +61,6 @@ TEST(PERCEPTRON, layer_action) {
 	var = vin;
 	std::vector<double> raw = ex.get_raw();
 	ASSERT_EQ(raw.size(), exout.size());
-}
-
-
-TEST(PERCEPTRON, mlp_action1) {
-	assert(sigmoid(0) == 0.5);
-	size_t n_out = 5;
-	size_t n_hidden = 4;
-	std::vector<double> vin = {1, 2, 3, 4, 5};
-	std::vector<std::pair<size_t, nnet::adhoc_operation> > hiddens = {
-		std::pair<size_t, nnet::adhoc_operation>(n_hidden, sig),
-		std::pair<size_t, nnet::adhoc_operation>(n_hidden, sig),
-		std::pair<size_t, nnet::adhoc_operation>(n_out, sig),
-		};
-	nnet::ml_perceptron mlp =
-		nnet::ml_perceptron(vin.size(), hiddens);
-
-	std::vector<double> vout = mlp(vin);
-	ASSERT_EQ(vout.size(), n_out);
-	for (double o : vout) {
-		EXPECT_LE(o, 1);
-		EXPECT_GE(o, 0);
-	}
 }
 
 

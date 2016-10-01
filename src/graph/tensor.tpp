@@ -13,7 +13,7 @@
 namespace nnet {
 
 template <typename T>
-void tensor<T>::copy (tensor<T> const & other) {
+void tensor<T>::copy (const tensor<T>& other) {
     if (nullptr == other.alloc) {
         alloc = nullptr;
     } else {
@@ -36,7 +36,7 @@ tensor<T>::tensor (void) {
 }
 
 template <typename T>
-tensor<T>::tensor (tensor_shape const & shape)
+tensor<T>::tensor (const tensor_shape& shape)
 : allowed_shape(shape) {}
 
 template <typename T>
@@ -53,7 +53,7 @@ tensor<T>::tensor (iallocator& a,
 // tensor (operation op, size_t v_idx);
 
 template <typename T>
-tensor<T>::tensor (tensor<T> const & other) {
+tensor<T>::tensor (const tensor<T>& other) {
     copy(other);
 }
 
@@ -67,7 +67,7 @@ tensor<T>::~tensor (void) {
 }
 
 template <typename T>
-tensor<T> & tensor<T>::operator = (tensor<T> const & other) {
+tensor<T> & tensor<T>::operator = (const tensor<T>& other) {
     if (this != &other) {
         if (nullptr != alloc) {
             alloc->dealloc(raw_data, this->alloc_shape.n_elems());
@@ -83,18 +83,18 @@ void tensor<T>::allocate (iallocator& allocer) {
 }
 
 template <typename T>
-void tensor<T>::allocate (iallocator& allocer, alloc_attrib const & attrib) {
+void tensor<T>::allocate (iallocator& allocer, const alloc_attrib& attrib) {
     allowed_shape.assert_is_fully_defined();
     allocate(allocer, allowed_shape, attrib);
 }
 
 template <typename T>
-void tensor<T>::allocate (iallocator& allocer, tensor_shape const & shape) {
+void tensor<T>::allocate (iallocator& allocer, const tensor_shape& shape) {
     allocate(allocer, shape, default_attr);
 }
 
 template <typename T>
-void tensor<T>::allocate (iallocator& allocer, tensor_shape const & shape,
+void tensor<T>::allocate (iallocator& allocer, const tensor_shape& shape,
     alloc_attrib const & attrib) {
     assert(shape.is_compatible_with(allowed_shape));
     shape.assert_is_fully_defined();
@@ -144,7 +144,7 @@ bool tensor<T>::is_aligned (void) const {
 }
 
 template <typename T>
-bool tensor<T>::is_same_size (tensor<T> const & other) const {
+bool tensor<T>::is_same_size (const tensor<T>& other) const {
     return (this->is_alloc() && other.is_alloc() &&
             alloc_shape.is_compatible_with(other.alloc_shape)) ||
         (this->allowed_shape.is_compatible_with(other.allowed_shape));
@@ -184,7 +184,7 @@ void tensor<T>::set_shape (tensor_shape shape) {
 
 // how to handle shape expansion / compression?
 template <typename T>
-bool tensor<T>::copy_from (tensor<T> const & other, tensor_shape const & shape) {
+bool tensor<T>::copy_from (const tensor<T>& other, const tensor_shape& shape) {
     throw std::bad_function_call(); // NOT IMPLEMENTED
     return false;
 }
@@ -196,16 +196,16 @@ tensor<T> tensor<T>::slice (size_t dim_start, size_t limit) {
     return tensor<T>();
 }
 
-// bool shares_buffer_with (tensor<T> const & other) const;
+// bool shares_buffer_with (const tensor<T>& other) const;
 
 // template <typename T>
 // size_t tensor<T>::buffer_hash (void) const {
 //     return 0;
 // }
 
-// bool from_proto (tensorproto const & other);
+// bool from_proto (const tensorproto& other);
 
-// bool from_proto (iallocator* a, tensorproto const & other);
+// bool from_proto (iallocator* a, const tensorproto& other);
 
 }
 

@@ -67,7 +67,7 @@ class layer_perceptron {
 
 		virtual ~layer_perceptron (void);
 
-		layer_perceptron& operator = (layer_perceptron const & other);
+		layer_perceptron& operator = (const layer_perceptron& other);
 
 		ivariable<double>* operator () (ivariable<double> & input);
 
@@ -84,8 +84,8 @@ class layer_perceptron {
 			size_t n_output,
 			adhoc_operation op,
 			std::string scope="");
-		std::vector<double> operator () (std::vector<double> const & input);
-		std::vector<double> hypothesis (std::vector<double> const & input);
+		std::vector<double> operator () (const std::vector<double>& input);
+		std::vector<double> hypothesis (const std::vector<double>& input);
 		// expose raw_weights and raw_bias
 		// TODO: replace array with tensors
 		std::pair<V_MATRIX&, double*> get_vars (void) {
@@ -112,7 +112,7 @@ class ml_perceptron {
 			ml_perceptron const & other,
 			std::string scope="");
 		virtual ~ml_perceptron (void);
-		ml_perceptron& operator = (ml_perceptron const & other);
+		ml_perceptron& operator = (const ml_perceptron& other);
 
 		ivariable<double>* operator () (ivariable<double> & input);
 		std::vector<WB_PAIR> get_variables (void);
@@ -131,7 +131,7 @@ class ml_perceptron {
 			std::vector<std::pair<size_t,
 			adhoc_operation> > hiddens,
 			std::string scope = "MLP");
-		std::vector<double> operator () (std::vector<double> const & input);
+		std::vector<double> operator () (const std::vector<double>& input);
 		std::vector<layer_perceptron*> get_vars (void) {
 			return raw_layers;
 		}
