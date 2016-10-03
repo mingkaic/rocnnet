@@ -44,6 +44,8 @@ class session {
         session& operator = (session const&) = delete;
         session& operator = (session &&) = delete;
 
+        // member setter
+        void seed_rand_eng (size_t seed) { generator.seed(seed); }
         // member getter
         std::default_random_engine& get_rand_generator (void) { return generator; }
 

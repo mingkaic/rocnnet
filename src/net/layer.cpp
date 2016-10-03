@@ -63,7 +63,8 @@ void layer_perceptron::clear_ownership (void) {
 layer_perceptron::layer_perceptron (
 	size_t n_input,
 	size_t n_output,
-	std::string scope) {
+	std::string scope)
+	: n_input(n_input), n_output(n_output) {
 	// inputs pipe into the rows of the weight
 	weights = new variable<double>(
 		std::vector<size_t>{n_output, n_input},
@@ -132,9 +133,10 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 // returned variable ownership is retained by layer_perceptron instance
 // destroys passed out variable from previous calls
 // (use with care until smartpointers...)
-ivariable<double>* layer_perceptron::operator () (
+// input are expected to have shape n_input by batch_size
+// outputs are expected to have shape output by batch_size
+ivariable<double>& layer_perceptron::operator () (
 	ivariable<double>& input) {
-	// input are expected to be n_input by batch_size
 	// weights are n_output column by n_input rows
 	tensor_shape ts = input.get_shape();
 	assert(2 >= ts.n_dims() && ts.is_fully_defined());
@@ -142,6 +144,7 @@ ivariable<double>* layer_perceptron::operator () (
 	size_t batch_size = 1 == ts.n_dims() ? 1 : ts.as_list()[1];
 	ivariable<double>* mres = new matmul<double>(input, *weights);
 	// mres is n_output column by batch_size rows (extend bias to fit)
+	// TODO: replace with extend
 	variable<double>* extension =
 		new variable<double>(std::vector<size_t>{1, batch_size}, oinit);
 	ivariable<double>* exbias = new matmul<double>(*extension, *bias);
@@ -149,7 +152,7 @@ ivariable<double>* layer_perceptron::operator () (
 	// take ownership of all variables
 	clear_ownership(); // clear room for new ownership
 	ownership = {mres, extension, exbias, res};
-	return res;
+	return *res;
 }
 
 // DEPRECATED
@@ -303,17 +306,21 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 	return *this;
 }
 
-ivariable<double>* ml_perceptron::operator () (ivariable<double> & input) {
-	// input are expected to be batch_size by n_input or n_input by batch_size
+// input are expected to have shape n_input by batch_size
+// outputs are expected to have shape output by batch_size
+ivariable<double>& ml_perceptron::operator () (placeholder<double> & input) {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
+	in_place = &input;
 	ivariable<double>* output = &input;
-	size_t i = 0;
 	for (HID_PAIR hp : layers) {
-		ivariable<double>* hypothesis = (*hp.first)(*output);
+		std::vector<size_t> shapes = output->get_shape().as_list();
+		ivariable<double>& hypothesis = (*hp.first)(*output);
+		hypothesi.push_back(&hypothesis);
 		output = &(*hp.second)(hypothesis);
 	}
-	return output;
+	// last layer owns output
+	return *output;
 }
 
 std::vector<WB_PAIR> ml_perceptron::get_variables (void) {

@@ -69,7 +69,7 @@ class layer_perceptron {
 
 		layer_perceptron& operator = (const layer_perceptron& other);
 
-		ivariable<double>* operator () (ivariable<double> & input);
+		ivariable<double>& operator () (ivariable<double>& input);
 
 		size_t get_n_input (void) const { return n_input; }
 		size_t get_n_output (void) const { return n_output; }
@@ -94,27 +94,26 @@ class layer_perceptron {
 };
 
 class ml_perceptron {
-	private:
+	//private:
+	protected:
 		std::string scope;
 		std::vector<HID_PAIR> layers;
+		ivariable<double>* in_place;
+		std::vector<ivariable<double>*> hypothesi;
 
-		void copy (
-			ml_perceptron const & other,
+		void copy (ml_perceptron const & other,
 			std::string scope);
 
 	public:
 		// trust that passed in operations are unconnected
-		ml_perceptron (
-			size_t n_input,
+		ml_perceptron (size_t n_input,
 			std::vector<IN_PAIR> hiddens,
 			std::string scope = "MLP");
-		ml_perceptron (
-			ml_perceptron const & other,
-			std::string scope="");
+		ml_perceptron (const ml_perceptron& other, std::string scope="");
 		virtual ~ml_perceptron (void);
 		ml_perceptron& operator = (const ml_perceptron& other);
 
-		ivariable<double>* operator () (ivariable<double> & input);
+		ivariable<double>& operator () (placeholder<double>& input);
 		std::vector<WB_PAIR> get_variables (void);
 
 		// def get_var(self):

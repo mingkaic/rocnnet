@@ -7,6 +7,7 @@
 //
 
 #include "../include/graph.hpp"
+#include "gtest/gtest.h"
 
 TEST(VARIABLE, tensor_construct) {
     nnet::tensor<double> t1; // no shape -> equiv to scalar
@@ -100,7 +101,6 @@ TEST(VARIABLE, const_init) {
         init, "constant arr");
 
     cvar.initialize();
-
     nnet::expose<double> ex(cvar);
     std::vector<double> raw = ex.get_raw();
 

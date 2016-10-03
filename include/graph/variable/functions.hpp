@@ -18,7 +18,7 @@ namespace nnet {
 // FUNCTION WRAPPER
 
 template <typename T>
-class univar_func : ioperation<T> {
+class univar_func : public ioperation<T> {
 	private:
 		// do not own fanin or out
 		ivariable<T>* fanin = nullptr;
@@ -30,8 +30,11 @@ class univar_func : ioperation<T> {
 
 	protected:
 		std::vector<ioperation<T>*> ownout;
-		virtual void shape_eval (void);
+		virtual void decompose (ivariable<T>& food) {
+			if (fanin == &food) fanin = nullptr;
+		}
 
+		virtual void shape_eval (void);
 		univar_func (const univar_func<T>& other, std::string name);
 
 	public:
@@ -43,7 +46,7 @@ class univar_func : ioperation<T> {
 		virtual ~univar_func (void) { clear(); }
 		// connect input to fanin ivariables according
 		// to declared equation ordered by function parameters
-		virtual ivariable<T>& operator () (ivariable<T>* input);
+		virtual ivariable<T>& operator () (ivariable<T>& input);
 		virtual univar_func<T>& operator = (const ivariable<T>& other);
 
 		// calls derive from fanout

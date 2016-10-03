@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include "../include/graph.hpp"
+#include "gtest/gtest.h"
 
 template <typename T>
 void unaryElemTest (
@@ -50,15 +51,13 @@ void binaryElemTest (
 	nnet::placeholder<double> p2(goodshape);
 	nnet::placeholder<double> bad(std::vector<size_t>{edge, edge});
 
-	T trouble1(p1, bad);
-	T trouble2(bad, p1);
+	EXPECT_DEATH({ T trouble1(p1, bad); }, ".*"); // evalutates shapes at construction
+    EXPECT_DEATH({ T trouble2(bad, p1); }, ".*");
 	T res(p1, p2);
 	T res1(p1, 2);
 	T _1res(2, p1);
 
 	// didn't initialize
-	EXPECT_DEATH({ trouble1.eval(); }, ".*");
-	EXPECT_DEATH({ trouble2.eval(); }, ".*");
 	EXPECT_DEATH({ res.eval(); }, ".*");
 	EXPECT_DEATH({ res1.eval(); }, ".*");
 	EXPECT_DEATH({ _1res.eval(); }, ".*");
@@ -76,11 +75,6 @@ void binaryElemTest (
 	}
 	p1 = r1;
 	p2 = r2;
-	bad = rbad;
-
-	// delayed evaluation
-	EXPECT_DEATH({ trouble1.eval(); }, ".*");
-	EXPECT_DEATH({ trouble2.eval(); }, ".*");
 
 	nnet::expose<double> ex(res);
 	nnet::expose<double> ex1(res1);
@@ -518,8 +512,9 @@ TEST(DERIV, unary) {
 		r.push_back(given-round(given/limit));
 	}
 	in = r;
+	size_t len = univars.size();
 
-	for (size_t i = 0; i < univars.size(); i++) {
+	for (size_t i = 0; i < len; i++) {
 		nnet::expose<double> exvar(*univars[i]);
 		exvar.eval(); // not really needed since we only operation has depth 1
 		std::vector<double> badv = exvar.get_derive(bad);

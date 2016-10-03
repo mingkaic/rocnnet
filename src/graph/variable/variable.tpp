@@ -152,6 +152,17 @@ tensor<T>& variable<T>::initialize (tensor_shape alloc_shape) {
 }
 
 template <typename T>
+void variable<T>::update (const tensor<T>& in, std::function<T(T,T)> op) {
+	// TODO: use a better method of manipulating rawdata
+	assert(this->out.is_same_size(in));
+	T* old_data = this->out.raw_data;
+	const T* new_data = in.raw_data;
+	for (size_t i = 0; i < in.n_elems(); i++) {
+		old_data[i] = op(old_data[i], new_data[i]);
+	}
+}
+
+template <typename T>
 const tensor<T>& variable<T>::eval (void) {
 	assert(is_init);
 	return this->out;

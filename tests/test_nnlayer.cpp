@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include "../include/nnet.hpp"
+#include "gtest/gtest.h"
 
 static double sigmoid (double in) {
 	return 1/(1+exp(-in));
@@ -52,10 +53,8 @@ TEST(PERCEPTRON, layer_action) {
 	std::vector<double> exout = {1, 2, 3};
 	nnet::layer_perceptron layer(vin.size(), exout.size());
 	nnet::placeholder<double> var(std::vector<size_t>{5});
-	// don't own res
-	nnet::ivariable<double>* res = layer(var);
-	ASSERT_NE(res, nullptr);
-	nnet::expose<double> ex(*res);
+	nnet::ivariable<double>& res = layer(var);
+	nnet::expose<double> ex(res);
 	// initialize variables
 	sess.initialize_all<double>();
 	var = vin;
@@ -80,9 +79,8 @@ TEST(PERCEPTRON, mlp_action) {
 		nnet::ml_perceptron(vin.size(), hiddens);
 
 	nnet::placeholder<double> var(std::vector<size_t>{5});
-	// don't own res
-	nnet::ivariable<double>* res = mlp(var);
-	nnet::expose<double> ex(*res);
+	nnet::ivariable<double>& res = mlp(var);
+	nnet::expose<double> ex(res);
 	sess.initialize_all<double>();
 	var = vin;
 	std::vector<double> raw = ex.get_raw();
@@ -96,9 +94,40 @@ TEST(PERCEPTRON, mlp_action) {
 
 // test with gradient descent
 TEST(PERCEPTRON, gd_train) {
+	nnet::session& sess = nnet::session::get_instance();
+	sess.seed_rand_eng(1);
 	size_t n_in = 10;
 	size_t n_out = n_in/2;
-	std::vector<size_t> n_hidden = {10, n_out};
+	size_t n_hidden = 8;
+	std::vector<IN_PAIR> hiddens = {
+		// use same sigmoid in static memory once deep copy is established
+		IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
+		IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
+		IN_PAIR(n_out, new nnet::sigmoid<double>()),
+	};
+	size_t batch_size = 1;
+	size_t test_size = 100;
+	nnet::gd_net net(n_in, hiddens);
+	nnet::placeholder<double> fanin(std::vector<size_t>{n_in, batch_size});
+	nnet::placeholder<double> exout(std::vector<size_t>{n_out, batch_size});
+	nnet::ivariable<double>& fanout = net(fanin);
+	sess.initialize_all<double>();
+
+	std::vector<VECS> samples;
+	fill_binary_samples(samples, n_in, batch_size);
+	for (VECS vecs : samples) {
+		fanin = vecs.first;
+		exout = vecs.second;
+		//net.train(exout);
+	}
+}
+
+
+// test with gradient descent
+TEST(PERCEPTRON, gd_train1) {
+	size_t n_in = 10;
+	size_t n_out = n_in/2;
+	std::vector<size_t> n_hidden = {8, 8, n_out};
 	size_t batch_size = 50000;
 	size_t test_size = 100;
 
@@ -109,8 +138,7 @@ TEST(PERCEPTRON, gd_train) {
 		hiddens.push_back(std::pair<size_t, nnet::adhoc_operation>(hid_size, sig));
 	}
 
-	nnet::gd_net net;
-	net.mlp = new nnet::ml_perceptron(n_in, hiddens);
+	nnet::gd_net net(n_in, hiddens);
 	fill_binary_samples(samples, n_in, batch_size);
 	for (VECS s : samples) {
 		net.train(s);
@@ -154,8 +182,7 @@ TEST(PERCEPTRON, bgd_train) {
 		hiddens.push_back(std::pair<size_t, nnet::adhoc_operation>(hid_size, sig));
 	}
 
-	nnet::gd_net net;
-	net.mlp = new nnet::ml_perceptron(n_in, hiddens);
+	nnet::gd_net net(n_in, hiddens);
 
 	for (size_t i = 0; i < trials; i++) {
 		samples.clear();

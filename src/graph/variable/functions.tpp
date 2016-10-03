@@ -56,8 +56,8 @@ univar_func<T>* univar_func<T>::clone (std::string name) {
 }
 
 template <typename T>
-ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
-    if (nullptr != input) {
+ivariable<T>& univar_func<T>::operator () (ivariable<T>& input) {
+    if (nullptr == fanin) {
         ioperation<T>* buffer;
         std::queue<ioperation<T>*> q;
         q.push(fanout);
@@ -65,17 +65,16 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
         while (false == q.empty()) {
             buffer = q.front();
             q.pop();
-
             if (iunar_ops<T>* uptr = dynamic_cast<iunar_ops<T>*>(buffer)) {
                 if (nullptr == uptr->var) {
-                    (*uptr)(*input);
+                    (*uptr)(input);
                 } else if (ioperation<T>* inptr =
                     dynamic_cast<ioperation<T>*>(uptr->var)) {
                     q.push(inptr);
                 }
             } else if (ibin_ops<T>* bptr = dynamic_cast<ibin_ops<T>*>(buffer)) {
                 if (nullptr == bptr->a && nullptr == bptr->b) {
-                    (*bptr)(*input, *input);
+                    (*bptr)(input, input);
                 } else {
                     if (ioperation<T>* ptr1 =
                         dynamic_cast<ioperation<T>*>(bptr->a)) {
@@ -88,9 +87,9 @@ ivariable<T>& univar_func<T>::operator () (ivariable<T>* input) {
                 }
             }
         }
-        fanin = input;
+        fanin = &input;
+        shape_eval();
     }
-    shape_eval();
     return *this;
 }
 

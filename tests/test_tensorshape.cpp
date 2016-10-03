@@ -7,6 +7,7 @@
 //
 
 #include "../include/graph.hpp"
+#include "gtest/gtest.h"
 
 static bool tensor_shape_equal (
 	nnet::tensor_shape const & ts1,

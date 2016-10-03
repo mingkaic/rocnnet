@@ -32,8 +32,12 @@ class ibin_ops : public ioperation<T> {
 
 		// calc_derive remains abstract
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void shape_eval (void);
+		virtual void decompose (ivariable<T>& food) {
+			if (a == &food) a = nullptr;
+			if (b == &food) b = nullptr;
+		}
 
+		virtual void shape_eval (void);
 		// operator () getters
 		virtual std::string get_symb (void) = 0;
 		virtual std::function<T(T, T)> get_op (void) = 0;
@@ -41,13 +45,48 @@ class ibin_ops : public ioperation<T> {
 		friend class univar_func<T>;
 
 	public:
-		virtual ~ibin_ops (void) { if (own) delete own; }
+		virtual ~ibin_ops (void) {
+			if (own) delete own;
+			if (a) a->get_consumers().erase(this);
+			if (b) b->get_consumers().erase(this);
+		}
 		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
 		virtual ivariable<T>& operator () (ivariable<T>& a, T b);
 		virtual ivariable<T>& operator () (T a, ivariable<T>& b);
 		virtual ibin_ops<T>& operator = (const ivariable<T>& other);
 
 		virtual const tensor<T>& eval (void);
+};
+
+// DERIVATION
+
+// TODO extend ioperation interface for unique operations like derive and expose
+// TODO change ALL derivative elementary operations to use ioperations as to
+// enable n-th derivative (derivative of derivative of derivative...)
+// TODO test derivation
+template <typename T>
+class derive : public ibin_ops<T> {
+	protected:
+		virtual tensor<T>* calc_derive (ivariable<T>* over) const {
+			// TODO implement calc_derive
+			return nullptr;
+		}
+		derive (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return " over "; }
+		std::function<T(T, T)> get_op (void);
+
+	public:
+		derive (void) {}
+		derive (ivariable<T>& func, ivariable<T>& over) { (*this)(func, over); }
+		virtual derive<T>* clone (std::string name = "");
+
+		virtual const tensor<T>& eval (void) {
+			tensor<T>* prime = this->a->derive(this->b);
+			this->out = *prime;
+			delete prime;
+			return this->out;
+		}
 };
 
 // addition

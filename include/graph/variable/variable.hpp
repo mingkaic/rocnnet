@@ -10,6 +10,7 @@
 #include <ctime>
 #include <random>
 #include <new>
+#include <iostream>
 
 #include "../memory/session.hpp"
 #include "../tensor.hpp"
@@ -71,7 +72,7 @@ class ivariable {
 	protected:
 		tensor<T> out;
 		std::string name;
-		std::list<ioperation<T>*> consumers; // next
+		std::unordered_set<ioperation<T>*> consumers; // next
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const {
 			return nullptr;
@@ -91,6 +92,9 @@ class ivariable {
 		virtual ~ivariable (void) {
 			session& sess = session::get_instance();
 			sess.unregister_obj(*this);
+			for (ioperation<T>* con : consumers) {
+				con->decompose(*this);
+			}
 		}
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
 
@@ -98,7 +102,7 @@ class ivariable {
 		virtual tensor_shape get_shape (void) const
 			{ return this->out.get_shape(); }
 
-		std::list<ioperation<T>*> get_consumers (void) { return consumers; }
+		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 		// calculate the derivative over input variable given values
 		// from the last evaluation. no forward evaluation takes place
 		// currently doesn't handle the case of bad evaluation
@@ -137,9 +141,15 @@ class variable : public ivariable<T> {
 		bool can_init (void) const { return init != nullptr; }
 
 		// required by variables using initializer (not by placeholder)
-		// calls initializer can call multiple times to reset
+		// initializer can be call multiple times to reset values
+		// TODO: allow session to flag variables as init once only to ensure safety
 		virtual tensor<T>& initialize (void);
 		virtual tensor<T>& initialize (tensor_shape alloc_shape);
+
+		// update raw values with new tensor and some operation on the old and new values
+		// where old value is the first parameter and new value is the second parameter
+		virtual void update (const tensor<T>& in, std::function<T(T,T)> op);
+
 		virtual const tensor<T>& eval (void);
 
 		// tensor<T> scatter_sub (IndexedSlices sparse_delta, use_locking = false);

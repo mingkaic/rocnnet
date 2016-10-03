@@ -26,9 +26,10 @@ static alloc_attrib default_attr;
 
 template <typename T>
 class initializer;
-
 template <typename T>
 class ioperation;
+template <typename T>
+class variable;
 
 template <typename T>
 class tensor {
@@ -45,6 +46,8 @@ class tensor {
 
 		friend class initializer<T>;
 		friend class ioperation<T>;
+		// TODO make a better, unified method of manipulating tensors from variable (non-operations objects like scalar and variable)
+		friend class variable<T>;
 
 	public:
 		// name identifier

@@ -9,6 +9,7 @@
 #pragma once
 #ifndef unar_ops_hpp
 #define unar_ops_hpp
+#include <iostream>
 
 #include "operation.hpp"
 
@@ -25,8 +26,11 @@ class iunar_ops : public ioperation<T> {
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void shape_eval (void);
+		virtual void decompose (ivariable<T>& food) {
+			if (var == &food) var = nullptr;
+		}
 
+		virtual void shape_eval (void);
 		// operator () getters
 		virtual std::string get_symb (void) = 0;
 		virtual std::function<T(T)> get_op (void) = 0;
@@ -34,7 +38,9 @@ class iunar_ops : public ioperation<T> {
 		friend class univar_func<T>;
 
 	public:
-		virtual ~iunar_ops (void) {}
+		virtual ~iunar_ops (void) {
+			if (var) var->get_consumers().erase(this);
+		}
 		virtual ivariable<T>& operator () (ivariable<T>& in);
 		virtual iunar_ops<T>& operator = (const ivariable<T>& other);
 
@@ -43,6 +49,7 @@ class iunar_ops : public ioperation<T> {
 
 // OUT NODE
 
+// TODO extend ioperation interface for unique operations like derive and expose
 template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
@@ -57,7 +64,10 @@ class expose : public iunar_ops<T> {
 		expose (ivariable<T>& var) { (*this)(var); }
 		virtual expose<T>* clone (std::string name = "");
 
-		virtual const tensor<T>& eval (void) { return this->var->eval(); }
+		virtual const tensor<T>& eval (void) {
+			this->out = this->var->eval();
+			return this->out;
+		}
 
 		// non-inheriteds
 		// evaluates consumed operation
