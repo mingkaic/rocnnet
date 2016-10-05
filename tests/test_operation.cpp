@@ -458,17 +458,220 @@ TEST(OPERATION, transpose) {
 }
 
 
+TEST(OPERATION, extend) {
+	nnet::placeholder<double> A(std::vector<size_t>{2, 1, 2});
+	nnet::placeholder<double> B(std::vector<size_t>{2, 2, 1});
+	nnet::placeholder<double> C(std::vector<size_t>{2, 2, 2});
+
+	std::vector<double> t1 = {
+		0.4, 0.9,
+		1.2, 3.1,
+	};
+	std::vector<double> t2 = {
+		// layer 1
+		0.4, 0.9,
+		1.2, 3.1,
+		// layer 2
+		1.9, 1.0,
+		2.5, 2.0,
+	};
+	std::vector<double> ex1 = {
+		// layer 1
+		0.4, 0.9, 0.4, 0.9,
+		1.2, 3.1, 1.2, 3.1,
+		// layer 2
+		1.9, 1.0, 1.9, 1.0,
+		2.5, 2.0, 2.5, 2.0,
+	};
+	std::vector<double> ex2 = {
+		// layer 1
+		0.4, 0.9,
+		0.4, 0.9,
+		// layer 2
+		1.2, 3.1,
+		1.2, 3.1,
+	};
+	std::vector<double> ex3 = {
+		// layer 1
+		0.4, 0.9,
+		1.2, 3.1,
+		// layer 2
+		0.4, 0.9,
+		1.2, 3.1,
+	};
+	std::vector<double> ex4 = {
+		// layer A
+		// layer 1
+		0.4, 0.9,
+		1.2, 3.1,
+		// layer 2
+		1.9, 1.0,
+		2.5, 2.0,
+		// layer B
+		// layer 1
+		0.4, 0.9,
+		1.2, 3.1,
+		// layer 2
+		1.9, 1.0,
+		2.5, 2.0,
+	};
+	A = t1;
+	B = t1;
+	C = t2;
+
+	nnet::extend<double> e1(C, 0, 2);
+	nnet::extend<double> e2(A, 1, 2);
+	nnet::extend<double> e3(B, 2, 2);
+	nnet::extend<double> e4(C, 3, 2);
+
+	nnet::expose<double> expose1(e1);
+	const nnet::tensor<double>& res1 = expose1.eval();
+	std::vector<double> raw = expose1.get_raw();
+
+	std::vector<size_t> ts1 = res1.get_shape().as_list();
+	ASSERT_EQ(3, ts1.size());
+	ASSERT_EQ(4, ts1[0]);
+	for (auto it = ++ts1.begin(); it != ts1.end(); it++) {
+		ASSERT_EQ(2, *it);
+	}
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(ex1[i], raw[i]);
+	}
+
+	nnet::expose<double> expose2(e2);
+	const nnet::tensor<double>& res2 = expose2.eval();
+	raw = expose2.get_raw();
+
+	std::vector<size_t> ts2 = res2.get_shape().as_list();
+	ASSERT_EQ(3, ts2.size());
+	for (size_t s : ts2) {
+		ASSERT_EQ(2, s);
+	}
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(ex2[i], raw[i]);
+	}
+
+	nnet::expose<double> expose3(e3);
+	const nnet::tensor<double>& res3 = expose3.eval();
+	raw = expose3.get_raw();
+
+	std::vector<size_t> ts3 = res3.get_shape().as_list();
+	ASSERT_EQ(3, ts3.size());
+	for (size_t s : ts3) {
+		ASSERT_EQ(2, s);
+	}
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(ex3[i], raw[i]);
+	}
+
+	nnet::expose<double> expose4(e4);
+	const nnet::tensor<double>& res4 = expose4.eval();
+	raw = expose4.get_raw();
+
+	std::vector<size_t> ts4 = res4.get_shape().as_list();
+	ASSERT_EQ(4, ts4.size());
+	for (size_t s : ts4) {
+		ASSERT_EQ(2, s);
+	}
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(ex4[i], raw[i]);
+	}
+
+}
+
+
+TEST(OPERATION, compress) {
+	nnet::placeholder<double> A(std::vector<size_t>{5, 2});
+	nnet::placeholder<double> B(std::vector<size_t>{2, 5});
+	nnet::placeholder<double> C(std::vector<size_t>{2, 5, 2});
+
+	std::vector<double> in1 = {
+		1, 2, 3, 4, 5,
+		2, 10, 23, 1, 2,
+	};
+
+	std::vector<double> exp1 = { 3, 7.6 };
+
+	std::vector<double> in2 = {
+		3, 2,
+		10, 23,
+		2, 1.2,
+		0.5, 0.1,
+		1, 2,
+	};
+
+	std::vector<double> exp2 = { 3.3, 5.66 };
+
+	std::vector<double> in3 = {
+		// layer 1
+		3, 2,
+		10, 23,
+		2, 1.2,
+		0.5, 0.1,
+		1, 2,
+		// layer 2
+		2, 1.8,
+		12, 84,
+		92, 1.9,
+		9, 3.14,
+		70, 17.1,
+	};
+
+	std::vector<double> exp3 = {
+		// layer 1
+		3.3, 5.66,
+		// layer 2
+		37, 21.588,
+	};
+
+	A = in1;
+	B = in2;
+	C = in3;
+
+	nnet::compress<double> c1(A, 0); // expect vector of 2
+	nnet::compress<double> c2(B, 1); // expect vector of 2
+	nnet::compress<double> c3(C, 1); // expect shape of 2, 1, 2
+
+	nnet::expose<double> e1(c1);
+	std::vector<size_t> v1 = e1.eval().get_shape().as_list();
+	ASSERT_EQ(1, v1.size());
+	ASSERT_EQ(2, v1[0]);
+	std::vector<double> raw = e1.get_raw();
+
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(exp1[i], raw[i]);
+	}
+
+	nnet::expose<double> e2(c2);
+	std::vector<size_t> v2 = e2.eval().get_shape().as_list();
+	ASSERT_EQ(1, v2.size());
+	ASSERT_EQ(2, v2[0]);
+	raw = e2.get_raw();
+
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(exp2[i], raw[i]);
+	}
+
+	nnet::expose<double> e3(c3);
+	std::vector<size_t> v3 = e3.eval().get_shape().as_list();
+	ASSERT_EQ(3, v3.size());
+	ASSERT_EQ(2, v3[0]);
+	ASSERT_EQ(1, v3[1]);
+	ASSERT_EQ(2, v3[2]);
+	raw = e3.get_raw();
+
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(exp3[i], raw[i]);
+	}
+}
+
+
 TEST(OPERATION, dot) {
 
 }
 
 
 TEST(OPERATION, high_dim_mul) {
-
-}
-
-
-TEST(OPERATION, contraction) {
 
 }
 

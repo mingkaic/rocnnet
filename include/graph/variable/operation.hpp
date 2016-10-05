@@ -49,6 +49,15 @@ class ioperation : public ivariable<T> {
 			const tensor<T>& t1,
 			const tensor<T>& t2) const;
 
+		tensor_shape transpose_shape (const tensor_shape& ins) const;
+
+		tensor_shape change_shape (
+			const tensor_shape& ins,
+			size_t index,
+			double multiplier,
+			size_t& below_dim,
+			size_t& at_idx) const;
+
 		tensor_shape get_matrix_shape (
 			const tensor<T>& t1, const tensor<T>& t2,
 			bool transposeA, bool transposeB,
@@ -76,8 +85,11 @@ class ioperation : public ivariable<T> {
 			const tensor<T>& b,
 		    bool transposeA,
 		    bool transposeB) const;
-		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier);
-		tensor<T>* compress_op (const tensor<T>& in, size_t index);
+		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier) const;
+		tensor<T>* compress_op (
+			const tensor<T>& in,
+			size_t index,
+			std::function<T(const std::vector<T>&)> collector) const;
 
 		std::vector<T> get_vec (const tensor<T>& in) const {
 			T* raw = in.raw_data;
@@ -150,7 +162,7 @@ class iunar_mat_ops : public ioperation<T> {
 		}
 		virtual std::string get_symb (void) = 0;
 
-		virtual void shape_eval (void);
+		virtual void shape_eval (void) = 0;
 		void copy (const ivariable<T>& other, std::string name = ""); // virtually identical to iunar_ops
 
 	public:
@@ -173,6 +185,7 @@ class extend : public iunar_mat_ops<T> {
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 		virtual std::string get_symb (void) { return "extend"; }
 
+		virtual void shape_eval (void);
 		void copy (const ivariable<T>& other, std::string name = "");
 		extend (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
@@ -182,6 +195,7 @@ class extend : public iunar_mat_ops<T> {
 		extend (ivariable<T>& in, size_t index, size_t multiplier);
 		void set_ext_info (size_t index, size_t multiplier);
 		virtual extend<T>* clone (std::string name = "");
+		virtual extend<T>& operator = (const ivariable<T>& other);
 
 		virtual const tensor<T>& eval (void);
 };
@@ -192,11 +206,14 @@ template <typename T>
 class compress : public iunar_mat_ops<T> {
 	private:
 		size_t index = 0;
+		// first parameter is the collecting buffer, second is the gathered data
+		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 		virtual std::string get_symb (void) { return "compress"; }
 
+		virtual void shape_eval (void);
 		void copy (const ivariable<T>& other, std::string name = "");
 		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
@@ -204,8 +221,11 @@ class compress : public iunar_mat_ops<T> {
 		compress (void) {}
 		compress (ivariable<T>& in);
 		compress (ivariable<T>& in, size_t index);
-		void set_cmpr_info (size_t index);
+		compress (ivariable<T>& in, size_t index, std::function<T(const std::vector<T>&)> collector);
 		virtual compress<T>* clone (std::string name = "");
+		virtual compress<T>& operator = (const ivariable<T>& other);
+
+		void set_cmpr_info (size_t index, std::function<T(const std::vector<T>&)> collector);
 
 		virtual const tensor<T>& eval (void);
 };
@@ -219,6 +239,7 @@ class transpose : public iunar_mat_ops<T> {
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 		virtual std::string get_symb (void) { return "transpose"; }
 
+		virtual void shape_eval (void);
 		transpose (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
 	public:

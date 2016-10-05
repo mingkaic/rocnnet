@@ -56,6 +56,7 @@ class tensor {
 		// creates a rank 0 tensor
 		tensor (void);
 		tensor (const tensor_shape& shape);
+		// allocate raw_data on construction
 		tensor (iallocator& a, const tensor_shape& shape)
 		: tensor(a, shape, default_attr) {}
 		tensor (iallocator& a,

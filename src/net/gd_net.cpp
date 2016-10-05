@@ -82,14 +82,15 @@ void gd_net::train (ivariable<double>& expected_out) {
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		ivariable<double>* cost = new matmul<double>(*output, *err, true);
-		ownership.insert(cost);
 		// expecting err to be output by batchsize, compress along batchsize
-		ivariable<double>* compressed_bias = new compress<double>(err, 1);
-		ownership.insert(compressed_bias);
+		ivariable<double>* compressed_err = new compress<double>(*err, 1);
+		ownership.insert(compressed_err);
+
+		ivariable<double>* cost = new matmul<double>(*output, *compressed_err, true);
+		ownership.insert(cost);
 		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
 		ownership.insert(dweights);
-		ivariable<double>* dbias = new mul<double>(*compressed_bias, learn_batch);
+		ivariable<double>* dbias = new mul<double>(*compressed_err, learn_batch);
 		ownership.insert(dbias);
 
 		// update weights and bias
