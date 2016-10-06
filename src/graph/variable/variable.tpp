@@ -191,6 +191,15 @@ placeholder<T>::placeholder (const tensor_shape& shape, std::string name)
 }
 
 template <typename T>
+variable<T>& placeholder<T>::assign (const ivariable<T>& other) {
+	if (this != &other) {
+		this->out = other.out;
+	}
+	this->is_init = true;
+	return *this;
+}
+
+template <typename T>
 variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 	this->init = new open_init();
 

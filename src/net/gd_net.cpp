@@ -12,11 +12,82 @@
 
 namespace nnet {
 
+void gd_net::train (tensor_shape ts) {
+	clear_ownership(); // all intermediate vars are used once anyways
+
+	// follow () operator for ml_perceptron except store hypothesis
+	std::stack<ivariable<double>*> act_prime;
+	ivariable<double>* output = this->in_place;
+	for (size_t i = 0; i < hypothesi.size(); i++) {
+		// act'(z_i)
+		ivariable<double>* prime = new derive<double>(*this->layers[i].second, *hypothesi[i]);
+		ownership.insert(prime);
+		act_prime.push(prime);
+		output = this->layers[i].second;
+	}
+	output->eval(); // run data through weights once before evaluating updated weights
+	// err_n = (out-y)*act'(z_n)
+	// where z_n is the input to the nth layer (last)
+	// and act is the activation operation
+	// take ownership
+	expected_out = new placeholder<double>(ts);
+	ownership.insert(expected_out);
+	ivariable<double>* diff = new sub<double>(*output, *expected_out);
+	ownership.insert(diff);
+	ivariable<double>* err = new mul<double>(*diff, *act_prime.top());
+	ownership.insert(err);
+	act_prime.pop();
+
+	std::stack<ivariable<double>*> errs;
+	errs.push(err);
+	auto term = --this->layers.rend();
+	for (auto rit = this->layers.rbegin();
+		 term != rit; rit++) {
+		HID_PAIR hp = *rit;
+		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
+		ivariable<double>* weight_i = hp.first->get_variables().first;
+		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
+		ivariable<double>* mres = new matmul<double>(*err, *weight_i, false ,true);
+		ownership.insert(mres);
+		err = new mul<double>(*mres, *act_prime.top());
+		ownership.insert(err);
+		act_prime.pop();
+		errs.push(err);
+	}
+
+
+	double learn_batch = learning_rate / ts.as_list()[1];
+	output = this->in_place;
+	for (HID_PAIR hp : this->layers) {
+		err = errs.top();
+		errs.pop();
+
+		// dweights = learning*matmul(transpose(layer_in), err)
+		// dbias = learning*err
+		// expecting err to be output by batchsize, compress along batchsize
+		ivariable<double>* compressed_err = new compress<double>(*err, 1);
+		ownership.insert(compressed_err);
+
+		ivariable<double>* cost = new matmul<double>(*output, *compressed_err, true);
+		ownership.insert(cost);
+		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
+		ownership.insert(dweights);
+		ivariable<double>* dbias = new mul<double>(*compressed_err, learn_batch);
+		ownership.insert(dbias);
+		differentials.push_back(IVARS(dweights, dbias));
+		// store for update
+
+		output = hp.second;
+	}
+}
+
 void gd_net::clear_ownership (void) {
 	for (ivariable<double>* mine : ownership) {
 		delete mine;
 	}
 	ownership.clear();
+	differentials.clear();
+	expected_out = nullptr;
 }
 
 gd_net::gd_net (size_t n_input,
@@ -34,76 +105,22 @@ gd_net::~gd_net (void) {
 // then apply cost funct to grad desc alg:
 // new weight = old weight - learning_rate * cost func derive over old weight
 // same thing with bias (should experience no performance decrease due to short circuiting)
-void gd_net::train (ivariable<double>& expected_out) {
-	// follow () operator for ml_perceptron except store hypothesis
-	std::stack<ivariable<double>*> act_prime;
-	ivariable<double>* output = this->in_place;
-	for (size_t i = 0; i < hypothesi.size(); i++) {
-		// act'(z_i)
-		ivariable<double>* prime = new derive<double>(*this->layers[i].second, *hypothesi[i]);
-		ownership.insert(prime);
-		act_prime.push(prime);
-		output = this->layers[i].second;
+void gd_net::train (ivariable<double>& e_out) {
+	if (nullptr == expected_out) {
+		train(e_out.get_shape());
 	}
-	// err_n = (out-y)*act'(z_n)
-	// where z_n is the input to the nth layer (last)
-	// and act is the activation operation
-	// take ownership
-	ivariable<double>* diff = new sub<double>(*output, expected_out);
-	ownership.insert(diff);
-	ivariable<double>* err = new mul<double>(*diff, *act_prime.top());
-	ownership.insert(err);
-	act_prime.pop();
+	expected_out->assign(e_out);
 
-	std::stack<ivariable<double>*> errs;
-	errs.push(err);
-	auto term = --this->layers.rend();
-	for (auto rit = this->layers.rbegin();
-		 term != rit; rit++) {
-		HID_PAIR hp = *rit;
-		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
-		ivariable<double>* weight_i = hp.first->get_variables().first;
-        // weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		ivariable<double>* mres = new matmul<double>(*err, *weight_i, false ,true);
-		ownership.insert(mres);
-		err = new mul<double>(*mres, *act_prime.top());
-		ownership.insert(err);
-		act_prime.pop();
-		errs.push(err);
-	}
-
-
-	double learn_batch = learning_rate / expected_out.get_shape().as_list()[1];
-	output = this->in_place;
-	for (HID_PAIR hp : this->layers) {
-		err = errs.top();
-		errs.pop();
-		WB_PAIR wb = hp.first->get_variables();
-
-		// dweights = learning*matmul(transpose(layer_in), err)
-		// dbias = learning*err
-		// expecting err to be output by batchsize, compress along batchsize
-		ivariable<double>* compressed_err = new compress<double>(*err, 1);
-		ownership.insert(compressed_err);
-
-		ivariable<double>* cost = new matmul<double>(*output, *compressed_err, true);
-		ownership.insert(cost);
-		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
-		ownership.insert(dweights);
-		ivariable<double>* dbias = new mul<double>(*compressed_err, learn_batch);
-		ownership.insert(dbias);
-
+	for (size_t i = 0; i < differentials.size(); i++) {
+		IVARS ds = differentials[i];
+		WB_PAIR wb = layers[i].first->get_variables();
 		// update weights and bias
-		// weights -= avg_row(dweights), bias -= avg_row(dbias)
-		const tensor<double>& dwt = dweights->eval();
-		const tensor<double>& dbt = dbias->eval();
+		// weights -= dweights, bias -= dbias
+		const tensor<double>& dwt = ds.first->eval();
+		const tensor<double>& dbt = ds.second->eval();
 		wb.first->update(dwt, shared_cnnet::op_sub<double>);
 		wb.second->update(dbt, shared_cnnet::op_sub<double>);
-
-		output = hp.second;
 	}
-
-	clear_ownership(); // all intermediate vars are used once anyways
 }
 
 // batch gradient descent

@@ -15,6 +15,8 @@
 
 namespace nnet {
 
+#define IVARS std::pair<ivariable<double>*, ivariable<double>*>
+
 // wrapper for
 // gradient descent
 // TODO transform into a tensor operation "optimizer" similar to tf.optimizer
@@ -26,11 +28,16 @@ class gd_net : public ml_perceptron {
 		double learning_rate = 0.5; // implement setter
 		void clear_ownership (void); // for book keeping, remove when replaced with smart ptrs
 
+		placeholder<double>* expected_out = nullptr;
+		std::vector<IVARS> differentials;
+		void train (tensor_shape ts);
+
 	public:
 		gd_net (size_t n_input,
 			std::vector<IN_PAIR> hiddens,
 			std::string scope = "MLP");
 		virtual ~gd_net (void);
+
 		// operator () is inherited from ml_perceptron
 		void train (ivariable<double>& expected_out);
 

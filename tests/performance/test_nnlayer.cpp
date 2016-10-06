@@ -106,7 +106,7 @@ TEST(PERCEPTRON, gd_train) {
 		IN_PAIR(n_out, new nnet::sigmoid<double>()),
 	};
 	size_t batch_size = 1;
-	size_t test_size = 1000;
+	size_t test_size = 10000;
 	nnet::gd_net net(n_in, hiddens);
 	nnet::placeholder<double> fanin(std::vector<size_t>{n_in, batch_size});
 	nnet::placeholder<double> exout(std::vector<size_t>{n_out, batch_size});

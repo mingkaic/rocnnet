@@ -68,6 +68,9 @@ class random_uniform : public initializer<T> {
 };
 
 template <typename T>
+class placeholder;
+
+template <typename T>
 class ivariable {
 	protected:
 		tensor<T> out;
@@ -82,6 +85,7 @@ class ivariable {
 			std::string name = "");
 		// protected members need to be accessed by other operations
 		friend class ioperation<T>;
+		friend class placeholder<T>;
 
 	public:
 		ivariable (void) {
@@ -97,6 +101,15 @@ class ivariable {
 			}
 		}
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
+
+		// TODO implement
+		// operators that will replace elementary operation objects
+		ivariable<double> operator + (void) const;
+		ivariable<double> operator - (void) const;
+		ivariable<double> operator + (const ivariable<double>& b) const;
+		ivariable<double> operator - (const ivariable<double>& b) const;
+		ivariable<double> operator * (const ivariable<double>& b) const;
+		ivariable<double> operator / (const ivariable<double>& b) const;
 
 		std::string get_name (void) const { return name; }
 		virtual tensor_shape get_shape (void) const
@@ -169,6 +182,7 @@ class placeholder : public variable<T> {
 		placeholder (const tensor_shape& shape, std::string name = "");
 
 		// assign raw data according to 1 dimension representation of inner tensor
+		virtual variable<T>& assign (const ivariable<T>& other);
 		virtual variable<T>& operator = (std::vector<T> data);
 		virtual variable<T>& operator = (const tensor<T>& data);
 

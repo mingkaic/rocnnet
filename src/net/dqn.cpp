@@ -82,14 +82,27 @@ namespace nnet {
 // 	# summaries
 // 	tf.scalar_summary("prediction_error", self.prediction_error)
 
-dq_net::dq_net (size_t n_input,
-				std::vector<std::pair<size_t, ioperation<double> > > hiddens,
-				size_t train_interval,
-				double discount_rate,
-				double update_rate) :
-		train_interval(train_interval),
-		discount_rate(discount_rate),
-		update_rate(update_rate) {
+dq_net::dq_net (
+	size_t n_input,
+	std::vector<std::pair<size_t, ioperation<double> > > hiddens,
+	size_t train_interval,
+	double discount_rate,
+	double update_rate) :
+	train_interval(train_interval),
+	discount_rate(discount_rate),
+	update_rate(update_rate) {
+
+	// fanins:
+	// next_observation
+	// next_observation_mask
+
+	// next_action_score = ignore_in_grad(target_q_network(next_observation))
+	// target_values = reduce_max( next_action_score, 1) * next_observation_mask
+	// future_rewards = rewards + discount_rate * target_values
+	// predict_err = reduce_mean(square(reduce_sum(action_score * action_masks) - future_rewards))
+	// to minimize error we take its gradient
+	// gradient = gradient(predict_err)
+
 	// create model
 	//q_net = new ml_perceptron(n_input, hiddens);
 
