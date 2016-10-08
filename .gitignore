@@ -49,5 +49,6 @@ node_modules
 .sass-cache
 
 # Application specific folder structure
-bin/bin/*
+bin/
+docs/
 .idea/
