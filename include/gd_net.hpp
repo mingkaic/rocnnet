@@ -32,31 +32,18 @@ class gd_net : public ml_perceptron {
 		std::vector<IVARS> differentials;
 		void train (tensor_shape ts);
 
+	protected:
+		gd_net (const gd_net& net, std::string scope);
+
 	public:
 		gd_net (size_t n_input,
 			std::vector<IN_PAIR> hiddens,
 			std::string scope = "MLP");
 		virtual ~gd_net (void);
+		virtual gd_net* clone (std::string scope = "MLP_COPY") { return new gd_net(*this, scope); }
 
 		// operator () is inherited from ml_perceptron
 		void train (ivariable<double>& expected_out);
-
-		// DEPRECATED
-		gd_net (
-			size_t n_input,
-			std::vector<std::pair<size_t,
-			adhoc_operation> > hiddens,
-			std::string scope = "MLP") : ml_perceptron(n_input, hiddens, scope) {}
-
-		// gradient descent for linear regression
-		void train (VECS io_pair) {
-			std::vector<VECS> samples = {io_pair};
-			train(samples);
-		}
-
-		// batch gradient descent
-		// prone to overfitting
-		void train (std::vector<VECS> sample);
 };
 
 }

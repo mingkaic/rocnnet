@@ -178,6 +178,12 @@ class placeholder : public variable<T> {
 		// used by assignment operators to freely initialized inner tensor
 		struct open_init;
 
+		void consumer_reshape (void) {
+			for (ioperation<T>* cons : this->consumers) {
+				cons->shape_eval();
+			}
+		}
+
 	public:
 		placeholder (const tensor_shape& shape, std::string name = "");
 
@@ -185,6 +191,9 @@ class placeholder : public variable<T> {
 		virtual variable<T>& assign (const ivariable<T>& other);
 		virtual variable<T>& operator = (std::vector<T> data);
 		virtual variable<T>& operator = (const tensor<T>& data);
+
+		// replace with shared_ptr<unique_ptr<placeholder<T> > >...
+		void replace (const placeholder<T>& other);
 
 		// initialize does nothing
 		virtual tensor<T>& initialize (void) { return this->out; }

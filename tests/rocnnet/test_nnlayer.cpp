@@ -10,16 +10,7 @@
 #include "rocnnet/nnet.hpp"
 #include "gtest/gtest.h"
 
-static double sigmoid (double in) {
-	return 1/(1+exp(-in));
-}
-
-static double grad_sig (double in) {
-	double sx = sigmoid(in);
-	return sx*(1-sx);
-}
-
-static double identity (double in) { return in; }
+#define VECS std::pair<std::vector<double>, std::vector<double> >
 
 static void fill_binary_samples(
 	std::vector<VECS>& samples,
@@ -42,9 +33,6 @@ static void fill_binary_samples(
 		samples.push_back(VECS(a, c));
 	}
 }
-
-nnet::adhoc_operation sig(sigmoid, grad_sig);
-nnet::adhoc_operation same(identity, identity);
 
 
 TEST(PERCEPTRON, layer_action) {

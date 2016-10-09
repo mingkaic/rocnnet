@@ -86,33 +86,103 @@ dq_net::dq_net (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
 	size_t train_interval,
+	double rand_action_prob,
 	double discount_rate,
-	double update_rate) :
+	double update_rate,
+	// memory parameters
+	size_t store_interval,
+	size_t mini_batch_size,
+	size_t max_exp) :
+	n_observations(n_input),
+	rand_action_prob(rand_action_prob),
+	store_interval(store_interval),
 	train_interval(train_interval),
+	mini_batch_size(mini_batch_size),
 	discount_rate(discount_rate),
+	max_exp(max_exp),
 	update_rate(update_rate) {
 
 	session& sess = session::get_instance();
 
-	gd_net q_network(n_input, hiddens, "qnetwork");
+	IN_PAIR lastpair = *(hiddens.rbegin());
+	n_actions = lastpair.first;
 
-	// fanins:
-	// next_observation
-	// next_observation_mask
+	q_net = new ml_perceptron(n_input, hiddens, "q_network");
 
-	// next_action_score = ignore_in_grad(target_q_network(next_observation))
-	// target_values = reduce_max( next_action_score, 1) * next_observation_mask
-	// future_rewards = rewards + discount_rate * target_values
-	// predict_err = reduce_mean(square(reduce_sum(action_score * action_masks) - future_rewards))
-	// to minimize error we take its gradient
-	// gradient = gradient(predict_err)
+	actions_executed = 0;
+	iteration = 0;
+	n_store_called = 0;
+	n_train_called = 0;
 
-	// create model
-	//q_net = new ml_perceptron(n_input, hiddens);
+	// ===============================
+	// ACTION AND TRAINING VARIABLES!
+	// ===============================
+	tensor_shape in_shape = std::vector<size_t>{n_input};
+	target_net = q_net->clone("target_network");
 
-	// input injection
+	// ACTION SCORE COMPUTATION
+	// ===============================
+	placeholder<double>* observation =
+		new placeholder<double>(in_shape);
+	ivariable<double>& action_scores = (*target_net)(*observation);
+	ivariable<double>* predicted_actions = // max arg index
+		new compress<double>(action_scores, 1, [](const std::vector<double>& v) {
+			size_t big_idx = 0;
+			for (size_t i = 1; i < v.size(); i++) {
+				if (v[big_idx] < v[i]) {
+					big_idx = i;
+				}
+			}
+			return big_idx;
+		});
 
-	//
+	// PREDICT FUTURE REWARDS
+	// ===============================
+	placeholder<double>* next_observation = new placeholder<double>(in_shape);
+	ivariable<double>& next_action_scores = (*target_net)(*next_observation);
+	// unknown shapes
+	// mask and reward shape depends on batch size
+	placeholder<double>* next_observation_mask =
+		new placeholder<double>(std::vector<size_t>{n_observations, mini_batch_size});
+	placeholder<double>* rewards =
+		new placeholder<double>(std::vector<size_t>{mini_batch_size});
+	ivariable<double>* target_values = // reduce max
+		new compress<double>(next_action_scores, 1, [](const std::vector<double>& v) {
+			double big;
+			auto it = v.begin();
+			big = *it;
+			for (it++; v.end() != it; it++) {
+				big = big > *it ? big : *it;
+			}
+			return big;
+		});
+	// future rewards = rewards + discount * target action
+	ivariable<double>* mulop = new mul<double>(discount_rate, *target_values);
+	ivariable<double>* future_rewards = new add<double>(*rewards, *mulop);
+
+	// PREDICT ERROR
+	// ===============================
+	placeholder<double>* action_mask = new placeholder<double>(std::vector<size_t>(0, n_actions));
+	ivariable<double>* inter_mul = new mul<double>(action_scores, *action_mask);
+	ivariable<double>* masked_action_score = // reduce sum
+		new compress<double>(*inter_mul, 1, [](const std::vector<double>& v) {
+			double accum;
+			for (double d : v) {
+				accum += d;
+			}
+			return accum;
+		});
+	ivariable<double>* tempdiff = new sub<double>(*masked_action_score, *future_rewards);
+	ivariable<double>* sqrdiff = new mul<double>(*tempdiff, *tempdiff);
+	ivariable<double>* prediction_error = new compress<double>(*sqrdiff); // reduce mean
+	// minimize error
+
+//	gradients                       = self.optimizer.compute_gradients(self.prediction_error)
+//	for i, (grad, var) in enumerate(gradients):
+//		if grad is not None:
+//			gradients[i] = (tf.clip_by_norm(grad, 5), var)
+//	self.train_op                   = self.optimizer.apply_gradients(gradients)
+
 	sess.initialize_all<double>();
 }
 

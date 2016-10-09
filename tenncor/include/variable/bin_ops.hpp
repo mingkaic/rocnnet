@@ -32,9 +32,11 @@ class ibin_ops : public ioperation<T> {
 
 		// calc_derive remains abstract
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void decompose (ivariable<T>& food) {
-			if (a == &food) a = nullptr;
-			if (b == &food) b = nullptr;
+		virtual void replace (
+			const ivariable<T>& food,
+			const ivariable<T>* newfood) {
+			if (a == &food) a = const_cast<ivariable<T>*>(newfood);
+			if (b == &food) b = const_cast<ivariable<T>*>(newfood);
 		}
 
 		virtual void shape_eval (void);

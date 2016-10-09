@@ -26,8 +26,10 @@ class iunar_ops : public ioperation<T> {
 		// backward chaining for AD
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void decompose (ivariable<T>& food) {
-			if (var == &food) var = nullptr;
+		virtual void replace (
+			const ivariable<T>& food,
+			const ivariable<T>* newfood) {
+			if (var == &food) var = const_cast<ivariable<T>*>(newfood);
 		}
 
 		virtual void shape_eval (void);

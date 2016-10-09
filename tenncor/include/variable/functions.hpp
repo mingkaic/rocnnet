@@ -30,8 +30,10 @@ class univar_func : public ioperation<T> {
 
 	protected:
 		std::vector<ioperation<T>*> ownout;
-		virtual void decompose (ivariable<T>& food) {
-			if (fanin == &food) fanin = nullptr;
+		virtual void replace (
+			const ivariable<T>& food,
+			const ivariable<T>* newfood) {
+			if (fanin == &food) fanin = const_cast<ivariable<T>*>(newfood);
 		}
 
 		virtual void shape_eval (void);

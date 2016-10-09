@@ -22,20 +22,6 @@
 
 namespace nnet {
 
-// DEPRECATED (TODO: replace with ioperation)
-struct adhoc_operation {
-	std::function<double(double)> act;
-	std::function<double(double)> grad;
-
-	adhoc_operation (void) {}
-
-	adhoc_operation (std::function<double(double)> act,
-		std::function<double(double)> grad)
-		: act(act), grad(grad) {}
-
-	double operator () (double in) { return act(in); }
-};
-
 // INTERFACE OPERATION
 
 template <typename T>
@@ -89,7 +75,7 @@ class ioperation : public ivariable<T> {
 		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier) const;
 		tensor<T>* compress_op (
 			const tensor<T>& in,
-			size_t index,
+			signed index,
 			std::function<T(const std::vector<T>&)> collector) const;
 
 		std::vector<T> get_vec (const tensor<T>& in) const {
@@ -103,7 +89,12 @@ class ioperation : public ivariable<T> {
 		void consume (ivariable<T>& food) {
 			food.consumers.insert(this);
 		}
-		virtual void decompose (ivariable<T>& food) = 0;
+		virtual void decompose (const ivariable<T>& food) {
+			replace(food, nullptr);
+		}
+		virtual void replace (
+			const ivariable<T>& food,
+			const ivariable<T>* newfood) = 0;
 
 		// check if candidate_shape is worth propagating to consumers
 		// before assigning consumers with new shapes to consume
@@ -113,6 +104,7 @@ class ioperation : public ivariable<T> {
 		virtual void shape_eval (void) = 0;
 
 		friend class ivariable<T>;
+		friend class placeholder<T>;
 
 	public:
 		// clone remains abstract
@@ -137,7 +129,9 @@ class scalar : public ioperation<T> {
 
 	protected:
 		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
-		virtual void decompose (ivariable<T>& food) {}
+		virtual void replace (
+			const ivariable<T>& food,
+			const ivariable<T>* newfood) {}
 
 		scalar (const scalar<T>& other, std::string name);
 		virtual void shape_eval (void) { /* do nothing */ }
@@ -147,155 +141,6 @@ class scalar : public ioperation<T> {
 		virtual scalar<T>* clone (std::string name = "");
 		virtual ~scalar (void) {}
 		virtual const tensor<T>& eval (void) { return this->out; }
-};
-
-// MATRIX OPERATIONS
-
-// UNARY MATRIX OPERATIONS
-
-template <typename T>
-class iunar_mat_ops : public ioperation<T> {
-	protected:
-		ivariable<T>* var = nullptr;
-
-		virtual void decompose (ivariable<T>& food) {
-			if (var == &food) var = nullptr;
-		}
-		virtual std::string get_symb (void) = 0;
-
-		virtual void shape_eval (void) = 0;
-		void copy (const ivariable<T>& other, std::string name = ""); // virtually identical to iunar_ops
-
-	public:
-		virtual ~iunar_mat_ops (void) { if (var) var->get_consumers().erase(this); }
-		virtual ivariable<T>& operator () (ivariable<T>& in); // identical to iunar_ops
-		virtual iunar_mat_ops<T>& operator = (const ivariable<T>& other);
-
-		// eval remains abstract
-};
-
-// TENSOR EXTENSION
-
-template <typename T>
-class extend : public iunar_mat_ops<T> {
-	private:
-		size_t index = 0;
-		size_t multiplier = 1;
-
-	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
-		virtual std::string get_symb (void) { return "extend"; }
-
-		virtual void shape_eval (void);
-		void copy (const ivariable<T>& other, std::string name = "");
-		extend (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-
-	public:
-		extend (void) {}
-		extend (ivariable<T>& in);
-		extend (ivariable<T>& in, size_t index, size_t multiplier);
-		void set_ext_info (size_t index, size_t multiplier);
-		virtual extend<T>* clone (std::string name = "");
-		virtual extend<T>& operator = (const ivariable<T>& other);
-
-		virtual const tensor<T>& eval (void);
-};
-
-// TENSOR COMPRESSION ALONG ONE DIMENSION
-
-template <typename T>
-class compress : public iunar_mat_ops<T> {
-	private:
-		size_t index = 0;
-		// first parameter is the collecting buffer, second is the gathered data
-		std::function<T(const std::vector<T>&)> collector; // default to average sum
-
-	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
-		virtual std::string get_symb (void) { return "compress"; }
-
-		virtual void shape_eval (void);
-		void copy (const ivariable<T>& other, std::string name = "");
-		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-
-	public:
-		compress (void) {}
-		compress (ivariable<T>& in);
-		compress (ivariable<T>& in, size_t index);
-		compress (ivariable<T>& in, size_t index, std::function<T(const std::vector<T>&)> collector);
-		virtual compress<T>* clone (std::string name = "");
-		virtual compress<T>& operator = (const ivariable<T>& other);
-
-		void set_cmpr_info (size_t index, std::function<T(const std::vector<T>&)> collector);
-
-		virtual const tensor<T>& eval (void);
-};
-
-// MATRIX TRANSPOSE
-
-template <typename T>
-class transpose : public iunar_mat_ops<T> {
-	protected:
-		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
-		virtual std::string get_symb (void) { return "transpose"; }
-
-		virtual void shape_eval (void);
-		transpose (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-
-	public:
-		transpose (void) {}
-		transpose (ivariable<T>& in);
-		virtual transpose<T>* clone (std::string name = "");
-
-		virtual const tensor<T>& eval (void);
-};
-
-// MATRIX MULTIPLICATION
-
-// restricted to 2-d matrices with proper shapes
-// dimension 1 denote number of columns,
-// dimension 2 denote number of rows
-// TODO implement calc_deriv for matmul ops
-template <typename T>
-class matmul : public ioperation<T> {
-	private:
-		ivariable<T>* a = nullptr;
-		ivariable<T>* b = nullptr;
-		bool transposeA;
-		bool transposeB;
-
-	protected:
-		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
-		virtual void decompose (ivariable<T>& food) {
-			if (a == &food) a = nullptr;
-			if (b == &food) b = nullptr;
-		}
-
-		virtual void shape_eval (void);
-		matmul (const matmul<T>& other, std::string name);
-
-	public:
-		matmul (void) : transposeA(false), transposeB(false) {}
-		matmul (
-			ivariable<T>& a,
-			ivariable<T>& b,
-			bool transposeA = false,
-			bool transposeB = false);
-		virtual matmul<T>* clone (std::string name = "");
-		virtual ivariable<T>& operator () (
-			ivariable<T>& a,
-			ivariable<T>& b,
-			bool transposeA = false,
-			bool transposeB = false);
-		virtual ~matmul (void) {
-			if (a) a->get_consumers().erase(this);
-			if (b) b->get_consumers().erase(this);
-		}
-		virtual matmul<T>& operator = (const ivariable<T>& other);
-
-		virtual const tensor<T>& eval (void);
 };
 
 // template <typename T>

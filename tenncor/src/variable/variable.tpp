@@ -190,15 +190,21 @@ placeholder<T>::placeholder (const tensor_shape& shape, std::string name)
 	this->out.allocate(all);
 }
 
+// changes shape
 template <typename T>
 variable<T>& placeholder<T>::assign (const ivariable<T>& other) {
 	if (this != &other) {
+		bool reshape_needed = false == other.out.is_same_size(this->out);
 		this->out = other.out;
+		if (reshape_needed) {
+			consumer_reshape();
+		}
 	}
 	this->is_init = true;
 	return *this;
 }
 
+// maintains shape
 template <typename T>
 variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 	this->init = new open_init();
@@ -213,10 +219,26 @@ variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 	return *this;
 }
 
+// changes shape
 template <typename T>
 variable<T>& placeholder<T>::operator = (const tensor<T>& data) {
+	bool reshape_needed = false == data.is_same_size(this->out);
 	this->out = data;
+	if (reshape_needed) {
+		consumer_reshape();
+	}
 	return *this;
+}
+
+// changes shape
+template <typename T>
+void placeholder<T>::replace (const placeholder<T>& other) {
+	for (ioperation<T>* cons : this->consumers) {
+		cons->replace(*this, &other);
+	}
+	if (false == other.out.is_same_size(this->out)) {
+		consumer_reshape();
+	}
 }
 
 }

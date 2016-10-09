@@ -23,13 +23,18 @@ void layer_perceptron::copy (
 	std::string scope) {
 	n_input = other.n_input;
 	n_output = other.n_output;
-	op = other.op;
 	if (0 == scope.size()) {
 		scope = other.scope + "_cpy";
 	}
 	this->scope = scope;
 	weights = other.weights->clone(scope);
 	bias = other.bias->clone(scope);
+}
+
+layer_perceptron::layer_perceptron (
+		layer_perceptron const & other,
+		std::string scope) {
+	copy(other, scope);
 }
 
 void layer_perceptron::clear_ownership (void) {
@@ -74,32 +79,12 @@ layer_perceptron::layer_perceptron (
 		zinit, scope+"_bias");
 }
 
-layer_perceptron::layer_perceptron (
-	layer_perceptron const & other,
-	std::string scope) {
-	copy(other, scope);
-
-	// DEPRECATED
-	raw_weights = new V_MATRIX();
-	raw_bias = new double[n_output];
-	for (size_t x = 0; x < n_input; x++) {
-		raw_weights->push_back((*other.raw_weights)[x]);
-	}
-	memcpy(raw_bias, other.raw_bias, n_output*sizeof(double));
-}
-
 layer_perceptron::~layer_perceptron (void) {
 	if (weights) {
 		delete weights;
 		delete bias;
 	}
 	clear_ownership();
-
-	// DEPRECATED
-	if (raw_weights) {
-		delete raw_weights;
-		delete[] raw_bias;
-	}
 }
 
 layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
@@ -109,17 +94,6 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 			delete bias;
 		}
 		copy(other, scope);
-
-		// DEPRECATED
-		this->op = other.op;
-		delete raw_weights;
-		delete[] raw_bias;
-		raw_weights = new V_MATRIX();
-		raw_bias = new double[n_output];
-		for (size_t x = 0; x < n_input; x++) {
-			raw_weights->push_back((*other.raw_weights)[x]);
-		}
-		memcpy(raw_bias, other.raw_bias, n_output*sizeof(double));
 	}
 	return *this;
 }
@@ -153,55 +127,6 @@ ivariable<double>& layer_perceptron::operator () (
 	clear_ownership(); // clear room for new ownership
 	ownership = {mres, extension, exbias, res};
 	return *res;
-}
-
-// DEPRECATED
-layer_perceptron::layer_perceptron (
-	size_t n_input,
-	size_t n_output,
-	adhoc_operation op,
-	std::string scope)
-	: n_input(n_input), n_output(n_output), scope(scope) {
-	this->op = op;
-	raw_weights = new V_MATRIX();
-	raw_bias = new double[n_output];
-
-	std::random_device generator;
-	std::uniform_real_distribution<double> distribution(0.0,1.0);
-
-	for (size_t x = 0; x < n_input; x++) {
-		raw_weights->push_back(std::vector<double>());
-		for (size_t y = 0; y < n_output; y++) {
-			(*raw_weights)[x].push_back(distribution(generator));
-		}
-	}
-	memset(raw_bias, 0, n_output*sizeof(double));
-}
-
-std::vector<double> layer_perceptron::operator () (
-	std::vector<double> const & input) {
-	std::vector<double> output;
-	for (size_t out = 0; out < n_output; out++) {
-		output.push_back(0);
-		for (size_t in = 0; in < n_input; in++) {
-			output[out] += input[in]*(*raw_weights)[in][out];
-		}
-		output[out] = op(output[out]+raw_bias[out]);
-	}
-	return output;
-}
-
-std::vector<double> layer_perceptron::hypothesis (
-	std::vector<double> const & input) {
-	std::vector<double> output;
-	for (size_t out = 0; out < n_output; out++) {
-		output.push_back(0);
-		for (size_t in = 0; in < n_input; in++) {
-			output[out] += input[in]*(*raw_weights)[in][out];
-		}
-		output[out] += raw_bias[out];
-	}
-	return output;
 }
 
 // MULTILAYER PERCEPTRON IMPLEMENTATION
@@ -283,11 +208,6 @@ ml_perceptron::~ml_perceptron (void) {
 		delete hp.first;
 		delete hp.second;
 	}
-
-	// DEPRECATED
-	for (layer_perceptron* pl : raw_layers) {
-		delete pl;
-	}
 }
 
 ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
@@ -297,29 +217,33 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 			delete hp.second;
 		}
 		copy(other, scope);
-
-		// DEPRECATED
-		for (layer_perceptron* pl : raw_layers) {
-			delete pl;
-		}
 	}
 	return *this;
 }
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
-ivariable<double>& ml_perceptron::operator () (placeholder<double> & input) {
-	// output of one layer's dimensions is expected to be matched by
-	// the layer_perceptron of the next layer
-	in_place = &input;
-	ivariable<double>* output = &input;
-	for (HID_PAIR hp : layers) {
-		std::vector<size_t> shapes = output->get_shape().as_list();
-		ivariable<double>& hypothesis = (*hp.first)(*output);
-		hypothesi.push_back(&hypothesis);
-		output = &(*hp.second)(hypothesis);
+ivariable<double>& ml_perceptron::operator () (placeholder<double>& input) {
+	ivariable<double>* output;
+	if (nullptr == in_place) {
+		// (activation functions, hp.second, can only be bound once)
+		// output of one layer's dimensions is expected to be matched by
+		// the layer_perceptron of the next layer
+		in_place = &input;
+		output = &input;
+		for (HID_PAIR hp : layers) {
+			std::vector<size_t> shapes = output->get_shape().as_list();
+			ivariable<double> &hypothesis = (*hp.first)(*output);
+			hypothesi.push_back(&hypothesis);
+			output = &(*hp.second)(hypothesis);
+		}
+	} else {
+		// input takes over all in_place consumers
+		in_place->replace(input);
+		in_place = &input;
+		// last layer owns output
+		output = &(*(layers.rbegin())->second);
 	}
-	// last layer owns output
 	return *output;
 }
 
@@ -329,42 +253,6 @@ std::vector<WB_PAIR> ml_perceptron::get_variables (void) {
 		wb_vec.push_back(hp.first->get_variables());
 	}
 	return wb_vec;
-}
-
-// def __call__(self, in_x):
-// 	if type(in_x) != list:
-// 		in_x = [in_x]
-// 	with tf.variable_scope(self.scope):
-// 		# run input
-// 		hidden = self.input_act(self.input_layer(in_x))
-// 		# run consecutive layers
-// 		for inner, activation in zip(self.layers, self.inner_act):
-// 			# activate layer call for x_s = last layer's result
-// 			hidden = activation(inner(hidden))
-// 		return hidden
-
-// DEPRECATED
-ml_perceptron::ml_perceptron (
-	size_t n_input,
-	std::vector<std::pair<size_t, adhoc_operation> > hiddens,
-	std::string scope) : scope(scope) {
-	size_t n_output;
-	size_t layerlvl = 0;
-	for (auto pl : hiddens) {
-		n_output = pl.first;
-		raw_layers.push_back(
-			new layer_perceptron(n_input, n_output, pl.second,
-				nnutils::formatter() << scope << "/hidden_" << layerlvl++));
-		n_input = n_output;
-	}
-}
-
-std::vector<double> ml_perceptron::operator () (const std::vector<double>& input) {
-	std::vector<double> output = input;
-	for (layer_perceptron* lp : raw_layers) {
-		output = (*lp)(output);
-	}
-	return output;
 }
 
 }

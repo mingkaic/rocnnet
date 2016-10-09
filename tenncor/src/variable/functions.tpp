@@ -23,7 +23,8 @@ void univar_func<T>::clear (void) {
 template <typename T>
 void univar_func<T>::copy (const ivariable<T>& other, std::string name) {
     if (const univar_func<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
-        // shallow copy
+        // TODO: make deep copy
+        // currently shallow copy
         // no ownership
         fanout = uptr->fanout;
         fanin = uptr->fanin;
