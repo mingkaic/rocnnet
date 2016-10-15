@@ -23,7 +23,9 @@ ivariable<T>& iunar_mat_ops<T>::operator () (ivariable<T>& var) {
 	this->name = ns.str();
 	this->consume(var);
 	this->var = &var;
-	shape_eval();
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
 	return *this;
 }
 
@@ -84,10 +86,30 @@ extend<T>::extend (ivariable<T>& in, size_t index, size_t multiplier)
 }
 
 template <typename T>
+extend<T>::extend (ivariable<T>& in, ivariable<T>* watch) : watch(watch) {
+	this->consume(*watch);
+	shape_eval();
+	(*this)(in);
+}
+
+template <typename T>
+void extend<T>::set_ext_info (ivariable<T>* watch) {
+	this->index = 0;
+	this->multiplier = 0;
+	this->consume(*watch);
+	this->watch = watch;
+}
+
+template <typename T>
 void extend<T>::set_ext_info (size_t index, size_t multiplier) {
 	this->index = index;
 	this->multiplier = multiplier;
-	shape_eval(); // re-eval
+	watch = nullptr;
+	// if we use deconsume, we risk nullifying input var if var is same as watch
+	std::unordered_set<ioperation<T>*>& cons = watch->get_consumers();
+	if (cons.end() != cons.find(this)) {
+		cons.erase(this);
+	}
 }
 
 template <typename T>
@@ -107,9 +129,29 @@ template <typename T>
 const tensor<T>& extend<T>::eval (void) {
 	assert(nullptr != this->var);
 	const tensor<T>& in = this->var->eval();
-	tensor<T>* ans = this->extend_op(in, index, multiplier);
-	this->out = *ans;
-	delete ans;
+	if (nullptr == watch) {
+		tensor<T> *ans = this->extend_op(in, index, multiplier);
+		this->out = *ans;
+		delete ans;
+	} else {
+		this->out = in;
+		std::vector<size_t> target = watch->get_shape().as_list();
+		std::vector<size_t> orig = in.get_shape().as_list();
+		// this actually get expensive for big shapes, TODO: refactor/change anti-pattern
+		for (size_t i = 0; i < target.size(); i++) {
+			if (i < orig.size()) {
+				if (target[i] > orig[i]) {
+					tensor<T> *ans = this->extend_op(in, i, orig[i]/target[i]);
+					this->out = *ans;
+					delete ans;
+				}
+			} else {
+				tensor<T>* ans = this->extend_op(in, i, target[i]);
+				this->out = *ans;
+				delete ans;
+			}
+		}
+	}
 	return this->out;
 }
 
@@ -312,7 +354,7 @@ ivariable<T>& matmul<T>::operator () (
 		bool transposeA,
 		bool transposeB) {
 	std::stringstream ns;
-	ns << a.get_name() << "X" << b.get_name();
+	ns << a.get_name() << "•" << b.get_name();
 	this->name = ns.str();
 	this->consume(a);
 	this->consume(b);
@@ -321,7 +363,9 @@ ivariable<T>& matmul<T>::operator () (
 	this->transposeA = transposeA;
 	this->transposeB = transposeB;
 	size_t common_dim;
-	shape_eval();
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
 	return *this;
 }
 

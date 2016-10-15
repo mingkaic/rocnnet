@@ -26,17 +26,22 @@ class variable;
 // singleton object controller
 class session {
     private:
-        // std::set<std::any> registry;
+        // std::unordered_set<std::any> registry;
         std::unordered_set<void*> registry;
         std::default_random_engine generator;
 
     protected:
+    	bool shape_eval = false;
         session (void) : generator(std::time(NULL)){}
         ~session (void) {}
 
     public:
         static session& get_instance (void);
         static std::default_random_engine& get_generator (void);
+        static bool pre_shape_eval(void) {
+        	session& inst = get_instance();
+        	return inst.shape_eval;
+        }
 
         // delete all copiers
         session (session const&) = delete;
@@ -54,7 +59,7 @@ class session {
 
         template <typename T>
         void register_obj (ivariable<T>& obj) {
-            registry.insert(&obj);
+            registry.emplace(&obj);
         }
 
         template <typename T>
@@ -81,8 +86,8 @@ class session {
         // controls whether to shape evaluate at object construction during runtime
         // potentially save space when running slow operations
         // this option is not always desirable since full shape definition is required for shape evaluation
-        void enable_shape_eval (void);
-        void disable_shape_eval (void);
+        void enable_shape_eval (void) { shape_eval = true; }
+        void disable_shape_eval (void) { shape_eval = false; }
 
         // input is resultant operator required to deep copy the graph
         template <typename T>

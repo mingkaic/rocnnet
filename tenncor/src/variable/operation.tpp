@@ -74,6 +74,7 @@ tensor_shape ioperation<T>::change_shape (
 		below_dim = ins.n_elems() / at_idx;
 		shape_changed = true;
 	}
+	if (0 == below_dim) below_dim = 1; // round up
 
 	if (false == shape_changed) {
 		at_idx = tv[index];
@@ -247,8 +248,9 @@ tensor<T>* ioperation<T>::matmul_op (
 	bool transposeA,
 	bool transposeB) const {
 	size_t dimZ;
+
 	tensor_shape ts = get_matrix_shape(a, b, transposeA, transposeB, dimZ);
-	assert(ts.n_dims() > 0);
+	ts.assert_is_fully_defined();
 	std::vector<size_t> dims = ts.as_list();
 	size_t dimX = dims[0];
 	size_t dimY = dims[1];
@@ -274,10 +276,9 @@ tensor<T>* ioperation<T>::matmul_op (
 template <typename T>
 tensor<T>* ioperation<T>::extend_op (const tensor<T>& in, size_t index, size_t multiplier) const {
 	size_t cline;
-	size_t below_dim;
+	size_t below_dim = 1;
 	tensor_shape ts = change_shape(in.get_shape(), index, multiplier, below_dim, cline); // new shape
 	below_dim *= cline;
-
 	memory_alloc all;
 	tensor<T>* ans = new tensor<T>(all, ts);
 

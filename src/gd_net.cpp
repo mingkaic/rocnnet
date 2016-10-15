@@ -21,7 +21,7 @@ void gd_net::train (tensor_shape ts) {
 	for (size_t i = 0; i < hypothesi.size(); i++) {
 		// act'(z_i)
 		ivariable<double>* prime = new derive<double>(*this->layers[i].second, *hypothesi[i]);
-		ownership.insert(prime);
+		ownership.emplace(prime);
 		act_prime.push(prime);
 		output = this->layers[i].second;
 	}
@@ -31,11 +31,12 @@ void gd_net::train (tensor_shape ts) {
 	// and act is the activation operation
 	// take ownership
 	expected_out = new placeholder<double>(ts);
-	ownership.insert(expected_out);
 	ivariable<double>* diff = new sub<double>(*output, *expected_out);
-	ownership.insert(diff);
 	ivariable<double>* err = new mul<double>(*diff, *act_prime.top());
-	ownership.insert(err);
+
+	ownership.emplace(expected_out);
+	ownership.emplace(diff);
+	ownership.emplace(err);
 	act_prime.pop();
 
 	std::stack<ivariable<double>*> errs;
@@ -48,13 +49,12 @@ void gd_net::train (tensor_shape ts) {
 		ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
 		ivariable<double>* mres = new matmul<double>(*err, *weight_i, false ,true);
-		ownership.insert(mres);
 		err = new mul<double>(*mres, *act_prime.top());
-		ownership.insert(err);
 		act_prime.pop();
 		errs.push(err);
+		ownership.emplace(mres);
+		ownership.emplace(err);
 	}
-
 
 	double learn_batch = learning_rate / ts.as_list()[1];
 	output = this->in_place;
@@ -64,16 +64,18 @@ void gd_net::train (tensor_shape ts) {
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
+		ivariable<double>* cost = new matmul<double>(*output, *err, true);
+		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
+
 		// expecting err to be output by batchsize, compress along batchsize
 		ivariable<double>* compressed_err = new compress<double>(*err, 1);
-		ownership.insert(compressed_err);
-
-		ivariable<double>* cost = new matmul<double>(*output, *compressed_err, true);
-		ownership.insert(cost);
-		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
-		ownership.insert(dweights);
 		ivariable<double>* dbias = new mul<double>(*compressed_err, learn_batch);
-		ownership.insert(dbias);
+
+		ownership.emplace(cost);
+		ownership.emplace(dweights);
+		ownership.emplace(compressed_err);
+		ownership.emplace(dbias);
+
 		differentials.push_back(IVARS(dweights, dbias));
 		// store for update
 
@@ -107,7 +109,7 @@ gd_net::~gd_net (void) {
 }
 
 // batch gradient descent
-// TODO upgrade to using ioperation's derive method for cost function
+// TODO upgrade to using ioperation's derive method for cost function (determine speedup before "upgrade")
 // 1/m*sum_m(Err(X, Y)) once matrix operations support auto derivation
 // then apply cost funct to grad desc alg:
 // new weight = old weight - learning_rate * cost func derive over old weight

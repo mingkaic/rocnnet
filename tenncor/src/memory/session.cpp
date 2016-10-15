@@ -23,7 +23,7 @@ std::default_random_engine& session::get_generator (void) {
 }
 
 // void register_obj (ivariable<std::any>& obj) {
-//     registry.insert(&obj);
+//     registry.emplace(&obj);
 // }
 
 }

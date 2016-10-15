@@ -40,7 +40,9 @@ ivariable<T>& iunar_ops<T>::operator () (ivariable<T>& var) {
     this->name = ns.str();
     this->consume(var);
     this->var = &var;
-    shape_eval();
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
     return *this;
 }
 

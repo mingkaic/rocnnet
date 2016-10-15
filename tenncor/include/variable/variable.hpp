@@ -96,8 +96,9 @@ class ivariable {
 		virtual ~ivariable (void) {
 			session& sess = session::get_instance();
 			sess.unregister_obj(*this);
-			for (ioperation<T>* con : consumers) {
-				con->decompose(*this);
+			std::unordered_set<ioperation<T>*> copy = consumers;
+			for (ioperation<T>* cons : copy) {
+				cons->deconsume(*this);
 			}
 		}
 		virtual ivariable<T>& operator = (const ivariable<T>& other);

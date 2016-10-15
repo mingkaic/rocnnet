@@ -38,36 +38,26 @@ void ibin_ops<T>::shape_eval (void) {
 template <typename T>
 ivariable<T>& ibin_ops<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
 	std::stringstream ns;
-	ns << a.get_name() << get_symb() << b.get_name();
+	ns << "(" << a.get_name() << get_symb() << b.get_name() << ")";
 	this->name = ns.str();
 	this->consume(a); this->consume(b);
 	this->a = &a; this->b = &b;
-	shape_eval();
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
 	return *this;
 }
 
 template <typename T>
 ivariable<T>& ibin_ops<T>::operator () (ivariable<T>& a, T b) {
-	std::stringstream ns;
-	ns << a.get_name() << get_symb() << b;
-	this->name = ns.str();
-	this->consume(a);
-	this->a = &a;
-	own = this->b = new scalar<T>(b); // need smart pointer
-	shape_eval();
-	return *this;
+	own = new scalar<T>(b); // need smart pointer
+	return (*this)(a, *own);
 }
 
 template <typename T>
 ivariable<T>& ibin_ops<T>::operator () (T a, ivariable<T>& b) {
-	std::stringstream ns;
-	ns << a << get_symb() << b.get_name();
-	this->name = ns.str();
-	this->consume(b);
-	own = this->a = new scalar<T>(a);
-	this->b = &b;
-	shape_eval();
-	return *this;
+	own = new scalar<T>(a);
+	return (*this)(*own, b);
 }
 
 template <typename T>

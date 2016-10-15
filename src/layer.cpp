@@ -112,20 +112,12 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 ivariable<double>& layer_perceptron::operator () (
 	ivariable<double>& input) {
 	// weights are n_output column by n_input rows
-	tensor_shape ts = input.get_shape();
-	assert(2 >= ts.n_dims() && ts.is_fully_defined());
-	// batch size is 1 if tensor is only vector
-	size_t batch_size = 1 == ts.n_dims() ? 1 : ts.as_list()[1];
 	ivariable<double>* mres = new matmul<double>(input, *weights);
-	// mres is n_output column by batch_size rows (extend bias to fit)
-	// TODO: replace with extend
-	variable<double>* extension =
-		new variable<double>(std::vector<size_t>{1, batch_size}, oinit);
-	ivariable<double>* exbias = new matmul<double>(*extension, *bias);
+	extend<double>* exbias = new extend<double>(*bias, mres); // adjust shape based on mres shape
 	ivariable<double>* res = new add<double>(*mres, *exbias);
 	// take ownership of all variables
 	clear_ownership(); // clear room for new ownership
-	ownership = {mres, extension, exbias, res};
+	ownership = {mres, exbias, res};
 	return *res;
 }
 
@@ -141,7 +133,7 @@ void ml_perceptron::copy (
 	size_t level = 0;
 	for (HID_PAIR hp : other.layers) {
 		std::string layername =
-			nnutils::formatter() << scope << "/hiddens_" << level++;
+			nnutils::formatter() << scope << ":hiddens" << level++;
 		layers.push_back(HID_PAIR(
 			new layer_perceptron(*hp.first, layername),
 			hp.second->clone()));
@@ -174,6 +166,9 @@ void ml_perceptron::copy (
 // 		self.n_input_arr = [n_input_arr]
 // 	if type(hiddens) != list:
 // 		self.n_input_arr = [hiddens]
+
+// TODO: change current ivariable ownership handle pattern
+// ownership of activation functions are kept by caller
 ml_perceptron::ml_perceptron (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
@@ -184,7 +179,7 @@ ml_perceptron::ml_perceptron (
 	for (IN_PAIR ip : hiddens) {
 		n_output = ip.first;
 		layer = new layer_perceptron(n_input, n_output,
-			nnutils::formatter() << scope << "/hidden_" << level++);
+			nnutils::formatter() << scope << ":hidden_" << level++);
 		layers.push_back(HID_PAIR(layer, ip.second));
 		n_input = n_output;
 	}
@@ -206,7 +201,6 @@ ml_perceptron::ml_perceptron (
 ml_perceptron::~ml_perceptron (void) {
 	for (HID_PAIR hp : layers) {
 		delete hp.first;
-		delete hp.second;
 	}
 }
 
@@ -214,7 +208,6 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 	if (&other != this) {
 		for (HID_PAIR hp : layers) {
 			delete hp.first;
-			delete hp.second;
 		}
 		copy(other, scope);
 	}
@@ -225,24 +218,15 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 // outputs are expected to have shape output by batch_size
 ivariable<double>& ml_perceptron::operator () (placeholder<double>& input) {
 	ivariable<double>* output;
-	if (nullptr == in_place) {
-		// (activation functions, hp.second, can only be bound once)
-		// output of one layer's dimensions is expected to be matched by
-		// the layer_perceptron of the next layer
-		in_place = &input;
-		output = &input;
-		for (HID_PAIR hp : layers) {
-			std::vector<size_t> shapes = output->get_shape().as_list();
-			ivariable<double> &hypothesis = (*hp.first)(*output);
-			hypothesi.push_back(&hypothesis);
-			output = &(*hp.second)(hypothesis);
-		}
-	} else {
-		// input takes over all in_place consumers
-		in_place->replace(input);
-		in_place = &input;
-		// last layer owns output
-		output = &(*(layers.rbegin())->second);
+	// output of one layer's dimensions is expected to be matched by
+	// the layer_perceptron of the next layer
+	in_place = &input;
+	output = &input;
+	for (HID_PAIR hp : layers) {
+		std::vector<size_t> shapes = output->get_shape().as_list();
+		ivariable<double> &hypothesis = (*hp.first)(*output);
+		hypothesi.push_back(&hypothesis);
+		output = &(*hp.second)(hypothesis);
 	}
 	return *output;
 }

@@ -33,7 +33,9 @@ protected:
 	void copy (const ivariable<T>& other, std::string name = ""); // virtually identical to iunar_ops
 
 public:
-	virtual ~iunar_mat_ops (void) { if (var) var->get_consumers().erase(this); }
+	virtual ~iunar_mat_ops (void) {
+		if (var) var->get_consumers().erase(this);
+	}
 	virtual ivariable<T>& operator () (ivariable<T>& in); // identical to iunar_ops
 	virtual iunar_mat_ops<T>& operator = (const ivariable<T>& other);
 
@@ -45,8 +47,9 @@ public:
 template <typename T>
 class extend : public iunar_mat_ops<T> {
 private:
-	size_t index = -1;
-	size_t multiplier = 1;
+	size_t index = 0;
+	size_t multiplier = 0;
+	ivariable<T>* watch = nullptr;
 
 protected:
 	virtual tensor<T>* calc_derive (ivariable<T>* over) const;
@@ -59,7 +62,9 @@ protected:
 public:
 	extend (void) {}
 	extend (ivariable<T>& in);
+	extend (ivariable<T>& in, ivariable<T>* watch); // extend to fit shape
 	extend (ivariable<T>& in, size_t index, size_t multiplier);
+	void set_ext_info (ivariable<T>* watch);
 	void set_ext_info (size_t index, size_t multiplier);
 	virtual extend<T>* clone (std::string name = "");
 	virtual extend<T>& operator = (const ivariable<T>& other);
@@ -137,7 +142,7 @@ protected:
 			const ivariable<T>& food,
 			const ivariable<T>* newfood) {
 		if (a == &food) a = const_cast<ivariable<T>*>(newfood);
-		else if (b == &food) b = const_cast<ivariable<T>*>(newfood);
+		if (b == &food) b = const_cast<ivariable<T>*>(newfood);
 	}
 
 	virtual void shape_eval (void);

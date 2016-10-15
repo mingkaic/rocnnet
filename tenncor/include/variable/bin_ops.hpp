@@ -75,7 +75,7 @@ class derive : public ibin_ops<T> {
 		}
 		derive (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
-		std::string get_symb (void) { return " over "; }
+		std::string get_symb (void) { return "/Derive?"; }
 		std::function<T(T, T)> get_op (void);
 
 	public:

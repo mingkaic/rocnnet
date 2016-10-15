@@ -43,6 +43,8 @@ void unaryElemTest (
 template <typename T>
 void binaryElemTest (
 	std::function<double(double, double)> op) {
+	nnet::session& sess = nnet::session::get_instance();
+	sess.enable_shape_eval();
 	const size_t edge = 10;
 	const size_t badsize = edge*edge;
 	const size_t supersize = edge*edge*edge;
@@ -51,7 +53,7 @@ void binaryElemTest (
 	nnet::placeholder<double> p2(goodshape);
 	nnet::placeholder<double> bad(std::vector<size_t>{edge, edge});
 
-	EXPECT_DEATH({ T trouble1(p1, bad); }, ".*"); // evalutates shapes at construction
+	EXPECT_DEATH({ T trouble1(p1, bad); }, ".*"); // evaluates shapes at construction
     EXPECT_DEATH({ T trouble2(bad, p1); }, ".*");
 	T res(p1, p2);
 	T res1(p1, 2);
@@ -93,6 +95,46 @@ void binaryElemTest (
 		EXPECT_EQ(op(r1[i], 2), raw1[i]);
 		EXPECT_EQ(op(2, r1[i]), raw2[i]);
     }
+	sess.disable_shape_eval();
+}
+
+
+TEST(OPERATION, consumer_deletion) {
+	nnet::ivariable<double>* sample = new nnet::variable<double>(std::vector<size_t>{1}, "sample");
+	nnet::neg<double>* neg = new nnet::neg<double>(*sample);
+	nnet::add<double>* add = new nnet::add<double>(*sample, *sample);
+	nnet::transpose<double>* trans = new nnet::transpose<double>(*sample);
+	nnet::matmul<double>* matmul = new nnet::matmul<double>(*sample, *sample);
+	nnet::sigmoid<double>* sig = new nnet::sigmoid<double>();
+	(*sig)(*sample);
+	delete neg;
+	delete add;
+	delete trans;
+	delete matmul;
+	delete sig;
+	std::unordered_set<nnet::ioperation<double>*> consumers = sample->get_consumers();
+	ASSERT_TRUE(consumers.empty());
+	delete sample;
+}
+
+
+TEST(OPERATION, producer_deletion) {
+	nnet::ivariable<double>* sample = new nnet::variable<double>(std::vector<size_t>{1}, "sample");
+	nnet::neg<double>* neg = new nnet::neg<double>(*sample);
+	nnet::add<double>* add = new nnet::add<double>(*sample, *sample);
+	nnet::transpose<double>* trans = new nnet::transpose<double>(*sample);
+	nnet::matmul<double>* matmul = new nnet::matmul<double>(*sample, *sample);
+	nnet::sigmoid<double>* sig = new nnet::sigmoid<double>();
+	(*sig)(*sample);
+	std::unordered_set<nnet::ioperation<double>*> consumers = sample->get_consumers();
+	ASSERT_EQ(consumers.size(), 6);
+	delete sample;
+
+	delete neg;
+	delete add;
+	delete trans;
+	delete matmul;
+	delete sig;
 }
 
 
@@ -783,7 +825,7 @@ TEST(DERIV, binary) {
 	}
 }
 
-
+// TODO: write these
 TEST(DERIV, transpose) {
 
 }
@@ -833,4 +875,17 @@ TEST(DERIV, complex) {
 }
 
 
-// TODO test function wrappers
+TEST(OPERATION, univar_func) {
+	nnet::placeholder<double> fanin(std::vector<size_t>{1});
+	nnet::sigmoid<double> sig;
+	nnet::ivariable<double>& res = sig(fanin);
+	nnet::expose<double> out(res);
+	fanin = std::vector<double>{0};
+	double sigres = out.get_raw()[0];
+
+	ASSERT_EQ(sigres, 0.5);
+	fanin = std::vector<double>{1};
+	sigres = out.get_raw()[0];
+	double err = 0.73105857863 - sigres;
+	ASSERT_LT(err, 0.0001);
+}

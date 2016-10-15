@@ -58,39 +58,46 @@ univar_func<T>* univar_func<T>::clone (std::string name) {
 
 template <typename T>
 ivariable<T>& univar_func<T>::operator () (ivariable<T>& input) {
-    if (nullptr == fanin) {
-        ioperation<T>* buffer;
-        std::queue<ioperation<T>*> q;
-        q.push(fanout);
-        // connect input
-        while (false == q.empty()) {
-            buffer = q.front();
-            q.pop();
-            if (iunar_ops<T>* uptr = dynamic_cast<iunar_ops<T>*>(buffer)) {
-                if (nullptr == uptr->var) {
-                    (*uptr)(input);
-                } else if (ioperation<T>* inptr =
-                    dynamic_cast<ioperation<T>*>(uptr->var)) {
-                    q.push(inptr);
-                }
-            } else if (ibin_ops<T>* bptr = dynamic_cast<ibin_ops<T>*>(buffer)) {
-                if (nullptr == bptr->a && nullptr == bptr->b) {
-                    (*bptr)(input, input);
-                } else {
-                    if (ioperation<T>* ptr1 =
-                        dynamic_cast<ioperation<T>*>(bptr->a)) {
-                        q.push(ptr1);
-                    }
-                    if (ioperation<T>* ptr2 =
-                        dynamic_cast<ioperation<T>*>(bptr->b)) {
-                        q.push(ptr2);
-                    }
-                }
-            }
-        }
-        fanin = &input;
-        shape_eval();
-    }
+	if (fanin) {
+		std::unordered_set<ioperation<T>*> copy = fanin->get_consumers();
+		for (ioperation<T>* cons : copy) {
+			cons->deconsume(*fanin);
+		}
+	}
+	ioperation<T>* buffer;
+	std::queue<ioperation<T>*> q;
+	q.push(fanout);
+	// connect input
+	while (false == q.empty()) {
+		buffer = q.front();
+		q.pop();
+		if (iunar_ops<T>* uptr = dynamic_cast<iunar_ops<T>*>(buffer)) {
+			if (nullptr == uptr->var) {
+				(*uptr)(input);
+			} else if (ioperation<T>* inptr =
+				dynamic_cast<ioperation<T>*>(uptr->var)) {
+				q.push(inptr);
+			}
+		} else if (ibin_ops<T>* bptr = dynamic_cast<ibin_ops<T>*>(buffer)) {
+			if (nullptr == bptr->a && nullptr == bptr->b) {
+				(*bptr)(input, input);
+			} else {
+				if (ioperation<T>* ptr1 =
+					dynamic_cast<ioperation<T>*>(bptr->a)) {
+					q.push(ptr1);
+				}
+				if (ioperation<T>* ptr2 =
+					dynamic_cast<ioperation<T>*>(bptr->b)) {
+					q.push(ptr2);
+				}
+			}
+		}
+	}
+	fanin = &input;
+	this->consume(input);
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
     return *this;
 }
 
@@ -128,7 +135,9 @@ sigmoid<T>::sigmoid (void) : univar_func<T>([this](ioperation<T>*& outop) {
     ioperation<T>* denom = new add<T>(1, *expres);
     outop = new div<T>(1, *denom);
     this->ownout = { negres, expres, denom, outop };
-}) {}
+}) {
+	this->name = "sigmoid";
+}
 
 template <typename T>
 tanh<T>::tanh (void) : univar_func<T>([this](ioperation<T>*& outop) {
@@ -139,7 +148,9 @@ tanh<T>::tanh (void) : univar_func<T>([this](ioperation<T>*& outop) {
     ioperation<T>* denom = new add<T>(*expres, 1);
     outop = new div<T>(*numer, *denom);
     this->ownout = { pres, expres, numer, denom, outop };
-}) {}
+}) {
+	this->name = "tanh";
+}
 
 }
 

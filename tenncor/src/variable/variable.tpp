@@ -208,7 +208,6 @@ variable<T>& placeholder<T>::assign (const ivariable<T>& other) {
 template <typename T>
 variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 	this->init = new open_init();
-
 	assert(data.size() <= this->out.n_elems());
 	dynamic_cast<open_init*>(this->init)->prime = data;
 	(*this->init)(this->out);

@@ -45,7 +45,10 @@ class univar_func : public ioperation<T> {
 		// currently shallow copy
 		// TODO implement graph object manager for deep copy cloner
 		virtual univar_func<T>* clone (std::string name = "");
-		virtual ~univar_func (void) { clear(); }
+		virtual ~univar_func (void) {
+			if (fanin) fanin->get_consumers().erase(this);
+			clear();
+		}
 		// connect input to fanin ivariables according
 		// to declared equation ordered by function parameters
 		virtual ivariable<T>& operator () (ivariable<T>& input);

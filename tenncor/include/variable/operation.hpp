@@ -25,6 +25,13 @@ namespace nnet {
 // INTERFACE OPERATION
 
 template <typename T>
+class iunar_ops;
+template <typename T>
+class ibin_ops;
+template <typename T>
+class univar_func;
+
+template <typename T>
 class ioperation : public ivariable<T> {
 	protected:
 		// TODO: find a way to move these functions out of here
@@ -87,11 +94,16 @@ class ioperation : public ivariable<T> {
 		tensor<T>& get_eval (ivariable<T>& var) const { return var.out; }
 		// note keeping: record self as consumer of food
 		void consume (ivariable<T>& food) {
-			food.consumers.insert(this);
+			food.consumers.emplace(this);
 		}
-		virtual void decompose (const ivariable<T>& food) {
+
+		// clears input
+		void deconsume (ivariable<T>& food) {
+			food.consumers.erase(this);
 			replace(food, nullptr);
 		}
+
+		// changes input
 		virtual void replace (
 			const ivariable<T>& food,
 			const ivariable<T>* newfood) = 0;
@@ -105,19 +117,13 @@ class ioperation : public ivariable<T> {
 
 		friend class ivariable<T>;
 		friend class placeholder<T>;
+		friend class univar_func<T>;
 
 	public:
 		// clone remains abstract
 		virtual ~ioperation (void) {}
 		// eval remains abstract
 };
-
-template <typename T>
-class iunar_ops;
-template <typename T>
-class ibin_ops;
-template <typename T>
-class univar_func;
 
 // SCALAR using operation functions
 // TODO change base class to ivariable
