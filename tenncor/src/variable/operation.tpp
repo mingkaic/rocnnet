@@ -64,7 +64,7 @@ tensor_shape ioperation<T>::change_shape (
 			shape_changed = true;
 		}
 	} else if (multiplier >= 1 && index >= tv.size()) {
-		at_idx = multiplier;
+		at_idx = index == tv.size() ? tv.back() : multiplier;
 		// extending extra dimensions
 		size_t extra_dims = index - tv.size();
 		if (extra_dims) {
@@ -283,6 +283,7 @@ tensor<T>* ioperation<T>::extend_op (const tensor<T>& in, size_t index, size_t m
 	tensor<T>* ans = new tensor<T>(all, ts);
 
 	size_t above_dim = in.n_elems() / below_dim;
+	if (0 == above_dim) above_dim = 1; // remember that extension can increase dimensionality
 	// copy over data
 	T* src_data = in.raw_data;
 	T* dest_data = ans->raw_data;

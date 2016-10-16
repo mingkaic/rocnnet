@@ -115,7 +115,9 @@ gd_net::~gd_net (void) {
 // new weight = old weight - learning_rate * cost func derive over old weight
 // same thing with bias (should experience no rocnnet decrease due to short circuiting)
 void gd_net::train (ivariable<double>& e_out) {
-	if (nullptr == expected_out) {
+	if (nullptr == expected_out ||
+		false == e_out.get_shape().is_compatible_with(
+			expected_out->get_shape())) {
 		train(e_out.get_shape());
 	}
 	expected_out->assign(e_out);

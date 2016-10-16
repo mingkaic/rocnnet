@@ -145,9 +145,9 @@ TEST(PERCEPTRON, gd_train) {
 			}
 		}
 	}
-	double successrate = 1.0-(double)fails/(samples.size()*n_in);
+	double successrate = 1.0-(double)fails/(test_size*n_out);
 	err /= (test_size*n_out);
-	ASSERT_GE(successrate, 0.75); // TODO: increase to 0.9
+	ASSERT_GE(successrate, 0.80); // TODO increase to 90
 	std::cout << "average err: " << err << std::endl;
 	std::cout << "success rate: " << successrate << std::endl;
 }
@@ -168,7 +168,7 @@ TEST(PERCEPTRON, bgd_train) {
 	};
 	size_t batch_size = 12;
 	size_t test_size = 100;
-	size_t train_size = 10000;
+	size_t train_size = 5000;
 	nnet::gd_net net(n_in, hiddens);
 	nnet::placeholder<double> fanin(std::vector<size_t>{n_in, batch_size});
 	nnet::placeholder<double> exout(std::vector<size_t>{n_out, batch_size});
@@ -197,14 +197,16 @@ TEST(PERCEPTRON, bgd_train) {
 	for (size_t i = 0; i < test_size; i++) {
 		std::cout << "testing " << i << "\n";
 		samples.clear();
-		fill_binary_samples(samples, n_in, test_size);
+		fill_binary_samples(samples, n_in, batch_size);
+		std::vector<double> first;
+		std::vector<double> second;
 
-		std::vector<double> first = samples[0].first;
-		std::vector<double> second = samples[0].second;
-		//flatten(samples, first, second, 0);
+		flatten(samples, first, second, 0);
 		testin = first;
+
 		std::vector<double> res = exposeout.get_raw();
 		std::vector<double> expect = second;
+
 		for (size_t i = 0; i < res.size(); i++) {
 			err += std::abs(expect[i] - res[i]);
 			if (expect[i] != std::round(res[i])) {
@@ -212,7 +214,7 @@ TEST(PERCEPTRON, bgd_train) {
 			}
 		}
 	}
-	double successrate = 1.0-(double)fails/(samples.size()*n_in);
+	double successrate = 1.0-(double)fails/(test_size*n_out);
 	err /= (test_size*n_out);
 	ASSERT_GE(successrate, 0.75); // TODO: increase to 0.9
 	std::cout << "average err: " << err << std::endl;
