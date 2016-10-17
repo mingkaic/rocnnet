@@ -52,7 +52,7 @@ private:
 	ivariable<T>* watch = nullptr;
 
 protected:
-	virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+	virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 	virtual std::string get_symb (void) { return "extend"; }
 
 	virtual void shape_eval (void);
@@ -82,7 +82,7 @@ private:
 	std::function<T(const std::vector<T>&)> collector; // default to average sum
 
 protected:
-	virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+	virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 	virtual std::string get_symb (void) { return "compress"; }
 
 	virtual void shape_eval (void);
@@ -108,7 +108,7 @@ template <typename T>
 class transpose : public iunar_mat_ops<T> {
 protected:
 	// backward chaining for AD
-	virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+	virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 	virtual std::string get_symb (void) { return "transpose"; }
 
 	virtual void shape_eval (void);
@@ -137,7 +137,7 @@ private:
 
 protected:
 	// backward chaining for AD
-	virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+	virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 	virtual void replace (
 			const ivariable<T>& food,
 			const ivariable<T>* newfood) {

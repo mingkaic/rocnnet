@@ -376,7 +376,7 @@ void scalar<T>::atleast1 (bool& reduce, T value) {
 }
 
 template <typename T>
-tensor<T>* scalar<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* scalar<T>::calc_gradient (ivariable<T>* over) const {
 	return nullptr;
 	// there's something wrong here, we don't have a scalar placeholder, so everything here is a constant. derivative of constant is 0.
 	// TODO: generalize placeholder so we can use this code

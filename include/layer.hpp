@@ -95,6 +95,8 @@ class ml_perceptron {
 
 		ml_perceptron& operator = (const ml_perceptron& other);
 
+		// input are expected to have shape n_input by batch_size
+		// outputs are expected to have shape output by batch_size
 		ivariable<double>& operator () (placeholder<double>& input);
 		std::vector<WB_PAIR> get_variables (void);
 };

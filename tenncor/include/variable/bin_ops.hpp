@@ -30,7 +30,7 @@ class ibin_ops : public ioperation<T> {
 		ivariable<T>* b = nullptr;
 		ivariable<T>* own = nullptr;
 
-		// calc_derive remains abstract
+		// calc_gradient remains abstract
 		void copy (const ivariable<T>& other, std::string name = "");
 		virtual void replace (
 			const ivariable<T>& food,
@@ -60,44 +60,13 @@ class ibin_ops : public ioperation<T> {
 		virtual const tensor<T>& eval (void);
 };
 
-// DERIVATION
-
-// TODO extend ioperation interface for unique operations like derive and expose
-// TODO change ALL derivative elementary operations to use ioperations as to
-// enable n-th derivative (derivative of derivative of derivative...)
-// TODO test derivation
-template <typename T>
-class derive : public ibin_ops<T> {
-	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const {
-			// TODO implement calc_derive
-			return nullptr;
-		}
-		derive (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "/Derive?"; }
-		std::function<T(T, T)> get_op (void);
-
-	public:
-		derive (void) {}
-		derive (ivariable<T>& func, ivariable<T>& over) { (*this)(func, over); }
-		virtual derive<T>* clone (std::string name = "");
-
-		virtual const tensor<T>& eval (void) {
-			tensor<T>* prime = this->a->derive(this->b);
-			this->out = *prime;
-			delete prime;
-			return this->out;
-		}
-};
-
 // addition
 
 template <typename T>
 class add : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		add (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "+"; }
@@ -117,7 +86,7 @@ template <typename T>
 class sub : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		sub (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "-"; }
@@ -137,7 +106,7 @@ template <typename T>
 class mul : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		mul (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "*"; }
@@ -157,7 +126,7 @@ template <typename T>
 class div : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		div (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "/"; }

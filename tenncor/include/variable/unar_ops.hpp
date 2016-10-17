@@ -24,7 +24,7 @@ class iunar_ops : public ioperation<T> {
 		ivariable<T>* var = nullptr;
 
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		void copy (const ivariable<T>& other, std::string name = "");
 		virtual void replace (
 			const ivariable<T>& food,
@@ -35,7 +35,7 @@ class iunar_ops : public ioperation<T> {
 		virtual void shape_eval (void);
 		// operator () getters
 		virtual std::string get_symb (void) = 0;
-		virtual std::function<T(T)> get_op (void) = 0;
+		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
 
 		friend class univar_func<T>;
 
@@ -49,13 +49,50 @@ class iunar_ops : public ioperation<T> {
 		virtual const tensor<T>& eval (void);
 };
 
+// GRADIENT
+
+// TODO extend ioperation interface for unique operations like gradient and expose
+// TODO change ALL derivative elementary operations to use ioperations as to
+// enable n-th derivative (derivative of derivative of derivative...)
+// TODO test derivation
+template <typename T>
+class gradient : public iunar_ops<T> {
+	private:
+		ivariable<double>* over = nullptr;
+
+	protected:
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const {
+			// TODO implement calc_gradient
+			return nullptr;
+		}
+		gradient (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "/gradient?"; }
+		std::function<T(T)> get_op (void) { return shared_cnnet::op_neg<T>; } // useless for grad
+
+	public:
+		gradient (void) {}
+
+		gradient (ivariable<T>& func) { (*this)(func); }
+		gradient (ivariable<T>& func, ivariable<T>& over) :
+			over(&over) { (*this)(func); }
+		virtual gradient<T>* clone (std::string name = "");
+
+		virtual const tensor<T>& eval (void) {
+			tensor<T>* prime = this->var->gradient(over);
+			this->out = *prime;
+			delete prime;
+			return this->out;
+		}
+};
+
 // OUT NODE
 
-// TODO extend ioperation interface for unique operations like derive and expose
+// TODO extend ioperation interface for unique operations like gradient and expose
 template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
-		// inherits calc_derive from iunar_ops
+		// inherits calc_gradient from iunar_ops
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "expose"; }
@@ -84,7 +121,7 @@ class expose : public iunar_ops<T> {
 template <typename T>
 class neg : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		neg (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "-"; }
@@ -101,7 +138,7 @@ class neg : public iunar_ops<T> {
 template <typename T>
 class sin : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		sin (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "sin"; }
@@ -118,7 +155,7 @@ class sin : public iunar_ops<T> {
 template <typename T>
 class cos : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		cos (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "cos"; }
@@ -135,7 +172,7 @@ class cos : public iunar_ops<T> {
 template <typename T>
 class tan : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		tan (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "tan"; }
@@ -152,7 +189,7 @@ class tan : public iunar_ops<T> {
 template <typename T>
 class csc : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		csc (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "csc"; }
@@ -169,7 +206,7 @@ class csc : public iunar_ops<T> {
 template <typename T>
 class sec : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		sec (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "sec"; }
@@ -186,7 +223,7 @@ class sec : public iunar_ops<T> {
 template <typename T>
 class cot : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		cot (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "cot"; }
@@ -203,7 +240,7 @@ class cot : public iunar_ops<T> {
 template <typename T>
 class exp : public iunar_ops<T> {
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		exp (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "exp"; }

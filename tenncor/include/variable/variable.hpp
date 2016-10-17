@@ -72,13 +72,23 @@ class placeholder;
 
 template <typename T>
 class ivariable {
+	private:
+		// construct and return tensor filled with ones with shape identical to this
+		tensor<T>* get_ones (void) const {
+			memory_alloc all;
+			const_init<T> oneinit(1);
+			tensor<T>* ones = new tensor<T>(all, this->out.get_shape());
+			oneinit(*ones);
+			return ones;
+		}
+
 	protected:
 		tensor<T> out;
 		std::string name;
 		std::unordered_set<ioperation<T>*> consumers; // next
 		// backward chaining for AD
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const {
-			return nullptr;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const {
+			return nullptr == over ? get_ones() : nullptr;
 		}
 		void copy (
 			ivariable<T> const & other,
@@ -120,8 +130,8 @@ class ivariable {
 		// calculate the derivative over input variable given values
 		// from the last evaluation. no forward evaluation takes place
 		// currently doesn't handle the case of bad evaluation
-		// (uninitialized variables) before derive is called
-		virtual tensor<T>* derive (ivariable<T>* over) const;
+		// (uninitialized variables) before gradient is called
+		virtual tensor<T>* gradient (ivariable<T>* over) const;
 		virtual const tensor<T>& eval (void) = 0;
 };
 

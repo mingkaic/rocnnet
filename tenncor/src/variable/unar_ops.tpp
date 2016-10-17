@@ -20,9 +20,10 @@ void iunar_ops<T>::copy (const ivariable<T>& other, std::string name) {
     ivariable<T>::copy(other, name);
 }
 
+// used by expose otherwise make abstract
 template <typename T>
-tensor<T>* iunar_ops<T>::calc_derive (ivariable<T>* over) const {
-    return this->var->derive(over);
+tensor<T>* iunar_ops<T>::calc_gradient (ivariable<T>* over) const {
+    return this->var->gradient(over);
 }
 
 template <typename T>
@@ -64,6 +65,13 @@ const tensor<T>& iunar_ops<T>::eval (void) {
     return this->out;
 }
 
+// GRADIENT NODE
+
+template <typename T>
+gradient<T>* gradient<T>::clone (std::string name) {
+    return new gradient<T>(*this, name);
+}
+
 // OUT NODE
 
 template <typename T>
@@ -82,7 +90,7 @@ std::vector<T> expose<T>::get_raw (void) {
 
 template <typename T>
 std::vector<T> expose<T>::get_derive (ivariable<T>& over) const {
-    tensor<T>* tense = this->derive(&over);
+    tensor<T>* tense = this->gradient(&over);
     if (nullptr == tense) {
         return std::vector<T>();
     }
@@ -97,8 +105,8 @@ template <typename T>
 std::function<T(T)> neg<T>::get_op (void) { return shared_cnnet::op_neg<T>; }
 
 template <typename T>
-tensor<T>* neg<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* neg<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // neg'(f(x)) = -f'(x)
         tensor<T>* ans = this->util_op(*deriv, shared_cnnet::op_neg<T>);
@@ -119,8 +127,8 @@ template <typename T>
 std::function<T(T)> sin<T>::get_op (void) { return shared_cnnet::op_sin<T>; }
 
 template <typename T>
-tensor<T>* sin<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* sin<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // sin'(f(x)) = f'(x)*cos(f(x))
         tensor<T>* cosres = this->util_op(this->get_eval(*this->var), shared_cnnet::op_cos<T>);
@@ -143,8 +151,8 @@ template <typename T>
 std::function<T(T)> cos<T>::get_op (void) { return shared_cnnet::op_cos<T>; }
 
 template <typename T>
-tensor<T>* cos<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* cos<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // cos'(f(x)) = -f'(x)*sin(f(x))
         tensor<T>* sinres = this->util_op(this->get_eval(*this->var), shared_cnnet::op_sin<T>);
@@ -169,8 +177,8 @@ template <typename T>
 std::function<T(T)> tan<T>::get_op (void) { return shared_cnnet::op_tan<T>; }
 
 template <typename T>
-tensor<T>* tan<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* tan<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // sec'(f(x)) = f'(x)*sec^2(f(x))
         // better with = f'(x)/cos^2(f(x))
@@ -196,8 +204,8 @@ template <typename T>
 std::function<T(T)> csc<T>::get_op (void) { return shared_cnnet::op_csc<T>; }
 
 template <typename T>
-tensor<T>* csc<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* csc<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
         // better with -f'(x)/(sin(f(x)*tan(f(x))))
@@ -229,8 +237,8 @@ template <typename T>
 std::function<T(T)> sec<T>::get_op (void) { return shared_cnnet::op_sec<T>; }
 
 template <typename T>
-tensor<T>* sec<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* sec<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
         // better with f'(x)*tan(f(x))/cos(f(x))
@@ -260,8 +268,8 @@ template <typename T>
 std::function<T(T)> cot<T>::get_op (void) { return shared_cnnet::op_cot<T>; }
 
 template <typename T>
-tensor<T>* cot<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* cot<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // cot'(f(x)) = -f'(x)*csc^2(f(x))
         tensor<T>* cscres = this->util_op(this->get_eval(*this->var), shared_cnnet::op_csc<T>);
@@ -288,8 +296,8 @@ template <typename T>
 std::function<T(T)> exp<T>::get_op (void) { return shared_cnnet::op_exp<T>; }
 
 template <typename T>
-tensor<T>* exp<T>::calc_derive (ivariable<T>* over) const {
-    tensor<T>* deriv = this->var->derive(over);
+tensor<T>* exp<T>::calc_gradient (ivariable<T>* over) const {
+    tensor<T>* deriv = this->var->gradient(over);
     if (nullptr != deriv) {
         // exp'(f(x)) = f'(x)*exp(f(x))
         tensor<T>* expres = this->util_op(this->get_eval(*this->var), shared_cnnet::op_exp<T>);

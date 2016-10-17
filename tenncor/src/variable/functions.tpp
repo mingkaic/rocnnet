@@ -111,13 +111,13 @@ univar_func<T>& univar_func<T>::operator = (const ivariable<T>& other) {
 }
 
 template <typename T>
-tensor<T>* univar_func<T>::derive (ivariable<T>* over) const {
-    return fanout->derive(over);
+tensor<T>* univar_func<T>::gradient (ivariable<T>* over) const {
+    return fanout->gradient(over);
 }
 
 template <typename T>
-tensor<T>* univar_func<T>::derive (void) const {
-    return fanout->derive(fanin);
+tensor<T>* univar_func<T>::gradient (void) const {
+    return fanout->gradient(fanin);
 }
 
 template <typename T>

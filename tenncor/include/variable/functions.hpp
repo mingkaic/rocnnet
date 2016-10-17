@@ -54,10 +54,10 @@ class univar_func : public ioperation<T> {
 		virtual ivariable<T>& operator () (ivariable<T>& input);
 		virtual univar_func<T>& operator = (const ivariable<T>& other);
 
-		// calls derive from fanout
-		virtual tensor<T>* derive (ivariable<T>* over) const;
-		// calls derive on single input
-		tensor<T>* derive (void) const;
+		// calls gradient from fanout
+		virtual tensor<T>* gradient (ivariable<T>* over) const;
+		// calls gradient on single input
+		tensor<T>* gradient (void) const;
 		virtual const tensor<T>& eval (void);
 };
 

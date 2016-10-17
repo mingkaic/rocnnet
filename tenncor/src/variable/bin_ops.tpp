@@ -79,26 +79,16 @@ const tensor<T>& ibin_ops<T>::eval (void) {
 	return this->out;
 }
 
-// DERIVE NODE
-
-template <typename T>
-std::function<T(T, T)> derive<T>::get_op (void) { return shared_cnnet::op_add<T>; }
-
-template <typename T>
-derive<T>* derive<T>::clone (std::string name) {
-	return new derive<T>(*this, name);
-}
-
 // ADDITION
 
 template <typename T>
 std::function<T(T, T)> add<T>::get_op (void) { return shared_cnnet::op_add<T>; }
 
 template <typename T>
-tensor<T>* add<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* add<T>::calc_gradient (ivariable<T>* over) const {
 	// h'(f(x), g(x)) = f'(x) + g'(x)
-	tensor<T>* deriva = this->a->derive(over);
-	tensor<T>* derivb = this->b->derive(over);
+	tensor<T>* deriva = this->a->gradient(over);
+	tensor<T>* derivb = this->b->gradient(over);
 	if (deriva && derivb) {
 		tensor<T>* ans = this->util_op(*deriva, *derivb, shared_cnnet::op_add<T>);
 		delete deriva;
@@ -121,10 +111,10 @@ template <typename T>
 std::function<T(T, T)> sub<T>::get_op (void) { return shared_cnnet::op_sub<T>; }
 
 template <typename T>
-tensor<T>* sub<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* sub<T>::calc_gradient (ivariable<T>* over) const {
 	// h'(f(x), g(x)) = f'(x) - g'(x)
-	tensor<T>* deriva = this->a->derive(over);
-	tensor<T>* derivb = this->b->derive(over);
+	tensor<T>* deriva = this->a->gradient(over);
+	tensor<T>* derivb = this->b->gradient(over);
 	if (deriva && derivb) {
 		tensor<T>* ans = this->util_op(*deriva, *derivb, shared_cnnet::op_sub<T>);
 		delete deriva;
@@ -149,10 +139,10 @@ template <typename T>
 std::function<T(T, T)> mul<T>::get_op (void) { return shared_cnnet::op_mul<T>; }
 
 template <typename T>
-tensor<T>* mul<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* mul<T>::calc_gradient (ivariable<T>* over) const {
 	// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-	tensor<T>* deriva = this->a->derive(over);
-	tensor<T>* derivb = this->b->derive(over);
+	tensor<T>* deriva = this->a->gradient(over);
+	tensor<T>* derivb = this->b->gradient(over);
 	tensor<T>* ans = nullptr;
 	if (deriva && derivb) {
 		tensor<T>& tensa = this->get_eval(*this->a);
@@ -187,10 +177,10 @@ template <typename T>
 std::function<T(T, T)> div<T>::get_op (void) { return shared_cnnet::op_div<T>; }
 
 template <typename T>
-tensor<T>* div<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* div<T>::calc_gradient (ivariable<T>* over) const {
 	// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-	tensor<T>* deriva = this->a->derive(over);
-	tensor<T>* derivb = this->b->derive(over);
+	tensor<T>* deriva = this->a->gradient(over);
+	tensor<T>* derivb = this->b->gradient(over);
 	tensor<T>* ans = nullptr;
 	// deriva or derivb can be null.
 	if (deriva && derivb) {

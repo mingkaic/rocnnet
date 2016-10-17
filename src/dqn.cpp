@@ -12,76 +12,6 @@
 
 namespace nnet {
 
-// def __init__(self, in_size, n_layers, layers_f,
-// 		tf_session, optimizer,
-// 		train_interval = 5,
-// 		discount_rate = 0.95,
-// 		model_update_rate = 0.01):
-// 	# remember parameters
-// 	self.in_size = in_size
-// 	self.out_size = n_layers[-1]
-
-// 	# create model
-// 	self.q_network = MLayerPerceptron(in_size, n_layers, layers_f)
-// 	self.tf_session = tf_session
-// 	self.optimizer = optimizer
-
-// 	with tf.name_scope("taking_action"):
-// 		self.in_gates		= tf.placeholder(tf.float32, (None, self.in_size), name="in_weight")
-// 		self.action_scores	= tf.identity(self.q_network(self.in_gates), name="action_scores")
-// 		tf.histogram_summary("action_scores", self.action_scores)
-// 		self.predicted_actions  = tf.argmax(self.action_scores, dimension=1, name="predicted_actions")
-
-// 	# training constants
-// 	self.train_interval		= train_interval
-// 	self.discount_rate		= tf.constant(discount_rate)
-// 	self.t_net_update_rate 	= tf.constant(model_update_rate)
-
-// 	# deepq state
-// 	self.train_count 		= 0
-// 	self.target_q_network	= self.q_network.copy(scope="target_network")
-
-// 	# FOR PREDICTING TARGET FUTURE REWARDS
-// 	with tf.name_scope("estimating_future_rewards"):
-// 		self.next_in_weight 			= tf.placeholder(tf.float32, (None, self.in_size), name="next_in_weight")
-// 		self.next_in_weight_mask		= tf.placeholder(tf.float32, (None,), name="next_in_weight_mask")
-// 		self.next_action_scores			= tf.stop_gradient(self.target_q_network(self.next_in_weight))
-// 		tf.histogram_summary("target_action_scores", self.next_action_scores)
-// 		self.rewards					= tf.placeholder(tf.float32, (None,), name="rewards")
-// 		target_values				 	= tf.reduce_max(self.next_action_scores, reduction_indices=[1,]) * self.next_in_weight_mask
-// 		self.future_rewards				= self.rewards + self.discount_rate * target_values
-
-// 	# FOR ERROR PREDICTION
-// 	with tf.name_scope("q_value_predicition"):
-// 		self.action_mask				= tf.placeholder(tf.float32, (None, self.out_size), name="action_mask")
-// 		self.masked_action_scores		= tf.reduce_sum(self.action_scores * self.action_mask, reduction_indices=[1,])
-// 		temp_diff						= self.masked_action_scores - self.future_rewards
-// 		self.prediction_error			= tf.reduce_mean(tf.square(temp_diff))
-
-// 		#self.train_op = optimizer.minimize(self.prediction_error)
-// 		gradients						= self.optimizer.compute_gradients(self.prediction_error)
-// 		for i, (grad, var) in enumerate(gradients):
-// 			if grad is not None:
-// 				gradients[i] = (tf.clip_by_norm(grad, 5), var)
-// 		# Add histograms for gradients.
-// 		for grad, var in gradients:
-// 			tf.histogram_summary(var.name, var)
-// 			if grad is not None:
-// 				tf.histogram_summary(var.name + '/gradients', grad)
-// 		self.train_op					= self.optimizer.apply_gradients(gradients)
-
-// 	# UPDATE TARGET NETWORK
-// 	with tf.name_scope("target_network_update"):
-// 		self.target_network_update = []
-// 		for v_source, v_target in zip(self.q_network.get_variables(), self.target_q_network.get_variables()):
-// 			# this is equivalent to target = (1-alpha) * target + alpha * source
-// 			update_op = v_target.assign_sub(self.t_net_update_rate * (v_target - v_source))
-// 			self.target_network_update.append(update_op)
-// 		self.target_network_update = tf.group(*self.target_network_update)
-
-// 	# summaries
-// 	tf.scalar_summary("prediction_error", self.prediction_error)
-
 dq_net::dq_net (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
@@ -93,14 +23,20 @@ dq_net::dq_net (
 	size_t store_interval,
 	size_t mini_batch_size,
 	size_t max_exp) :
-	n_observations(n_input),
-	rand_action_prob(rand_action_prob),
-	store_interval(store_interval),
-	train_interval(train_interval),
-	mini_batch_size(mini_batch_size),
-	discount_rate(discount_rate),
-	max_exp(max_exp),
-	update_rate(update_rate) {
+		// state parameters
+		n_observations(n_input),
+		rand_action_prob(rand_action_prob),
+		store_interval(store_interval),
+		train_interval(train_interval),
+		mini_batch_size(mini_batch_size),
+		discount_rate(discount_rate),
+		max_exp(max_exp),
+		update_rate(update_rate),
+		// internal states
+		actions_executed(0),
+		iteration(0),
+		n_store_called(0),
+		n_train_called(0) {
 
 	session& sess = session::get_instance();
 
@@ -108,11 +44,6 @@ dq_net::dq_net (
 	n_actions = lastpair.first;
 
 	q_net = new ml_perceptron(n_input, hiddens, "q_network");
-
-	actions_executed = 0;
-	iteration = 0;
-	n_store_called = 0;
-	n_train_called = 0;
 
 	// ===============================
 	// ACTION AND TRAINING VARIABLES!
@@ -122,10 +53,10 @@ dq_net::dq_net (
 
 	// ACTION SCORE COMPUTATION
 	// ===============================
-	placeholder<double>* observation =
+	observation =
 		new placeholder<double>(in_shape);
 	ivariable<double>& action_scores = (*target_net)(*observation);
-	ivariable<double>* predicted_actions = // max arg index
+	predicted_actions = // max arg index
 		new compress<double>(action_scores, 1, [](const std::vector<double>& v) {
 			size_t big_idx = 0;
 			for (size_t i = 1; i < v.size(); i++) {
@@ -138,14 +69,13 @@ dq_net::dq_net (
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	placeholder<double>* next_observation = new placeholder<double>(in_shape);
+	next_observation = new placeholder<double>(in_shape);
 	ivariable<double>& next_action_scores = (*target_net)(*next_observation);
 	// unknown shapes
 	// mask and reward shape depends on batch size
-	placeholder<double>* next_observation_mask =
-		new placeholder<double>(std::vector<size_t>{n_observations, mini_batch_size});
-	placeholder<double>* rewards =
-		new placeholder<double>(std::vector<size_t>{mini_batch_size});
+	next_observation_mask = new placeholder<double>(std::vector<size_t>{n_observations, mini_batch_size});
+	rewards = new placeholder<double>(std::vector<size_t>{mini_batch_size});
+
 	ivariable<double>* target_values = // reduce max
 		new compress<double>(next_action_scores, 1, [](const std::vector<double>& v) {
 			double big;
@@ -159,10 +89,14 @@ dq_net::dq_net (
 	// future rewards = rewards + discount * target action
 	ivariable<double>* mulop = new mul<double>(discount_rate, *target_values);
 	ivariable<double>* future_rewards = new add<double>(*rewards, *mulop);
+	ownership.emplace(target_values);
+	ownership.emplace(mulop);
+	ownership.emplace(future_rewards);
 
 	// PREDICT ERROR
 	// ===============================
-	placeholder<double>* action_mask = new placeholder<double>(std::vector<size_t>(0, n_actions));
+	action_mask = new placeholder<double>(std::vector<size_t>(n_actions, mini_batch_size));
+
 	ivariable<double>* inter_mul = new mul<double>(action_scores, *action_mask);
 	ivariable<double>* masked_action_score = // reduce sum
 		new compress<double>(*inter_mul, 1, [](const std::vector<double>& v) {
@@ -174,52 +108,107 @@ dq_net::dq_net (
 		});
 	ivariable<double>* tempdiff = new sub<double>(*masked_action_score, *future_rewards);
 	ivariable<double>* sqrdiff = new mul<double>(*tempdiff, *tempdiff);
-	ivariable<double>* prediction_error = new compress<double>(*sqrdiff); // reduce mean
-	// minimize error
+	ownership.emplace(inter_mul);
+	ownership.emplace(masked_action_score);
+	ownership.emplace(tempdiff);
+	ownership.emplace(sqrdiff);
 
-//	gradients                       = self.optimizer.compute_gradients(self.prediction_error)
-//	for i, (grad, var) in enumerate(gradients):
-//		if grad is not None:
-//			gradients[i] = (tf.clip_by_norm(grad, 5), var)
-//	self.train_op                   = self.optimizer.apply_gradients(gradients)
+	prediction_error = new compress<double>(*sqrdiff); // reduce mean
+	// minimize error
+	gradient<double>* grads = new gradient<double>(*prediction_error);
+
+	// TODO: do something with gradient (update by gradient descent?) attach update operation as an output
 
 	sess.initialize_all<double>();
+
+	// other initialization such as saver
 }
 
-// def __call__(self, xvec):
-// 	res = self.tf_session.run(self.predicted_actions, {self.in_gates: xvec[np.newaxis,:]})
-// 	return res[0]
+std::vector<double> dq_net::operator () (std::vector<double>& observations) {
+	// action is based on 1 set of observations
 
-std::vector<double> dq_net::operator () (std::vector<double>& input) {
-	return std::vector<double>();
+	actions_executed++;
+	double exploration = linear_annealing(1.0);
+
+	if (get_random() < exploration) {
+		std::vector<double> act_score(n_actions);
+		std::generate(act_score.begin(), act_score.end(), [this](){ return get_random(); });
+
+		return act_score;
+	}
+
+	(*observation) = observations;
+	expose<double> out(*predicted_actions);
+	return out.get_raw();
 }
 
-// def act(self, xvec):
-// 	outs = self.tf_session.run(self.action_scores, {self.in_gates: xvec[np.newaxis,:]})
-// 	return outs
+void dq_net::store (
+	std::vector<double> observation,
+	size_t action_idx,
+	double reward,
+	std::vector<double> new_obs) {
+	if (0 == n_store_called % store_interval) {
+		experiences.push_back(exp_batch(observation, action_idx, reward, new_obs));
+		if (experiences.size() > max_exp) {
+			experiences.erase(experiences.begin()); // not that efficient :/ meh
+		}
+	}
+	n_store_called++;
+}
 
-// def train(self, minibatch, epoch):
-// 	if self.train_count % self.train_interval == 0:
-// 		states, newstates, newstates_mask, actions, rewards = minibatch
-// 		# update internal
-// 		cost, _ = self.tf_session.run([
-// 			self.prediction_error,
-// 			self.train_op,
-// 		], {
-// 			self.in_gates:				states,
-// 			self.next_in_weight:		newstates,
-// 			self.next_in_weight_mask:	newstates_mask,
-// 			self.action_mask:			actions,
-// 			self.rewards:				rewards,
-// 		})
+void dq_net::train (std::vector<std::vector<double> > train_batch) {
+	// extract mini_batch from buffer and backpropagate
+	if (0 == n_train_called % train_interval &&
+		experiences.size() >= mini_batch_size) {
+		std::vector<exp_batch> samples = get_sample();
 
-// 		print ("epoch=%d, cost = %f" %(epoch, cost))
+		// process samples
+		std::vector<double> states; // n_observation by mini_batch_size
+		std::vector<double> new_states; // n_observation by mini_batch_size
+		std::vector<double> action_mask; // n_action by mini_batch_size
+		std::vector<double> new_states_mask; // mini_batch_size
+		std::vector<double> rewards; // mini_batch_size
 
-// 		self.tf_session.run(self.target_network_update)
+		for (size_t i = 0; i < experiences.size(); i++) {
+			exp_batch batch = experiences[i];
+			// states
+			states.insert(states.end(),
+				batch.observation.begin(),
+				batch.observation.end());
+			// action_mask
+			std::vector<double> local_act_mask(n_actions, 0);
+			local_act_mask[batch.action_idx] = 1.0;
+			action_mask.insert(action_mask.end(),
+				local_act_mask.begin(),
+				local_act_mask.end());
+			// rewards
+			rewards.push_back(batch.reward);
+			// new_states and new_states_mask
+			if (batch.new_observation.empty()) {
+				new_states.insert(new_states.end(), n_observations, 0);
+				new_states_mask.push_back(0);
+			} else {
+				new_states.insert(
+					new_states.end(),
+					batch.new_observation.begin(),
+					batch.new_observation.end());
+				new_states_mask.push_back(1);
+			}
+		}
 
-// 	self.train_count += 1
+		(*observation) = states;
+		(*next_observation) = new_states;
+		(*next_observation_mask) = new_states_mask;
+		(*this->action_mask) = action_mask;
+		(*this->rewards) = rewards;
 
-void dq_net::train (std::vector<std::vector<double> > train_batch) {}
+		prediction_error->eval(); // cost
+		// do something to update networks
+
+		iteration++;
+	}
+	n_train_called++;
+}
 
 }
 

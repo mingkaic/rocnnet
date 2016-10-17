@@ -20,7 +20,7 @@ void gd_net::train (tensor_shape ts) {
 	ivariable<double>* output = this->in_place;
 	for (size_t i = 0; i < hypothesi.size(); i++) {
 		// act'(z_i)
-		ivariable<double>* prime = new derive<double>(*this->layers[i].second, *hypothesi[i]);
+		ivariable<double>* prime = new gradient<double>(*this->layers[i].second, *hypothesi[i]);
 		ownership.emplace(prime);
 		act_prime.push(prime);
 		output = this->layers[i].second;
@@ -109,10 +109,10 @@ gd_net::~gd_net (void) {
 }
 
 // batch gradient descent
-// TODO upgrade to using ioperation's derive method for cost function (determine speedup before "upgrade")
+// TODO upgrade to using ioperation's gradient method for cost function (determine speedup before "upgrade")
 // 1/m*sum_m(Err(X, Y)) once matrix operations support auto derivation
 // then apply cost funct to grad desc alg:
-// new weight = old weight - learning_rate * cost func derive over old weight
+// new weight = old weight - learning_rate * cost func gradient over old weight
 // same thing with bias (should experience no rocnnet decrease due to short circuiting)
 void gd_net::train (ivariable<double>& e_out) {
 	if (nullptr == expected_out ||

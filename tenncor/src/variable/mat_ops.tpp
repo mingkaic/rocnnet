@@ -40,10 +40,10 @@ iunar_mat_ops<T>& iunar_mat_ops<T>::operator = (const ivariable<T>& other) {
 // TENSOR EXTENSION
 
 template <typename T>
-tensor<T>* extend<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* extend<T>::calc_gradient (ivariable<T>* over) const {
 	tensor<T>* ans = nullptr;
 	if (this->var) {
-		tensor<T>* deriv = this->var->derive(over);
+		tensor<T>* deriv = this->var->gradient(over);
 		if (deriv) {
 			// extend along index
 			ans = this->extend_op(*deriv, index, multiplier);
@@ -158,10 +158,10 @@ const tensor<T>& extend<T>::eval (void) {
 // TENSOR COMPRESSION
 
 template <typename T>
-tensor<T>* compress<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* compress<T>::calc_gradient (ivariable<T>* over) const {
 	tensor<T>* ans = nullptr;
 	if (this->var) {
-		tensor<T>* deriv = this->var->derive(over);
+		tensor<T>* deriv = this->var->gradient(over);
 		if (deriv) {
 			// uncompress along index
 			ans = this->compress_op(*deriv, index, collector);
@@ -246,10 +246,10 @@ const tensor<T>& compress<T>::eval (void) {
 // MATRIX TRANSPOSE
 
 template <typename T>
-tensor<T>* transpose<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* transpose<T>::calc_gradient (ivariable<T>* over) const {
 	tensor<T>* ans = nullptr;
 	if (this->var) {
-		tensor<T>* deriv = this->var->derive(over);
+		tensor<T>* deriv = this->var->gradient(over);
 		if (deriv) {
 			ans = this->transpose_op(*deriv); // transpose
 			delete deriv;
@@ -291,7 +291,7 @@ const tensor<T>& transpose<T>::eval (void) {
 // MATRIX MULTIPLICATION
 
 template <typename T>
-tensor<T>* matmul<T>::calc_derive (ivariable<T>* over) const {
+tensor<T>* matmul<T>::calc_gradient (ivariable<T>* over) const {
 	tensor<T>* ans = nullptr;
 	if (a == over) {
 		// we take the trace of b
@@ -300,8 +300,8 @@ tensor<T>* matmul<T>::calc_derive (ivariable<T>* over) const {
 		// we take the trace of a
 		ans = this->get_trace(*a);
 	} else {
-		tensor<T>* deriva = a->derive(over);
-		tensor<T>* derivb = b->derive(over);
+		tensor<T>* deriva = a->gradient(over);
+		tensor<T>* derivb = b->gradient(over);
 		ans = this->util_op(*deriva, *derivb, shared_cnnet::op_add<T>);
 		delete deriva;
 		delete derivb;

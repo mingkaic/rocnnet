@@ -50,16 +50,8 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 }
 
 template <typename T>
-tensor<T>* ivariable<T>::derive (ivariable<T>* over) const {
-	if (over == this) {
-		memory_alloc all;
-		const_init<T> oneinit(1);
-		tensor<T>* ones = new tensor<T>(this->out.get_shape());
-		ones->allocate(all);
-		oneinit(*ones);
-		return ones;
-	}
-	return this->calc_derive(over);
+tensor<T>* ivariable<T>::gradient (ivariable<T>* over) const {
+	return over == this ? get_ones() : this->calc_gradient(over);
 }
 
 // variable implementation

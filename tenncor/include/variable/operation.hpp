@@ -134,7 +134,7 @@ class scalar : public ioperation<T> {
 		static void atleast1 (bool& reduce, T value);
 
 	protected:
-		virtual tensor<T>* calc_derive (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
 		virtual void replace (
 			const ivariable<T>& food,
 			const ivariable<T>* newfood) {}

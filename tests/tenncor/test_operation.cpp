@@ -194,7 +194,7 @@ TEST(OPERATION, scalar) {
 	nnet::scalar<double> one(1);
 	nnet::scalar<double> deux(2);
 
-	uno.derive(&one);
+	uno.gradient(&one);
 }
 
 

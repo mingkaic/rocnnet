@@ -168,7 +168,7 @@ TEST(PERCEPTRON, bgd_train) {
 	};
 	size_t batch_size = 12;
 	size_t test_size = 100;
-	size_t train_size = 5000;
+	size_t train_size = 4500;
 	nnet::gd_net net(n_in, hiddens);
 	nnet::placeholder<double> fanin(std::vector<size_t>{n_in, batch_size});
 	nnet::placeholder<double> exout(std::vector<size_t>{n_out, batch_size});
