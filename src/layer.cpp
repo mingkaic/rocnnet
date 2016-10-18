@@ -104,6 +104,8 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 // 	with tf.variable_scope(self.scope):
 // 		return sum([tf.matmul(x, weight) for x, weight in zip(in_x, self.weights)]) + self.bias
 
+// TODO: implement multiple input/output by associating ownership with output
+
 // returned variable ownership is retained by layer_perceptron instance
 // destroys passed out variable from previous calls
 // (use with care until smartpointers...)

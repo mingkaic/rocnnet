@@ -23,11 +23,58 @@ void univar_func<T>::clear (void) {
 template <typename T>
 void univar_func<T>::copy (const ivariable<T>& other, std::string name) {
     if (const univar_func<T>* uptr = dynamic_cast<const univar_func<T>*>(&other)) {
-        // TODO: make deep copy
-        // currently shallow copy
-        // no ownership
-        fanout = uptr->fanout;
-        fanin = uptr->fanin;
+    	// deep copy:
+    	std::queue<ivariable<T>*> q;
+    	std::unordered_map<ivariable<T>*, ivariable<T>*> src_to_dest;
+		ivariable<T>* buffer = nullptr;
+		ivariable<T>* current = uptr->fanout->clone();
+    	q.push(fanout);
+    	src_to_dest[uptr->fanout] = current;
+
+    	while (false == q.empty()) {
+			buffer = q.front();
+			current = src_to_dest[buffer];
+			q.pop();
+			if (iunar_ops<T>* op = dynamic_cast<iunar_ops<T>*>(buffer)) {
+				iunar_ops<T>* cur = dynamic_cast<iunar_ops<T>*>(current);
+				ivariable<T>* cpy = nullptr;
+				if (src_to_dest.end() == src_to_dest.find(op->var)) {
+					cpy = op->var->clone();
+					q.push(op->var);
+					src_to_dest[op->var] = cpy;
+				} else {
+					cpy = src_to_dest[op->var];
+				}
+				(*cur)(*cpy);
+			} else if (ibin_ops<T>* op = dynamic_cast<ibin_ops<T>*>(buffer)) {
+				ibin_ops<T>* cur = dynamic_cast<ibin_ops<T>*>(current);
+				ivariable<T>* acpy = nullptr;
+				ivariable<T>* bcpy = nullptr;
+				if (src_to_dest.end() == src_to_dest.find(op->a)) {
+					acpy = op->a->clone();
+					q.push(op->a);
+					src_to_dest[op->a] = acpy;
+				} else {
+					acpy = src_to_dest[op->a];
+				}
+				if (src_to_dest.end() == src_to_dest.find(op->b)) {
+					bcpy = op->b->clone();
+					q.push(op->b);
+					src_to_dest[op->b] = bcpy;
+				} else {
+					bcpy = src_to_dest[op->b];
+				}
+				(*cur)(*acpy, *bcpy);
+			} else {
+				fanin = src_to_dest[buffer];
+			}
+    	}
+    	this->consume(*fanin);
+//        // TODO: make deep copy
+//        // currently shallow copy
+//        // no ownership
+//        fanout = uptr->fanout;
+//        fanin = uptr->fanin;
     }
     ivariable<T>::copy(other, name);
 }

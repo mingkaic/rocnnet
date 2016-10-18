@@ -22,6 +22,8 @@ TEST(DQN, forward) {
 			IN_PAIR(n_out, new nnet::sigmoid<double>()),
 	};
 	nnet::dq_net net(vin.size(), hiddens);
+
+//	std::vector<double> res = net(vin);
 }
 
 

@@ -98,7 +98,7 @@ TEST(VARIABLE, const_init) {
     nnet::const_init<double> init(constant);
 
     nnet::variable<double> cvar(std::vector<size_t>{3, 3},
-        init, "constant arr");
+        init, "constant_arr");
 
     cvar.initialize();
     nnet::expose<double> ex(cvar);
@@ -120,7 +120,7 @@ TEST(VARIABLE, get_index) {
     size_t ndeps = 5; // depth
 
     nnet::variable<double> cvar(std::vector<size_t>{nrows, ncols, ndeps},
-        init, "constant arr");
+        init, "constant_arr");
 
     cvar.initialize();
 
@@ -143,7 +143,7 @@ TEST(VARIABLE, random_init) {
     nnet::random_uniform<double> init(0.0, 1.0);
 
     nnet::variable<double> rvar(std::vector<size_t>{5, 5},
-        init, "random arr");
+        init, "random_arr");
 
     rvar.initialize();
 

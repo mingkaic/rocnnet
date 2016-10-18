@@ -53,8 +53,7 @@ dq_net::dq_net (
 
 	// ACTION SCORE COMPUTATION
 	// ===============================
-	observation =
-		new placeholder<double>(in_shape);
+	observation = new placeholder<double>(in_shape, "observation");
 	ivariable<double>& action_scores = (*target_net)(*observation);
 	predicted_actions = // max arg index
 		new compress<double>(action_scores, 1, [](const std::vector<double>& v) {
@@ -69,12 +68,13 @@ dq_net::dq_net (
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	next_observation = new placeholder<double>(in_shape);
+	next_observation = new placeholder<double>(in_shape, "next_observation");
 	ivariable<double>& next_action_scores = (*target_net)(*next_observation);
 	// unknown shapes
 	// mask and reward shape depends on batch size
-	next_observation_mask = new placeholder<double>(std::vector<size_t>{n_observations, mini_batch_size});
-	rewards = new placeholder<double>(std::vector<size_t>{mini_batch_size});
+	next_observation_mask = new placeholder<double>(
+		std::vector<size_t>{n_observations, mini_batch_size}, "new_observation_mask");
+	rewards = new placeholder<double>(std::vector<size_t>{mini_batch_size}, "rewards");
 
 	ivariable<double>* target_values = // reduce max
 		new compress<double>(next_action_scores, 1, [](const std::vector<double>& v) {
@@ -95,7 +95,7 @@ dq_net::dq_net (
 
 	// PREDICT ERROR
 	// ===============================
-	action_mask = new placeholder<double>(std::vector<size_t>(n_actions, mini_batch_size));
+	action_mask = new placeholder<double>(std::vector<size_t>{n_actions, mini_batch_size}, "action_mask");
 
 	ivariable<double>* inter_mul = new mul<double>(action_scores, *action_mask);
 	ivariable<double>* masked_action_score = // reduce sum

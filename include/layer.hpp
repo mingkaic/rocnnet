@@ -30,7 +30,7 @@ namespace nnet {
 
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
-
+// TODO: make convolution neural net via multiple weights per layer
 class layer_perceptron {
 	private:
 		static random_uniform<double> rinit;
