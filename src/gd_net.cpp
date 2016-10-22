@@ -12,100 +12,84 @@
 
 namespace nnet {
 
-void gd_net::train (tensor_shape ts) {
-	clear_ownership(); // all intermediate vars are used once anyways
-
+void gd_net::train_set_up (void) {
 	// follow () operator for ml_perceptron except store hypothesis
-	std::stack<ivariable<double>*> act_prime;
-	ivariable<double>* output = this->in_place;
-	for (size_t i = 0; i < hypothesi.size(); i++) {
+	std::queue<VAR_PTR<double> > layer_out;
+	std::stack<VAR_PTR<double> > prime_out;
+
+	VAR_PTR<double> output = std::dynamic_pointer_cast<ivariable<double> >(train_in);
+	for (HID_PAIR hp : layers) {
+		VAR_PTR<double> hypothesis = (*hp.first)(output);
+		(hp.second)(output, hypothesis);
+		layer_out.push(output);
 		// act'(z_i)
-		ivariable<double>* prime = new gradient<double>(*this->layers[i].second, *hypothesi[i]);
-		ownership.emplace(prime);
-		act_prime.push(prime);
-		output = this->layers[i].second;
+		VAR_PTR<double> grad = std::make_shared<gradient<double> >(output, hypothesis);
+		prime_out.push(grad);
 	}
-	output->eval(); // run data through weights once before evaluating updated weights
+
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
-	// take ownership
-	expected_out = new placeholder<double>(ts);
-	ivariable<double>* diff = new sub<double>(*output, *expected_out);
-	ivariable<double>* err = new mul<double>(*diff, *act_prime.top());
-
-	ownership.emplace(expected_out);
-	ownership.emplace(diff);
-	ownership.emplace(err);
-	act_prime.pop();
-
-	std::stack<ivariable<double>*> errs;
+	VAR_PTR<double> diff = std::make_shared<sub<double> >(output, expected_out);
+	VAR_PTR<double> err = std::make_shared<mul<double> >(diff, prime_out.top());
+	prime_out.pop();
+	std::stack<VAR_PTR<double> > errs;
 	errs.push(err);
+
 	auto term = --this->layers.rend();
 	for (auto rit = this->layers.rbegin();
 		 term != rit; rit++) {
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
-		ivariable<double>* weight_i = hp.first->get_variables().first;
+		VAR_PTR<double> weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		ivariable<double>* mres = new matmul<double>(*err, *weight_i, false ,true);
-		err = new mul<double>(*mres, *act_prime.top());
-		act_prime.pop();
+		VAR_PTR<double> mres = std::make_shared<matmul<double> >(err, weight_i, false ,true);
+		err = std::make_shared<mul<double> >(mres, prime_out.top());
+		prime_out.pop();
 		errs.push(err);
-		ownership.emplace(mres);
-		ownership.emplace(err);
 	}
 
-	double learn_batch = learning_rate / ts.as_list()[1];
-	output = this->in_place;
+	VAR_PTR<double> learn_batch = std::make_shared<div<double> >(learning_rate, batch_size);
+	output = train_in;
 	for (HID_PAIR hp : this->layers) {
 		err = errs.top();
 		errs.pop();
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		ivariable<double>* cost = new matmul<double>(*output, *err, true);
-		ivariable<double>* dweights = new mul<double>(*cost, learn_batch);
+		VAR_PTR<double> cost = std::make_shared<matmul<double> >(output, err, true);
+		VAR_PTR<double> dweights = std::make_shared<mul<double> >(cost, learn_batch);
 
 		// expecting err to be output by batchsize, compress along batchsize
-		ivariable<double>* compressed_err = new compress<double>(*err, 1);
-		ivariable<double>* dbias = new mul<double>(*compressed_err, learn_batch);
-
-		ownership.emplace(cost);
-		ownership.emplace(dweights);
-		ownership.emplace(compressed_err);
-		ownership.emplace(dbias);
+		VAR_PTR<double> compressed_err = std::make_shared<compress<double> >(err, 1);
+		VAR_PTR<double> dbias = std::make_shared<mul<double> >(compressed_err, learn_batch);
 
 		differentials.push_back(IVARS(dweights, dbias));
 		// store for update
 
-		output = hp.second;
+		output = layer_out.front();
+		layer_out.pop();
 	}
 }
 
-void gd_net::clear_ownership (void) {
-	for (ivariable<double>* mine : ownership) {
-		delete mine;
-	}
-	ownership.clear();
-	differentials.clear();
-	expected_out = nullptr;
-}
-
-gd_net::gd_net (const gd_net& net, std::string scope) :
-	ml_perceptron(net, scope) {
+gd_net::gd_net (const gd_net& net, std::string scope) : ml_perceptron(net, scope) {
+	n_input = net.n_input;
 	learning_rate = net.learning_rate;
-	expected_out = net.expected_out;
-	differentials = net.differentials;
+	batch_size = net.batch_size->clone();
+	train_in = net.train_in->clone();
+	expected_out = net.expected_out->clone();
+	train_set_up();
 }
 
 gd_net::gd_net (size_t n_input,
 	std::vector<IN_PAIR> hiddens,
 	std::string scope)
-	: ml_perceptron(n_input, hiddens, scope) {}
-
-gd_net::~gd_net (void) {
-	clear_ownership();
+	: ml_perceptron(n_input, hiddens, scope), n_input(n_input) {
+	size_t n_out = hiddens.back().first;
+	batch_size = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "batch_size");
+	train_in = std::make_shared<placeholder<double> >(std::vector<size_t>{n_input, 0}, "train_in");
+	expected_out = std::make_shared<placeholder<double> >(std::vector<size_t>{n_out, 0}, "expected_out");
+	train_set_up();
 }
 
 // batch gradient descent
@@ -114,14 +98,12 @@ gd_net::~gd_net (void) {
 // then apply cost funct to grad desc alg:
 // new weight = old weight - learning_rate * cost func gradient over old weight
 // same thing with bias (should experience no rocnnet decrease due to short circuiting)
-void gd_net::train (ivariable<double>& e_out) {
-	if (nullptr == expected_out ||
-		false == e_out.get_shape().is_compatible_with(
-			expected_out->get_shape())) {
-		train(e_out.get_shape());
-	}
-	expected_out->assign(e_out);
-
+void gd_net::train (std::vector<double> train_in,
+					std::vector<double> expected_out) {
+	(*this->batch_size) = std::vector<double>{(double) train_in.size() / n_input};
+	(*this->train_in) = train_in;
+	(*this->expected_out) = expected_out;
+	// trigger update
 	for (size_t i = 0; i < differentials.size(); i++) {
 		IVARS ds = differentials[i];
 		WB_PAIR wb = layers[i].first->get_variables();
@@ -129,8 +111,14 @@ void gd_net::train (ivariable<double>& e_out) {
 		// weights -= dweights, bias -= dbias
 		const tensor<double>& dwt = ds.first->eval();
 		const tensor<double>& dbt = ds.second->eval();
-		wb.first->update(dwt, shared_cnnet::op_sub<double>);
-		wb.second->update(dbt, shared_cnnet::op_sub<double>);
+		std::static_pointer_cast<
+			variable<double>,
+			ivariable<double> >(wb.first)->update(dwt,
+				shared_cnnet::op_sub<double>);
+		std::static_pointer_cast<
+			variable<double>,
+			ivariable<double> >(wb.second)->update(dbt,
+				shared_cnnet::op_sub<double>);
 	}
 }
 

@@ -43,7 +43,7 @@ set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 include_directories(${COMMON_INCLUDES} ${TENNCOR_INCLUDE_DIR})
 
 add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
-add_subdirectory(${EXT_PROJECTS_DIR}/gbenchmark)
+#add_subdirectory(${EXT_PROJECTS_DIR}/gbenchmark)
 
 #-------------------
 # Google Test Setup
@@ -62,8 +62,8 @@ function(GoogleTest PROJECT_TEST_NAME TEST_DIR)
 
     # Test dependencies
     add_dependencies(${PROJECT_TEST_NAME}
-        googletest
-        googlebenchmark)
+        googletest)
+        #googlebenchmark)
 
     if(NOT WIN32 OR MINGW)
         target_link_libraries(${PROJECT_TEST_NAME}

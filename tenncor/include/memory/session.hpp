@@ -23,6 +23,9 @@ class ivariable;
 template <typename T>
 class variable;
 
+template <typename T>
+class placeholder;
+
 // singleton object controller
 class session {
     private:

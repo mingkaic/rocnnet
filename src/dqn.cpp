@@ -12,6 +12,33 @@
 
 namespace nnet {
 
+double dq_net::get_random(void) {
+	static std::default_random_engine generator;
+	static std::uniform_real_distribution<double> explore;
+
+	return explore(generator);
+}
+
+std::vector<dq_net::exp_batch> dq_net::get_sample (void) {
+	std::vector<size_t> indices(experiences.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	std::random_shuffle(indices.begin(), indices.end());
+	std::vector<dq_net::exp_batch> res;
+	for (size_t idx : indices) {
+		res.push_back(experiences[idx]);
+	}
+	return res;
+}
+
+double dq_net::linear_annealing (double initial_prob) const {
+	if (actions_executed >= exploration_period) {
+		return rand_action_prob;
+	}
+	return initial_prob - actions_executed *
+						  (initial_prob - rand_action_prob)
+						  / exploration_period;
+}
+
 dq_net::dq_net (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
@@ -45,18 +72,26 @@ dq_net::dq_net (
 
 	q_net = new ml_perceptron(n_input, hiddens, "q_network");
 
+	// fanin setup
+	target_net = q_net->clone("target_network");
+	tensor_shape in_shape = std::vector<size_t>{n_input};
+	observation = std::make_shared<placeholder<double> >(in_shape, "observation");
+	next_observation = std::make_shared<placeholder<double> >(in_shape, "next_observation");
+	// mask and reward shape depends on batch size
+	next_observation_mask = std::make_shared<placeholder<double> >(
+			std::vector<size_t>{n_observations, 0}, "new_observation_mask");
+	rewards = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "rewards");
+	action_mask = std::make_shared<placeholder<double> >(std::vector<size_t>{n_actions, 0}, "action_mask");
+
 	// ===============================
 	// ACTION AND TRAINING VARIABLES!
 	// ===============================
-	tensor_shape in_shape = std::vector<size_t>{n_input};
-	target_net = q_net->clone("target_network");
 
 	// ACTION SCORE COMPUTATION
 	// ===============================
-	observation = new placeholder<double>(in_shape, "observation");
-	ivariable<double>& action_scores = (*target_net)(*observation);
+	VAR_PTR<double> action_scores = (*target_net)(observation);
 	predicted_actions = // max arg index
-		new compress<double>(action_scores, 1, [](const std::vector<double>& v) {
+		std::make_shared<compress<double> >(action_scores, 1, [](const std::vector<double>& v) {
 			size_t big_idx = 0;
 			for (size_t i = 1; i < v.size(); i++) {
 				if (v[big_idx] < v[i]) {
@@ -68,16 +103,10 @@ dq_net::dq_net (
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	next_observation = new placeholder<double>(in_shape, "next_observation");
-	ivariable<double>& next_action_scores = (*target_net)(*next_observation);
-	// unknown shapes
-	// mask and reward shape depends on batch size
-	next_observation_mask = new placeholder<double>(
-		std::vector<size_t>{n_observations, mini_batch_size}, "new_observation_mask");
-	rewards = new placeholder<double>(std::vector<size_t>{mini_batch_size}, "rewards");
-
-	ivariable<double>* target_values = // reduce max
-		new compress<double>(next_action_scores, 1, [](const std::vector<double>& v) {
+	VAR_PTR<double> next_action_scores = (*target_net)(next_observation);
+	VAR_PTR<double> target_values = // reduce max
+		std::make_shared<compress<double> >(next_action_scores, 1,
+		[](const std::vector<double>& v) {
 			double big;
 			auto it = v.begin();
 			big = *it;
@@ -87,35 +116,27 @@ dq_net::dq_net (
 			return big;
 		});
 	// future rewards = rewards + discount * target action
-	ivariable<double>* mulop = new mul<double>(discount_rate, *target_values);
-	ivariable<double>* future_rewards = new add<double>(*rewards, *mulop);
-	ownership.emplace(target_values);
-	ownership.emplace(mulop);
-	ownership.emplace(future_rewards);
+	VAR_PTR<double> mulop = std::make_shared<mul<double> >(discount_rate, target_values);
+	VAR_PTR<double> future_rewards = std::make_shared<add<double> >(rewards, mulop);
 
 	// PREDICT ERROR
 	// ===============================
-	action_mask = new placeholder<double>(std::vector<size_t>{n_actions, mini_batch_size}, "action_mask");
-
-	ivariable<double>* inter_mul = new mul<double>(action_scores, *action_mask);
-	ivariable<double>* masked_action_score = // reduce sum
-		new compress<double>(*inter_mul, 1, [](const std::vector<double>& v) {
+	VAR_PTR<double> inter_mul = std::make_shared<mul<double> >(action_scores, action_mask);
+	VAR_PTR<double> masked_action_score = // reduce sum
+		std::make_shared<compress<double> >(inter_mul, 1,
+			[](const std::vector<double>& v) {
 			double accum;
 			for (double d : v) {
 				accum += d;
 			}
 			return accum;
 		});
-	ivariable<double>* tempdiff = new sub<double>(*masked_action_score, *future_rewards);
-	ivariable<double>* sqrdiff = new mul<double>(*tempdiff, *tempdiff);
-	ownership.emplace(inter_mul);
-	ownership.emplace(masked_action_score);
-	ownership.emplace(tempdiff);
-	ownership.emplace(sqrdiff);
+	VAR_PTR<double> tempdiff = std::make_shared<sub<double> >(masked_action_score, future_rewards);
+	VAR_PTR<double> sqrdiff = std::make_shared<mul<double> >(tempdiff, tempdiff);
 
-	prediction_error = new compress<double>(*sqrdiff); // reduce mean
+	prediction_error = std::make_shared<compress<double> >(sqrdiff); // reduce mean
 	// minimize error
-	gradient<double>* grads = new gradient<double>(*prediction_error);
+	VAR_PTR<double> grads = std::make_shared<gradient<double> >(prediction_error);
 
 	// TODO: do something with gradient (update by gradient descent?) attach update operation as an output
 
@@ -126,7 +147,6 @@ dq_net::dq_net (
 
 std::vector<double> dq_net::operator () (std::vector<double>& observations) {
 	// action is based on 1 set of observations
-
 	actions_executed++;
 	double exploration = linear_annealing(1.0);
 
@@ -138,15 +158,13 @@ std::vector<double> dq_net::operator () (std::vector<double>& observations) {
 	}
 
 	(*observation) = observations;
-	expose<double> out(*predicted_actions);
+	expose<double> out(predicted_actions);
 	return out.get_raw();
 }
 
-void dq_net::store (
-	std::vector<double> observation,
-	size_t action_idx,
-	double reward,
-	std::vector<double> new_obs) {
+void dq_net::store (std::vector<double> observation,
+					size_t action_idx, double reward,
+					std::vector<double> new_obs) {
 	if (0 == n_store_called % store_interval) {
 		experiences.push_back(exp_batch(observation, action_idx, reward, new_obs));
 		if (experiences.size() > max_exp) {

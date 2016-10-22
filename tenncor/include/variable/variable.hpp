@@ -22,6 +22,15 @@
 namespace nnet {
 
 template <typename T>
+using VAR_PTR = std::shared_ptr<ivariable<T> >;
+
+template <typename T>
+using WEAK_VAR_PTR = std::weak_ptr<ivariable<T> >;
+
+template <typename T>
+using PLACEHOLDER_PTR = std::shared_ptr<placeholder<T> >;
+
+template <typename T>
 class initializer {
 	protected:
 		// anti pattern?
@@ -85,33 +94,26 @@ class ivariable {
 	protected:
 		tensor<T> out;
 		std::string name;
+		// TODO make shared
 		std::unordered_set<ioperation<T>*> consumers; // next
+
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const {
-			return nullptr == over ? get_ones() : nullptr;
-		}
-		void copy (
-			ivariable<T> const & other,
-			std::string name = "");
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		void copy (const ivariable<T>& other, std::string name = "");
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name) = 0;
+
 		// protected members need to be accessed by other operations
 		friend class ioperation<T>;
 		friend class placeholder<T>;
 
 	public:
-		ivariable (void) {
-			session& sess = session::get_instance();
-			sess.register_obj(*this);
-		}
-		virtual ivariable<T>* clone (std::string name = "") = 0;
-		virtual ~ivariable (void) {
-			session& sess = session::get_instance();
-			sess.unregister_obj(*this);
-			std::unordered_set<ioperation<T>*> copy = consumers;
-			for (ioperation<T>* cons : copy) {
-				cons->deconsume(*this);
-			}
-		}
+		ivariable (void);
+		virtual ~ivariable (void);
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
+
+		std::shared_ptr<ivariable<T> > clone (std::string name = "") {
+			return clone_impl(name);
+		}
 
 		// TODO implement
 		// operators that will replace elementary operation objects
@@ -131,7 +133,7 @@ class ivariable {
 		// from the last evaluation. no forward evaluation takes place
 		// currently doesn't handle the case of bad evaluation
 		// (uninitialized variables) before gradient is called
-		virtual tensor<T>* gradient (ivariable<T>* over) const;
+		virtual tensor<T>* gradient (WEAK_VAR_PTR<T> over) const;
 		virtual const tensor<T>& eval (void) = 0;
 };
 
@@ -139,9 +141,6 @@ class ivariable {
 // also holds initializer (in operation)
 template <typename T>
 class variable : public ivariable<T> {
-	private:
-		// Graph graph; // variable manager
-
 	protected:
 		bool is_init = false;
 		initializer<T>* init = nullptr;
@@ -149,18 +148,23 @@ class variable : public ivariable<T> {
 		void copy (const variable<T>& other, std::string name="");
 		variable (const variable<T>& other, std::string name);
 
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
 		// track all variables and placeholders for
 		// static/singleton function initialize all
 		// static session_manager manager;
 
 	public:
+		variable (T scalar);
+		variable (std::string name = "");
 		variable (const tensor_shape& shape, std::string name = "");
-		variable (const tensor_shape& shape,
-			initializer<T>& init, std::string name = "");
-		virtual variable<T>* clone (std::string name = "");
-		// variable (const variable<T>& other, std::string name="");
+		variable (const tensor_shape& shape, initializer<T>& init, std::string name = "");
 		virtual ~variable (void);
 		virtual variable<T>& operator = (const ivariable<T>& other);
+
+		std::shared_ptr<variable<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<variable<T>, ivariable<T> >(clone_impl(name));
+		}
 
 		bool can_init (void) const { return init != nullptr; }
 
@@ -188,20 +192,23 @@ class placeholder : public variable<T> {
 	private:
 		// used by assignment operators to freely initialized inner tensor
 		struct open_init;
+		void consumer_reshape (void);
+		placeholder (const placeholder<T>& other, std::string name);
 
-		void consumer_reshape (void) {
-			for (ioperation<T>* cons : this->consumers) {
-				cons->shape_eval();
-			}
-		}
+	protected:
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
+		placeholder (std::string name = ""); // super generic placeholder
 		placeholder (const tensor_shape& shape, std::string name = "");
-
 		// assign raw data according to 1 dimension representation of inner tensor
-		virtual variable<T>& assign (const ivariable<T>& other);
+		virtual variable<T>& assign (VAR_PTR<T> other);
 		virtual variable<T>& operator = (std::vector<T> data);
 		virtual variable<T>& operator = (const tensor<T>& data);
+
+		std::shared_ptr<placeholder<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<placeholder<T>, ivariable<T> >(clone_impl(name));
+		}
 
 		// replace with shared_ptr<unique_ptr<placeholder<T> > >...
 		void replace (const placeholder<T>& other);

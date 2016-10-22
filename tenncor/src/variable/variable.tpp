@@ -31,6 +31,11 @@ void random_uniform<T>::operator () (tensor<T>& in) {
 // variable interface
 
 template <typename T>
+tensor<T>* ivariable<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
+	return nullptr == VAR_PTR<T>(over) ? get_ones() : nullptr;
+}
+
+template <typename T>
 void ivariable<T>::copy (
 	ivariable<T> const & other,
 	std::string name) {
@@ -42,6 +47,22 @@ void ivariable<T>::copy (
 }
 
 template <typename T>
+ivariable<T>::ivariable (void) {
+	session& sess = session::get_instance();
+	sess.register_obj(*this);
+}
+
+template <typename T>
+ivariable<T>::~ivariable (void){
+	session& sess = session::get_instance();
+	sess.unregister_obj(*this);
+	std::unordered_set<ioperation<T>*> copy = consumers;
+	for (ioperation<T>* cons : copy) {
+		cons->deconsume(*this);
+	}
+}
+
+template <typename T>
 ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 	if (this != &other) {
 		copy(other);
@@ -50,8 +71,8 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 }
 
 template <typename T>
-tensor<T>* ivariable<T>::gradient (ivariable<T>* over) const {
-	return over == this ? get_ones() : this->calc_gradient(over);
+tensor<T>* ivariable<T>::gradient (WEAK_VAR_PTR<T> over) const {
+	return over.lock().get() == this ? get_ones() : this->calc_gradient(over);
 }
 
 // variable implementation
@@ -70,36 +91,36 @@ variable<T>::variable (const variable<T>& other, std::string name) {
 }
 
 template <typename T>
-variable<T>::variable (
-	tensor_shape const & shape,
-	std::string name) {
-	this->out.set_shape(shape);
+variable<T>::variable (T scalar) {
+	this->out.set_shape(std::vector<size_t>{1});
+	this->init = new const_init<T>(scalar);
+	this->name = nnutils::formatter() << scalar;
+	initialize();
+}
+
+template <typename T>
+variable<T>::variable (std::string name) {
 	this->name = name;
 }
 
 template <typename T>
 variable<T>::variable (
 	tensor_shape const & shape,
-	initializer<T>& init,
-	std::string name)
+	std::string name) {
+	this->name = name;
+	this->out.set_shape(shape);
+}
+
+template <typename T>
+variable<T>::variable (tensor_shape const & shape, initializer<T>& init, std::string name)
 	: variable(shape, name) {
 	this->init = init.copy();
 }
 
 template <typename T>
-variable<T>* variable<T>::clone (std::string name) {
-	return new variable(*this, name);
+std::shared_ptr<ivariable<T> > variable<T>::clone_impl (std::string name) {
+	return std::shared_ptr<variable<T> >(new variable<T>(*this, name));
 }
-
-// template <typename T>
-// variable<T>::variable (
-// 	variable<T> const & other,
-// 	std::string name) {
-// 	copy(other);
-// 	if (false == name.empty()) {
-// 		this->name = name;
-// 	}
-// }
 
 template <typename T>
 variable<T>::~variable (void) {
@@ -163,6 +184,18 @@ const tensor<T>& variable<T>::eval (void) {
 // placeholder implementation
 
 template <typename T>
+void placeholder<T>::consumer_reshape (void) {
+	for (ioperation<T>* cons : this->consumers) {
+		cons->shape_eval();
+	}
+}
+
+template <typename T>
+placeholder<T>::placeholder (const placeholder<T>& other, std::string name) {
+	this->copy(other, name);
+}
+
+template <typename T>
 struct placeholder<T>::open_init : public initializer<T> {
 	std::vector<T> prime;
 
@@ -176,18 +209,27 @@ struct placeholder<T>::open_init : public initializer<T> {
 };
 
 template <typename T>
+placeholder<T>::placeholder (std::string name) : variable<T>(name) {}
+
+template <typename T>
 placeholder<T>::placeholder (const tensor_shape& shape, std::string name)
-	: variable<T>(shape, name) {
-	memory_alloc all;
-	this->out.allocate(all);
+	: variable<T>(shape, name) {}
+
+template <typename T>
+std::shared_ptr<ivariable<T> > placeholder<T>::clone_impl (std::string name) {
+	return std::shared_ptr<placeholder<T> >(new placeholder<T>(*this, name));
 }
 
 // changes shape
 template <typename T>
-variable<T>& placeholder<T>::assign (const ivariable<T>& other) {
-	if (this != &other) {
-		bool reshape_needed = false == other.out.is_same_size(this->out);
-		this->out = other.out;
+variable<T>& placeholder<T>::assign (VAR_PTR<T> other) {
+	if (VAR_PTR<T>(this) != other) {
+		bool reshape_needed = false == other->out.is_same_size(this->out);
+		if (false == this->out.is_alloc()) {
+			memory_alloc all;
+			this->out.allocate(all, other->get_shape());
+		}
+		this->out = other->out;
 		if (reshape_needed) {
 			consumer_reshape();
 		}
@@ -199,6 +241,14 @@ variable<T>& placeholder<T>::assign (const ivariable<T>& other) {
 // maintains shape
 template <typename T>
 variable<T>& placeholder<T>::operator = (std::vector<T> data) {
+	// note: if this is allocated,
+	// compatibility is compared to allocated shape instead of allowed
+	assert(this->out.is_compatible_with(data));
+
+	if (false == this->out.is_alloc()) {
+		memory_alloc all;
+		this->out.allocate(all, this->out.guess_shape(data));
+	}
 	this->init = new open_init();
 	assert(data.size() <= this->out.n_elems());
 	dynamic_cast<open_init*>(this->init)->prime = data;
@@ -213,7 +263,12 @@ variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 // changes shape
 template <typename T>
 variable<T>& placeholder<T>::operator = (const tensor<T>& data) {
-	bool reshape_needed = false == data.is_same_size(this->out);
+	assert(this->out.is_compatible_with(data));
+
+	bool reshape_needed =
+		this->out.get_shape().is_fully_defined() &&
+		!data.is_same_size(this->out);
+
 	this->out = data;
 	if (reshape_needed) {
 		consumer_reshape();
@@ -225,7 +280,7 @@ variable<T>& placeholder<T>::operator = (const tensor<T>& data) {
 template <typename T>
 void placeholder<T>::replace (const placeholder<T>& other) {
 	for (ioperation<T>* cons : this->consumers) {
-		cons->replace(*this, &other);
+		cons->replace(this, &other);
 	}
 	if (false == other.out.is_same_size(this->out)) {
 		consumer_reshape();

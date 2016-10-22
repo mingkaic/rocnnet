@@ -15,7 +15,6 @@ namespace nnet {
 template <typename T>
 void ibin_ops<T>::copy (const ivariable<T>& other, std::string name) {
 	if (const ibin_ops<T>* bptr = dynamic_cast<const ibin_ops<T>*>(&other)) {
-		if (own) delete own;
 		a = bptr->a;
 		b = bptr->b;
 		own = bptr->own;
@@ -28,20 +27,20 @@ void ibin_ops<T>::shape_eval (void) {
 	if (a->get_shape().is_fully_defined() &&
 		b->get_shape().is_fully_defined()) {
 		tensor_shape ts = this->get_element_shape(
-			this->get_eval(*a),
-			this->get_eval(*b));
+			this->get_eval(a),
+			this->get_eval(b));
 		assert(ts.is_fully_defined()); // assert initial shape is at least valid (re-checked at eval time)
 		this->update(ts);
 	}
 }
 
 template <typename T>
-ivariable<T>& ibin_ops<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
+ivariable<T>& ibin_ops<T>::operator () (VAR_PTR<T> a, VAR_PTR<T> b) {
 	std::stringstream ns;
-	ns << "(" << a.get_name() << get_symb() << b.get_name() << ")";
+	ns << "(" << a->get_name() << get_symb() << b->get_name() << ")";
 	this->name = ns.str();
-	this->consume(a); this->consume(b);
-	this->a = &a; this->b = &b;
+	this->consume(*(a.get())); this->consume(*(b.get()));
+	this->a = a; this->b = b;
 	if (session::pre_shape_eval()) {
 		shape_eval();
 	}
@@ -49,15 +48,15 @@ ivariable<T>& ibin_ops<T>::operator () (ivariable<T>& a, ivariable<T>& b) {
 }
 
 template <typename T>
-ivariable<T>& ibin_ops<T>::operator () (ivariable<T>& a, T b) {
-	own = new scalar<T>(b); // need smart pointer
-	return (*this)(a, *own);
+ivariable<T>& ibin_ops<T>::operator () (VAR_PTR<T> a, T b) {
+	own = VAR_PTR<T>(new variable<T>(b));
+	return (*this)(a, own);
 }
 
 template <typename T>
-ivariable<T>& ibin_ops<T>::operator () (T a, ivariable<T>& b) {
-	own = new scalar<T>(a);
-	return (*this)(*own, b);
+ivariable<T>& ibin_ops<T>::operator () (T a, VAR_PTR<T> b) {
+	own = VAR_PTR<T>(new variable<T>(a));
+	return (*this)(own, b);
 }
 
 template <typename T>
@@ -85,7 +84,7 @@ template <typename T>
 std::function<T(T, T)> add<T>::get_op (void) { return shared_cnnet::op_add<T>; }
 
 template <typename T>
-tensor<T>* add<T>::calc_gradient (ivariable<T>* over) const {
+tensor<T>* add<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 	// h'(f(x), g(x)) = f'(x) + g'(x)
 	tensor<T>* deriva = this->a->gradient(over);
 	tensor<T>* derivb = this->b->gradient(over);
@@ -101,8 +100,8 @@ tensor<T>* add<T>::calc_gradient (ivariable<T>* over) const {
 }
 
 template <typename T>
-add<T>* add<T>::clone (std::string name) {
-	return new add<T>(*this, name);
+std::shared_ptr<ivariable<T> > add<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new add<T>(*this, name));
 }
 
 // SUBTRACTION
@@ -111,7 +110,7 @@ template <typename T>
 std::function<T(T, T)> sub<T>::get_op (void) { return shared_cnnet::op_sub<T>; }
 
 template <typename T>
-tensor<T>* sub<T>::calc_gradient (ivariable<T>* over) const {
+tensor<T>* sub<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 	// h'(f(x), g(x)) = f'(x) - g'(x)
 	tensor<T>* deriva = this->a->gradient(over);
 	tensor<T>* derivb = this->b->gradient(over);
@@ -129,8 +128,8 @@ tensor<T>* sub<T>::calc_gradient (ivariable<T>* over) const {
 }
 
 template <typename T>
-sub<T>* sub<T>::clone (std::string name) {
-	return new sub<T>(*this, name);
+std::shared_ptr<ivariable<T> > sub<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new sub<T>(*this, name));
 }
 
 // MULTIPLICATION
@@ -139,14 +138,14 @@ template <typename T>
 std::function<T(T, T)> mul<T>::get_op (void) { return shared_cnnet::op_mul<T>; }
 
 template <typename T>
-tensor<T>* mul<T>::calc_gradient (ivariable<T>* over) const {
+tensor<T>* mul<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 	// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
 	tensor<T>* deriva = this->a->gradient(over);
 	tensor<T>* derivb = this->b->gradient(over);
 	tensor<T>* ans = nullptr;
 	if (deriva && derivb) {
-		tensor<T>& tensa = this->get_eval(*this->a);
-		tensor<T>& tensb = this->get_eval(*this->b);
+		tensor<T>& tensa = this->get_eval(this->a);
+		tensor<T>& tensb = this->get_eval(this->b);
 		tensor<T>* ta = this->util_op(*deriva, tensb, shared_cnnet::op_mul<T>); // f'(x)*g(x)
 		tensor<T>* tb = this->util_op(*derivb, tensa, shared_cnnet::op_mul<T>); // f(x)*g'(x)
 		ans = this->util_op(*ta, *tb, shared_cnnet::op_add<T>);
@@ -156,19 +155,19 @@ tensor<T>* mul<T>::calc_gradient (ivariable<T>* over) const {
 		delete derivb;
 	} else if (deriva){
 		// deriva -> derivb * evala
-		ans = this->util_op(*deriva, this->get_eval(*this->b), shared_cnnet::op_mul<T>); // f'(x)*g(x)
+		ans = this->util_op(*deriva, this->get_eval(this->b), shared_cnnet::op_mul<T>); // f'(x)*g(x)
 		delete deriva;
 	} else if (derivb) {
 		// derivb -> deriva * evalb
-		ans = this->util_op(this->get_eval(*this->a), *derivb, shared_cnnet::op_mul<T>); // f(x)*g'(x)
+		ans = this->util_op(this->get_eval(this->a), *derivb, shared_cnnet::op_mul<T>); // f(x)*g'(x)
 		delete derivb;
 	}
 	return ans;
 }
 
 template <typename T>
-mul<T>* mul<T>::clone (std::string name) {
-	return new mul<T>(*this, name);
+std::shared_ptr<ivariable<T> > mul<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new mul<T>(*this, name));
 }
 
 // DIVISION
@@ -177,15 +176,15 @@ template <typename T>
 std::function<T(T, T)> div<T>::get_op (void) { return shared_cnnet::op_div<T>; }
 
 template <typename T>
-tensor<T>* div<T>::calc_gradient (ivariable<T>* over) const {
+tensor<T>* div<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 	// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
 	tensor<T>* deriva = this->a->gradient(over);
 	tensor<T>* derivb = this->b->gradient(over);
 	tensor<T>* ans = nullptr;
 	// deriva or derivb can be null.
 	if (deriva && derivb) {
-		tensor<T>& tensa = this->get_eval(*this->a);
-		tensor<T>& tensb = this->get_eval(*this->b);
+		tensor<T>& tensa = this->get_eval(this->a);
+		tensor<T>& tensb = this->get_eval(this->b);
 		// use util operations to handle scalar cases
 		tensor<T>* numer0 = this->util_op(*deriva, tensb, shared_cnnet::op_mul<T>); // f'(x)*g(x)
 		tensor<T>* numer1 = this->util_op(*derivb, tensa, shared_cnnet::op_mul<T>); // f(x)*g'(x)
@@ -200,12 +199,12 @@ tensor<T>* div<T>::calc_gradient (ivariable<T>* over) const {
 		delete derivb;
 	} else if (deriva) {
 		// derivb is null, so h'(f(x), g(x)) = f'(x)*g(x)/g^2(x) = f'(x)/g(x)
-		ans = this->util_op(*deriva, this->get_eval(*this->b), shared_cnnet::op_div<T>);
+		ans = this->util_op(*deriva, this->get_eval(this->b), shared_cnnet::op_div<T>);
 		delete deriva;
 	} else if (derivb) {
 		// deriva is null, so h'(f(x), g(x)) = -f(x)*g'(x)/g^2(x)
-		tensor<T>& tensa = this->get_eval(*this->a);
-		tensor<T>& tensb = this->get_eval(*this->b);
+		tensor<T>& tensa = this->get_eval(this->a);
+		tensor<T>& tensb = this->get_eval(this->b);
 		// use util operations to handle scalar cases
 		tensor<T>* negres = this->util_op(*derivb, shared_cnnet::op_neg<T>);
 		tensor<T>* numer = this->util_op(*negres, tensa, shared_cnnet::op_mul<T>); // -f(x)*g'(x)
@@ -220,8 +219,8 @@ tensor<T>* div<T>::calc_gradient (ivariable<T>* over) const {
 }
 
 template <typename T>
-div<T>* div<T>::clone (std::string name) {
-	return new div<T>(*this, name);
+std::shared_ptr<ivariable<T> > div<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new div<T>(*this, name));
 }
 
 }

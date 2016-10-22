@@ -88,6 +88,10 @@ class tensor {
 		// checks if tensorshape is aligned
 		// (e.g.: same number of column for each row)
 		bool is_aligned (void) const;
+
+		tensor_shape guess_shape (std::vector<T> data) const;
+		bool is_compatible_with (std::vector<T> data) const;
+		bool is_compatible_with (const tensor<T>& other) const;
 		// checks if input tensor has a compatible allowed tensor_shape
 		bool is_same_size (const tensor<T>& other) const;
 

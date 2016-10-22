@@ -26,17 +26,15 @@ class univar_func;
 template <typename T>
 class ibin_ops : public ioperation<T> {
 	protected:
-		ivariable<T>* a = nullptr;
-		ivariable<T>* b = nullptr;
-		ivariable<T>* own = nullptr;
+		VAR_PTR<T> a = nullptr;
+		VAR_PTR<T> b = nullptr;
+		VAR_PTR<T> own = nullptr;
 
 		// calc_gradient remains abstract
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void replace (
-			const ivariable<T>& food,
-			const ivariable<T>* newfood) {
-			if (a == &food) a = const_cast<ivariable<T>*>(newfood);
-			if (b == &food) b = const_cast<ivariable<T>*>(newfood);
+		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) {
+			if (a.get() == food) a = newfood;
+			if (b.get() == food) b = newfood;
 		}
 
 		virtual void shape_eval (void);
@@ -47,14 +45,12 @@ class ibin_ops : public ioperation<T> {
 		friend class univar_func<T>;
 
 	public:
-		virtual ~ibin_ops (void) {
-			if (own) delete own;
-			if (a) a->get_consumers().erase(this);
-			if (b) b->get_consumers().erase(this);
-		}
-		virtual ivariable<T>& operator () (ivariable<T>& a, ivariable<T>& b);
-		virtual ivariable<T>& operator () (ivariable<T>& a, T b);
-		virtual ivariable<T>& operator () (T a, ivariable<T>& b);
+		virtual ~ibin_ops (void) {}
+
+		virtual ivariable<T>& operator () (VAR_PTR<T> a, VAR_PTR<T> b);
+		virtual ivariable<T>& operator () (VAR_PTR<T> a, T b);
+		virtual ivariable<T>& operator () (T a, VAR_PTR<T> b);
+
 		virtual ibin_ops<T>& operator = (const ivariable<T>& other);
 
 		virtual const tensor<T>& eval (void);
@@ -66,18 +62,23 @@ template <typename T>
 class add : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		add (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "+"; }
 		std::function<T(T, T)> get_op (void);
 
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
 	public:
 		add (void) {}
-		add (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
-		add (ivariable<T>& a, T b) { (*this)(a, b); }
-		add (T a, ivariable<T>& b) { (*this)(a, b); }
-		virtual add<T>* clone (std::string name = "");
+		add (VAR_PTR<T> a, VAR_PTR<T> b) { (*this)(a, b); }
+		add (VAR_PTR<T> a, T b) { (*this)(a, b); }
+		add (T a, VAR_PTR<T> b) { (*this)(a, b); }
+
+		std::shared_ptr<add<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<add<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // subtraction
@@ -86,18 +87,23 @@ template <typename T>
 class sub : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		sub (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "-"; }
 		std::function<T(T, T)> get_op (void);
 
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
 	public:
 		sub (void) {}
-		sub (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
-		sub (ivariable<T>& a, const T b) { (*this)(a, b); }
-		sub (const T a, ivariable<T>& b) { (*this)(a, b); }
-		virtual sub<T>* clone (std::string name = "");
+		sub (VAR_PTR<T> a, VAR_PTR<T> b) { (*this)(a, b); }
+		sub (VAR_PTR<T> a, T b) { (*this)(a, b); }
+		sub (T a, VAR_PTR<T> b) { (*this)(a, b); }
+
+		std::shared_ptr<sub<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<sub<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // element wise multiplication
@@ -106,18 +112,23 @@ template <typename T>
 class mul : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		mul (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "*"; }
 		std::function<T(T, T)> get_op (void);
 
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
 	public:
 		mul (void) {}
-		mul (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
-		mul (ivariable<T>& a, const T b) { (*this)(a, b); }
-		mul (const T a, ivariable<T>& b) { (*this)(a, b); }
-		virtual mul<T>* clone (std::string name = "");
+		mul (VAR_PTR<T> a, VAR_PTR<T> b) { (*this)(a, b); }
+		mul (VAR_PTR<T> a, T b) { (*this)(a, b); }
+		mul (T a, VAR_PTR<T> b) { (*this)(a, b); }
+
+		std::shared_ptr<mul<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<mul<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // element wise division
@@ -126,18 +137,23 @@ template <typename T>
 class div : public ibin_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		div (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "/"; }
 		std::function<T(T, T)> get_op (void);
 
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
 	public:
 		div (void) {}
-		div (ivariable<T>& a, ivariable<T>& b) { (*this)(a, b); }
-		div (ivariable<T>& a, const T b) { (*this)(a, b); }
-		div (const T a, ivariable<T>& b) { (*this)(a, b); }
-		virtual div<T>* clone (std::string name = "");
+		div (VAR_PTR<T> a, VAR_PTR<T> b) { (*this)(a, b); }
+		div (VAR_PTR<T> a, T b) { (*this)(a, b); }
+		div (T a, VAR_PTR<T> b) { (*this)(a, b); }
+
+		std::shared_ptr<div<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<div<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 }

@@ -21,32 +21,50 @@ template <typename T>
 class iunar_ops : public ioperation<T> {
 	protected:
 		// avoid calling ivariable's assignment multiple time
-		ivariable<T>* var = nullptr;
+		VAR_PTR<T> var = nullptr;
 
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const = 0;
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void replace (
-			const ivariable<T>& food,
-			const ivariable<T>* newfood) {
-			if (var == &food) var = const_cast<ivariable<T>*>(newfood);
-		}
-
+		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
 		virtual void shape_eval (void);
 		// operator () getters
 		virtual std::string get_symb (void) = 0;
-		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
 
 		friend class univar_func<T>;
 
 	public:
-		virtual ~iunar_ops (void) {
-			if (var) var->get_consumers().erase(this);
-		}
-		virtual ivariable<T>& operator () (ivariable<T>& in);
+		virtual ~iunar_ops (void) {}
+		virtual ivariable<T>& operator () (VAR_PTR<T> in);
 		virtual iunar_ops<T>& operator = (const ivariable<T>& other);
+};
 
+// OUT NODE
+
+template <typename T>
+class expose : public iunar_ops<T> {
+	protected:
+		tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "expose"; }
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
+	public:
+		expose (void) {}
+		expose (VAR_PTR<T> var) { (*this)(var); }
 		virtual const tensor<T>& eval (void);
+
+		std::shared_ptr<expose<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<expose<T>, ivariable<T> >(clone_impl(name));
+		}
+
+		// non-inheriteds
+		// evaluates consumed operation
+		virtual std::vector<T> get_raw (void);
+		// extracts derivative based on the LAST evaluation
+		// doesn't evaluate
+		virtual std::vector<T> get_derive (WEAK_VAR_PTR<T> over) const;
 };
 
 // GRADIENT
@@ -58,198 +76,206 @@ class iunar_ops : public ioperation<T> {
 template <typename T>
 class gradient : public iunar_ops<T> {
 	private:
-		ivariable<double>* over = nullptr;
+		VAR_PTR<T> over = nullptr;
 
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const {
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const {
 			// TODO implement calc_gradient
 			return nullptr;
 		}
 		gradient (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "/gradient?"; }
-		std::function<T(T)> get_op (void) { return shared_cnnet::op_neg<T>; } // useless for grad
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		gradient (void) {}
+		gradient (VAR_PTR<T> func) { (*this)(func); }
+		gradient (VAR_PTR<T> func, VAR_PTR<T> over) : over(over) { (*this)(func); }
+		virtual const tensor<T>& eval (void);
 
-		gradient (ivariable<T>& func) { (*this)(func); }
-		gradient (ivariable<T>& func, ivariable<T>& over) :
-			over(&over) { (*this)(func); }
-		virtual gradient<T>* clone (std::string name = "");
-
-		virtual const tensor<T>& eval (void) {
-			tensor<T>* prime = this->var->gradient(over);
-			this->out = *prime;
-			delete prime;
-			return this->out;
+		std::shared_ptr<gradient<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<gradient<T>, ivariable<T> >(clone_impl(name));
 		}
 };
 
-// OUT NODE
+// USED FOR ELEMENT WISE OPERATIONS ONLY
 
-// TODO extend ioperation interface for unique operations like gradient and expose
 template <typename T>
-class expose : public iunar_ops<T> {
+class iunar_elem_ops : public iunar_ops<T> {
 	protected:
-		// inherits calc_gradient from iunar_ops
-		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "expose"; }
-		std::function<T(T)> get_op (void);
+		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
 
 	public:
-		expose (void) {}
-		expose (ivariable<T>& var) { (*this)(var); }
-		virtual expose<T>* clone (std::string name = "");
-
-		virtual const tensor<T>& eval (void) {
-			this->out = this->var->eval();
-			return this->out;
-		}
-
-		// non-inheriteds
-		// evaluates consumed operation
-		virtual std::vector<T> get_raw (void);
-		// extracts derivative based on the LAST evaluation
-		// doesn't evaluate
-		virtual std::vector<T> get_derive (ivariable<T>& over) const;
+		virtual const tensor<T>& eval (void);
 };
 
 // NEGATION
 
 template <typename T>
-class neg : public iunar_ops<T> {
+class neg : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		neg (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "-"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		neg (void) {}
-		neg (ivariable<T>& var) { (*this)(var); }
-		virtual neg<T>* clone (std::string name = "");
+		neg (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<neg<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<neg<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // SINE
 
 template <typename T>
-class sin : public iunar_ops<T> {
+class sin : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		sin (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "sin"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		sin (void) {}
-		sin (ivariable<T>& var) { (*this)(var); }
-		virtual sin<T>* clone (std::string name = "");
+		sin (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<sin<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<sin<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // COSINE
 
 template <typename T>
-class cos : public iunar_ops<T> {
+class cos : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		cos (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "cos"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		cos (void) {}
-		cos (ivariable<T>& var) { (*this)(var); }
-		virtual cos<T>* clone (std::string name = "");
+		cos (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<cos<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<cos<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // TANGENT
 
 template <typename T>
-class tan : public iunar_ops<T> {
+class tan : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		tan (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "tan"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		tan (void) {}
-		tan (ivariable<T>& var) { (*this)(var); }
-		virtual tan<T>* clone (std::string name = "");
+		tan (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<tan<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<tan<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // COSECANT
 
 template <typename T>
-class csc : public iunar_ops<T> {
+class csc : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		csc (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "csc"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		csc (void) {}
-		csc (ivariable<T>& var) { (*this)(var); }
-		virtual csc<T>* clone (std::string name = "");
+		csc (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<csc<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<csc<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // SECANT
 
 template <typename T>
-class sec : public iunar_ops<T> {
+class sec : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		sec (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "sec"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		sec (void) {}
-		sec (ivariable<T>& var) { (*this)(var); }
-		virtual sec<T>* clone (std::string name = "");
+		sec (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<sec<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<sec<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // COTANGENT
 
 template <typename T>
-class cot : public iunar_ops<T> {
+class cot : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		cot (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "cot"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		cot (void) {}
-		cot (ivariable<T>& var) { (*this)(var); }
-		virtual cot<T>* clone (std::string name = "");
+		cot (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<cot<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<cot<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 // EXPONENT OF E
 
 template <typename T>
-class exp : public iunar_ops<T> {
+class exp : public iunar_elem_ops<T> {
 	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		exp (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "exp"; }
 		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
 		exp (void) {}
-		exp (ivariable<T>& var) { (*this)(var); }
-		virtual exp<T>* clone (std::string name = "");
+		exp (VAR_PTR<T> var) { (*this)(var); }
+
+		std::shared_ptr<exp<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<exp<T>, ivariable<T> >(clone_impl(name));
+		}
 };
 
 }

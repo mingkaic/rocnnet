@@ -12,6 +12,7 @@
 #include <functional>
 #include <limits>
 #include <queue>
+#include <memory>
 
 #pragma once
 #ifndef operation_hpp
@@ -91,22 +92,22 @@ class ioperation : public ivariable<T> {
 		}
 		// share friend priviledge with ivariable and tensor to descendants
 		// retrieve the last evaluated tensor
-		tensor<T>& get_eval (ivariable<T>& var) const { return var.out; }
-		// note keeping: record self as consumer of food
-		void consume (ivariable<T>& food) {
-			food.consumers.emplace(this);
+		tensor<T>& get_eval (VAR_PTR<T> var) const {
+			return var->out;
 		}
 
 		// clears input
 		void deconsume (ivariable<T>& food) {
 			food.consumers.erase(this);
-			replace(food, nullptr);
+		}
+
+		// note keeping: record self as consumer of food
+		void consume (ivariable<T>& food) {
+			food.consumers.emplace(this);
 		}
 
 		// changes input
-		virtual void replace (
-			const ivariable<T>& food,
-			const ivariable<T>* newfood) = 0;
+		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) = 0;
 
 		// check if candidate_shape is worth propagating to consumers
 		// before assigning consumers with new shapes to consume
@@ -123,30 +124,6 @@ class ioperation : public ivariable<T> {
 		// clone remains abstract
 		virtual ~ioperation (void) {}
 		// eval remains abstract
-};
-
-// SCALAR using operation functions
-// TODO change base class to ivariable
-template <typename T>
-class scalar : public ioperation<T> {
-	private:
-		static T equivalent (T a, T b);
-		static void atleast1 (bool& reduce, T value);
-
-	protected:
-		virtual tensor<T>* calc_gradient (ivariable<T>* over) const;
-		virtual void replace (
-			const ivariable<T>& food,
-			const ivariable<T>* newfood) {}
-
-		scalar (const scalar<T>& other, std::string name);
-		virtual void shape_eval (void) { /* do nothing */ }
-
-	public:
-		scalar (T value);
-		virtual scalar<T>* clone (std::string name = "");
-		virtual ~scalar (void) {}
-		virtual const tensor<T>& eval (void) { return this->out; }
 };
 
 // template <typename T>

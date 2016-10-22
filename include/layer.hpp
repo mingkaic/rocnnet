@@ -24,9 +24,9 @@
 
 namespace nnet {
 
-#define WB_PAIR std::pair<variable<double>*, variable<double>*>
-#define IN_PAIR std::pair<size_t, nnet::univar_func<double>*>
-#define HID_PAIR std::pair<layer_perceptron*, univar_func<double>*>
+#define WB_PAIR std::pair<VAR_PTR<double>, VAR_PTR<double>>
+#define IN_PAIR std::pair<size_t, nnet::TEN_FUNC<double> >
+#define HID_PAIR std::pair<layer_perceptron*, nnet::TEN_FUNC<double> >
 
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
@@ -41,31 +41,25 @@ class layer_perceptron {
 		size_t n_input;
 		size_t n_output;
 		// any allowed size
-		variable<double>* weights = nullptr;
-		variable<double>* bias = nullptr;
-		std::vector<ivariable<double>*> ownership;
+		VAR_PTR<double> weights = nullptr;
+		VAR_PTR<double> bias = nullptr;
 
 		void copy (
-			layer_perceptron const & other,
+			const layer_perceptron& other,
 			std::string scope);
-
-		void clear_ownership (void);
 
 	public:
 		layer_perceptron (
 			size_t n_input,
 			size_t n_output,
 			std::string scope="");
-
 		layer_perceptron (
-			layer_perceptron const & other,
+			const layer_perceptron& other,
 			std::string scope="");
-
-		virtual ~layer_perceptron (void);
+		virtual ~layer_perceptron (void) {}
 
 		layer_perceptron& operator = (const layer_perceptron& other);
-
-		ivariable<double>& operator () (ivariable<double>& input);
+		VAR_PTR<double> operator () (VAR_PTR<double>);
 
 		size_t get_n_input (void) const { return n_input; }
 		size_t get_n_output (void) const { return n_output; }
@@ -77,10 +71,9 @@ class ml_perceptron {
 	protected:
 		std::string scope;
 		std::vector<HID_PAIR> layers;
-		placeholder<double>* in_place = nullptr;
-		std::vector<ivariable<double>*> hypothesi;
 
-		void copy (ml_perceptron const & other,
+		void copy (
+			const ml_perceptron& other,
 			std::string scope);
 
 		ml_perceptron (const ml_perceptron& other, std::string scope);
@@ -97,7 +90,7 @@ class ml_perceptron {
 
 		// input are expected to have shape n_input by batch_size
 		// outputs are expected to have shape output by batch_size
-		ivariable<double>& operator () (placeholder<double>& input);
+		VAR_PTR<double> operator () (PLACEHOLDER_PTR<double> input);
 		std::vector<WB_PAIR> get_variables (void);
 };
 

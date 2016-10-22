@@ -6,32 +6,29 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <stdio.h>
-#include <algorithm>
-#include "tenncor/tenncor.hpp"
-#include "gtest/gtest.h"
+#include "../shared/utils.hpp"
 
 template <typename T>
 void unaryElemTest (
 	std::function<double(double)> op) {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
-	nnet::placeholder<double> p(std::vector<size_t>{edge, edge, edge});
+	nnet::PLACEHOLDER_PTR<double> p = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "unar_in");
 
-	T res(p);
+	std::shared_ptr<T> res = std::make_shared<T>(p);
 
 	// didn't initialize
-	EXPECT_DEATH({ res.eval(); }, ".*");
+	EXPECT_DEATH({ res->eval(); }, ".*");
 
 	std::vector<double> r;
 	for (size_t i = 0; i < supersize; i++) {
 		r.push_back(rand());
 	}
-	p = r;
+	*p = r;
 
-	nnet::expose<double> ex(res);
+	EXPOSE_PTR ex = EXPOSE(res);
 	// evaluates
-    std::vector<double> raw = ex.get_raw();
+    std::vector<double> raw = ex->get_raw();
 
     ASSERT_EQ(raw.size(), supersize);
 
@@ -49,20 +46,20 @@ void binaryElemTest (
 	const size_t badsize = edge*edge;
 	const size_t supersize = edge*edge*edge;
 	nnet::tensor_shape goodshape = std::vector<size_t>{edge, edge, edge};
-	nnet::placeholder<double> p1(goodshape);
-	nnet::placeholder<double> p2(goodshape);
-	nnet::placeholder<double> bad(std::vector<size_t>{edge, edge});
+	nnet::PLACEHOLDER_PTR<double> p1 = MAKE_PLACEHOLDER(goodshape, "bin_in1");
+	nnet::PLACEHOLDER_PTR<double> p2 = MAKE_PLACEHOLDER(goodshape, "bin_in2");
+	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge}), "bad");
 
-	EXPECT_DEATH({ T trouble1(p1, bad); }, ".*"); // evaluates shapes at construction
-    EXPECT_DEATH({ T trouble2(bad, p1); }, ".*");
-	T res(p1, p2);
-	T res1(p1, 2);
-	T _1res(2, p1);
+	EXPECT_DEATH({ std::shared_ptr<T> trouble1 = std::make_shared<T>(p1, bad); }, ".*"); // evaluates shapes at construction
+    EXPECT_DEATH({ std::shared_ptr<T> trouble2 = std::make_shared<T>(bad, p1); }, ".*");
+	std::shared_ptr<T> res = std::make_shared<T>(p1, p2);
+	std::shared_ptr<T> res1 = std::make_shared<T>(p1, 2);
+	std::shared_ptr<T> _1res = std::make_shared<T>(2, p1);
 
 	// didn't initialize
-	EXPECT_DEATH({ res.eval(); }, ".*");
-	EXPECT_DEATH({ res1.eval(); }, ".*");
-	EXPECT_DEATH({ _1res.eval(); }, ".*");
+	EXPECT_DEATH({ res->eval(); }, ".*");
+	EXPECT_DEATH({ res1->eval(); }, ".*");
+	EXPECT_DEATH({ _1res->eval(); }, ".*");
 
 	// initialize
 	std::vector<double> r1;
@@ -75,16 +72,16 @@ void binaryElemTest (
 	for (size_t i = 0; i < badsize; i++) {
 		rbad.push_back(rand());
 	}
-	p1 = r1;
-	p2 = r2;
+	*p1 = r1;
+	*p2 = r2;
 
-	nnet::expose<double> ex(res);
-	nnet::expose<double> ex1(res1);
-	nnet::expose<double> ex2(_1res);
+	EXPOSE_PTR ex = EXPOSE(res);
+	EXPOSE_PTR ex1 = EXPOSE(res1);
+	EXPOSE_PTR ex2 = EXPOSE(_1res);
 	// evaluates
-    std::vector<double> raw = ex.get_raw();
-	std::vector<double> raw1 = ex1.get_raw();
-	std::vector<double> raw2 = ex2.get_raw();
+    std::vector<double> raw = ex->get_raw();
+	std::vector<double> raw1 = ex1->get_raw();
+	std::vector<double> raw2 = ex2->get_raw();
 
     ASSERT_EQ(raw.size(), supersize);
 	ASSERT_EQ(raw1.size(), supersize);
@@ -96,45 +93,6 @@ void binaryElemTest (
 		EXPECT_EQ(op(2, r1[i]), raw2[i]);
     }
 	sess.disable_shape_eval();
-}
-
-
-TEST(OPERATION, consumer_deletion) {
-	nnet::ivariable<double>* sample = new nnet::variable<double>(std::vector<size_t>{1}, "sample");
-	nnet::neg<double>* neg = new nnet::neg<double>(*sample);
-	nnet::add<double>* add = new nnet::add<double>(*sample, *sample);
-	nnet::transpose<double>* trans = new nnet::transpose<double>(*sample);
-	nnet::matmul<double>* matmul = new nnet::matmul<double>(*sample, *sample);
-	nnet::sigmoid<double>* sig = new nnet::sigmoid<double>();
-	(*sig)(*sample);
-	delete neg;
-	delete add;
-	delete trans;
-	delete matmul;
-	delete sig;
-	std::unordered_set<nnet::ioperation<double>*> consumers = sample->get_consumers();
-	ASSERT_TRUE(consumers.empty());
-	delete sample;
-}
-
-
-TEST(OPERATION, producer_deletion) {
-	nnet::ivariable<double>* sample = new nnet::variable<double>(std::vector<size_t>{1}, "sample");
-	nnet::neg<double>* neg = new nnet::neg<double>(*sample);
-	nnet::add<double>* add = new nnet::add<double>(*sample, *sample);
-	nnet::transpose<double>* trans = new nnet::transpose<double>(*sample);
-	nnet::matmul<double>* matmul = new nnet::matmul<double>(*sample, *sample);
-	nnet::sigmoid<double>* sig = new nnet::sigmoid<double>();
-	(*sig)(*sample);
-	std::unordered_set<nnet::ioperation<double>*> consumers = sample->get_consumers();
-	ASSERT_EQ(consumers.size(), 6);
-	delete sample;
-
-	delete neg;
-	delete add;
-	delete trans;
-	delete matmul;
-	delete sig;
 }
 
 
@@ -185,16 +143,6 @@ TEST(OPERATION, cot) {
 	unaryElemTest<nnet::cot<double> >([](double var) {
 		return cos(var)/sin(var);
 	});
-}
-
-
-TEST(OPERATION, scalar) {
-	nnet::scalar<double> zero(0);
-	nnet::scalar<double> uno(1);
-	nnet::scalar<double> one(1);
-	nnet::scalar<double> deux(2);
-
-	uno.gradient(&one);
 }
 
 
@@ -271,40 +219,40 @@ TEST(OPERATION, matmul) {
 		{219, 51, 78}
 	};
 	const size_t supersize = ncol*nrow;
-	nnet::placeholder<double> A(std::vector<size_t>{ncol, nrow});
-	nnet::placeholder<double> B(std::vector<size_t>{ncol, nrow});
-	nnet::placeholder<double> C(std::vector<size_t>{nrow, ncol});
-	nnet::matmul<double> ans1(A, B, false, true); // output is 4x4
-	nnet::matmul<double> ans2(A, B, true); // output is 3x3
-	nnet::matmul<double> ans3(C, A); // output is 3x3
+	nnet::PLACEHOLDER_PTR<double> A = MAKE_PLACEHOLDER((std::vector<size_t>{ncol, nrow}), "a");
+	nnet::PLACEHOLDER_PTR<double> B = MAKE_PLACEHOLDER((std::vector<size_t>{ncol, nrow}), "b");
+	nnet::PLACEHOLDER_PTR<double> C = MAKE_PLACEHOLDER((std::vector<size_t>{nrow, ncol}), "c");
+	nnet::VAR_PTR<double> ans1 = std::make_shared<nnet::matmul<double> >(A, B, false, true); // output is 4x4
+	nnet::VAR_PTR<double> ans2 = std::make_shared<nnet::matmul<double> >(A, B, true); // output is 3x3
+	nnet::VAR_PTR<double> ans3 = std::make_shared<nnet::matmul<double> >(C, A); // output is 3x3
 
 	// didn't initialize
-	EXPECT_DEATH({ ans1.eval(); }, ".*");
-	EXPECT_DEATH({ ans2.eval(); }, ".*");
-	EXPECT_DEATH({ ans3.eval(); }, ".*");
-	A = av;
-	B = bv;
-	C = cv;
+	EXPECT_DEATH({ ans1->eval(); }, ".*");
+	EXPECT_DEATH({ ans2->eval(); }, ".*");
+	EXPECT_DEATH({ ans3->eval(); }, ".*");
+	*A = av;
+	*B = bv;
+	*C = cv;
 
-	nnet::expose<double> res1(ans1);
-	nnet::expose<double> res2(ans2);
-	nnet::expose<double> res3(ans3);
+	EXPOSE_PTR res1 = EXPOSE(ans1);
+	EXPOSE_PTR res2 = EXPOSE(ans2);
+	EXPOSE_PTR res3 = EXPOSE(ans3);
 	// evaluates
-    nnet::tensor<double> t1 = res1.eval();
+    nnet::tensor<double> t1 = res1->eval();
 	nnet::tensor_shape s1 = t1.get_shape();
 	std::vector<size_t> v1 = s1.as_list();
 	ASSERT_EQ(v1.size(), 2);
 	ASSERT_EQ(v1[0], nrow);
 	ASSERT_EQ(v1[1], nrow);
 
-    nnet::tensor<double> t2 = res2.eval();
+    nnet::tensor<double> t2 = res2->eval();
 	nnet::tensor_shape s2 = t2.get_shape();
 	std::vector<size_t> v2 = s2.as_list();
 	ASSERT_EQ(v2.size(), 2);
 	ASSERT_EQ(v2[0], ncol);
 	ASSERT_EQ(v2[1], ncol);
 
-    nnet::tensor<double> t3 = res3.eval();
+    nnet::tensor<double> t3 = res3->eval();
 	nnet::tensor_shape s3 = t3.get_shape();
 	std::vector<size_t> v3 = s3.as_list();
 	ASSERT_EQ(v3.size(), 2);
@@ -362,26 +310,26 @@ TEST(OPERATION, matmul2) {
 		{1198, 194},
 		{116, 16}
 	};
-	nnet::placeholder<double> A(std::vector<size_t>{2, 4});
-	nnet::placeholder<double> B(std::vector<size_t>{3, 4});
-	nnet::placeholder<double> C(std::vector<size_t>{4, 5});
-	nnet::matmul<double> ans1(A, B, true); // output is 2x3 (row by col)
-	nnet::matmul<double> ans2(B, C, true, true); // output is 3x5
-	nnet::matmul<double> ans3(C, A); // output is 5x2
+	nnet::PLACEHOLDER_PTR<double> A = MAKE_PLACEHOLDER((std::vector<size_t>{2, 4}), "a");
+	nnet::PLACEHOLDER_PTR<double> B = MAKE_PLACEHOLDER((std::vector<size_t>{3, 4}), "b");
+	nnet::PLACEHOLDER_PTR<double> C = MAKE_PLACEHOLDER((std::vector<size_t>{4, 5}), "c");
+	nnet::VAR_PTR<double> ans1 = std::make_shared<nnet::matmul<double> >(A, B, true); // output is 2x3 (row by col)
+	nnet::VAR_PTR<double> ans2 = std::make_shared<nnet::matmul<double> >(B, C, true, true); // output is 3x5
+	nnet::VAR_PTR<double> ans3 = std::make_shared<nnet::matmul<double> >(C, A); // output is 5x2
 
 	// didn't initialize
-	EXPECT_DEATH({ ans1.eval(); }, ".*");
-	EXPECT_DEATH({ ans2.eval(); }, ".*");
-	EXPECT_DEATH({ ans3.eval(); }, ".*");
-	A = av;
-	B = bv;
-	C = cv;
+	EXPECT_DEATH({ ans1->eval(); }, ".*");
+	EXPECT_DEATH({ ans2->eval(); }, ".*");
+	EXPECT_DEATH({ ans3->eval(); }, ".*");
+	*A = av;
+	*B = bv;
+	*C = cv;
 
-	nnet::expose<double> res1(ans1);
-	nnet::expose<double> res2(ans2);
-	nnet::expose<double> res3(ans3);
+	EXPOSE_PTR res1 = EXPOSE(ans1);
+	EXPOSE_PTR res2 = EXPOSE(ans2);
+	EXPOSE_PTR res3 = EXPOSE(ans3);
 	// evaluates
-    nnet::tensor<double> t1 = res1.eval();
+    nnet::tensor<double> t1 = res1->eval();
 	nnet::tensor_shape s1 = t1.get_shape();
 	std::vector<size_t> v1 = s1.as_list();
 	ASSERT_EQ(v1.size(), 2);
@@ -393,7 +341,7 @@ TEST(OPERATION, matmul2) {
 		}
     }
 
-    nnet::tensor<double> t2 = res2.eval();
+    nnet::tensor<double> t2 = res2->eval();
 	nnet::tensor_shape s2 = t2.get_shape();
 	std::vector<size_t> v2 = s2.as_list();
 	ASSERT_EQ(v2.size(), 2);
@@ -406,7 +354,7 @@ TEST(OPERATION, matmul2) {
 		}
     }
 
-    nnet::tensor<double> t3 = res3.eval();
+    nnet::tensor<double> t3 = res3->eval();
 	nnet::tensor_shape s3 = t3.get_shape();
 	std::vector<size_t> v3 = s3.as_list();
 	ASSERT_EQ(v3.size(), 2);
@@ -455,16 +403,16 @@ TEST(OPERATION, transpose) {
 		{32, 45, 3, 22, 2},
 		{9, 3.2, 3, 32, 1}
 	};
-	nnet::placeholder<double> A(std::vector<size_t>{2, 4});
-	nnet::placeholder<double> B(std::vector<size_t>{3, 4});
-	nnet::placeholder<double> C(std::vector<size_t>{4, 5});
-	nnet::transpose<double> resa(A);
-	nnet::transpose<double> resb(B);
-	nnet::transpose<double> resc(C);
-	A = av;
-	B = bv;
-	C = cv;
-	nnet::tensor<double> ta = resa.eval();
+	nnet::PLACEHOLDER_PTR<double> A = MAKE_PLACEHOLDER((std::vector<size_t>{2, 4}), "a");
+	nnet::PLACEHOLDER_PTR<double> B = MAKE_PLACEHOLDER((std::vector<size_t>{3, 4}), "b");
+	nnet::PLACEHOLDER_PTR<double> C = MAKE_PLACEHOLDER((std::vector<size_t>{4, 5}), "c");
+	nnet::VAR_PTR<double> resa = std::make_shared<nnet::transpose<double> >(A);
+	nnet::VAR_PTR<double> resb = std::make_shared<nnet::transpose<double> >(B);
+	nnet::VAR_PTR<double> resc = std::make_shared<nnet::transpose<double> >(C);
+	*A = av;
+	*B = bv;
+	*C = cv;
+	nnet::tensor<double> ta = resa->eval();
 	nnet::tensor_shape sa = ta.get_shape();
 	std::vector<size_t> va = sa.as_list();
 	ASSERT_EQ(va.size(), 2);
@@ -475,7 +423,7 @@ TEST(OPERATION, transpose) {
 			EXPECT_EQ(ex1[y][x], ta.get({x, y}));
 		}
 	}
-	nnet::tensor<double> tb = resb.eval();
+	nnet::tensor<double> tb = resb->eval();
 	nnet::tensor_shape sb = tb.get_shape();
 	std::vector<size_t> vb = sb.as_list();
 	ASSERT_EQ(vb.size(), 2);
@@ -486,7 +434,7 @@ TEST(OPERATION, transpose) {
 			EXPECT_EQ(ex2[y][x], tb.get({x, y}));
 		}
 	}
-	nnet::tensor<double> tc = resc.eval();
+	nnet::tensor<double> tc = resc->eval();
 	nnet::tensor_shape sc = tc.get_shape();
 	std::vector<size_t> vc = sc.as_list();
 	ASSERT_EQ(vc.size(), 2);
@@ -501,9 +449,9 @@ TEST(OPERATION, transpose) {
 
 
 TEST(OPERATION, extend) {
-	nnet::placeholder<double> A(std::vector<size_t>{2, 1, 2});
-	nnet::placeholder<double> B(std::vector<size_t>{2, 2, 1});
-	nnet::placeholder<double> C(std::vector<size_t>{2, 2, 2});
+	nnet::PLACEHOLDER_PTR<double> A = MAKE_PLACEHOLDER((std::vector<size_t>{2, 1, 2}), "a");
+	nnet::PLACEHOLDER_PTR<double> B = MAKE_PLACEHOLDER((std::vector<size_t>{2, 2, 1}), "b");
+	nnet::PLACEHOLDER_PTR<double> C = MAKE_PLACEHOLDER((std::vector<size_t>{2, 2, 2}), "c");
 
 	std::vector<double> t1 = {
 		0.4, 0.9,
@@ -557,18 +505,18 @@ TEST(OPERATION, extend) {
 		1.9, 1.0,
 		2.5, 2.0,
 	};
-	A = t1;
-	B = t1;
-	C = t2;
+	*A = t1;
+	*B = t1;
+	*C = t2;
 
-	nnet::extend<double> e1(C, 0, 2);
-	nnet::extend<double> e2(A, 1, 2);
-	nnet::extend<double> e3(B, 2, 2);
-	nnet::extend<double> e4(C, 3, 2);
+	nnet::VAR_PTR<double> e1 = std::make_shared<nnet::extend<double> >(C, 0, 2);
+	nnet::VAR_PTR<double> e2 = std::make_shared<nnet::extend<double> >(A, 1, 2);
+	nnet::VAR_PTR<double> e3 = std::make_shared<nnet::extend<double> >(B, 2, 2);
+	nnet::VAR_PTR<double> e4 = std::make_shared<nnet::extend<double> >(C, 3, 2);
 
-	nnet::expose<double> expose1(e1);
-	const nnet::tensor<double>& res1 = expose1.eval();
-	std::vector<double> raw = expose1.get_raw();
+	EXPOSE_PTR expose1 = EXPOSE(e1);
+	const nnet::tensor<double>& res1 = expose1->eval();
+	std::vector<double> raw = expose1->get_raw();
 
 	std::vector<size_t> ts1 = res1.get_shape().as_list();
 	ASSERT_EQ(3, ts1.size());
@@ -580,9 +528,9 @@ TEST(OPERATION, extend) {
 		EXPECT_EQ(ex1[i], raw[i]);
 	}
 
-	nnet::expose<double> expose2(e2);
-	const nnet::tensor<double>& res2 = expose2.eval();
-	raw = expose2.get_raw();
+	EXPOSE_PTR expose2 = EXPOSE(e2);
+	const nnet::tensor<double>& res2 = expose2->eval();
+	raw = expose2->get_raw();
 
 	std::vector<size_t> ts2 = res2.get_shape().as_list();
 	ASSERT_EQ(3, ts2.size());
@@ -593,9 +541,9 @@ TEST(OPERATION, extend) {
 		EXPECT_EQ(ex2[i], raw[i]);
 	}
 
-	nnet::expose<double> expose3(e3);
-	const nnet::tensor<double>& res3 = expose3.eval();
-	raw = expose3.get_raw();
+	EXPOSE_PTR expose3 = EXPOSE(e3);
+	const nnet::tensor<double>& res3 = expose3->eval();
+	raw = expose3->get_raw();
 
 	std::vector<size_t> ts3 = res3.get_shape().as_list();
 	ASSERT_EQ(3, ts3.size());
@@ -606,9 +554,9 @@ TEST(OPERATION, extend) {
 		EXPECT_EQ(ex3[i], raw[i]);
 	}
 
-	nnet::expose<double> expose4(e4);
-	const nnet::tensor<double>& res4 = expose4.eval();
-	raw = expose4.get_raw();
+	EXPOSE_PTR expose4 = EXPOSE(e4);
+	const nnet::tensor<double>& res4 = expose4->eval();
+	raw = expose4->get_raw();
 
 	std::vector<size_t> ts4 = res4.get_shape().as_list();
 	ASSERT_EQ(4, ts4.size());
@@ -623,9 +571,9 @@ TEST(OPERATION, extend) {
 
 
 TEST(OPERATION, compress) {
-	nnet::placeholder<double> A(std::vector<size_t>{5, 2});
-	nnet::placeholder<double> B(std::vector<size_t>{2, 5});
-	nnet::placeholder<double> C(std::vector<size_t>{2, 5, 2});
+	nnet::PLACEHOLDER_PTR<double> A = MAKE_PLACEHOLDER((std::vector<size_t>{5, 2}), "a");
+	nnet::PLACEHOLDER_PTR<double> B = MAKE_PLACEHOLDER((std::vector<size_t>{2, 5}), "b");
+	nnet::PLACEHOLDER_PTR<double> C = MAKE_PLACEHOLDER((std::vector<size_t>{2, 5, 2}), "c");
 
 	std::vector<double> in1 = {
 		1, 2, 3, 4, 5,
@@ -666,41 +614,41 @@ TEST(OPERATION, compress) {
 		37, 21.588,
 	};
 
-	A = in1;
-	B = in2;
-	C = in3;
+	*A = in1;
+	*B = in2;
+	*C = in3;
 
-	nnet::compress<double> c1(A, 0); // expect vector of 2
-	nnet::compress<double> c2(B, 1); // expect vector of 2
-	nnet::compress<double> c3(C, 1); // expect shape of 2, 1, 2
+	nnet::VAR_PTR<double> c1 = std::make_shared<nnet::compress<double> >(A, 0); // expect vector of 2
+	nnet::VAR_PTR<double> c2 = std::make_shared<nnet::compress<double> >(B, 1); // expect vector of 2
+	nnet::VAR_PTR<double> c3 = std::make_shared<nnet::compress<double> >(C, 1); // expect shape of 2, 1, 2
 
-	nnet::expose<double> e1(c1);
-	std::vector<size_t> v1 = e1.eval().get_shape().as_list();
+	EXPOSE_PTR e1 = EXPOSE(c1);
+	std::vector<size_t> v1 = e1->eval().get_shape().as_list();
 	ASSERT_EQ(1, v1.size());
 	ASSERT_EQ(2, v1[0]);
-	std::vector<double> raw = e1.get_raw();
+	std::vector<double> raw = e1->get_raw();
 
 	for (size_t i = 0; i < raw.size(); i++) {
 		EXPECT_EQ(exp1[i], raw[i]);
 	}
 
-	nnet::expose<double> e2(c2);
-	std::vector<size_t> v2 = e2.eval().get_shape().as_list();
+	EXPOSE_PTR e2 = EXPOSE(c2);
+	std::vector<size_t> v2 = e2->eval().get_shape().as_list();
 	ASSERT_EQ(1, v2.size());
 	ASSERT_EQ(2, v2[0]);
-	raw = e2.get_raw();
+	raw = e2->get_raw();
 
 	for (size_t i = 0; i < raw.size(); i++) {
 		EXPECT_EQ(exp2[i], raw[i]);
 	}
 
-	nnet::expose<double> e3(c3);
-	std::vector<size_t> v3 = e3.eval().get_shape().as_list();
+	EXPOSE_PTR e3 = EXPOSE(c3);
+	std::vector<size_t> v3 = e3->eval().get_shape().as_list();
 	ASSERT_EQ(3, v3.size());
 	ASSERT_EQ(2, v3[0]);
 	ASSERT_EQ(1, v3[1]);
 	ASSERT_EQ(2, v3[2]);
-	raw = e3.get_raw();
+	raw = e3->get_raw();
 
 	for (size_t i = 0; i < raw.size(); i++) {
 		EXPECT_EQ(exp3[i], raw[i]);
@@ -723,18 +671,18 @@ TEST(DERIV, unary) {
 	const size_t limit = 523;
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
-	nnet::placeholder<double> in(std::vector<size_t>{edge, edge, edge});
-	nnet::placeholder<double> bad(std::vector<size_t>{edge, edge, edge});
+	nnet::PLACEHOLDER_PTR<double> in = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "in");
+	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "bad");
 
-	std::vector<nnet::ivariable<double>*> univars = {
-		new nnet::neg<double>(in),
-		new nnet::sin<double>(in),
-		new nnet::cos<double>(in),
-		new nnet::tan<double>(in),
-		new nnet::csc<double>(in),
-		new nnet::sec<double>(in),
-		new nnet::cot<double>(in),
-		new nnet::exp<double>(in),
+	std::vector<nnet::VAR_PTR<double> > univars = {
+		std::make_shared<nnet::neg<double> >(in),
+		std::make_shared<nnet::sin<double> >(in),
+		std::make_shared<nnet::cos<double> >(in),
+		std::make_shared<nnet::tan<double> >(in),
+		std::make_shared<nnet::csc<double> >(in),
+		std::make_shared<nnet::sec<double> >(in),
+		std::make_shared<nnet::cot<double> >(in),
+		std::make_shared<nnet::exp<double> >(in),
 	};
 
 	std::vector<std::function<double(double)> > derivs = {
@@ -756,20 +704,19 @@ TEST(DERIV, unary) {
 		double given = rand();
 		r.push_back(given-round(given/limit));
 	}
-	in = r;
+	*in = r;
 	size_t len = univars.size();
 
 	for (size_t i = 0; i < len; i++) {
-		nnet::expose<double> exvar(*univars[i]);
-		exvar.eval(); // not really needed since we only operation has depth 1
-		std::vector<double> badv = exvar.get_derive(bad);
+		EXPOSE_PTR exvar = EXPOSE(univars[i]);
+		exvar->eval(); // not really needed since we only operation has depth 1
+		std::vector<double> badv = exvar->get_derive(bad);
 		EXPECT_TRUE(badv.empty());
-		std::vector<double> raw = exvar.get_derive(in);
+		std::vector<double> raw = exvar->get_derive(in);
 		ASSERT_EQ(supersize, raw.size());
 		for (size_t j = 0; j < supersize; j++) {
 			EXPECT_EQ(derivs[i](r[j]), raw[j]);
 		}
-		delete univars[i];
 	}
 }
 
@@ -777,15 +724,15 @@ TEST(DERIV, unary) {
 TEST(DERIV, binary) {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
-	nnet::placeholder<double> a(std::vector<size_t>{edge, edge, edge});
-	nnet::placeholder<double> b(std::vector<size_t>{edge, edge, edge});
-	nnet::placeholder<double> bad(std::vector<size_t>{edge, edge, edge});
+	nnet::PLACEHOLDER_PTR<double> a = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "a");
+	nnet::PLACEHOLDER_PTR<double> b = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "b");
+	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "bad");
 
-	std::vector<nnet::ivariable<double>*> univars = {
-		new nnet::add<double>(a, b),
-		new nnet::sub<double>(a, b),
-		new nnet::mul<double>(a, b),
-		new nnet::div<double>(a, b),
+	std::vector<nnet::VAR_PTR<double> > univars = {
+		std::make_shared<nnet::add<double> >(a, b),
+		std::make_shared<nnet::sub<double> >(a, b),
+		std::make_shared<nnet::mul<double> >(a, b),
+		std::make_shared<nnet::div<double> >(a, b),
 	};
 
 	std::vector<std::function<double(double, double, bool)> > derivs = {
@@ -804,26 +751,26 @@ TEST(DERIV, binary) {
 		ra.push_back(rand());
 		rb.push_back(rand());
 	}
-	a = ra;
-	b = rb;
+	*a = ra;
+	*b = rb;
 
 	for (size_t i = 0; i < univars.size(); i++) {
-		nnet::expose<double> exvar(*univars[i]);
-		exvar.eval(); // not really needed since we only operation has depth 1
-		std::vector<double> badv = exvar.get_derive(bad);
+		EXPOSE_PTR exvar = EXPOSE(univars[i]);
+		exvar->eval(); // not really needed since we only operation has depth 1
+		std::vector<double> badv = exvar->get_derive(bad);
 		EXPECT_TRUE(badv.empty());
 
-		std::vector<double> rawa = exvar.get_derive(a);
-		std::vector<double> rawb = exvar.get_derive(b);
+		std::vector<double> rawa = exvar->get_derive(a);
+		std::vector<double> rawb = exvar->get_derive(b);
 		ASSERT_EQ(supersize, rawa.size());
 		ASSERT_EQ(supersize, rawb.size());
 		for (size_t j = 0; j < supersize; j++) {
 			EXPECT_EQ(derivs[i](ra[j], rb[j], true), rawa[j]);
 			EXPECT_EQ(derivs[i](ra[j], rb[j], false), rawb[j]);
 		}
-		delete univars[i];
 	}
 }
+
 
 // TODO: write these
 TEST(DERIV, transpose) {
@@ -839,13 +786,13 @@ TEST(DERIV, matop) {
 TEST(DERIV, complex) {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
-	nnet::placeholder<double> p1(std::vector<size_t>{edge, edge, edge});
-	nnet::placeholder<double> p2(std::vector<size_t>{edge, edge, edge});
+	nnet::PLACEHOLDER_PTR<double> p1 = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "p1");
+	nnet::PLACEHOLDER_PTR<double> p2 = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "p2");
 
-	nnet::sin<double> o1(p1);
-	nnet::mul<double> o2(p1, p2);
-	nnet::add<double> o3(o1, o2);
-	nnet::expose<double> res(o3);
+	nnet::VAR_PTR<double> o1 = std::make_shared<nnet::sin<double> >(p1);
+	nnet::VAR_PTR<double> o2 = std::make_shared<nnet::mul<double> >(p1, p2);
+	nnet::VAR_PTR<double> o3 = std::make_shared<nnet::add<double> >(o1, o2);
+	EXPOSE_PTR res = EXPOSE(o3);
 
 	// pipe into placeholder
 	std::vector<double> r1;
@@ -854,15 +801,15 @@ TEST(DERIV, complex) {
 		r1.push_back(rand());
 		r2.push_back(rand());
 	}
-	p1 = r1;
-	p2 = r2;
+	*p1 = r1;
+	*p2 = r2;
 
 	// res = f(a,b) = sin(a)+a*b
 	// df(a,b)/da = cos(a)+b
 	// df(a,b)/db = a
-	std::vector<double> raw = res.get_raw();
-	std::vector<double> dp1 = res.get_derive(p1);
-	std::vector<double> dp2 = res.get_derive(p2);
+	std::vector<double> raw = res->get_raw();
+	std::vector<double> dp1 = res->get_derive(p1);
+	std::vector<double> dp2 = res->get_derive(p2);
     ASSERT_EQ(raw.size(), supersize);
 	ASSERT_EQ(dp1.size(), supersize);
 	ASSERT_EQ(dp2.size(), supersize);
@@ -876,16 +823,17 @@ TEST(DERIV, complex) {
 
 
 TEST(OPERATION, univar_func) {
-	nnet::placeholder<double> fanin(std::vector<size_t>{1});
-	nnet::sigmoid<double> sig;
-	nnet::ivariable<double>& res = sig(fanin);
-	nnet::expose<double> out(res);
-	fanin = std::vector<double>{0};
-	double sigres = out.get_raw()[0];
+	nnet::PLACEHOLDER_PTR<double> fanin = MAKE_PLACEHOLDER((std::vector<size_t>{1}), "in");
+	nnet::VAR_PTR<double> res;
+	nnet::sigmoid<double>(res, fanin);
+	EXPOSE_PTR out = EXPOSE(res);
 
+	*fanin = std::vector<double>{0};
+	double sigres = out->get_raw()[0];
 	ASSERT_EQ(sigres, 0.5);
-	fanin = std::vector<double>{1};
-	sigres = out.get_raw()[0];
+
+	*fanin = std::vector<double>{1};
+	sigres = out->get_raw()[0];
 	double err = 0.73105857863 - sigres;
 	ASSERT_LT(err, 0.0001);
 }

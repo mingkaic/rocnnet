@@ -17,9 +17,9 @@ TEST(DQN, forward) {
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	std::vector<IN_PAIR> hiddens = {
 			// use same sigmoid in static memory once deep copy is established
-			IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
-			IN_PAIR(n_hidden, new nnet::sigmoid<double>()),
-			IN_PAIR(n_out, new nnet::sigmoid<double>()),
+			IN_PAIR(n_hidden, nnet::sigmoid<double>),
+			IN_PAIR(n_hidden, nnet::sigmoid<double>),
+			IN_PAIR(n_out, nnet::sigmoid<double>),
 	};
 	nnet::dq_net net(vin.size(), hiddens);
 
