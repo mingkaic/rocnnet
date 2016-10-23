@@ -49,6 +49,27 @@ static void flatten (const std::vector<VECS>& samples,
 }
 
 
+TEST(PERCEPTRON, layer_multiple_in) {
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::PLACEHOLDER_PTR<double> in1 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin1");
+	nnet::PLACEHOLDER_PTR<double> in2 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin2");
+	nnet::layer_perceptron layer = nnet::layer_perceptron(5, 5);
+	nnet::VAR_PTR<double> res1 = layer(in1);
+	nnet::VAR_PTR<double> res2 = layer(in2);
+	*in1 = std::vector<double>{1, 4, 8, 16, 32};
+	*in2 = std::vector<double>{5, 4, 3, 2, 1};
+	EXPOSE_PTR e1 = EXPOSE(res1);
+	EXPOSE_PTR e2 = EXPOSE(res2);
+	sess.initialize_all<double>();
+	std::vector<double> raw1 = e1->get_raw();
+	std::vector<double> raw2 = e2->get_raw();
+	ASSERT_EQ(raw1.size(), raw2.size());
+	for (size_t i = 0; i < raw1.size(); i++) {
+		EXPECT_NE(raw1[i], raw2[i]);
+	}
+}
+
+
 TEST(PERCEPTRON, layer_action) {
 	nnet::session& sess = nnet::session::get_instance();
 	std::vector<double> vin = {1, 2, 3, 4, 5};
@@ -62,6 +83,33 @@ TEST(PERCEPTRON, layer_action) {
 	*var = vin;
 	std::vector<double> raw = ex->get_raw();
 	ASSERT_EQ(raw.size(), exout.size());
+}
+
+
+TEST(PERCEPTRON, mlp_multiple_in) {
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::PLACEHOLDER_PTR<double> in1 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin1");
+	nnet::PLACEHOLDER_PTR<double> in2 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin2");
+	std::vector<IN_PAIR> hiddens = {
+			// use same sigmoid in static memory once deep copy is established
+			IN_PAIR(5, nnet::sigmoid<double>),
+			IN_PAIR(5, nnet::sigmoid<double>),
+			IN_PAIR(5, nnet::sigmoid<double>),
+	};
+	nnet::ml_perceptron mlp = nnet::ml_perceptron(5, hiddens);
+	nnet::VAR_PTR<double> res1 = mlp(in1);
+	nnet::VAR_PTR<double> res2 = mlp(in2);
+	*in1 = std::vector<double>{1, 4, 8, 16, 32};
+	*in2 = std::vector<double>{5, 4, 3, 2, 1};
+	EXPOSE_PTR e1 = EXPOSE(res1);
+	EXPOSE_PTR e2 = EXPOSE(res2);
+	sess.initialize_all<double>();
+	std::vector<double> raw1 = e1->get_raw();
+	std::vector<double> raw2 = e2->get_raw();
+	ASSERT_EQ(raw1.size(), raw2.size());
+	for (size_t i = 0; i < raw1.size(); i++) {
+		EXPECT_NE(raw1[i], raw2[i]);
+	}
 }
 
 

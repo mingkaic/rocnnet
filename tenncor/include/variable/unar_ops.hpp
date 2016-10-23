@@ -24,7 +24,9 @@ class iunar_ops : public ioperation<T> {
 		VAR_PTR<T> var = nullptr;
 
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const = 0;
+		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const {
+			return this->var->gradient(over);
+		}
 		void copy (const ivariable<T>& other, std::string name = "");
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
 		virtual void shape_eval (void);
@@ -44,7 +46,6 @@ class iunar_ops : public ioperation<T> {
 template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
-		tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "expose"; }
@@ -89,10 +90,11 @@ class gradient : public iunar_ops<T> {
 		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
 
 	public:
-		gradient (void) {}
 		gradient (VAR_PTR<T> func) { (*this)(func); }
 		gradient (VAR_PTR<T> func, VAR_PTR<T> over) : over(over) { (*this)(func); }
 		virtual const tensor<T>& eval (void);
+
+		void set_over (VAR_PTR<T> over) { this->over = over; }
 
 		std::shared_ptr<gradient<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<gradient<T>, ivariable<T> >(clone_impl(name));
@@ -275,6 +277,57 @@ class exp : public iunar_elem_ops<T> {
 
 		std::shared_ptr<exp<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<exp<T>, ivariable<T> >(clone_impl(name));
+		}
+};
+
+// CLIP
+
+template <typename T>
+class clip_by_value : public iunar_elem_ops<T> {
+	private:
+		T min;
+		T max;
+
+	protected:
+		clip_by_value (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "clip_val"; }
+		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
+	public:
+		clip_by_value (void) {}
+		clip_by_value (VAR_PTR<T> var, T min, T max) : min(min), max(max) { (*this)(var); }
+		virtual ~clip_by_value (void) {}
+
+		void set_bounds (T min, T max) { this->min = min; this->max = max; }
+
+		std::shared_ptr<clip_by_value<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<clip_by_value<T>, ivariable<T> >(clone_impl(name));
+		}
+};
+
+template <typename T>
+class clip_by_norm : public iunar_elem_ops<T> {
+	private:
+		T cap;
+
+	protected:
+		clip_by_norm (ivariable<T>& var, std::string name) { this->copy(var, name); }
+
+		std::string get_symb (void) { return "clip_norm"; }
+		std::function<T(T)> get_op (void);
+		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+
+	public:
+		clip_by_norm (void) {}
+		clip_by_norm (VAR_PTR<T> var, T cap) : cap(cap) { (*this)(var); }
+		virtual ~clip_by_norm (void) {}
+
+		void set_bounds (T min, T max) { this->min = min; this->max = max; }
+
+		std::shared_ptr<clip_by_norm<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<clip_by_norm<T>, ivariable<T> >(clone_impl(name));
 		}
 };
 

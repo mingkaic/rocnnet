@@ -38,6 +38,8 @@ class dq_net {
 		size_t max_exp;
 		double update_rate;
 
+		nnet::OPTIMIZER<double> optimizer;
+
 		// state
 		struct exp_batch {
 			std::vector<double> observation;
@@ -70,24 +72,28 @@ class dq_net {
 		// fanouts
 		VAR_PTR<double> predicted_actions;
 		VAR_PTR<double> prediction_error;
+		// update
+		std::vector<VAR_PTR<double> > update_weight;
+		std::vector<VAR_PTR<double> > update_bias;
 
-		double get_random(void);
+		void variable_setup (void);
+		double get_random (void);
 		std::vector<exp_batch> get_sample (void);
 
 		double linear_annealing (double initial_prob) const;
 
 	public:
-		dq_net (
-			size_t n_input,
-			std::vector<IN_PAIR> hiddens,
-			size_t train_interval = 5,
-			double rand_action_prob = 0.05,
-			double discount_rate = 0.95,
-			double update_rate = 0.01,
-			// memory parameters
-			size_t store_interval = 5,
-			size_t mini_batch_size = 32,
-			size_t max_exp = 30000);
+		dq_net (size_t n_input,
+				std::vector<IN_PAIR> hiddens,
+				nnet::OPTIMIZER<double> optimizer,
+				size_t train_interval = 5,
+				double rand_action_prob = 0.05,
+				double discount_rate = 0.95,
+				double update_rate = 0.01,
+				// memory parameters
+				size_t store_interval = 5,
+				size_t mini_batch_size = 32,
+				size_t max_exp = 30000);
 
 		virtual ~dq_net (void) {}
 

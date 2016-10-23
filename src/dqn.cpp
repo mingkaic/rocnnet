@@ -12,6 +12,85 @@
 
 namespace nnet {
 
+void dq_net::variable_setup (void) {
+	// ===============================
+	// ACTION AND TRAINING VARIABLES!
+	// ===============================
+
+	// ACTION SCORE COMPUTATION
+	// ===============================
+	VAR_PTR<double> action_scores = (*target_net)(observation);
+	predicted_actions = // max arg index
+			std::make_shared<compress<double> >(action_scores, 1, [](const std::vector<double>& v) {
+				size_t big_idx = 0;
+				for (size_t i = 1; i < v.size(); i++) {
+					if (v[big_idx] < v[i]) {
+						big_idx = i;
+					}
+				}
+				return big_idx;
+			});
+
+	// PREDICT FUTURE REWARDS
+	// ===============================
+	VAR_PTR<double> next_action_scores = (*target_net)(next_observation);
+	VAR_PTR<double> target_values = // reduce max
+			std::make_shared<compress<double> >(next_action_scores, 1,
+												[](const std::vector<double>& v) {
+													double big;
+													auto it = v.begin();
+													big = *it;
+													for (it++; v.end() != it; it++) {
+														big = big > *it ? big : *it;
+													}
+													return big;
+												});
+	// future rewards = rewards + discount * target action
+	VAR_PTR<double> mulop = std::make_shared<mul<double> >(discount_rate, target_values);
+	VAR_PTR<double> future_rewards = std::make_shared<add<double> >(rewards, mulop);
+
+	// PREDICT ERROR
+	// ===============================
+	VAR_PTR<double> inter_mul = std::make_shared<mul<double> >(action_scores, action_mask);
+	VAR_PTR<double> masked_action_score = // reduce sum
+			std::make_shared<compress<double> >(inter_mul, 1,
+												[](const std::vector<double>& v) {
+													double accum;
+													for (double d : v) {
+														accum += d;
+													}
+													return accum;
+												});
+	VAR_PTR<double> tempdiff = std::make_shared<sub<double> >(masked_action_score, future_rewards);
+	VAR_PTR<double> sqrdiff = std::make_shared<mul<double> >(tempdiff, tempdiff);
+
+	prediction_error = std::make_shared<compress<double> >(sqrdiff); // reduce mean
+	// minimize error
+	optimizer->ignore(next_action_scores);
+	std::vector<nnet::GRAD<double> > gradients = optimizer->compute_grad(prediction_error);
+
+	for (size_t i = 0; i <  gradients.size(); i++) {
+		VAR_PTR<double> grad = gradients[i].first;
+		VAR_PTR<double> var = gradients[i].second;
+		if (nullptr != grad) {
+			gradients[i] = GRAD<double>(std::make_shared<clip_by_norm<double> >(grad, 5), var);
+		}
+	}
+
+	/* EVOKER = */ optimizer->apply_grad(gradients);
+
+	// UPDATE TARGET NETWORK
+	// ===============================
+	std::vector<WB_PAIR> q_net_var = q_net->get_variables();
+	std::vector<WB_PAIR> target_q_net_var = q_net->get_variables();
+	for (size_t i = 0; i < q_net_var.size(); i++) {
+		VAR_PTR<double> diff_w = std::make_shared<sub<double> >(q_net_var[i].first, target_q_net_var[i].first);
+		VAR_PTR<double> diff_b = std::make_shared<sub<double> >(q_net_var[i].second, target_q_net_var[i].second);
+		update_weight.push_back(std::make_shared<mul<double> >(update_rate, diff_w));
+		update_bias.push_back(std::make_shared<mul<double> >(update_rate, diff_b));
+	}
+}
+
 double dq_net::get_random(void) {
 	static std::default_random_engine generator;
 	static std::uniform_real_distribution<double> explore;
@@ -42,6 +121,7 @@ double dq_net::linear_annealing (double initial_prob) const {
 dq_net::dq_net (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
+	nnet::OPTIMIZER<double> optimizer,
 	size_t train_interval,
 	double rand_action_prob,
 	double discount_rate,
@@ -52,6 +132,7 @@ dq_net::dq_net (
 	size_t max_exp) :
 		// state parameters
 		n_observations(n_input),
+		optimizer(optimizer),
 		rand_action_prob(rand_action_prob),
 		store_interval(store_interval),
 		train_interval(train_interval),
@@ -83,62 +164,7 @@ dq_net::dq_net (
 	rewards = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "rewards");
 	action_mask = std::make_shared<placeholder<double> >(std::vector<size_t>{n_actions, 0}, "action_mask");
 
-	// ===============================
-	// ACTION AND TRAINING VARIABLES!
-	// ===============================
-
-	// ACTION SCORE COMPUTATION
-	// ===============================
-	VAR_PTR<double> action_scores = (*target_net)(observation);
-	predicted_actions = // max arg index
-		std::make_shared<compress<double> >(action_scores, 1, [](const std::vector<double>& v) {
-			size_t big_idx = 0;
-			for (size_t i = 1; i < v.size(); i++) {
-				if (v[big_idx] < v[i]) {
-					big_idx = i;
-				}
-			}
-			return big_idx;
-		});
-
-	// PREDICT FUTURE REWARDS
-	// ===============================
-	VAR_PTR<double> next_action_scores = (*target_net)(next_observation);
-	VAR_PTR<double> target_values = // reduce max
-		std::make_shared<compress<double> >(next_action_scores, 1,
-		[](const std::vector<double>& v) {
-			double big;
-			auto it = v.begin();
-			big = *it;
-			for (it++; v.end() != it; it++) {
-				big = big > *it ? big : *it;
-			}
-			return big;
-		});
-	// future rewards = rewards + discount * target action
-	VAR_PTR<double> mulop = std::make_shared<mul<double> >(discount_rate, target_values);
-	VAR_PTR<double> future_rewards = std::make_shared<add<double> >(rewards, mulop);
-
-	// PREDICT ERROR
-	// ===============================
-	VAR_PTR<double> inter_mul = std::make_shared<mul<double> >(action_scores, action_mask);
-	VAR_PTR<double> masked_action_score = // reduce sum
-		std::make_shared<compress<double> >(inter_mul, 1,
-			[](const std::vector<double>& v) {
-			double accum;
-			for (double d : v) {
-				accum += d;
-			}
-			return accum;
-		});
-	VAR_PTR<double> tempdiff = std::make_shared<sub<double> >(masked_action_score, future_rewards);
-	VAR_PTR<double> sqrdiff = std::make_shared<mul<double> >(tempdiff, tempdiff);
-
-	prediction_error = std::make_shared<compress<double> >(sqrdiff); // reduce mean
-	// minimize error
-	VAR_PTR<double> grads = std::make_shared<gradient<double> >(prediction_error);
-
-	// TODO: do something with gradient (update by gradient descent?) attach update operation as an output
+	variable_setup();
 
 	sess.initialize_all<double>();
 
@@ -221,7 +247,26 @@ void dq_net::train (std::vector<std::vector<double> > train_batch) {
 		(*this->rewards) = rewards;
 
 		prediction_error->eval(); // cost
-		// do something to update networks
+
+		// TODO get minimum cost
+
+
+		// update
+		std::vector<WB_PAIR> target_var = q_net->get_variables();
+		for (size_t i = 0; i < update_weight.size(); i++) {
+			const tensor<double> &dwt = update_weight[i]->eval();
+			const tensor<double> &dbt = update_bias[i]->eval();
+			WB_PAIR wb = target_var[i];
+
+			std::static_pointer_cast<
+					variable<double>,
+					ivariable<double> >(wb.first)->update(dwt,
+														  shared_cnnet::op_sub<double>);
+			std::static_pointer_cast<
+					variable<double>,
+					ivariable<double> >(wb.second)->update(dbt,
+														   shared_cnnet::op_sub<double>);
+		}
 
 		iteration++;
 	}

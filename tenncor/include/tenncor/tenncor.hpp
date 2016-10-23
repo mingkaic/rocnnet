@@ -5,3 +5,4 @@
 #include "../variable/mat_ops.hpp"
 #include "../tensor.hpp"
 #include "../tensorshape.hpp"
+#include "../optimization/optimizer.hpp"

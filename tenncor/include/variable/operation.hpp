@@ -127,15 +127,6 @@ class ioperation : public ivariable<T> {
 };
 
 // template <typename T>
-// tensor<T> assign (variable<T> value, variable<T> delta, bool use_locking = false);
-//
-// template <typename T>
-// tensor<T> assign_add (variable<T> value, variable<T> delta, bool use_locking = false);
-//
-// template <typename T>
-// tensor<T> assign_sub (variable<T> value, variable<T> delta, bool use_locking = false);
-//
-// template <typename T>
 // tensor scatter_sub (IndexedSlices sparse_delta, use_locking = false);
 //
 // template <typename T>

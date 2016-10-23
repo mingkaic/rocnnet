@@ -21,9 +21,15 @@ TEST(DQN, forward) {
 			IN_PAIR(n_hidden, nnet::sigmoid<double>),
 			IN_PAIR(n_out, nnet::sigmoid<double>),
 	};
-	nnet::dq_net net(vin.size(), hiddens);
 
-//	std::vector<double> res = net(vin);
+	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::rms_prop_optimizer>(0.001);
+
+	nnet::dq_net net(vin.size(), hiddens, optimizer);
+
+	std::vector<double> result = net(vin);
+	for (double res : result) {
+		std::cout << res << " ";
+	}	std::cout << std::endl;
 }
 
 

@@ -57,11 +57,6 @@ iunar_ops<T>& iunar_ops<T>::operator = (const ivariable<T>& other) {
 // OUT NODE
 
 template <typename T>
-tensor<T>* expose<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	return this->var->gradient(over);
-}
-
-template <typename T>
 std::shared_ptr<ivariable<T> > expose<T>::clone_impl (std::string name) {
 	return std::shared_ptr<ivariable<T> >(new expose<T>(*this, name));
 }
@@ -329,6 +324,39 @@ tensor<T>* exp<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 template <typename T>
 std::shared_ptr<ivariable<T> > exp<T>::clone_impl (std::string name) {
 	return std::shared_ptr<ivariable<T> >(new exp<T>(*this, name));
+}
+
+// CLIP ELEMENT VALUES
+
+template <typename T>
+std::function<T(T)> clip_by_value<T>::get_op (void) {
+	return [this](T in) {
+		if (min > in) return min;
+		else if (max < in) return max;
+		return in;
+	};
+}
+
+template <typename T>
+std::shared_ptr<ivariable<T> > clip_by_value<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new clip_by_value<T>(*this, name));
+}
+
+template <typename T>
+std::function<T(T)> clip_by_norm<T>::get_op (void) {
+	T l2norm;
+	this->template util_op<double>(l2norm, this->out, [](T& out, T in) {
+		out += sqrt(in);
+	});
+	l2norm = sqrt(l2norm);
+	return [this, &l2norm](T in) {
+		return in * cap / l2norm;
+	};
+}
+
+template <typename T>
+std::shared_ptr<ivariable<T> > clip_by_norm<T>::clone_impl (std::string name) {
+	return std::shared_ptr<ivariable<T> >(new clip_by_norm<T>(*this, name));
 }
 
 }

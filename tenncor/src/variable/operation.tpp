@@ -348,7 +348,6 @@ tensor<T>* ioperation<T>::compress_op (
 	return ans;
 }
 
-// TODO consider options of not evaluating shape at construction
 template <typename T>
 void ioperation<T>::update (tensor_shape candidate_shape) {
 	// no point in propagating if the shape is undefined
