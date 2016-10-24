@@ -36,27 +36,6 @@ layer_perceptron::layer_perceptron (
 	copy(other, scope);
 }
 
-// def __init__ (self, n_input_arr, n_output, scope="Layer"):
-// 	self.scope = scope
-
-// 	# store initializing parameters for copying
-// 	self.n_input_arr = n_input_arr
-// 	self.n_output = n_output
-
-// 	if type(n_input_arr) != list:
-// 		n_input_arr = [n_input_arr]adhoc_operation
-
-// 	# share variable scope
-// 	with tf.variable_scope(scope):
-// 		self.weights = []
-// 		for idx, n_input in enumerate(n_input_arr):
-// 			wname = "weight%d" % (idx,)
-// 			# rand engine
-// 			winit = tf.random_uniform_initializer(-1.0 / math.sqrt(n_input), 1.0 / math.sqrt(n_input))
-// 			self.weights.append(tf.get_var(wname, (n_input, n_output), initializer=winit))
-// 		# create a bias
-// 		self.bias = tf.get_var("bias", (n_output,), initializer=tf.constant_initializer(0))
-
 layer_perceptron::layer_perceptron (
 	size_t n_input,
 	size_t n_output,
@@ -78,17 +57,6 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 	return *this;
 }
 
-// def __call__ (self, in_x):
-// 	if type(in_x) != list:
-// 		in_x = [in_x]
-// 	with tf.variable_scope(self.scope):
-// 		return sum([tf.matmul(x, weight) for x, weight in zip(in_x, self.weights)]) + self.bias
-
-// TODO: implement multiple input/output by associating ownership with output
-
-// returned variable ownership is retained by layer_perceptron instance
-// destroys passed out variable from previous calls
-// (use with care until smartpointers...)
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
 VAR_PTR<double> layer_perceptron::operator () (VAR_PTR<double> input) {
@@ -117,8 +85,6 @@ void ml_perceptron::copy (
 	}
 }
 
-// TODO: change current ivariable ownership handle pattern
-// ownership of activation functions are kept by caller
 ml_perceptron::ml_perceptron (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
@@ -134,13 +100,6 @@ ml_perceptron::ml_perceptron (
 		n_input = n_output;
 	}
 }
-
-// def copy(self, scope=None):
-// 	if (None == scope):
-// 		scope = self.scope + "_copy"
-// 	activations = [self.input_act] + self.inner_act
-// 	copy_layer = [self.input_layer.copy()] + [inner.copy() for inner in self.layers]
-// 	return MLayerPerceptron(self.n_input_arr, self.hiddens, activations, scope=scope, copy_layers=copy_layer)
 
 ml_perceptron::ml_perceptron (
 	ml_perceptron const & other,

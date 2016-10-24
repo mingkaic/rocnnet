@@ -64,8 +64,17 @@ void gd_net::train_set_up (void) {
 		VAR_PTR<double> compressed_err = std::make_shared<compress<double> >(err, 1);
 		VAR_PTR<double> dbias = std::make_shared<mul<double> >(compressed_err, learn_batch);
 
-		differentials.push_back(IVARS(dweights, dbias));
+		// update weights and bias
+		// weights -= dweights, bias -= dbias
+		WB_PAIR wb = hp.first->get_variables();
+		EVOKER_PTR<double> w_evok = std::make_shared<update_sub<double> >(
+			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dweights);
+		EVOKER_PTR<double> b_evok = std::make_shared<update_sub<double> >(
+			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbias);
+
 		// store for update
+		updates.push_back(w_evok);
+		updates.push_back(b_evok);
 
 		output = layer_out.front();
 		layer_out.pop();
@@ -104,21 +113,8 @@ void gd_net::train (std::vector<double> train_in,
 	(*this->train_in) = train_in;
 	(*this->expected_out) = expected_out;
 	// trigger update
-	for (size_t i = 0; i < differentials.size(); i++) {
-		IVARS ds = differentials[i];
-		WB_PAIR wb = layers[i].first->get_variables();
-		// update weights and bias
-		// weights -= dweights, bias -= dbias
-		const tensor<double>& dwt = ds.first->eval();
-		const tensor<double>& dbt = ds.second->eval();
-		std::static_pointer_cast<
-			variable<double>,
-			ivariable<double> >(wb.first)->update(dwt,
-				shared_cnnet::op_sub<double>);
-		std::static_pointer_cast<
-			variable<double>,
-			ivariable<double> >(wb.second)->update(dbt,
-				shared_cnnet::op_sub<double>);
+	for (EVOKER_PTR<double> evoks : updates) {
+		evoks->eval();
 	}
 }
 

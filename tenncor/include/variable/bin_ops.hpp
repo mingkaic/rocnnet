@@ -46,6 +46,9 @@ class ibin_ops : public ioperation<T> {
 
 	public:
 		virtual ~ibin_ops (void) {}
+		std::shared_ptr<ibin_ops<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<ibin_ops<T>, ievoker<T> >(this->clone_impl(name));
+		}
 
 		virtual ivariable<T>& operator () (VAR_PTR<T> a, VAR_PTR<T> b);
 		virtual ivariable<T>& operator () (VAR_PTR<T> a, T b);
@@ -68,7 +71,7 @@ class add : public ibin_ops<T> {
 		std::string get_symb (void) { return "+"; }
 		std::function<T(T, T)> get_op (void);
 
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		add (void) {}
@@ -77,7 +80,7 @@ class add : public ibin_ops<T> {
 		add (T a, VAR_PTR<T> b) { (*this)(a, b); }
 
 		std::shared_ptr<add<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<add<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<add<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -93,7 +96,7 @@ class sub : public ibin_ops<T> {
 		std::string get_symb (void) { return "-"; }
 		std::function<T(T, T)> get_op (void);
 
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		sub (void) {}
@@ -102,7 +105,7 @@ class sub : public ibin_ops<T> {
 		sub (T a, VAR_PTR<T> b) { (*this)(a, b); }
 
 		std::shared_ptr<sub<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<sub<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<sub<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -118,7 +121,7 @@ class mul : public ibin_ops<T> {
 		std::string get_symb (void) { return "*"; }
 		std::function<T(T, T)> get_op (void);
 
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		mul (void) {}
@@ -127,7 +130,7 @@ class mul : public ibin_ops<T> {
 		mul (T a, VAR_PTR<T> b) { (*this)(a, b); }
 
 		std::shared_ptr<mul<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<mul<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<mul<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -143,7 +146,7 @@ class div : public ibin_ops<T> {
 		std::string get_symb (void) { return "/"; }
 		std::function<T(T, T)> get_op (void);
 
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		div (void) {}
@@ -152,7 +155,7 @@ class div : public ibin_ops<T> {
 		div (T a, VAR_PTR<T> b) { (*this)(a, b); }
 
 		std::shared_ptr<div<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<div<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<div<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 

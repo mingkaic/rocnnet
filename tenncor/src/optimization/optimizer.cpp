@@ -18,18 +18,19 @@ std::vector<GRAD<double> > gd_optimizer::compute_grad (VAR_PTR<double> fanout) {
 }
 
 // update variables not covered by ignore
-void gd_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
-
+EVOKER_PTR<double> gd_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
+	return nullptr;
 }
 
 // separate minimize into the steps
 std::vector<GRAD<double> > rms_prop_optimizer::compute_grad (VAR_PTR<double> fanout) {
+
 	return std::vector<GRAD<double> >();
 }
 
 // update variables not covered by ignore
-void rms_prop_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
-
+EVOKER_PTR<double> rms_prop_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
+	return nullptr;
 }
 
 }

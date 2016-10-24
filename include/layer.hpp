@@ -53,12 +53,12 @@ class layer_perceptron {
 			size_t n_input,
 			size_t n_output,
 			std::string scope="");
-		layer_perceptron (
-			const layer_perceptron& other,
-			std::string scope="");
 		virtual ~layer_perceptron (void) {}
-
+		layer_perceptron (const layer_perceptron& other, std::string scope="");
 		layer_perceptron& operator = (const layer_perceptron& other);
+
+		// input are expected to have shape n_input by batch_size
+		// outputs are expected to have shape output by batch_size
 		VAR_PTR<double> operator () (VAR_PTR<double>);
 
 		size_t get_n_input (void) const { return n_input; }
@@ -85,7 +85,6 @@ class ml_perceptron {
 			std::string scope = "MLP");
 		virtual ~ml_perceptron (void);
 		ml_perceptron* clone (std::string scope = "MLP_COPY") { return new ml_perceptron(*this, scope); }
-
 		ml_perceptron& operator = (const ml_perceptron& other);
 
 		// input are expected to have shape n_input by batch_size

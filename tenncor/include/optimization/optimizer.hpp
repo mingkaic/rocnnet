@@ -6,7 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../variable/variable.hpp"
+#include <vector>
+#include "../evoker.hpp"
 
 #pragma once
 #ifndef optimizer_hpp
@@ -30,14 +31,14 @@ class ioptimizer {
 		void ignore (VAR_PTR<T> ig_var) { ignore_set.emplace(ig_var); }
 
 		// two step process in one
-		void minimize (VAR_PTR<T> fanout) {
+		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
 			apply_grad(compute_grad(fanout));
 		}
 
 		// separate minimize into the steps
 		virtual std::vector<GRAD<T> > compute_grad (VAR_PTR<T> fanout) = 0;
 		// update variables not covered by ignore
-		virtual void apply_grad (std::vector<GRAD<T> > gradients) = 0;
+		virtual EVOKER_PTR<T> apply_grad (std::vector<GRAD<T> > gradients) = 0;
 };
 
 template <typename T>
@@ -49,7 +50,7 @@ class gd_optimizer : public ioptimizer<double> {
 		// separate minimize into the steps
 		virtual std::vector<GRAD<double> > compute_grad (VAR_PTR<double> fanout);
 		// update variables not covered by ignore
-		virtual void apply_grad (std::vector<GRAD<double> > gradients);
+		virtual EVOKER_PTR<double> apply_grad (std::vector<GRAD<double> > gradients);
 };
 
 // rms prop
@@ -71,7 +72,7 @@ class rms_prop_optimizer : public ioptimizer<double> {
 		// separate minimize into the steps
 		virtual std::vector<GRAD<double> > compute_grad (VAR_PTR<double> fanout);
 		// update variables not covered by ignore
-		virtual void apply_grad (std::vector<GRAD<double> > gradients);
+		virtual EVOKER_PTR<double> apply_grad (std::vector<GRAD<double> > gradients);
 };
 
 }

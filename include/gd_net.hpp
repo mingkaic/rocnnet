@@ -15,8 +15,6 @@
 
 namespace nnet {
 
-#define IVARS std::pair<VAR_PTR<double>, VAR_PTR<double> >
-
 // wrapper for
 // gradient descent
 // TODO transform into a tensor operation "optimizer" similar to tf.optimizer
@@ -31,7 +29,7 @@ class gd_net : public ml_perceptron {
 		PLACEHOLDER_PTR<double> expected_out = nullptr;
 		PLACEHOLDER_PTR<double> batch_size = nullptr;
 		// output
-		std::vector<IVARS> differentials;
+		std::vector<EVOKER_PTR<double> > updates;
 
 		void train_set_up (void);
 		gd_net (const gd_net& net, std::string scope);

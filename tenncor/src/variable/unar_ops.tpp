@@ -57,8 +57,8 @@ iunar_ops<T>& iunar_ops<T>::operator = (const ivariable<T>& other) {
 // OUT NODE
 
 template <typename T>
-std::shared_ptr<ivariable<T> > expose<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new expose<T>(*this, name));
+EVOKER_PTR<T> expose<T>::clone_impl (std::string name) {
+	return std::shared_ptr<expose<T> >(new expose(*this, name));
 }
 
 template <typename T>
@@ -87,8 +87,8 @@ std::vector<T> expose<T>::get_derive (WEAK_VAR_PTR<T> over) const {
 // GRADIENT NODE
 
 template <typename T>
-std::shared_ptr<ivariable<T> > gradient<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new gradient<T>(*this, name));
+EVOKER_PTR<T> gradient<T>::clone_impl (std::string name) {
+	return std::shared_ptr<gradient<T> >(new gradient(*this, name));
 }
 
 template <typename T>
@@ -129,8 +129,8 @@ tensor<T>* neg<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > neg<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new neg<T>(*this, name));
+EVOKER_PTR<T> neg<T>::clone_impl (std::string name) {
+	return std::shared_ptr<neg<T> >(new neg(*this, name));
 }
 
 // SINE
@@ -153,8 +153,8 @@ tensor<T>* sin<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > sin<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new sin<T>(*this, name));
+EVOKER_PTR<T> sin<T>::clone_impl (std::string name) {
+	return std::shared_ptr<sin<T> >(new sin(*this, name));
 }
 
 // COSINE
@@ -179,8 +179,8 @@ tensor<T>* cos<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > cos<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new cos<T>(*this, name));
+EVOKER_PTR<T> cos<T>::clone_impl (std::string name) {
+	return std::shared_ptr<cos<T> >(new cos(*this, name));
 }
 
 // TANGENT
@@ -206,8 +206,8 @@ tensor<T>* tan<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > tan<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new tan<T>(*this, name));
+EVOKER_PTR<T> tan<T>::clone_impl (std::string name) {
+	return std::shared_ptr<tan<T> >(new tan(*this, name));
 }
 
 // COSECANT
@@ -239,8 +239,8 @@ tensor<T>* csc<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > csc<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new csc<T>(*this, name));
+EVOKER_PTR<T> csc<T>::clone_impl (std::string name) {
+	return std::shared_ptr<csc<T> >(new csc(*this, name));
 }
 
 // SECANT
@@ -270,8 +270,8 @@ tensor<T>* sec<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > sec<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new sec<T>(*this, name));
+EVOKER_PTR<T> sec<T>::clone_impl (std::string name) {
+	return std::shared_ptr<sec<T> >(new sec(*this, name));
 }
 
 // COTANGENT
@@ -298,8 +298,8 @@ tensor<T>* cot<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > cot<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new cot<T>(*this, name));
+EVOKER_PTR<T> cot<T>::clone_impl (std::string name) {
+	return std::shared_ptr<cot<T> >(new cot(*this, name));
 }
 
 // EXPONENT OF E
@@ -322,8 +322,8 @@ tensor<T>* exp<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > exp<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new exp<T>(*this, name));
+EVOKER_PTR<T> exp<T>::clone_impl (std::string name) {
+	return std::shared_ptr<exp<T> >(new exp(*this, name));
 }
 
 // CLIP ELEMENT VALUES
@@ -338,8 +338,8 @@ std::function<T(T)> clip_by_value<T>::get_op (void) {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > clip_by_value<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new clip_by_value<T>(*this, name));
+EVOKER_PTR<T> clip_by_value<T>::clone_impl (std::string name) {
+	return std::shared_ptr<clip_by_value<T> >(new clip_by_value(*this, name));
 }
 
 template <typename T>
@@ -355,8 +355,8 @@ std::function<T(T)> clip_by_norm<T>::get_op (void) {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > clip_by_norm<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new clip_by_norm<T>(*this, name));
+EVOKER_PTR<T> clip_by_norm<T>::clone_impl (std::string name) {
+	return std::shared_ptr<clip_by_norm<T> >(new clip_by_norm(*this, name));
 }
 
 }

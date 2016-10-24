@@ -12,8 +12,7 @@
 #include <new>
 #include <iostream>
 
-#include "../memory/session.hpp"
-#include "../tensor.hpp"
+#include "../evoker.hpp"
 
 #pragma once
 #ifndef variable_hpp
@@ -22,18 +21,8 @@
 namespace nnet {
 
 template <typename T>
-using VAR_PTR = std::shared_ptr<ivariable<T> >;
-
-template <typename T>
-using WEAK_VAR_PTR = std::weak_ptr<ivariable<T> >;
-
-template <typename T>
-using PLACEHOLDER_PTR = std::shared_ptr<placeholder<T> >;
-
-template <typename T>
 class initializer {
 	protected:
-		// anti pattern?
 		void delegate_task(tensor<T>& value,
 			std::function<void(T*, size_t)> op) {
 			op(value.raw_data, value.n_elems());
@@ -77,10 +66,7 @@ class random_uniform : public initializer<T> {
 };
 
 template <typename T>
-class placeholder;
-
-template <typename T>
-class ivariable {
+class ivariable : public ievoker<T> {
 	private:
 		// construct and return tensor filled with ones with shape identical to this
 		tensor<T>* get_ones (void) const {
@@ -100,10 +86,10 @@ class ivariable {
 		// backward chaining for AD
 		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		void copy (const ivariable<T>& other, std::string name = "");
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name) = 0;
 
 		// protected members need to be accessed by other operations
 		friend class ioperation<T>;
+		friend class update<T>;
 		friend class placeholder<T>;
 
 	public:
@@ -112,7 +98,7 @@ class ivariable {
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<ivariable<T> > clone (std::string name = "") {
-			return clone_impl(name);
+			return std::static_pointer_cast<ivariable<T>, ievoker<T> >(this->clone_impl(name));
 		}
 
 		// TODO implement
@@ -125,8 +111,7 @@ class ivariable {
 		ivariable<double> operator / (const ivariable<double>& b) const;
 
 		std::string get_name (void) const { return name; }
-		virtual tensor_shape get_shape (void) const
-			{ return this->out.get_shape(); }
+		virtual tensor_shape get_shape (void) const { return this->out.get_shape(); }
 
 		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 		// calculate the derivative over input variable given values
@@ -134,7 +119,7 @@ class ivariable {
 		// currently doesn't handle the case of bad evaluation
 		// (uninitialized variables) before gradient is called
 		virtual tensor<T>* gradient (WEAK_VAR_PTR<T> over) const;
-		virtual const tensor<T>& eval (void) = 0;
+		// eval from ievoker remains abstract
 };
 
 // extend tensors by composition
@@ -148,7 +133,7 @@ class variable : public ivariable<T> {
 		void copy (const variable<T>& other, std::string name="");
 		variable (const variable<T>& other, std::string name);
 
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 		// track all variables and placeholders for
 		// static/singleton function initialize all
@@ -163,7 +148,7 @@ class variable : public ivariable<T> {
 		virtual variable<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<variable<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<variable<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<variable<T>, ievoker<T> >(clone_impl(name));
 		}
 
 		bool can_init (void) const { return init != nullptr; }
@@ -196,7 +181,7 @@ class placeholder : public variable<T> {
 		placeholder (const placeholder<T>& other, std::string name);
 
 	protected:
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		placeholder (std::string name = ""); // super generic placeholder
@@ -207,7 +192,7 @@ class placeholder : public variable<T> {
 		virtual variable<T>& operator = (const tensor<T>& data);
 
 		std::shared_ptr<placeholder<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<placeholder<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<placeholder<T>, ievoker<T> >(clone_impl(name));
 		}
 
 		// replace with shared_ptr<unique_ptr<placeholder<T> > >...
@@ -217,6 +202,9 @@ class placeholder : public variable<T> {
 		virtual tensor<T>& initialize (void) { return this->out; }
 		virtual tensor<T>& initialize (tensor_shape alloc_shape) { return this->out; }
 };
+
+template <typename T>
+using PLACEHOLDER_PTR = std::shared_ptr<placeholder<T> >;
 
 }
 

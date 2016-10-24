@@ -6,3 +6,4 @@
 #include "../tensor.hpp"
 #include "../tensorshape.hpp"
 #include "../optimization/optimizer.hpp"
+#include "../optimization/update.hpp"

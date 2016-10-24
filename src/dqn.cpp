@@ -12,7 +12,7 @@
 
 namespace nnet {
 
-void dq_net::variable_setup (void) {
+void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	// ===============================
 	// ACTION AND TRAINING VARIABLES!
 	// ===============================
@@ -77,7 +77,7 @@ void dq_net::variable_setup (void) {
 		}
 	}
 
-	/* EVOKER = */ optimizer->apply_grad(gradients);
+	train_op = optimizer->apply_grad(gradients);
 
 	// UPDATE TARGET NETWORK
 	// ===============================
@@ -86,8 +86,16 @@ void dq_net::variable_setup (void) {
 	for (size_t i = 0; i < q_net_var.size(); i++) {
 		VAR_PTR<double> diff_w = std::make_shared<sub<double> >(q_net_var[i].first, target_q_net_var[i].first);
 		VAR_PTR<double> diff_b = std::make_shared<sub<double> >(q_net_var[i].second, target_q_net_var[i].second);
-		update_weight.push_back(std::make_shared<mul<double> >(update_rate, diff_w));
-		update_bias.push_back(std::make_shared<mul<double> >(update_rate, diff_b));
+		VAR_PTR<double> dwt = std::make_shared<mul<double> >(update_rate, diff_w);
+		VAR_PTR<double> dbt = std::make_shared<mul<double> >(update_rate, diff_b);
+
+		WB_PAIR wb = target_q_net_var[i];
+		EVOKER_PTR<double> w_evok = std::make_shared<update_sub<double> >(
+			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dwt);
+		EVOKER_PTR<double> b_evok = std::make_shared<update_sub<double> >(
+			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbt);
+		update_ops.push_back(w_evok);
+		update_ops.push_back(b_evok);
 	}
 }
 
@@ -132,7 +140,6 @@ dq_net::dq_net (
 	size_t max_exp) :
 		// state parameters
 		n_observations(n_input),
-		optimizer(optimizer),
 		rand_action_prob(rand_action_prob),
 		store_interval(store_interval),
 		train_interval(train_interval),
@@ -164,7 +171,7 @@ dq_net::dq_net (
 	rewards = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "rewards");
 	action_mask = std::make_shared<placeholder<double> >(std::vector<size_t>{n_actions, 0}, "action_mask");
 
-	variable_setup();
+	variable_setup(optimizer);
 
 	sess.initialize_all<double>();
 
@@ -246,26 +253,15 @@ void dq_net::train (std::vector<std::vector<double> > train_batch) {
 		(*this->action_mask) = action_mask;
 		(*this->rewards) = rewards;
 
-		prediction_error->eval(); // cost
+		// record predictions if necessary
+//		prediction_error->eval(); // cost
 
-		// TODO get minimum cost
+		// weight training
+		train_op->eval();
 
-
-		// update
-		std::vector<WB_PAIR> target_var = q_net->get_variables();
-		for (size_t i = 0; i < update_weight.size(); i++) {
-			const tensor<double> &dwt = update_weight[i]->eval();
-			const tensor<double> &dbt = update_bias[i]->eval();
-			WB_PAIR wb = target_var[i];
-
-			std::static_pointer_cast<
-					variable<double>,
-					ivariable<double> >(wb.first)->update(dwt,
-														  shared_cnnet::op_sub<double>);
-			std::static_pointer_cast<
-					variable<double>,
-					ivariable<double> >(wb.second)->update(dbt,
-														   shared_cnnet::op_sub<double>);
+		// update q nets
+		for (EVOKER_PTR<double> update : update_ops) {
+			update->eval();
 		}
 
 		iteration++;

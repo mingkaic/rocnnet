@@ -118,7 +118,7 @@ variable<T>::variable (tensor_shape const & shape, initializer<T>& init, std::st
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > variable<T>::clone_impl (std::string name) {
+EVOKER_PTR<T> variable<T>::clone_impl (std::string name) {
 	return std::shared_ptr<variable<T> >(new variable<T>(*this, name));
 }
 
@@ -167,12 +167,12 @@ tensor<T>& variable<T>::initialize (tensor_shape alloc_shape) {
 template <typename T>
 void variable<T>::update (const tensor<T>& in, std::function<T(T,T)> op) {
 	// TODO: use a better method of manipulating rawdata
-	assert(this->out.is_same_size(in));
-	T* old_data = this->out.raw_data;
-	const T* new_data = in.raw_data;
-	for (size_t i = 0; i < in.n_elems(); i++) {
-		old_data[i] = op(old_data[i], new_data[i]);
-	}
+//	assert(this->out.is_same_size(in));
+//	T* old_data = this->out.raw_data;
+//	const T* new_data = in.raw_data;
+//	for (size_t i = 0; i < in.n_elems(); i++) {
+//		old_data[i] = op(old_data[i], new_data[i]);
+//	}
 }
 
 template <typename T>
@@ -216,7 +216,7 @@ placeholder<T>::placeholder (const tensor_shape& shape, std::string name)
 	: variable<T>(shape, name) {}
 
 template <typename T>
-std::shared_ptr<ivariable<T> > placeholder<T>::clone_impl (std::string name) {
+EVOKER_PTR<T> placeholder<T>::clone_impl (std::string name) {
 	return std::shared_ptr<placeholder<T> >(new placeholder<T>(*this, name));
 }
 

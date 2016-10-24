@@ -62,8 +62,8 @@ extend<T>::extend (VAR_PTR<T> in, size_t index, size_t multiplier)
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > extend<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new extend<T>(*this, name));
+EVOKER_PTR<T> extend<T>::clone_impl (std::string name) {
+	return std::shared_ptr<extend<T> >(new extend(*this, name));
 }
 
 template <typename T>
@@ -182,8 +182,8 @@ compress<T>::compress (VAR_PTR<T> in, size_t index, std::function<T(const std::v
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > compress<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new compress<T>(*this, name));
+EVOKER_PTR<T> compress<T>::clone_impl (std::string name) {
+	return std::shared_ptr<compress<T> >(new compress(*this, name));
 }
 
 template <typename T>
@@ -242,8 +242,8 @@ transpose<T>::transpose (VAR_PTR<T> in) {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > transpose<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new transpose<T>(*this, name));
+EVOKER_PTR<T> transpose<T>::clone_impl (std::string name) {
+	return std::shared_ptr<transpose<T> >(new transpose(*this, name));
 }
 
 template <typename T>
@@ -308,8 +308,8 @@ matmul<T>::matmul (VAR_PTR<T> a, VAR_PTR<T> b,
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > matmul<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new matmul<T>(*this, name));
+EVOKER_PTR<T> matmul<T>::clone_impl (std::string name) {
+	return std::shared_ptr<matmul<T> >(new matmul(*this, name));
 }
 
 template <typename T>

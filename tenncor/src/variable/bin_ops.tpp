@@ -100,8 +100,8 @@ tensor<T>* add<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > add<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new add<T>(*this, name));
+EVOKER_PTR<T> add<T>::clone_impl (std::string name) {
+	return std::shared_ptr<add<T> >(new add(*this, name));
 }
 
 // SUBTRACTION
@@ -128,8 +128,8 @@ tensor<T>* sub<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > sub<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new sub<T>(*this, name));
+EVOKER_PTR<T> sub<T>::clone_impl (std::string name) {
+	return std::shared_ptr<sub<T> >(new sub(*this, name));
 }
 
 // MULTIPLICATION
@@ -166,8 +166,8 @@ tensor<T>* mul<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > mul<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new mul<T>(*this, name));
+EVOKER_PTR<T> mul<T>::clone_impl (std::string name) {
+	return std::shared_ptr<mul<T> >(new mul(*this, name));
 }
 
 // DIVISION
@@ -219,8 +219,8 @@ tensor<T>* div<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
 }
 
 template <typename T>
-std::shared_ptr<ivariable<T> > div<T>::clone_impl (std::string name) {
-	return std::shared_ptr<ivariable<T> >(new div<T>(*this, name));
+EVOKER_PTR<T> div<T>::clone_impl (std::string name) {
+	return std::shared_ptr<div<T> >(new div(*this, name));
 }
 
 }

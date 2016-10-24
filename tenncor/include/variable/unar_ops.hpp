@@ -39,6 +39,10 @@ class iunar_ops : public ioperation<T> {
 		virtual ~iunar_ops (void) {}
 		virtual ivariable<T>& operator () (VAR_PTR<T> in);
 		virtual iunar_ops<T>& operator = (const ivariable<T>& other);
+
+		std::shared_ptr<iunar_ops<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<iunar_ops<T>, ievoker<T> >(this->clone_impl(name));
+		}
 };
 
 // OUT NODE
@@ -49,7 +53,7 @@ class expose : public iunar_ops<T> {
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "expose"; }
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		expose (void) {}
@@ -57,7 +61,7 @@ class expose : public iunar_ops<T> {
 		virtual const tensor<T>& eval (void);
 
 		std::shared_ptr<expose<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<expose<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<expose<T>, ievoker<T> >(clone_impl(name));
 		}
 
 		// non-inheriteds
@@ -87,7 +91,7 @@ class gradient : public iunar_ops<T> {
 		gradient (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "/gradient?"; }
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		gradient (VAR_PTR<T> func) { (*this)(func); }
@@ -97,7 +101,7 @@ class gradient : public iunar_ops<T> {
 		void set_over (VAR_PTR<T> over) { this->over = over; }
 
 		std::shared_ptr<gradient<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<gradient<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<gradient<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -109,6 +113,11 @@ class iunar_elem_ops : public iunar_ops<T> {
 		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
 
 	public:
+		virtual ~iunar_elem_ops (void) {}
+		std::shared_ptr<iunar_elem_ops<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<iunar_elem_ops<T>, ievoker<T> >(this->clone_impl(name));
+		}
+
 		virtual const tensor<T>& eval (void);
 };
 
@@ -122,14 +131,14 @@ class neg : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "-"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		neg (void) {}
 		neg (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<neg<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<neg<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<neg<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -143,14 +152,14 @@ class sin : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "sin"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		sin (void) {}
 		sin (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<sin<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<sin<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<sin<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -164,14 +173,14 @@ class cos : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "cos"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		cos (void) {}
 		cos (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<cos<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<cos<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<cos<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -185,14 +194,14 @@ class tan : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "tan"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		tan (void) {}
 		tan (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<tan<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<tan<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<tan<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -206,14 +215,14 @@ class csc : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "csc"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		csc (void) {}
 		csc (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<csc<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<csc<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<csc<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -227,14 +236,14 @@ class sec : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "sec"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		sec (void) {}
 		sec (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<sec<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<sec<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<sec<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -248,14 +257,14 @@ class cot : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "cot"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		cot (void) {}
 		cot (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<cot<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<cot<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<cot<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -269,14 +278,14 @@ class exp : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "exp"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		exp (void) {}
 		exp (VAR_PTR<T> var) { (*this)(var); }
 
 		std::shared_ptr<exp<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<exp<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<exp<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -293,7 +302,7 @@ class clip_by_value : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "clip_val"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		clip_by_value (void) {}
@@ -303,7 +312,7 @@ class clip_by_value : public iunar_elem_ops<T> {
 		void set_bounds (T min, T max) { this->min = min; this->max = max; }
 
 		std::shared_ptr<clip_by_value<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<clip_by_value<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<clip_by_value<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
@@ -317,7 +326,7 @@ class clip_by_norm : public iunar_elem_ops<T> {
 
 		std::string get_symb (void) { return "clip_norm"; }
 		std::function<T(T)> get_op (void);
-		virtual std::shared_ptr<ivariable<T> > clone_impl (std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
 		clip_by_norm (void) {}
@@ -327,7 +336,7 @@ class clip_by_norm : public iunar_elem_ops<T> {
 		void set_bounds (T min, T max) { this->min = min; this->max = max; }
 
 		std::shared_ptr<clip_by_norm<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<clip_by_norm<T>, ivariable<T> >(clone_impl(name));
+			return std::static_pointer_cast<clip_by_norm<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 

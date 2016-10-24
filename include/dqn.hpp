@@ -38,8 +38,6 @@ class dq_net {
 		size_t max_exp;
 		double update_rate;
 
-		nnet::OPTIMIZER<double> optimizer;
-
 		// state
 		struct exp_batch {
 			std::vector<double> observation;
@@ -73,10 +71,10 @@ class dq_net {
 		VAR_PTR<double> predicted_actions;
 		VAR_PTR<double> prediction_error;
 		// update
-		std::vector<VAR_PTR<double> > update_weight;
-		std::vector<VAR_PTR<double> > update_bias;
+		nnet::EVOKER_PTR<double> train_op;
+		std::vector<EVOKER_PTR<double> > update_ops;
 
-		void variable_setup (void);
+		void variable_setup (nnet::OPTIMIZER<double> optimizer);
 		double get_random (void);
 		std::vector<exp_batch> get_sample (void);
 

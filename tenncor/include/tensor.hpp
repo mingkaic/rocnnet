@@ -29,7 +29,7 @@ class initializer;
 template <typename T>
 class ioperation;
 template <typename T>
-class variable;
+class update;
 
 template <typename T>
 class tensor {
@@ -46,8 +46,7 @@ class tensor {
 
 		friend class initializer<T>;
 		friend class ioperation<T>;
-		// TODO make a better, unified method of manipulating tensors from variable (non-operations objects like scalar and variable)
-		friend class variable<T>;
+		friend class update<T>;
 
 	public:
 		// name identifier
