@@ -7,11 +7,13 @@
 //
 
 #include <vector>
-#include "../evoker.hpp"
+#include "../variable/variable.hpp"
 
 #pragma once
 #ifndef optimizer_hpp
 #define optimizer_hpp
+
+#include "update.hpp"
 
 namespace nnet {
 

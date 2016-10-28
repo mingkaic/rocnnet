@@ -8,21 +8,27 @@
 
 #include "../shared/utils.hpp"
 
-template <typename T>
 void unaryElemTest (
+	std::function<nnet::VAR_PTR<double>(nnet::VAR_PTR<double>)> func,
 	std::function<double(double)> op) {
+	const size_t limit = 523;
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
 	nnet::PLACEHOLDER_PTR<double> p = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "unar_in");
 
-	std::shared_ptr<T> res = std::make_shared<T>(p);
+	nnet::VAR_PTR<double> res =
+		func(std::static_pointer_cast<nnet::ivariable<double>, nnet::placeholder<double> >(p));
 
 	// didn't initialize
 	EXPECT_DEATH({ res->eval(); }, ".*");
 
 	std::vector<double> r;
 	for (size_t i = 0; i < supersize; i++) {
-		r.push_back(rand());
+		double val = 0;
+		while (0 == val) {
+			val = fmod(rand(), limit);
+		}
+		r.push_back(val);
 	}
 	*p = r;
 
@@ -33,15 +39,19 @@ void unaryElemTest (
     ASSERT_EQ(raw.size(), supersize);
 
     for (size_t i = 0; i < supersize; i++) {
-		EXPECT_EQ(op(r[i]), raw[i]);
+    	double err = std::abs(op(r[i]) - raw[i]);
+		EXPECT_LT(err, 0.001);
     }
 }
 
-template <typename T>
 void binaryElemTest (
+	std::function<nnet::VAR_PTR<double>(nnet::VAR_PTR<double>, nnet::VAR_PTR<double>)> func,
+	std::function<nnet::VAR_PTR<double>(nnet::VAR_PTR<double>, double)> func1,
+	std::function<nnet::VAR_PTR<double>(double, nnet::VAR_PTR<double>)> func2,
 	std::function<double(double, double)> op) {
 	nnet::session& sess = nnet::session::get_instance();
 	sess.enable_shape_eval();
+	const size_t limit = 523;
 	const size_t edge = 10;
 	const size_t badsize = edge*edge;
 	const size_t supersize = edge*edge*edge;
@@ -50,11 +60,12 @@ void binaryElemTest (
 	nnet::PLACEHOLDER_PTR<double> p2 = MAKE_PLACEHOLDER(goodshape, "bin_in2");
 	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge}), "bad");
 
-	EXPECT_DEATH({ std::shared_ptr<T> trouble1 = std::make_shared<T>(p1, bad); }, ".*"); // evaluates shapes at construction
-    EXPECT_DEATH({ std::shared_ptr<T> trouble2 = std::make_shared<T>(bad, p1); }, ".*");
-	std::shared_ptr<T> res = std::make_shared<T>(p1, p2);
-	std::shared_ptr<T> res1 = std::make_shared<T>(p1, 2);
-	std::shared_ptr<T> _1res = std::make_shared<T>(2, p1);
+	EXPECT_DEATH({ nnet::VAR_PTR<double> trouble1 = func(p1, bad); }, ".*"); // evaluates shapes at construction
+    EXPECT_DEATH({ nnet::VAR_PTR<double> trouble2 = func(bad, p1); }, ".*");
+
+    nnet::VAR_PTR<double> res = func(p1, p2);
+	nnet::VAR_PTR<double> res1 = func1(p1, 2);
+	nnet::VAR_PTR<double> _1res = func2(2, p1);
 
 	// didn't initialize
 	EXPECT_DEATH({ res->eval(); }, ".*");
@@ -66,8 +77,16 @@ void binaryElemTest (
 	std::vector<double> r2;
 	std::vector<double> rbad;
 	for (size_t i = 0; i < supersize; i++) {
-		r1.push_back(rand());
-		r2.push_back(rand());
+		double val = 0;
+		while (0 == val) {
+			val = fmod(rand(), limit);
+		}
+		r1.push_back(val);
+		val = 0;
+		while (0 == val) {
+			val = fmod(rand(), limit);
+		}
+		r2.push_back(val);
 	}
 	for (size_t i = 0; i < badsize; i++) {
 		rbad.push_back(rand());
@@ -96,88 +115,94 @@ void binaryElemTest (
 }
 
 
+TEST(OPERATION, abs) {
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return +in; },
+	[](double var) { return +var; });
+}
+
+
 TEST(OPERATION, neg) {
-	unaryElemTest<nnet::neg<double> >([](double var) {
-		return -var;
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return -in; },
+	[](double var) { return -var; });
 }
 
 
 TEST(OPERATION, sin) {
-	unaryElemTest<nnet::sin<double> >([](double var) {
-		return sin(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::sin(in); },
+	[](double var) { return sin(var); });
 }
 
 
 TEST(OPERATION, cos) {
-	unaryElemTest<nnet::cos<double> >([](double var) {
-		return cos(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::cos(in); },
+	[](double var) { return cos(var); });
 
 }
 
 
 TEST(OPERATION, tan) {
-	unaryElemTest<nnet::tan<double> >([](double var) {
-		return tan(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::tan(in); },
+	[](double var) { return tan(var); });
 }
 
 
 TEST(OPERATION, csc) {
-	unaryElemTest<nnet::csc<double> >([](double var) {
-		return 1/sin(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::csc(in); },
+	[](double var) { return 1/sin(var); });
 }
 
 
 TEST(OPERATION, sec) {
-	unaryElemTest<nnet::sec<double> >([](double var) {
-		return 1/cos(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::sec(in); },
+	[](double var) { return 1/cos(var); });
 }
 
 
 TEST(OPERATION, cot) {
-	unaryElemTest<nnet::cot<double> >([](double var) {
-		return cos(var)/sin(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::cot(in); },
+	[](double var) { return cos(var)/sin(var); });
 }
 
 
 TEST(OPERATION, exp) {
-	unaryElemTest<nnet::exp<double> >([](double var) {
-		return exp(var);
-	});
+	unaryElemTest([](nnet::VAR_PTR<double> in) { return nnet::exp(in); },
+	[](double var) { return exp(var); });
 }
 
 
 TEST(OPERATION, add) {
-	binaryElemTest<nnet::add<double> >([](double a, double b) {
-		return a+b;
-	});
+	binaryElemTest(
+	[](nnet::VAR_PTR<double> a, nnet::VAR_PTR<double> b) { return a+b; },
+	[](nnet::VAR_PTR<double> a, double b) { return a+b; },
+	[](double a, nnet::VAR_PTR<double> b) { return a+b; },
+	[](double a, double b) { return a+b; });
 }
 
 
 TEST(OPERATION, sub) {
-	binaryElemTest<nnet::sub<double> >([](double a, double b) {
-		return a-b;
-	});
+	binaryElemTest(
+	[](nnet::VAR_PTR<double> a, nnet::VAR_PTR<double> b) { return a-b; },
+	[](nnet::VAR_PTR<double> a, double b) { return a-b; },
+	[](double a, nnet::VAR_PTR<double> b) { return a-b; },
+	[](double a, double b) { return a-b; });
 }
 
 
 TEST(OPERATION, mul) {
-	binaryElemTest<nnet::mul<double> >([](double a, double b) {
-		return a*b;
-	});
+	binaryElemTest(
+	[](nnet::VAR_PTR<double> a, nnet::VAR_PTR<double> b) { return a*b; },
+	[](nnet::VAR_PTR<double> a, double b) { return a*b; },
+	[](double a, nnet::VAR_PTR<double> b) { return a*b; },
+	[](double a, double b) { return a*b; });
 }
 
 
 TEST(OPERATION, div) {
-	binaryElemTest<nnet::div<double> >([](double a, double b) {
-		return a/b;
-	});
+	binaryElemTest(
+	[](nnet::VAR_PTR<double> a, nnet::VAR_PTR<double> b) { return a/b; },
+	[](nnet::VAR_PTR<double> a, double b) { return a/b; },
+	[](double a, nnet::VAR_PTR<double> b) { return a/b; },
+	[](double a, double b) { return a/b; });
 }
 
 
@@ -675,17 +700,19 @@ TEST(DERIV, unary) {
 	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "bad");
 
 	std::vector<nnet::VAR_PTR<double> > univars = {
-		std::make_shared<nnet::neg<double> >(in),
-		std::make_shared<nnet::sin<double> >(in),
-		std::make_shared<nnet::cos<double> >(in),
-		std::make_shared<nnet::tan<double> >(in),
-		std::make_shared<nnet::csc<double> >(in),
-		std::make_shared<nnet::sec<double> >(in),
-		std::make_shared<nnet::cot<double> >(in),
-		std::make_shared<nnet::exp<double> >(in),
+		+nnet::PLACEHOLDER_TO_VAR<double>(in),
+		-nnet::PLACEHOLDER_TO_VAR<double>(in),
+		nnet::sin(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::cos(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::tan(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::csc(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::sec(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::cot(nnet::PLACEHOLDER_TO_VAR<double>(in)),
+		nnet::exp(nnet::PLACEHOLDER_TO_VAR<double>(in)),
 	};
 
 	std::vector<std::function<double(double)> > derivs = {
+		[](double e) { return +1; },
 		[](double e) { return -1; },
 		[](double e) { return cos(e); },
 		[](double e) { return -sin(e); },
@@ -708,13 +735,10 @@ TEST(DERIV, unary) {
 	size_t len = univars.size();
 
 	for (size_t i = 0; i < len; i++) {
-		EXPOSE_PTR exvar = EXPOSE(univars[i]);
-		exvar->eval(); // not really needed since we only operation has depth 1
-		std::vector<double> badv = exvar->get_derive(bad);
-		EXPECT_TRUE(badv.empty());
-		std::vector<double> raw = exvar->get_derive(in);
-		ASSERT_EQ(supersize, raw.size());
-		for (size_t j = 0; j < supersize; j++) {
+		nnet::VAR_PTR<double> d = univars[i]->get_gradient();
+		EXPOSE_PTR ex = EXPOSE(d);
+		std::vector<double> raw = ex->get_raw(in);
+		for (size_t j = 0; j < raw.size(); j++) {
 			EXPECT_EQ(derivs[i](r[j]), raw[j]);
 		}
 	}
@@ -729,10 +753,10 @@ TEST(DERIV, binary) {
 	nnet::PLACEHOLDER_PTR<double> bad = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "bad");
 
 	std::vector<nnet::VAR_PTR<double> > univars = {
-		std::make_shared<nnet::add<double> >(a, b),
-		std::make_shared<nnet::sub<double> >(a, b),
-		std::make_shared<nnet::mul<double> >(a, b),
-		std::make_shared<nnet::div<double> >(a, b),
+		nnet::PLACEHOLDER_TO_VAR<double>(a) + nnet::PLACEHOLDER_TO_VAR<double>(b),
+		nnet::PLACEHOLDER_TO_VAR<double>(a) - nnet::PLACEHOLDER_TO_VAR<double>(b),
+		nnet::PLACEHOLDER_TO_VAR<double>(a) * nnet::PLACEHOLDER_TO_VAR<double>(b),
+		nnet::PLACEHOLDER_TO_VAR<double>(a) / nnet::PLACEHOLDER_TO_VAR<double>(b),
 	};
 
 	std::vector<std::function<double(double, double, bool)> > derivs = {
@@ -756,17 +780,17 @@ TEST(DERIV, binary) {
 
 	for (size_t i = 0; i < univars.size(); i++) {
 		EXPOSE_PTR exvar = EXPOSE(univars[i]);
-		exvar->eval(); // not really needed since we only operation has depth 1
 		std::vector<double> badv = exvar->get_derive(bad);
-		EXPECT_TRUE(badv.empty());
+		EXPECT_EQ(0, badv[0]);
 
 		std::vector<double> rawa = exvar->get_derive(a);
 		std::vector<double> rawb = exvar->get_derive(b);
-		ASSERT_EQ(supersize, rawa.size());
-		ASSERT_EQ(supersize, rawb.size());
-		for (size_t j = 0; j < supersize; j++) {
-			EXPECT_EQ(derivs[i](ra[j], rb[j], true), rawa[j]);
-			EXPECT_EQ(derivs[i](ra[j], rb[j], false), rawb[j]);
+		ASSERT_EQ(rawa.size(), rawb.size());
+		for (size_t j = 0; j < rawa.size(); j++) {
+			double erra = derivs[i](ra[j], rb[j], true) - rawa[j];
+			double errb = derivs[i](ra[j], rb[j], false) - rawb[j];
+			EXPECT_LT(erra, 0.001);
+			EXPECT_LT(errb, 0.001);
 		}
 	}
 }
@@ -789,10 +813,9 @@ TEST(DERIV, complex) {
 	nnet::PLACEHOLDER_PTR<double> p1 = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "p1");
 	nnet::PLACEHOLDER_PTR<double> p2 = MAKE_PLACEHOLDER((std::vector<size_t>{edge, edge, edge}), "p2");
 
-	nnet::VAR_PTR<double> o1 = std::make_shared<nnet::sin<double> >(p1);
-	nnet::VAR_PTR<double> o2 = std::make_shared<nnet::mul<double> >(p1, p2);
-	nnet::VAR_PTR<double> o3 = std::make_shared<nnet::add<double> >(o1, o2);
-	EXPOSE_PTR res = EXPOSE(o3);
+	nnet::VAR_PTR<double> o = nnet::sin(nnet::PLACEHOLDER_TO_VAR<double>(p1)) +
+							nnet::PLACEHOLDER_TO_VAR<double>(p1) * nnet::PLACEHOLDER_TO_VAR<double>(p2);
+	EXPOSE_PTR res = EXPOSE(o);
 
 	// pipe into placeholder
 	std::vector<double> r1;
@@ -824,8 +847,7 @@ TEST(DERIV, complex) {
 
 TEST(OPERATION, univar_func) {
 	nnet::PLACEHOLDER_PTR<double> fanin = MAKE_PLACEHOLDER((std::vector<size_t>{1}), "in");
-	nnet::VAR_PTR<double> res;
-	nnet::sigmoid<double>(res, fanin);
+	nnet::VAR_PTR<double> res = nnet::sigmoid<double>(fanin);
 	EXPOSE_PTR out = EXPOSE(res);
 
 	*fanin = std::vector<double>{0};

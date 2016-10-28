@@ -10,42 +10,34 @@
 #ifndef functions_ops
 #define functions_ops
 
-#include "unar_ops.hpp"
-#include "bin_ops.hpp"
+#include "elementary.hpp"
 
 namespace nnet {
 
 template <typename T>
-using TEN_FUNC = std::function<void(VAR_PTR<T>&, VAR_PTR<T>)>;
+using TEN_FUNC = std::function<VAR_PTR<T>(VAR_PTR<T>)>;
 
 template <typename T>
-void sigmoid (VAR_PTR<T>& out, VAR_PTR<T> in) {
+VAR_PTR<T> sigmoid (VAR_PTR<T> x) {
 	// f(x) = 1/(1+e^-x)
-	VAR_PTR<T> negres = std::make_shared<neg<T> >(in);
-	VAR_PTR<T> expres = std::make_shared<exp<T> >(negres);
-	VAR_PTR<T> denom = std::make_shared<add<T> >(1, expres);
-	out = std::make_shared<div<T> >(1, denom);
+	return 1.0 / (1.0 + nnet::exp(-x));
 }
 
 template <typename T>
-void tanh (VAR_PTR<T>& out, VAR_PTR<T> in) {
+VAR_PTR<T> tanh (VAR_PTR<T> x) {
 	// f(x) = (e^(2*x)+1)/(e^(2*x)-1)
-	VAR_PTR<T> pres = std::make_shared<add<T> >(in); // 2*x
-	VAR_PTR<T> expres = std::make_shared<exp<T> >(pres);
-	VAR_PTR<T> numer = std::make_shared<sub<T> >(expres, 1);
-	VAR_PTR<T> denom = std::make_shared<add<T> >(expres, 1);
-	out = std::make_shared<div<T> >(numer, denom);
+	VAR_PTR<T> etx = nnet::exp(2.0 * x);
+	return (etx + 1.0) / (etx - 1.0);
 }
 
 template <typename T>
 // clones every node from root to anything in leaf_set_src
-void clone (VAR_PTR<T>& dest_root,
-			VAR_PTR<T> src_root,
+VAR_PTR<T> clone (VAR_PTR<T> src_root,
 			std::unordered_set<VAR_PTR<T> > leaf_set_src,
 			std::unordered_set<VAR_PTR<T> >& leaf_set_dest) {
 	std::queue<WEAK_VAR_PTR<T> > q;
 	std::unordered_map<WEAK_VAR_PTR<T>, WEAK_VAR_PTR<T> > src_to_dest;
-	dest_root = src_root->clone();
+	VAR_PTR<T> dest_root = src_root->clone();
 	WEAK_VAR_PTR<T> cur = src_root;
 	WEAK_VAR_PTR<T> cpy = dest_root;
 	// storage
@@ -92,6 +84,7 @@ void clone (VAR_PTR<T>& dest_root,
 			leaf_set_dest.emplace(cpy);
 		}
 	}
+	return dest_root;
 }
 
 }

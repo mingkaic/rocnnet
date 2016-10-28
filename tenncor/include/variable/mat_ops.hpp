@@ -10,6 +10,7 @@
 #define matop_hpp
 
 #include "operation.hpp"
+#include "unar_ops.hpp"
 
 namespace nnet {
 
@@ -25,7 +26,7 @@ class extend : public iunar_ops<T> {
 		WEAK_VAR_PTR<T> watch;
 
 	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		virtual void make_gradient (void);
 		virtual std::string get_symb (void) { return "extend"; }
 
 		virtual void shape_eval (void);
@@ -33,6 +34,7 @@ class extend : public iunar_ops<T> {
 		extend (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		extend (void) {}
@@ -62,7 +64,7 @@ class compress : public iunar_ops<T> {
 		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
 	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		virtual void make_gradient (void);
 		virtual std::string get_symb (void) { return "compress"; }
 
 		virtual void shape_eval (void);
@@ -70,6 +72,7 @@ class compress : public iunar_ops<T> {
 		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		compress (void) {}
@@ -93,13 +96,14 @@ template <typename T>
 class transpose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		virtual void make_gradient (void);
 		virtual std::string get_symb (void) { return "transpose"; }
 
 		virtual void shape_eval (void);
 		transpose (const ivariable<T>& other, std::string name) { this->copy(other, name); }
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		transpose (void) {}
@@ -127,7 +131,7 @@ class matmul : public ioperation<T> {
 
 	protected:
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
+		virtual void make_gradient (void);
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) {
 			if (a.get() == food) a = newfood;
 			if (b.get() == food) b = newfood;
@@ -137,6 +141,7 @@ class matmul : public ioperation<T> {
 		matmul (const matmul<T>& other, std::string name);
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		matmul (void) : transposeA(false), transposeB(false) {}

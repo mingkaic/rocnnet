@@ -9,17 +9,13 @@ namespace nnet {
 // TENSOR EXTENSION
 
 template <typename T>
-tensor<T>* extend<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	tensor<T>* ans = nullptr;
-	if (this->var) {
-		tensor<T>* deriv = this->var->gradient(over);
-		if (deriv) {
-			// extend along index
-			ans = this->extend_op(*deriv, index, multiplier);
-			delete deriv;
-		}
+void extend<T>::make_gradient (void) {
+	VAR_PTR<T> g = this->var->get_gradient();
+	if (nullptr == watch.lock()) {
+		this->set_gradient(std::make_shared<extend<T> >(g, index, multiplier));
+	} else {
+		this->set_gradient(std::make_shared<extend<T> >(g, watch));
 	}
-	return ans;
 }
 
 template <typename T>
@@ -123,20 +119,42 @@ const tensor<T>& extend<T>::eval (void) {
 	return this->out;
 }
 
+template <typename T>
+const tensor<T>& extend<T>::calc_eval (VAR_PTR<T> active) {
+	assert(nullptr != this->var);
+	const tensor<T>& in = this->var->eval(active);
+	if (nullptr == watch.lock()) {
+		tensor<T> *ans = this->extend_op(in, index, multiplier);
+		this->out = *ans;
+		delete ans;
+	} else {
+		this->out = in;
+		std::vector<size_t> target = watch.lock()->get_shape().as_list();
+		std::vector<size_t> orig = in.get_shape().as_list();
+		// this actually get expensive for big shapes, TODO: refactor/change anti-pattern
+		for (size_t i = 0; i < target.size(); i++) {
+			if (i < orig.size()) {
+				if (target[i] > orig[i]) {
+					tensor<T> *ans = this->extend_op(in, i, orig[i]/target[i]);
+					this->out = *ans;
+					delete ans;
+				}
+			} else {
+				tensor<T>* ans = this->extend_op(in, i, target[i]);
+				this->out = *ans;
+				delete ans;
+			}
+		}
+	}
+	return this->out;
+}
+
 // TENSOR COMPRESSION
 
 template <typename T>
-tensor<T>* compress<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	tensor<T>* ans = nullptr;
-	if (this->var) {
-		tensor<T>* deriv = this->var->gradient(over);
-		if (deriv) {
-			// uncompress along index
-			ans = this->compress_op(*deriv, index, collector);
-			delete deriv;
-		}
-	}
-	return ans;
+void compress<T>::make_gradient (void) {
+	VAR_PTR<T> g = this->var->get_gradient();
+	this->set_gradient(std::make_shared<compress<T> >(g, index, collector));
 }
 
 template <typename T>
@@ -211,19 +229,22 @@ const tensor<T>& compress<T>::eval (void) {
 	return this->out;
 }
 
+template <typename T>
+const tensor<T>& compress<T>::calc_eval (VAR_PTR<T> active) {
+	assert(nullptr != this->var);
+	const tensor<T>& in = this->var->eval(active);
+	tensor<T>* ans = this->compress_op(in, index, collector);
+	this->out = *ans;
+	delete ans;
+	return this->out;
+}
+
 // MATRIX TRANSPOSE
 
 template <typename T>
-tensor<T>* transpose<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	tensor<T>* ans = nullptr;
-	if (this->var) {
-		tensor<T>* deriv = this->var->gradient(over);
-		if (deriv) {
-			ans = this->transpose_op(*deriv); // transpose
-			delete deriv;
-		}
-	}
-	return ans;
+void transpose<T>::make_gradient (void) {
+	VAR_PTR<T> g = this->var->get_gradient();
+	this->set_gradient(std::make_shared<transpose<T> >(g));
 }
 
 template <typename T>
@@ -256,25 +277,23 @@ const tensor<T>& transpose<T>::eval (void) {
 	return this->out;
 }
 
+template <typename T>
+const tensor<T>& transpose<T>::calc_eval (VAR_PTR<T> active) {
+	assert(nullptr != this->var);
+	const tensor<T>& in = this->var->eval(active);
+	tensor<T>* ans = this->transpose_op(in);
+	this->out = *ans;
+	delete ans;
+	return this->out;
+}
+
 // MATRIX MULTIPLICATION
 
 template <typename T>
-tensor<T>* matmul<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	tensor<T>* ans = nullptr;
-	if (a == over.lock()) {
-		// we take the trace of b
-		ans = this->get_trace(*b);
-	} else if (b == over.lock()) {
-		// we take the trace of a
-		ans = this->get_trace(*a);
-	} else {
-		tensor<T>* deriva = a->gradient(over);
-		tensor<T>* derivb = b->gradient(over);
-		ans = this->util_op(*deriva, *derivb, shared_cnnet::op_add<T>);
-		delete deriva;
-		delete derivb;
-	}
-	return ans;
+void matmul<T>::make_gradient (void) {
+	VAR_PTR<T> ga = this->a->get_gradient();
+	VAR_PTR<T> gb = this->b->get_gradient();
+	this->set_gradient(std::make_shared<matmul<T> >(ga, gb, transposeA, transposeB));
 }
 
 template <typename T>
@@ -284,8 +303,8 @@ void matmul<T>::shape_eval (void) {
 		b->get_shape().is_fully_defined()) {
 		size_t common_dim;
 		tensor_shape ts = this->get_matrix_shape(
-				this->get_eval(this->a),
-				this->get_eval(this->b),
+				this->get_eval(a),
+				this->get_eval(b),
 				transposeA, transposeB, common_dim);
 		assert(ts.is_fully_defined()); // assert initial shape is at least valid (re-checked at eval time)
 		this->update(ts);
@@ -349,6 +368,17 @@ const tensor<T>& matmul<T>::eval (void) {
 	assert(nullptr != a && nullptr != b);
 	const tensor<T>& at = this->a->eval();
 	const tensor<T>& bt = this->b->eval();
+	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
+	this->out = *ans;
+	delete ans;
+	return this->out;
+}
+
+template <typename T>
+const tensor<T>& matmul<T>::calc_eval (VAR_PTR<T> active) {
+	assert(nullptr != a && nullptr != b);
+	const tensor<T> &at = this->a->eval(active);
+	const tensor<T> &bt = this->b->eval(active);
 	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
 	this->out = *ans;
 	delete ans;

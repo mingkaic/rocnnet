@@ -138,8 +138,44 @@ void ioperation<T>::util_op (
 	U& out, const tensor<T>& in,
 	std::function<void(U&, T)> op) const {
 	T* inraw = in.raw_data;
-	for (size_t i = 0; i < in.n_elems(); i++) {
+	size_t limit = in.n_elems();
+	for (size_t i = 0; i < limit; i++) {
 		op(out, inraw[i]);
+	}
+}
+
+template <typename T>
+void ioperation<T>::elem_op (
+		tensor<T>& out,
+		const tensor<T>& in,
+		std::function<void(T&, T)> op) const {
+	size_t outs = out.n_elems();
+	size_t ins = in.n_elems();
+	const T* inraw = in.raw_data;
+
+	if (outs < ins && 1 == outs) {
+		T scalar = out.raw_data[0];
+		out = in;
+		T* outraw = out.raw_data;
+		for (size_t i = 0; i < ins; i++) {
+			T buffer = scalar;
+			op(buffer, inraw[i]);
+			outraw[i] = buffer;
+		}
+	} else {
+		T* outraw = out.raw_data;
+		if (1 == ins) {
+			for (size_t i = 0; i < outs; i++) {
+				op(outraw[i], inraw[0]);
+			}
+		} else if (outs == ins) {
+			for (size_t i = 0; i < outs; i++) {
+				op(outraw[i], inraw[i]);
+			}
+		} else {
+			throw std::invalid_argument(
+			"cannot element-wise operate on tensors of vastly different shapes");
+		}
 	}
 }
 
@@ -155,8 +191,7 @@ tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
 		len_trace = tv[0];
 		tv[1] = 1;
 	}
-	memory_alloc alloc;
-	tensor<T>* ans = new tensor<T>(alloc, tv);
+	tensor<T>* ans = new tensor<T>(tv);
 	T* inraw = in.out.raw_data;
 	T* outraw = ans->raw_data;
 	for (size_t i = 0; i < len_trace; i++) {
@@ -169,8 +204,7 @@ template <typename T>
 tensor<T>* ioperation<T>::util_op (
 	const tensor<T>& in,
 	std::function<T(T)> op) const {
-	memory_alloc alloc;
-	tensor<T>* ans = new tensor<T>(alloc, in.get_shape());
+	tensor<T>* ans = new tensor<T>(in.get_shape());
 	T* inraw = in.raw_data;
 	T* outraw = ans->raw_data;
 	for (size_t i = 0; i < ans->n_elems(); i++) {
@@ -186,10 +220,8 @@ tensor<T>* ioperation<T>::util_op (
 	std::function<T(T, T)> op) const {
 	tensor_shape ts = get_element_shape(a, b);
 	assert(0 < ts.n_dims());
-	memory_alloc alloc;
 	tensor<T>* ans;
 	ans = new tensor<T>(ts);
-	ans->allocate(alloc);
 
 	if (1 == a.n_elems()) {
 		T scalar = a.get({0});
@@ -224,11 +256,10 @@ tensor<T>* ioperation<T>::transpose_op (
 	tensor<T> const & in) const {
 	// restrict shapes
 	tensor_shape news = transpose_shape(in.get_shape());
-	memory_alloc all;
 	std::vector<size_t> inl = news.as_list();
 	size_t dimY = inl[0];
 	size_t dimX = inl[1];
-	tensor<T>* ans = new tensor<T>(all, news); // new shape
+	tensor<T>* ans = new tensor<T>(news); // new shape
 	T* rawin = in.raw_data;
 	T* rawout = ans->raw_data;
 	// not in place so x = y+1 doesn't work
@@ -243,8 +274,8 @@ tensor<T>* ioperation<T>::transpose_op (
 // restrict matrices shape at evaluation time
 template <typename T>
 tensor<T>* ioperation<T>::matmul_op (
-	tensor<T> const & a,
-	tensor<T> const & b,
+	const tensor<T>& a,
+	const tensor<T>& b,
 	bool transposeA,
 	bool transposeB) const {
 	size_t dimZ;
@@ -254,9 +285,8 @@ tensor<T>* ioperation<T>::matmul_op (
 	std::vector<size_t> dims = ts.as_list();
 	size_t dimX = dims[0];
 	size_t dimY = dims[1];
-	memory_alloc all;
-	tensor<T>* ans = new tensor<T>(std::vector<size_t>({dimX, dimY}));
-	ans->allocate(all);
+	tensor<T>* ans = new tensor<T>(std::vector<size_t>{dimX, dimY});
+
 	T* rawa = a.raw_data;
 	T* rawb = b.raw_data;
 	T* rawr = ans->raw_data;
@@ -270,6 +300,7 @@ tensor<T>* ioperation<T>::matmul_op (
 			}
 		}
 	}
+
 	return ans;
 }
 
@@ -279,8 +310,7 @@ tensor<T>* ioperation<T>::extend_op (const tensor<T>& in, size_t index, size_t m
 	size_t below_dim = 1;
 	tensor_shape ts = change_shape(in.get_shape(), index, multiplier, below_dim, cline); // new shape
 	below_dim *= cline;
-	memory_alloc all;
-	tensor<T>* ans = new tensor<T>(all, ts);
+	tensor<T>* ans = new tensor<T>(ts);
 
 	size_t above_dim = in.n_elems() / below_dim;
 	if (0 == above_dim) above_dim = 1; // remember that extension can increase dimensionality
@@ -305,9 +335,8 @@ tensor<T>* ioperation<T>::compress_op (
 	signed index,
 	std::function<T(const std::vector<T>&)> collector) const {
 	size_t total = in.n_elems();
-	memory_alloc all;
 	if (index < 0) { // if index is negative compress all values
-		tensor<T>* ans = new tensor<T>(all, std::vector<size_t>{1}); // basically scalar
+		tensor<T>* ans = new tensor<T>(std::vector<size_t>{1}); // basically scalar
 		T* raw = ans->raw_data;
 		T* src_data = in.raw_data;
 		std::vector<T> gather;
@@ -326,7 +355,7 @@ tensor<T>* ioperation<T>::compress_op (
 	size_t below_dim;
 	tensor_shape ts = change_shape(in.get_shape(), index, 0, below_dim, cline); // new shape
 
-	tensor<T>* ans = new tensor<T>(all, ts);
+	tensor<T>* ans = new tensor<T>(ts);
 
 	size_t above_dim = total / (below_dim*cline);
 	// copy over data
@@ -358,6 +387,133 @@ void ioperation<T>::update (tensor_shape candidate_shape) {
 			consumer->shape_eval();
 		}
 	}
+}
+
+// Elementary Operations
+
+template <typename T>
+void elementary<T>::make_gradient (void) {
+	VAR_PTR<T> g = der(args);
+	this->set_gradient(g);
+	// keep propagating gradients
+	std::shared_ptr<elementary<T> > elem = std::dynamic_pointer_cast<elementary<T> >(g);
+	if (nullptr != elem) {
+		std::list<VAR_PTR<T> > q(elem->args.begin(), elem->args.end());
+		while (false == q.empty()) {
+			VAR_PTR<T> arg = q.front();
+			elem = std::dynamic_pointer_cast<elementary<T> >(arg);
+			q.pop_front();
+			if (nullptr != elem && nullptr == arg->integral) {
+			// TODO distinguish first order derivative, second order deriv... etc.
+			// only make element integral connection between greater and lower order, not of the same order
+				elem->integral = this;
+				for (VAR_PTR<T> e : elem->args) {
+					q.insert(q.end(), e);
+				}
+			}
+		}
+	}
+}
+
+template <typename T>
+EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
+	return std::make_shared<elementary<T> >(args, op, der, name);
+}
+
+template <typename T>
+void elementary<T>::replace (ivariable<T>* food, VAR_PTR<T> newfood) {
+	for (size_t i = 0; i < args.size(); i++) {
+		if (args[i].get() == food) args[i] = newfood;
+	}
+}
+
+template <typename T>
+void elementary<T>::shape_eval (void) {
+	auto it = args.begin();
+	tensor_shape first = this->get_eval(*it).get_shape();
+	if (first.is_fully_defined()) {
+		for (it++; args.end() != it; it++) {
+			tensor_shape ts = this->get_eval(*it).get_shape();
+			assert(first.is_compatible_with(ts) ||
+				1 == ts.n_dims() || 1 == first.n_dims());
+			if (ts.n_dims() > first.n_dims()) first = ts;
+		}
+		this->update(first);
+	}
+}
+
+template <typename T>
+elementary<T>::elementary (VAR_PTR<T> arg,
+		std::function<void(T&, T)> op,
+		ELEMENTARY_DERIV<T> der,
+		std::string name) : op(op), der(der) {
+	this->name = name;
+	args.push_back(arg);
+	this->consume(*(arg.get()));
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
+}
+
+template <typename T>
+elementary<T>::elementary (VAR_PTR<T> arga, VAR_PTR<T> argb,
+		std::function<void(T&, T)> op,
+		ELEMENTARY_DERIV<T> der,
+		std::string name) : op(op), der(der) {
+	this->name = name;
+	args.push_back(arga);
+	args.push_back(argb);
+	this->consume(*(arga.get()));
+	this->consume(*(argb.get()));
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
+}
+
+template <typename T>
+elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
+		std::function<void(T&, T)> op,
+		ELEMENTARY_DERIV<T> der,
+		std::string name) : op(op), der(der), args(args) {
+	this->name = name;
+	for (VAR_PTR<T> a : args) {
+		this->consume(*(a.get()));
+	}
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
+}
+
+template <typename T>
+const tensor<T>& elementary<T>::eval (void) {
+	auto it = args.begin();
+	if (1 == args.size()) {
+		this->out = tensor<T>(0);
+	} else {
+		this->out = (*it)->eval();
+		it++;
+	}
+	while (args.end() != it) {
+		this->elem_op(this->out, (*it)->eval(), op);
+		it++;
+	}
+	return this->out;
+}
+
+template <typename T>
+const tensor<T>& elementary<T>::calc_eval (VAR_PTR<T> active) {
+	auto it = args.begin();
+	if (1 == args.size()) {
+		this->out = tensor<T>(0);
+	} else {
+		this->out = (*it)->eval(active);
+		it++;
+	}
+	while (args.end() != it) {
+		this->elem_op(this->out, (*it)->eval(active), op);
+		it++;
+	}
+	return this->out;
 }
 
 }

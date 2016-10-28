@@ -31,11 +31,6 @@ void random_uniform<T>::operator () (tensor<T>& in) {
 // variable interface
 
 template <typename T>
-tensor<T>* ivariable<T>::calc_gradient (WEAK_VAR_PTR<T> over) const {
-	return nullptr == VAR_PTR<T>(over) ? get_ones() : nullptr;
-}
-
-template <typename T>
 void ivariable<T>::copy (
 	ivariable<T> const & other,
 	std::string name) {
@@ -68,11 +63,6 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 		copy(other);
 	}
 	return *this;
-}
-
-template <typename T>
-tensor<T>* ivariable<T>::gradient (WEAK_VAR_PTR<T> over) const {
-	return over.lock().get() == this ? get_ones() : this->calc_gradient(over);
 }
 
 // variable implementation
@@ -147,9 +137,10 @@ variable<T>& variable<T>::operator = (const ivariable<T>& other) {
 
 template <typename T>
 tensor<T>& variable<T>::initialize (void) {
-	memory_alloc all;
-	this->out.allocate(all);
 	assert(init != nullptr);
+	if (false == this->out.is_alloc()) { // if not alloc, allocate
+		this->out.allocate(std::make_shared<memory_alloc>());
+	}
 	(*init)(this->out);
 	is_init = true;
 	return this->out;
@@ -157,22 +148,13 @@ tensor<T>& variable<T>::initialize (void) {
 
 template <typename T>
 tensor<T>& variable<T>::initialize (tensor_shape alloc_shape) {
-	memory_alloc all;
-	this->out.allocate(all, alloc_shape);
+	assert(init != nullptr);
+	if (false == this->out.is_alloc()) { // if not alloc, allocate
+		this->out.allocate(std::make_shared<memory_alloc>(), alloc_shape);
+	}
 	(*init)(this->out);
 	is_init = true;
 	return this->out;
-}
-
-template <typename T>
-void variable<T>::update (const tensor<T>& in, std::function<T(T,T)> op) {
-	// TODO: use a better method of manipulating rawdata
-//	assert(this->out.is_same_size(in));
-//	T* old_data = this->out.raw_data;
-//	const T* new_data = in.raw_data;
-//	for (size_t i = 0; i < in.n_elems(); i++) {
-//		old_data[i] = op(old_data[i], new_data[i]);
-//	}
 }
 
 template <typename T>
@@ -226,8 +208,9 @@ variable<T>& placeholder<T>::assign (VAR_PTR<T> other) {
 	if (VAR_PTR<T>(this) != other) {
 		bool reshape_needed = false == other->out.is_same_size(this->out);
 		if (false == this->out.is_alloc()) {
-			memory_alloc all;
-			this->out.allocate(all, other->get_shape());
+			this->out.allocate(
+				std::make_shared<memory_alloc>(),
+				other->get_shape());
 		}
 		this->out = other->out;
 		if (reshape_needed) {
@@ -246,8 +229,9 @@ variable<T>& placeholder<T>::operator = (std::vector<T> data) {
 	assert(this->out.is_compatible_with(data));
 
 	if (false == this->out.is_alloc()) {
-		memory_alloc all;
-		this->out.allocate(all, this->out.guess_shape(data));
+		this->out.allocate(
+			std::make_shared<memory_alloc>(),
+			this->out.guess_shape(data));
 	}
 	this->init = new open_init();
 	assert(data.size() <= this->out.n_elems());

@@ -63,7 +63,7 @@ VAR_PTR<double> layer_perceptron::operator () (VAR_PTR<double> input) {
 	// weights are n_output column by n_input rows
 	VAR_PTR<double> mres = std::make_shared<matmul<double> >(input, weights);
 	VAR_PTR<double> exbias = std::make_shared<extend<double> >(bias, mres); // adjust shape based on mres shape
-	return std::make_shared<add<double> >(mres, exbias);
+	return mres + exbias;
 }
 
 // MULTILAYER PERCEPTRON IMPLEMENTATION
@@ -131,7 +131,7 @@ VAR_PTR<double> ml_perceptron::operator () (PLACEHOLDER_PTR<double> input) {
 	VAR_PTR<double> output = input;
 	for (HID_PAIR hp : layers) {
 		VAR_PTR<double> hypothesis = (*hp.first)(output);
-		(hp.second)(output, hypothesis);
+		output = (hp.second)(hypothesis);
 	}
 	return output;
 }

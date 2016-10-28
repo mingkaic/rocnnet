@@ -44,9 +44,7 @@ class layer_perceptron {
 		VAR_PTR<double> weights = nullptr;
 		VAR_PTR<double> bias = nullptr;
 
-		void copy (
-			const layer_perceptron& other,
-			std::string scope);
+		void copy (const layer_perceptron& other, std::string scope);
 
 	public:
 		layer_perceptron (

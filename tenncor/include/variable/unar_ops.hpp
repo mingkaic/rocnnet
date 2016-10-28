@@ -9,7 +9,6 @@
 #pragma once
 #ifndef unar_ops_hpp
 #define unar_ops_hpp
-#include <iostream>
 
 #include "operation.hpp"
 
@@ -23,10 +22,6 @@ class iunar_ops : public ioperation<T> {
 		// avoid calling ivariable's assignment multiple time
 		VAR_PTR<T> var = nullptr;
 
-		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const {
-			return this->var->gradient(over);
-		}
 		void copy (const ivariable<T>& other, std::string name = "");
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
 		virtual void shape_eval (void);
@@ -50,10 +45,16 @@ class iunar_ops : public ioperation<T> {
 template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
+		// backward chaining for AD
+		virtual void make_gradient (void) {
+			this->grad = this->var->get_gradient();
+		}
+
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "expose"; }
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active) { return this->var->eval(active); }
 
 	public:
 		expose (void) {}
@@ -67,9 +68,10 @@ class expose : public iunar_ops<T> {
 		// non-inheriteds
 		// evaluates consumed operation
 		virtual std::vector<T> get_raw (void);
+		virtual std::vector<T> get_raw (VAR_PTR<T> active);
 		// extracts derivative based on the LAST evaluation
 		// doesn't evaluate
-		virtual std::vector<T> get_derive (WEAK_VAR_PTR<T> over) const;
+		virtual std::vector<T> get_derive (VAR_PTR<T> over) const;
 };
 
 // GRADIENT
@@ -92,10 +94,17 @@ class gradient : public iunar_ops<T> {
 
 		std::string get_symb (void) { return "/gradient?"; }
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
+
+		virtual void make_gradient (void) {}
 
 	public:
-		gradient (VAR_PTR<T> func) { (*this)(func); }
-		gradient (VAR_PTR<T> func, VAR_PTR<T> over) : over(over) { (*this)(func); }
+		gradient (VAR_PTR<T> func) {
+			(*this)(func->get_gradient());
+		}
+		gradient (VAR_PTR<T> func, VAR_PTR<T> over) : over(over) {
+			(*this)(func->get_gradient());
+		}
 		virtual const tensor<T>& eval (void);
 
 		void set_over (VAR_PTR<T> over) { this->over = over; }
@@ -111,6 +120,7 @@ template <typename T>
 class iunar_elem_ops : public iunar_ops<T> {
 	protected:
 		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		virtual ~iunar_elem_ops (void) {}
@@ -119,174 +129,6 @@ class iunar_elem_ops : public iunar_ops<T> {
 		}
 
 		virtual const tensor<T>& eval (void);
-};
-
-// NEGATION
-
-template <typename T>
-class neg : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		neg (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "-"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		neg (void) {}
-		neg (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<neg<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<neg<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// SINE
-
-template <typename T>
-class sin : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		sin (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "sin"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		sin (void) {}
-		sin (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<sin<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<sin<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// COSINE
-
-template <typename T>
-class cos : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		cos (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "cos"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		cos (void) {}
-		cos (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<cos<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<cos<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// TANGENT
-
-template <typename T>
-class tan : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		tan (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "tan"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		tan (void) {}
-		tan (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<tan<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<tan<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// COSECANT
-
-template <typename T>
-class csc : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		csc (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "csc"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		csc (void) {}
-		csc (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<csc<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<csc<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// SECANT
-
-template <typename T>
-class sec : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		sec (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "sec"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		sec (void) {}
-		sec (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<sec<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<sec<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// COTANGENT
-
-template <typename T>
-class cot : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		cot (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "cot"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		cot (void) {}
-		cot (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<cot<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<cot<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-// EXPONENT OF E
-
-template <typename T>
-class exp : public iunar_elem_ops<T> {
-	protected:
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
-		exp (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
-		std::string get_symb (void) { return "exp"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		exp (void) {}
-		exp (VAR_PTR<T> var) { (*this)(var); }
-
-		std::shared_ptr<exp<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<exp<T>, ievoker<T> >(clone_impl(name));
-		}
 };
 
 // CLIP
@@ -298,6 +140,11 @@ class clip_by_value : public iunar_elem_ops<T> {
 		T max;
 
 	protected:
+		// backward chaining for AD
+		virtual void make_gradient (void) {
+			this->set_gradient(std::make_shared<clip_by_value<T> >(this->var->get_gradient(), min, max));
+		}
+
 		clip_by_value (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "clip_val"; }
@@ -322,6 +169,11 @@ class clip_by_norm : public iunar_elem_ops<T> {
 		T cap;
 
 	protected:
+		// backward chaining for AD
+		virtual void make_gradient (void) {
+			this->set_gradient(std::make_shared<clip_by_norm<T> >(this->var->get_gradient(), cap));
+		}
+
 		clip_by_norm (ivariable<T>& var, std::string name) { this->copy(var, name); }
 
 		std::string get_symb (void) { return "clip_norm"; }

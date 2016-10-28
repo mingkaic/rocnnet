@@ -46,7 +46,7 @@ class iallocator {
     public:
         static constexpr size_t alloc_alignment = 32;
 
-        virtual iallocator* clone (void) = 0;
+        virtual std::shared_ptr<iallocator> clone (void) = 0;
 
         virtual ~iallocator (void) {}
 
@@ -110,7 +110,7 @@ class memory_alloc : public iallocator {
         virtual void del_raw (void* ptr);
 
     public:
-        virtual memory_alloc* clone (void);
+        virtual std::shared_ptr<iallocator> clone (void);
         virtual size_t id (void) { return 0; } // update to boost uuid
 };
 

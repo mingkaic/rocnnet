@@ -26,24 +26,11 @@ TEST(VARIABLE, tensor_construct) {
     EXPECT_EQ(2, t3.n_dims());
     EXPECT_EQ(0, t3.n_elems());
 
-    nnet::memory_alloc alloc;
     // allocation constructions
-    nnet::tensor<double> tgood(alloc,
-        (std::vector<size_t>){2, 3});
+    nnet::tensor<double> tgood(std::vector<size_t>{2, 3});
     EXPECT_TRUE(tgood.is_alloc());
     EXPECT_EQ(2, tgood.n_dims());
     EXPECT_EQ(6, tgood.n_elems());
-
-    // must be fully defined
-    EXPECT_DEATH({
-        nnet::tensor<double> tbad1(alloc,
-            (std::vector<size_t>){0, 1});
-    }, ".*");
-
-    EXPECT_DEATH({
-        nnet::tensor<double> tbad2(alloc,
-            nnet::tensor_shape());
-    }, ".*");
 
     // attribute?
 }
@@ -60,7 +47,7 @@ TEST(VARIABLE, tensor_allocate) {
     // 3 by 3 matrix
     nnet::tensor<double> exact((std::vector<size_t>){3, 3});
 
-    nnet::memory_alloc locker;
+    std::shared_ptr<nnet::iallocator> locker = std::shared_ptr<nnet::iallocator>(new nnet::memory_alloc());
     // allocate from allowed shape
     EXPECT_DEATH({ liberal.allocate(locker); }, ".*");
     EXPECT_DEATH({ partial.allocate(locker); }, ".*");

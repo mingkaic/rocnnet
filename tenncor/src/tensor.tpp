@@ -17,7 +17,7 @@ void tensor<T>::copy (const tensor <T> &other) {
 	if (nullptr == other.alloc) {
 		alloc = nullptr;
 	} else {
-		alloc = other.alloc->clone();
+		alloc = other.alloc;
 	}
 	size_t nelem = other.n_elems();
 	allowed_shape = other.allowed_shape;
@@ -30,27 +30,36 @@ void tensor<T>::copy (const tensor <T> &other) {
 	memcpy(raw_data, other.raw_data, sizeof(T) * nelem);
 }
 
+template <typename T>
+tensor<T>::tensor (void) : tensor(std::vector<size_t>()) {}
+
 template<typename T>
-tensor<T>::tensor (void) {
-	allowed_shape = tensor_shape(std::vector<dimension>());
+tensor<T>::tensor (const tensor_shape shape) : allowed_shape(shape) {
+	if (allowed_shape.is_fully_defined()) {
+		alloc_shape = shape;
+		alloc = std::make_shared<memory_alloc>();
+		this->raw_data = alloc->allocate<T>(this->alloc_shape.n_elems(), default_attr);
+	}
 }
 
 template<typename T>
-tensor<T>::tensor (const tensor_shape &shape)
-		: allowed_shape(shape) {}
+tensor<T>::tensor (std::shared_ptr<iallocator> alloc, const tensor_shape shape) :
+		tensor(alloc, shape, default_attr) {}
 
 template<typename T>
-tensor<T>::tensor (iallocator &a,
-				  tensor_shape const &shape,
-				  alloc_attrib const &attrib)
-		: allowed_shape(shape), alloc() {
+tensor<T>::tensor (std::shared_ptr<iallocator> alloc,
+				   const tensor_shape shape,
+				   const alloc_attrib& attrib) :
+		allowed_shape(shape), alloc_shape(shape), alloc(alloc) {
 	shape.assert_is_fully_defined();
-	this->alloc_shape = shape;
-	alloc = a.clone();
 	this->raw_data = alloc->allocate<T>(this->alloc_shape.n_elems(), attrib);
 }
 
-// tensor (operation op, size_t v_idx);
+template<typename T>
+tensor<T>::tensor (T scalar) :
+		tensor(std::vector<size_t>{1}) {
+	this->raw_data[0] = scalar;
+}
 
 template<typename T>
 tensor<T>::tensor (const tensor <T> &other) {
@@ -62,7 +71,6 @@ tensor<T>::~tensor (void) {
 	// dealloc BUFFER<T> raw_data if needed
 	if (nullptr != alloc) {
 		alloc->dealloc(raw_data, this->alloc_shape.n_elems());
-		delete alloc;
 	}
 }
 
@@ -78,24 +86,26 @@ tensor <T> &tensor<T>::operator = (const tensor <T> &other) {
 }
 
 template<typename T>
-void tensor<T>::allocate (iallocator &allocer) {
+void tensor<T>::allocate (std::shared_ptr<iallocator> allocer) {
 	allocate(allocer, default_attr);
 }
 
 template<typename T>
-void tensor<T>::allocate (iallocator &allocer, const alloc_attrib &attrib) {
+void tensor<T>::allocate (std::shared_ptr<iallocator> allocer, const alloc_attrib& attrib) {
 	allowed_shape.assert_is_fully_defined();
 	allocate(allocer, allowed_shape, attrib);
 }
 
 template<typename T>
-void tensor<T>::allocate (iallocator &allocer, const tensor_shape &shape) {
+void tensor<T>::allocate (std::shared_ptr<iallocator> allocer, const tensor_shape shape) {
 	allocate(allocer, shape, default_attr);
 }
 
 template<typename T>
-void tensor<T>::allocate (iallocator &allocer, const tensor_shape &shape,
-						 alloc_attrib const &attrib) {
+void tensor<T>::allocate (
+		std::shared_ptr<iallocator> allocer,
+		const tensor_shape shape,
+		const alloc_attrib& attrib) {
 	assert(shape.is_compatible_with(allowed_shape));
 	shape.assert_is_fully_defined();
 
@@ -105,7 +115,7 @@ void tensor<T>::allocate (iallocator &allocer, const tensor_shape &shape,
 	}
 
 	alloc_shape = shape;
-	alloc = allocer.clone();
+	alloc = allocer;
 	raw_data = alloc->allocate<T>(this->alloc_shape.n_elems(), attrib);
 }
 
@@ -226,7 +236,7 @@ void tensor<T>::set_shape (tensor_shape shape) {
 
 // how to handle shape expansion / compression?
 template<typename T>
-bool tensor<T>::copy_from (const tensor <T> &other, const tensor_shape &shape) {
+bool tensor<T>::copy_from (const tensor<T>& other, const tensor_shape shape) {
 	throw std::bad_function_call(); // NOT IMPLEMENTED
 	return false;
 }

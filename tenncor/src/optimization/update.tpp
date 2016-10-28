@@ -38,7 +38,8 @@ const tensor<T>& update<T>::eval (void) {
 
 	T* old_data = out.raw_data;
 	const T* new_data = in.raw_data;
-	for (size_t i = 0; i < in.n_elems(); i++) {
+	size_t total = in.n_elems();
+	for (size_t i = 0; i < total; i++) {
 		assign(old_data[i], new_data[i]);
 	}
 

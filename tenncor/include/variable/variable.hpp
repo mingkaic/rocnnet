@@ -10,7 +10,7 @@
 #include <ctime>
 #include <random>
 #include <new>
-#include <iostream>
+#include <memory>
 
 #include "../evoker.hpp"
 
@@ -50,6 +50,9 @@ class const_init : public initializer<T> {
 };
 
 template <typename T>
+class elementary;
+
+template <typename T>
 class random_uniform : public initializer<T> {
 	private:
 		std::uniform_real_distribution<T> distribution;
@@ -67,30 +70,34 @@ class random_uniform : public initializer<T> {
 
 template <typename T>
 class ivariable : public ievoker<T> {
-	private:
-		// construct and return tensor filled with ones with shape identical to this
-		tensor<T>* get_ones (void) const {
-			memory_alloc all;
-			const_init<T> oneinit(1);
-			tensor<T>* ones = new tensor<T>(all, this->out.get_shape());
-			oneinit(*ones);
-			return ones;
-		}
-
 	protected:
 		tensor<T> out;
+		ivariable<T>* integral = nullptr;
+		VAR_PTR<T> grad = nullptr;
 		std::string name;
+
 		// TODO make shared
 		std::unordered_set<ioperation<T>*> consumers; // next
 
 		// backward chaining for AD
-		virtual tensor<T>* calc_gradient (WEAK_VAR_PTR<T> over) const;
 		void copy (const ivariable<T>& other, std::string name = "");
+
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active) = 0;
+
+		virtual void make_gradient (void) = 0;
+
+		virtual void set_gradient (VAR_PTR<T> g) {
+			if (nullptr == grad) {
+				grad = g;
+				grad->integral = this;
+			}
+		}
 
 		// protected members need to be accessed by other operations
 		friend class ioperation<T>;
 		friend class update<T>;
 		friend class placeholder<T>;
+		friend class elementary<T>;
 
 	public:
 		ivariable (void);
@@ -101,29 +108,32 @@ class ivariable : public ievoker<T> {
 			return std::static_pointer_cast<ivariable<T>, ievoker<T> >(this->clone_impl(name));
 		}
 
-		// TODO implement
-		// operators that will replace elementary operation objects
-		ivariable<double> operator + (void) const;
-		ivariable<double> operator - (void) const;
-		ivariable<double> operator + (const ivariable<double>& b) const;
-		ivariable<double> operator - (const ivariable<double>& b) const;
-		ivariable<double> operator * (const ivariable<double>& b) const;
-		ivariable<double> operator / (const ivariable<double>& b) const;
-
 		std::string get_name (void) const { return name; }
 		virtual tensor_shape get_shape (void) const { return this->out.get_shape(); }
 
 		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
-		// calculate the derivative over input variable given values
-		// from the last evaluation. no forward evaluation takes place
-		// currently doesn't handle the case of bad evaluation
-		// (uninitialized variables) before gradient is called
-		virtual tensor<T>* gradient (WEAK_VAR_PTR<T> over) const;
-		// eval from ievoker remains abstract
+
+		virtual const tensor<T>& eval (void) = 0;
+
+		virtual VAR_PTR<T> get_gradient (void) {
+			if (nullptr == this->grad) make_gradient();
+			return this->grad;
+		}
+
+		// ignores all leaf nodes that are not active in evaluation (used for the gradient tree)
+		virtual const tensor<T>& eval (VAR_PTR<T> active) {
+			static tensor<T> ones = tensor<T>(1);
+			if (nullptr == integral) {
+				return eval();
+			} else if (integral == active.get()) {
+				return ones;
+			}
+			return calc_eval(active);
+		}
 };
 
 // extend tensors by composition
-// also holds initializer (in operation)
+// also holds initializer (in operation)f
 template <typename T>
 class variable : public ivariable<T> {
 	protected:
@@ -131,13 +141,19 @@ class variable : public ivariable<T> {
 		initializer<T>* init = nullptr;
 
 		void copy (const variable<T>& other, std::string name="");
-		variable (const variable<T>& other, std::string name);
 
+		variable (const variable<T>& other, std::string name);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
-		// track all variables and placeholders for
-		// static/singleton function initialize all
-		// static session_manager manager;
+		const tensor<T>& calc_eval (VAR_PTR<T> active) {
+			static tensor<T> zero = tensor<T>(0);
+			// TODO: calculate matrix calculus
+			return zero;
+		}
+
+		virtual void make_gradient (void) {
+			this->set_gradient(std::make_shared<variable<T> >(1));
+		}
 
 	public:
 		variable (T scalar);
@@ -158,10 +174,6 @@ class variable : public ivariable<T> {
 		// TODO: allow session to flag variables as init once only to ensure safety
 		virtual tensor<T>& initialize (void);
 		virtual tensor<T>& initialize (tensor_shape alloc_shape);
-
-		// update raw values with new tensor and some operation on the old and new values
-		// where old value is the first parameter and new value is the second parameter
-		virtual void update (const tensor<T>& in, std::function<T(T,T)> op);
 
 		virtual const tensor<T>& eval (void);
 
@@ -205,6 +217,9 @@ class placeholder : public variable<T> {
 
 template <typename T>
 using PLACEHOLDER_PTR = std::shared_ptr<placeholder<T> >;
+
+template <typename T>
+constexpr auto PLACEHOLDER_TO_VAR = std::static_pointer_cast<ivariable<T>, placeholder<T> >;
 
 }
 

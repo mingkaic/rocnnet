@@ -20,7 +20,7 @@ void gd_net::train_set_up (void) {
 	VAR_PTR<double> output = std::dynamic_pointer_cast<ivariable<double> >(train_in);
 	for (HID_PAIR hp : layers) {
 		VAR_PTR<double> hypothesis = (*hp.first)(output);
-		(hp.second)(output, hypothesis);
+		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
 		VAR_PTR<double> grad = std::make_shared<gradient<double> >(output, hypothesis);
@@ -30,8 +30,8 @@ void gd_net::train_set_up (void) {
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
-	VAR_PTR<double> diff = std::make_shared<sub<double> >(output, expected_out);
-	VAR_PTR<double> err = std::make_shared<mul<double> >(diff, prime_out.top());
+	VAR_PTR<double> diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
+	VAR_PTR<double> err = diff * prime_out.top();
 	prime_out.pop();
 	std::stack<VAR_PTR<double> > errs;
 	errs.push(err);
@@ -44,12 +44,12 @@ void gd_net::train_set_up (void) {
 		VAR_PTR<double> weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
 		VAR_PTR<double> mres = std::make_shared<matmul<double> >(err, weight_i, false ,true);
-		err = std::make_shared<mul<double> >(mres, prime_out.top());
+		err = mres * prime_out.top();
 		prime_out.pop();
 		errs.push(err);
 	}
 
-	VAR_PTR<double> learn_batch = std::make_shared<div<double> >(learning_rate, batch_size);
+	VAR_PTR<double> learn_batch = learning_rate / PLACEHOLDER_TO_VAR<double>(batch_size);
 	output = train_in;
 	for (HID_PAIR hp : this->layers) {
 		err = errs.top();
@@ -58,11 +58,11 @@ void gd_net::train_set_up (void) {
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
 		VAR_PTR<double> cost = std::make_shared<matmul<double> >(output, err, true);
-		VAR_PTR<double> dweights = std::make_shared<mul<double> >(cost, learn_batch);
+		VAR_PTR<double> dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
 		VAR_PTR<double> compressed_err = std::make_shared<compress<double> >(err, 1);
-		VAR_PTR<double> dbias = std::make_shared<mul<double> >(compressed_err, learn_batch);
+		VAR_PTR<double> dbias = compressed_err * learn_batch;
 
 		// update weights and bias
 		// weights -= dweights, bias -= dbias

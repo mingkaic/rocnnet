@@ -61,6 +61,13 @@ class ioperation : public ivariable<T> {
 		void util_op (
 			U& out, const tensor<T>& in,
 			std::function<void(U&, T)> op) const;
+		// collector functions while maintaining tensor shape
+		void elem_op (
+			tensor<T>& out,
+			const tensor<T>& in,
+			std::function<void(T&, T)> op) const;
+
+		// TODO get rid of these in favor of collectors (no need to allocate new tensors)
 		tensor<T>* get_trace (const ivariable<T>& in) const;
 		// 1 to 1 map functional
 		tensor<T>* util_op (
@@ -88,7 +95,8 @@ class ioperation : public ivariable<T> {
 
 		std::vector<T> get_vec (const tensor<T>& in) const {
 			T* raw = in.raw_data;
-			return std::vector<T>(raw, raw + in.n_elems());
+			size_t limit = in.n_elems();
+			return std::vector<T>(raw, raw + limit);
 		}
 		// share friend priviledge with ivariable and tensor to descendants
 		// retrieve the last evaluated tensor
@@ -115,15 +123,53 @@ class ioperation : public ivariable<T> {
 		// implement unique method of consuming input variables
 		// to extract shape info
 		virtual void shape_eval (void) = 0;
+		virtual void make_gradient (void) = 0;
 
 		friend class ivariable<T>;
 		friend class placeholder<T>;
 		friend class univar_func<T>;
 
 	public:
+		ioperation (void) {}
 		// clone remains abstract
 		virtual ~ioperation (void) {}
 		// eval remains abstract
+};
+
+template <typename T>
+using ELEMENTARY_DERIV = std::function<VAR_PTR<T>(std::vector<VAR_PTR<T> >)>;
+
+template <typename T>
+class elementary : public ioperation<T> {
+	protected:
+		std::vector<VAR_PTR<T> > args; // order matters
+		std::function<void(T&, T)> op;
+		ELEMENTARY_DERIV<T> der;
+
+		virtual void make_gradient (void);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
+		virtual void shape_eval (void);
+		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
+
+	public:
+		elementary (VAR_PTR<T> arg,
+					std::function<void(T&, T)> op,
+					ELEMENTARY_DERIV<T> der,
+					std::string name = "");
+		elementary (VAR_PTR<T> arga, VAR_PTR<T> argb,
+					std::function<void(T&, T)> op,
+					ELEMENTARY_DERIV<T> der,
+					std::string name = "");
+		elementary (std::vector<VAR_PTR<T> > args,
+					std::function<void(T&, T)> op,
+					ELEMENTARY_DERIV<T> der,
+					std::string name = "");
+		std::shared_ptr<elementary<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<elementary<T>, ievoker<T> >(clone_impl(name));
+		}
+
+		virtual const tensor<T>& eval (void);
 };
 
 // template <typename T>

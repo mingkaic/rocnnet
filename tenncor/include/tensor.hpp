@@ -41,7 +41,8 @@ class tensor {
 		void copy (const tensor<T>& other);
 
 	protected:
-		iallocator* alloc = nullptr;
+		std::shared_ptr<iallocator> alloc = nullptr;
+		// TODO make unique at some point
 		T* raw_data = nullptr;
 
 		friend class initializer<T>;
@@ -54,26 +55,29 @@ class tensor {
 
 		// creates a rank 0 tensor
 		tensor (void);
-		tensor (const tensor_shape& shape);
+		tensor (const tensor_shape shape);
+
 		// allocate raw_data on construction
-		tensor (iallocator& a, const tensor_shape& shape)
-		: tensor(a, shape, default_attr) {}
-		tensor (iallocator& a,
-			tensor_shape const & shape,
-			alloc_attrib const & attrib);
+		tensor (std::shared_ptr<iallocator> alloc, const tensor_shape shape);
+		tensor (std::shared_ptr<iallocator> alloc, const tensor_shape shape, alloc_attrib const & attrib);
+
+		// makes a scalar
+		tensor (T scalar);
 
 		// rule of three
 		tensor (const tensor<T>& other);
 		virtual ~tensor (void);
-		tensor<T> & operator = (const tensor<T>& other);
+		tensor<T>& operator = (const tensor<T>& other);
 
 		// allocate
 		// reallocation clear raw data
-		void allocate (iallocator& allocer);
-		void allocate (iallocator& allocer, const alloc_attrib& attrib);
-		void allocate (iallocator& allocer, const tensor_shape& shape);
-		void allocate (iallocator& allocer, const tensor_shape& shape,
-			alloc_attrib const & attrib);
+		void allocate (std::shared_ptr<iallocator> allocer);
+		void allocate (std::shared_ptr<iallocator> allocer, const alloc_attrib& attrib);
+		void allocate (std::shared_ptr<iallocator> allocer, const tensor_shape shape);
+		void allocate (
+			std::shared_ptr<iallocator> allocer,
+			const tensor_shape shape,
+			const alloc_attrib& attrib);
 
 		// shape info getters
 		// get tensor shape
@@ -107,7 +111,7 @@ class tensor {
 		void set_shape (tensor_shape shape);
 
 		// TODO: unimplemented
-		bool copy_from (const tensor& other, const tensor_shape& shape);
+		bool copy_from (const tensor& other, const tensor_shape shape);
 		// slice along the first dimension
 		tensor slice (size_t dim_start, size_t limit);
 
@@ -116,6 +120,9 @@ class tensor {
 		// bool from_proto (const tensorproto& other);
 		// bool from_proto (iallocator* a, const tensorproto& other);
 };
+
+template <typename T>
+using TENSOR_PTR = std::shared_ptr<tensor<T> >;
 
 }
 

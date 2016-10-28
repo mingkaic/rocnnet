@@ -46,14 +46,13 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													return big;
 												});
 	// future rewards = rewards + discount * target action
-	VAR_PTR<double> mulop = std::make_shared<mul<double> >(discount_rate, target_values);
-	VAR_PTR<double> future_rewards = std::make_shared<add<double> >(rewards, mulop);
+	VAR_PTR<double> future_rewards = PLACEHOLDER_TO_VAR<double>(rewards) + (discount_rate * target_values);
 
 	// PREDICT ERROR
 	// ===============================
-	VAR_PTR<double> inter_mul = std::make_shared<mul<double> >(action_scores, action_mask);
 	VAR_PTR<double> masked_action_score = // reduce sum
-			std::make_shared<compress<double> >(inter_mul, 1,
+			std::make_shared<compress<double> >(
+			action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
 												[](const std::vector<double>& v) {
 													double accum;
 													for (double d : v) {
@@ -61,10 +60,8 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													}
 													return accum;
 												});
-	VAR_PTR<double> tempdiff = std::make_shared<sub<double> >(masked_action_score, future_rewards);
-	VAR_PTR<double> sqrdiff = std::make_shared<mul<double> >(tempdiff, tempdiff);
-
-	prediction_error = std::make_shared<compress<double> >(sqrdiff); // reduce mean
+	VAR_PTR<double> diff = masked_action_score - future_rewards;
+	prediction_error = std::make_shared<compress<double> >(diff * diff); // reduce mean
 	// minimize error
 	optimizer->ignore(next_action_scores);
 	std::vector<nnet::GRAD<double> > gradients = optimizer->compute_grad(prediction_error);
@@ -84,10 +81,8 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	std::vector<WB_PAIR> q_net_var = q_net->get_variables();
 	std::vector<WB_PAIR> target_q_net_var = q_net->get_variables();
 	for (size_t i = 0; i < q_net_var.size(); i++) {
-		VAR_PTR<double> diff_w = std::make_shared<sub<double> >(q_net_var[i].first, target_q_net_var[i].first);
-		VAR_PTR<double> diff_b = std::make_shared<sub<double> >(q_net_var[i].second, target_q_net_var[i].second);
-		VAR_PTR<double> dwt = std::make_shared<mul<double> >(update_rate, diff_w);
-		VAR_PTR<double> dbt = std::make_shared<mul<double> >(update_rate, diff_b);
+		VAR_PTR<double> dwt = update_rate * (q_net_var[i].first - target_q_net_var[i].first);
+		VAR_PTR<double> dbt = update_rate * (q_net_var[i].second - target_q_net_var[i].second);
 
 		WB_PAIR wb = target_q_net_var[i];
 		EVOKER_PTR<double> w_evok = std::make_shared<update_sub<double> >(

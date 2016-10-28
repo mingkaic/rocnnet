@@ -37,8 +37,8 @@ void memory_alloc::del_raw (void* ptr) {
     free (ptr);
 }
 
-memory_alloc* memory_alloc::clone (void) {
-    return new memory_alloc();
+std::shared_ptr<iallocator> memory_alloc::clone (void) {
+    return std::make_shared<memory_alloc>();
 }
 
 }
