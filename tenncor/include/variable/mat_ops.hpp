@@ -26,21 +26,24 @@ class extend : public iunar_ops<T> {
 		WEAK_VAR_PTR<T> watch;
 
 	protected:
-		virtual void make_gradient (void);
+		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual std::string get_symb (void) { return "extend"; }
 
 		virtual void shape_eval (void);
 		void copy (const ivariable<T>& other, std::string name = "");
 		extend (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
-
-	public:
-		extend (void) {}
-		extend (VAR_PTR<T> in);
 		extend (VAR_PTR<T> in, WEAK_VAR_PTR<T> watch); // extend to fit shape
 		extend (VAR_PTR<T> in, size_t index, size_t multiplier);
+
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
+
+	public:
+		static VAR_PTR<T> make (VAR_PTR<T> in, WEAK_VAR_PTR<T> watch) {
+			return ivariable<T>::make_shared(new extend(in, watch));
+		}
+		static VAR_PTR<T> make (VAR_PTR<T> in, size_t index = 0, size_t multiplier = 1) {
+			return ivariable<T>::make_shared(new extend(in, index, multiplier));
+		}
 		virtual extend<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<extend<T> > clone (std::string name = "") {
@@ -64,21 +67,24 @@ class compress : public iunar_ops<T> {
 		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
 	protected:
-		virtual void make_gradient (void);
+		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual std::string get_symb (void) { return "compress"; }
 
 		virtual void shape_eval (void);
 		void copy (const ivariable<T>& other, std::string name = "");
 		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
-
-	public:
-		compress (void) {}
-		compress (VAR_PTR<T> in);
 		compress (VAR_PTR<T> in, size_t index);
 		compress (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector);
+
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
+
+	public:
+		static VAR_PTR<T> make (VAR_PTR<T> in, size_t index = 0) {
+			return ivariable<T>::make_shared(new compress(in, index));
+		}
+		static VAR_PTR<T> make (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector) {
+			return ivariable<T>::make_shared(new compress(in, index, collector));
+		}
 		virtual compress<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<compress<T> > clone (std::string name = "") {
@@ -96,18 +102,19 @@ template <typename T>
 class transpose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (void);
+		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual std::string get_symb (void) { return "transpose"; }
 
 		virtual void shape_eval (void);
 		transpose (const ivariable<T>& other, std::string name) { this->copy(other, name); }
+		transpose (VAR_PTR<T> in);
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
-		transpose (void) {}
-		transpose (VAR_PTR<T> in);
+		static VAR_PTR<T> make (VAR_PTR<T> in) {
+			return ivariable<T>::make_shared(new transpose(in));
+		}
 
 		std::shared_ptr<transpose<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<transpose<T>, ievoker<T> >(clone_impl(name));
@@ -131,7 +138,7 @@ class matmul : public ioperation<T> {
 
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (void);
+		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) {
 			if (a.get() == food) a = newfood;
 			if (b.get() == food) b = newfood;
@@ -139,16 +146,15 @@ class matmul : public ioperation<T> {
 
 		virtual void shape_eval (void);
 		matmul (const matmul<T>& other, std::string name);
+		matmul (VAR_PTR<T> a, VAR_PTR<T> b, bool transposeA, bool transposeB);
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
-		matmul (void) : transposeA(false), transposeB(false) {}
-		matmul (VAR_PTR<T> a, VAR_PTR<T> b,
-				bool transposeA = false, bool transposeB = false);
-		virtual ivariable<T>& operator () (VAR_PTR<T> a, VAR_PTR<T> b,
-				bool transposeA = false, bool transposeB = false);
+		static VAR_PTR<T> make (VAR_PTR<T> a, VAR_PTR<T> b, bool transposeA = false, bool transposeB = false) {
+			return ivariable<T>::make_shared(new matmul(a, b, transposeA, transposeB));
+		}
+
 		virtual matmul<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<matmul<T> > clone (std::string name = "") {

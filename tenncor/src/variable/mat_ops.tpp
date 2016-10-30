@@ -9,13 +9,14 @@ namespace nnet {
 // TENSOR EXTENSION
 
 template <typename T>
-void extend<T>::make_gradient (void) {
+void extend<T>::make_gradient (VAR_PTR<T>& safety_ref) {
 	VAR_PTR<T> g = this->var->get_gradient();
 	if (nullptr == watch.lock()) {
-		this->set_gradient(std::make_shared<extend<T> >(g, index, multiplier));
+		this->set_gradient(extend<T>::make(g, index, multiplier));
 	} else {
-		this->set_gradient(std::make_shared<extend<T> >(g, watch));
+		this->set_gradient(extend<T>::make(g, watch));
 	}
+	safety_ref = this->grad;
 }
 
 template <typename T>
@@ -41,25 +42,22 @@ void extend<T>::copy (const ivariable<T>& other, std::string name) {
 }
 
 template <typename T>
-extend<T>::extend (VAR_PTR<T> in) : extend(in, 0, 1){}
-
-template <typename T>
 extend<T>::extend (VAR_PTR<T> in, WEAK_VAR_PTR<T> watch) : watch(watch) {
+	this->init(in);
 	this->consume(*(watch.lock().get()));
 	shape_eval();
-	(*this)(in);
 }
 
 template <typename T>
 extend<T>::extend (VAR_PTR<T> in, size_t index, size_t multiplier)
 		: index(index), multiplier(multiplier) {
+	this->init(in);
 	shape_eval();
-	(*this)(in);
 }
 
 template <typename T>
 EVOKER_PTR<T> extend<T>::clone_impl (std::string name) {
-	return std::shared_ptr<extend<T> >(new extend(*this, name));
+	return ivariable<T>::make_shared(new extend(*this, name));
 }
 
 template <typename T>
@@ -91,38 +89,12 @@ void extend<T>::set_ext_info (size_t index, size_t multiplier) {
 
 template <typename T>
 const tensor<T>& extend<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	assert(nullptr != this->var);
 	const tensor<T>& in = this->var->eval();
-	if (nullptr == watch.lock()) {
-		tensor<T> *ans = this->extend_op(in, index, multiplier);
-		this->out = *ans;
-		delete ans;
-	} else {
-		this->out = in;
-		std::vector<size_t> target = watch.lock()->get_shape().as_list();
-		std::vector<size_t> orig = in.get_shape().as_list();
-		// this actually get expensive for big shapes, TODO: refactor/change anti-pattern
-		for (size_t i = 0; i < target.size(); i++) {
-			if (i < orig.size()) {
-				if (target[i] > orig[i]) {
-					tensor<T> *ans = this->extend_op(in, i, orig[i]/target[i]);
-					this->out = *ans;
-					delete ans;
-				}
-			} else {
-				tensor<T>* ans = this->extend_op(in, i, target[i]);
-				this->out = *ans;
-				delete ans;
-			}
-		}
-	}
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& extend<T>::calc_eval (VAR_PTR<T> active) {
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval(active);
 	if (nullptr == watch.lock()) {
 		tensor<T> *ans = this->extend_op(in, index, multiplier);
 		this->out = *ans;
@@ -152,9 +124,10 @@ const tensor<T>& extend<T>::calc_eval (VAR_PTR<T> active) {
 // TENSOR COMPRESSION
 
 template <typename T>
-void compress<T>::make_gradient (void) {
+void compress<T>::make_gradient (VAR_PTR<T>& safety_ref) {
 	VAR_PTR<T> g = this->var->get_gradient();
-	this->set_gradient(std::make_shared<compress<T> >(g, index, collector));
+	this->set_gradient(std::shared_ptr<compress<T> >(new compress(g, index, collector)));
+	safety_ref = this->grad;
 }
 
 template <typename T>
@@ -180,9 +153,6 @@ void compress<T>::copy (const ivariable<T>& other, std::string name) {
 }
 
 template <typename T>
-compress<T>::compress (VAR_PTR<T> in) : compress(in, 0) {}
-
-template <typename T>
 compress<T>::compress (VAR_PTR<T> in, size_t index) : compress(in, index, [](const std::vector<T>& data) {
 	T ans = 0;
 	for (T raw : data) {
@@ -195,13 +165,13 @@ compress<T>::compress (VAR_PTR<T> in, size_t index) : compress(in, index, [](con
 template <typename T>
 compress<T>::compress (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector)
 		: index(index), collector(collector) {
+	this->init(in);
 	shape_eval();
-	(*this)(in);
 }
 
 template <typename T>
 EVOKER_PTR<T> compress<T>::clone_impl (std::string name) {
-	return std::shared_ptr<compress<T> >(new compress(*this, name));
+	return ivariable<T>::make_shared(new compress(*this, name));
 }
 
 template <typename T>
@@ -221,18 +191,12 @@ void compress<T>::set_cmpr_info (size_t index, std::function<T(const std::vector
 
 template <typename T>
 const tensor<T>& compress<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	assert(nullptr != this->var);
 	const tensor<T>& in = this->var->eval();
-	tensor<T>* ans = this->compress_op(in, index, collector);
-	this->out = *ans;
-	delete ans;
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& compress<T>::calc_eval (VAR_PTR<T> active) {
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval(active);
 	tensor<T>* ans = this->compress_op(in, index, collector);
 	this->out = *ans;
 	delete ans;
@@ -242,9 +206,10 @@ const tensor<T>& compress<T>::calc_eval (VAR_PTR<T> active) {
 // MATRIX TRANSPOSE
 
 template <typename T>
-void transpose<T>::make_gradient (void) {
+void transpose<T>::make_gradient (VAR_PTR<T>& safety_ref) {
 	VAR_PTR<T> g = this->var->get_gradient();
-	this->set_gradient(std::make_shared<transpose<T> >(g));
+	this->set_gradient(transpose<T>::make(g));
+	safety_ref = this->grad;
 }
 
 template <typename T>
@@ -258,29 +223,21 @@ void transpose<T>::shape_eval (void) {
 }
 
 template <typename T>
-transpose<T>::transpose (VAR_PTR<T> in) {
-	(*this)(in);
-}
+transpose<T>::transpose (VAR_PTR<T> in) { this->init(in); }
 
 template <typename T>
 EVOKER_PTR<T> transpose<T>::clone_impl (std::string name) {
-	return std::shared_ptr<transpose<T> >(new transpose(*this, name));
+	return ivariable<T>::make_shared(new transpose(*this, name));
 }
 
 template <typename T>
 const tensor<T>& transpose<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	assert(nullptr != this->var);
 	const tensor<T>& in = this->var->eval();
-	tensor<T>* ans = this->transpose_op(in);
-	this->out = *ans;
-	delete ans;
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& transpose<T>::calc_eval (VAR_PTR<T> active) {
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval(active);
 	tensor<T>* ans = this->transpose_op(in);
 	this->out = *ans;
 	delete ans;
@@ -290,10 +247,11 @@ const tensor<T>& transpose<T>::calc_eval (VAR_PTR<T> active) {
 // MATRIX MULTIPLICATION
 
 template <typename T>
-void matmul<T>::make_gradient (void) {
+void matmul<T>::make_gradient (VAR_PTR<T>& safety_ref) {
 	VAR_PTR<T> ga = this->a->get_gradient();
 	VAR_PTR<T> gb = this->b->get_gradient();
-	this->set_gradient(std::make_shared<matmul<T> >(ga, gb, transposeA, transposeB));
+	this->set_gradient(matmul<T>::make(ga, gb, transposeA, transposeB));
+	safety_ref = this->grad;
 }
 
 template <typename T>
@@ -323,17 +281,6 @@ matmul<T>::matmul (const matmul<T>& other, std::string name) {
 template <typename T>
 matmul<T>::matmul (VAR_PTR<T> a, VAR_PTR<T> b,
 					bool transposeA, bool transposeB) {
-	(*this)(a, b, transposeA, transposeB);
-}
-
-template <typename T>
-EVOKER_PTR<T> matmul<T>::clone_impl (std::string name) {
-	return std::shared_ptr<matmul<T> >(new matmul(*this, name));
-}
-
-template <typename T>
-ivariable<T>& matmul<T>::operator () (VAR_PTR<T> a, VAR_PTR<T> b,
-										bool transposeA, bool transposeB) {
 	std::stringstream ns;
 	ns << a->get_name() << "•" << b->get_name();
 	this->name = ns.str();
@@ -346,7 +293,11 @@ ivariable<T>& matmul<T>::operator () (VAR_PTR<T> a, VAR_PTR<T> b,
 	if (session::pre_shape_eval()) {
 		shape_eval();
 	}
-	return *this;
+}
+
+template <typename T>
+EVOKER_PTR<T> matmul<T>::clone_impl (std::string name) {
+	return ivariable<T>::make_shared(new matmul(*this, name));
 }
 
 template <typename T>
@@ -365,20 +316,13 @@ matmul<T>& matmul<T>::operator = (const ivariable<T>& other) {
 
 template <typename T>
 const tensor<T>& matmul<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	assert(nullptr != a && nullptr != b);
 	const tensor<T>& at = this->a->eval();
 	const tensor<T>& bt = this->b->eval();
-	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
-	this->out = *ans;
-	delete ans;
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& matmul<T>::calc_eval (VAR_PTR<T> active) {
-	assert(nullptr != a && nullptr != b);
-	const tensor<T> &at = this->a->eval(active);
-	const tensor<T> &bt = this->b->eval(active);
 	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
 	this->out = *ans;
 	delete ans;

@@ -80,14 +80,14 @@ TEST(VARIABLE, tensor_allocate) {
 
 
 TEST(VARIABLE, const_init) {
+	nnet::session& sess = nnet::session::get_instance();
     const double constant = (double) rand();
     nnet::const_init<double> init(constant);
 
-    std::shared_ptr<nnet::variable<double> > cvar =
-    	std::make_shared<nnet::variable<double> >(std::vector<size_t>{3, 3}, init, "constant_arr");
+    nnet::VAR_PTR<double> cvar = nnet::variable<double>::make(std::vector<size_t>{3, 3}, init, "constant_arr");
 
-    cvar->initialize();
-    EXPOSE_PTR ex = EXPOSE(cvar);
+	sess.initialize_all<double>();
+    EXPOSE_PTR ex = nnet::expose<double>::make(cvar);
     std::vector<double> raw = ex->get_raw();
 
     ASSERT_EQ(raw.size(), 9);
@@ -99,18 +99,18 @@ TEST(VARIABLE, const_init) {
 
 
 TEST(VARIABLE, get_index) {
+	nnet::session& sess = nnet::session::get_instance();
     const double constant = (double) rand();
     nnet::const_init<double> init(constant);
     size_t nrows = 3;
     size_t ncols = 4;
     size_t ndeps = 5; // depth
 
-	std::shared_ptr<nnet::variable<double> > cvar =
-			std::make_shared<nnet::variable<double> >(std::vector<size_t>{nrows, ncols, ndeps}, init, "constant_arr");
+    nnet::VAR_PTR<double> cvar =
+        nnet::variable<double>::make(std::vector<size_t>{nrows, ncols, ndeps}, init, "constant_arr");
 
-    cvar->initialize();
-
-	EXPOSE_PTR ex = EXPOSE(cvar);
+	sess.initialize_all<double>();
+	EXPOSE_PTR ex = nnet::expose<double>::make(cvar);
     nnet::tensor<double> raw = ex->eval();
 
     ASSERT_EQ(raw.n_elems(), nrows*ncols*ndeps);
@@ -126,14 +126,13 @@ TEST(VARIABLE, get_index) {
 
 
 TEST(VARIABLE, random_init) {
+	nnet::session& sess = nnet::session::get_instance();
     nnet::random_uniform<double> init(0.0, 1.0);
 
-	std::shared_ptr<nnet::variable<double> > rvar =
-			std::make_shared<nnet::variable<double> >(std::vector<size_t>{5, 5}, init, "random_arr");
+    nnet::VAR_PTR<double> rvar = nnet::variable<double>::make(std::vector<size_t>{5, 5}, init, "random_arr");
 
-    rvar->initialize();
-
-	EXPOSE_PTR ex = EXPOSE(rvar);
+	sess.initialize_all<double>();
+	EXPOSE_PTR ex = nnet::expose<double>::make(rvar);
     std::vector<double> raw = ex->get_raw();
 
     ASSERT_EQ(raw.size(), 25);
@@ -150,14 +149,14 @@ TEST(VARIABLE, random_init) {
 
 TEST(VARIABLE, placeholder) {
     const size_t insize = 20;
-    nnet::PLACEHOLDER_PTR<double> invar = MAKE_PLACEHOLDER((std::vector<size_t>{1, insize}), "in");
+    nnet::PLACEHOLDER_PTR<double> invar = nnet::placeholder<double>::make((std::vector<size_t>{1, insize}), "in");
     std::vector<double> sample;
     for (size_t i = 0; i < insize; i++) {
         sample.push_back(rand());
     }
     *invar = sample;
 
-    EXPOSE_PTR ex = EXPOSE(invar);
+    EXPOSE_PTR ex = nnet::expose<double>::make(invar);
     std::vector<double> raw = ex->get_raw();
 
     ASSERT_EQ(raw.size(), insize);

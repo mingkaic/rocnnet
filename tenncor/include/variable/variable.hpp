@@ -32,7 +32,7 @@ class initializer {
 		virtual ~initializer (void) {}
 
 		virtual void operator () (tensor<T>& in) = 0;
-		virtual initializer<T>* copy (void) = 0;
+		virtual initializer<T>* clone (void) = 0;
 };
 
 template <typename T>
@@ -44,13 +44,10 @@ class const_init : public initializer<T> {
 		const_init (T value) : value(value) {}
 
 		virtual void operator () (tensor<T>& in);
-		virtual initializer<T>* copy (void) {
+		virtual initializer<T>* clone (void) {
 			return new const_init(value);
 		}
 };
-
-template <typename T>
-class elementary;
 
 template <typename T>
 class random_uniform : public initializer<T> {
@@ -63,44 +60,60 @@ class random_uniform : public initializer<T> {
 		}
 
 		virtual void operator () (tensor<T>& in);
-		virtual initializer<T>* copy (void) {
+		virtual initializer<T>* clone (void) {
 			return new random_uniform(distribution.min(), distribution.max());
 		}
 };
 
 template <typename T>
+class ivar_init;
+
+template <typename T>
+class elementary;
+
+template <typename T>
 class ivariable : public ievoker<T> {
 	protected:
-		tensor<T> out;
-		ivariable<T>* integral = nullptr;
-		VAR_PTR<T> grad = nullptr;
-		std::string name;
+		// weak pointer to this
+		WEAK_VAR_PTR<T> self_ref;
 
-		// TODO make shared
+		tensor<T> out;
+		std::string name;
+		WEAK_VAR_PTR<T> integral;
+
+		size_t grad_order = 0; // TODO IMPLEMENT ON GRADIENTS TO DISTINGUISH INTEGRALS AND GRADS
+
+		// TODO make weak
 		std::unordered_set<ioperation<T>*> consumers; // next
 
 		// backward chaining for AD
 		void copy (const ivariable<T>& other, std::string name = "");
 
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active) = 0;
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
+		// different depending on leaf node or not
+		// TODO get rid of
+		virtual void set_gradient (VAR_PTR<T> g) = 0;
 
-		virtual void make_gradient (void) = 0;
-
-		virtual void set_gradient (VAR_PTR<T> g) {
-			if (nullptr == grad) {
-				grad = g;
-				grad->integral = this;
-			}
+		static VAR_PTR<T> make_shared(ivariable<T>* ptr) {
+			VAR_PTR<T> inst = VAR_PTR<T>(ptr);
+			inst->self_ref = inst;
+			return inst;
 		}
 
+		ivariable (void);
+
+		// FOR LEAVES only
+		// flip between 2 tensor states
+		class gradient_leaf;
+
 		// protected members need to be accessed by other operations
+		friend class ivar_init<T>;
 		friend class ioperation<T>;
 		friend class update<T>;
 		friend class placeholder<T>;
 		friend class elementary<T>;
 
 	public:
-		ivariable (void);
 		virtual ~ivariable (void);
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
 
@@ -115,104 +128,197 @@ class ivariable : public ievoker<T> {
 
 		virtual const tensor<T>& eval (void) = 0;
 
-		virtual VAR_PTR<T> get_gradient (void) {
-			if (nullptr == this->grad) make_gradient();
-			return this->grad;
+		virtual VAR_PTR<T> get_gradient (void) = 0;
+
+		virtual const tensor<T>& calc_gradient (VAR_PTR<T> active) {
+			if (VAR_PTR<T> g = this->get_gradient()) {
+				if (std::shared_ptr<gradient_leaf> leaf_ptr =
+						std::dynamic_pointer_cast<gradient_leaf>(active->get_gradient())) {
+					leaf_ptr->activate(active);
+					const tensor<T> &res = g->eval();
+					leaf_ptr->deactivate();
+					return res;
+				} else if (std::shared_ptr<ioperation<T> > op_ptr =
+						std::dynamic_pointer_cast<ioperation<T> >(active->get_gradient())) { // if active isn't a leaf
+					op_ptr->derive_this = true;
+					const tensor<T> &res = g->eval();
+					op_ptr->derive_this = false;
+					return res;
+				}
+			}
+			static tensor<T> zero(0);
+			return zero;
+		}
+};
+
+// interface for managing initializers
+template <typename T>
+class ivar_init : public ivariable<T> {
+	protected:
+		bool is_init = false;
+		initializer<T>* init = nullptr;
+		WEAK_VAR_PTR<T> grad;
+
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
+			this->integral = this->grad = this->self_ref;
+			safety_ref = this->self_ref.lock();
 		}
 
-		// ignores all leaf nodes that are not active in evaluation (used for the gradient tree)
-		virtual const tensor<T>& eval (VAR_PTR<T> active) {
-			static tensor<T> ones = tensor<T>(1);
-			if (nullptr == integral) {
-				return eval();
-			} else if (integral == active.get()) {
-				return ones;
+		virtual void set_gradient (VAR_PTR<T> g) {
+			if (grad.expired() && nullptr != g) {
+				grad = g;
+				g->integral = this->self_ref;
 			}
-			return calc_eval(active);
+		}
+
+		// used by assignment operators to freely initialized inner tensor
+		struct open_init;
+
+		void copy (const ivar_init<T>& other,
+					std::string name = "") {
+			init = other.init->clone();
+			ivariable<T>::copy(other, name);
+		}
+
+	public:
+		virtual ~ivar_init (void) {
+			if (nullptr != this->init) {
+				delete this->init;
+			}
+		}
+
+		virtual ivar_init<T>& operator = (const VAR_PTR<T>& other);
+
+		std::shared_ptr<ivar_init<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<ivar_init<T>, ievoker<T> >(this->clone_impl(name));
+		}
+
+		bool can_init (void) const { return init != nullptr; }
+		virtual const tensor<T>& eval (void) {
+			assert(is_init);
+			return this->out;
+		}
+
+		virtual VAR_PTR<T> get_gradient (void) {
+			VAR_PTR<T> safety_ref;
+			if (this->grad.expired()) make_gradient(safety_ref);
+			else safety_ref = this->grad.lock();
+			return safety_ref;
+		}
+};
+
+template <typename T>
+class constant : public ivar_init<T> {
+	private:
+		constant (T scalar);
+		constant (std::vector<T> raw, tensor_shape shape);
+		constant (VAR_PTR<T> get_out);
+
+	protected:
+		constant (const constant<T>& other, std::string name);
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
+
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
+			VAR_PTR<T> g = std::shared_ptr<constant<T> >(new constant(0));
+			this->set_gradient(g);
+			safety_ref = g;
+		}
+
+	public:
+		static VAR_PTR<T> make (T scalar) {
+			return ivariable<T>::make_shared(new constant(scalar));
+		}
+		static VAR_PTR<T> make (std::vector<T> raw, tensor_shape shape) {
+			return ivariable<T>::make_shared(new constant(raw, shape));
+		}
+		static VAR_PTR<T> make (VAR_PTR<T> get_out) {
+			return ivariable<T>::make_shared(new constant(get_out));
+		}
+		virtual ~constant (void) {}
+
+		std::shared_ptr<constant<T> > clone (std::string name = "") {
+			return std::static_pointer_cast<constant<T>, ievoker<T> >(clone_impl(name));
 		}
 };
 
 // extend tensors by composition
 // also holds initializer (in operation)f
 template <typename T>
-class variable : public ivariable<T> {
+class variable : public ivar_init<T> {
+	private:
+		variable (T scalar);
+		variable (std::string name = ""); // this requires initializer later on
+		variable (const tensor_shape& shape, std::string name = "");
+		variable (const tensor_shape& shape, initializer<T>& init, std::string name = "");
+
 	protected:
-		bool is_init = false;
-		initializer<T>* init = nullptr;
-
-		void copy (const variable<T>& other, std::string name="");
-
 		variable (const variable<T>& other, std::string name);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
-		const tensor<T>& calc_eval (VAR_PTR<T> active) {
-			static tensor<T> zero = tensor<T>(0);
-			// TODO: calculate matrix calculus
-			return zero;
-		}
-
-		virtual void make_gradient (void) {
-			this->set_gradient(std::make_shared<variable<T> >(1));
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
+			// no need to set_gradient, gradient sets this as integral
+			this->grad = safety_ref = ivariable<T>::gradient_leaf::make(this->self_ref);
 		}
 
 	public:
-		variable (T scalar);
-		variable (std::string name = "");
-		variable (const tensor_shape& shape, std::string name = "");
-		variable (const tensor_shape& shape, initializer<T>& init, std::string name = "");
-		virtual ~variable (void);
-		virtual variable<T>& operator = (const ivariable<T>& other);
+		static VAR_PTR<T> make (T scalar) {
+			return ivariable<T>::make_shared(new variable(scalar));
+		}
+		static VAR_PTR<T> make (std::string name = "") {
+			return ivariable<T>::make_shared(new variable(name));
+		}
+		static VAR_PTR<T> make (const tensor_shape& shape, std::string name = "") {
+			return ivariable<T>::make_shared(new variable(shape, name));
+		}
+		static VAR_PTR<T> make (const tensor_shape& shape, initializer<T>& init, std::string name = "") {
+			return ivariable<T>::make_shared(new variable(shape, init, name));
+		}
+		virtual ~variable (void) {}
 
 		std::shared_ptr<variable<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<variable<T>, ievoker<T> >(clone_impl(name));
 		}
-
-		bool can_init (void) const { return init != nullptr; }
 
 		// required by variables using initializer (not by placeholder)
 		// initializer can be call multiple times to reset values
 		// TODO: allow session to flag variables as init once only to ensure safety
 		virtual tensor<T>& initialize (void);
 		virtual tensor<T>& initialize (tensor_shape alloc_shape);
-
-		virtual const tensor<T>& eval (void);
-
-		// tensor<T> scatter_sub (IndexedSlices sparse_delta, use_locking = false);
-		// variable specific operations (inherit?)
-		// void eval(feed_dict=None, session=None);
-		// void eval (Session session);
-		// graph get_graph (void);
 };
 
 template <typename T>
-class placeholder : public variable<T> {
+class placeholder : public ivar_init<T> {
 	private:
-		// used by assignment operators to freely initialized inner tensor
-		struct open_init;
 		void consumer_reshape (void);
 		placeholder (const placeholder<T>& other, std::string name);
+		placeholder (std::string name); // super generic placeholder
+		placeholder (const tensor_shape& shape, std::string name);
 
 	protected:
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
-		placeholder (std::string name = ""); // super generic placeholder
-		placeholder (const tensor_shape& shape, std::string name = "");
-		// assign raw data according to 1 dimension representation of inner tensor
-		virtual variable<T>& assign (VAR_PTR<T> other);
-		virtual variable<T>& operator = (std::vector<T> data);
-		virtual variable<T>& operator = (const tensor<T>& data);
+		static std::shared_ptr<placeholder<T> > make (std::string name = "") {
+			VAR_PTR<T> inst = ivariable<T>::make_shared(new placeholder(name));
+			return std::static_pointer_cast<placeholder<T> >(inst);
+		}
+		static std::shared_ptr<placeholder<T> > make (const tensor_shape& shape, std::string name = "") {
+			VAR_PTR<T> inst = ivariable<T>::make_shared(new placeholder(shape, name));
+			return std::static_pointer_cast<placeholder<T> >(inst);
+		}
+		virtual ~placeholder (void) {}
 
 		std::shared_ptr<placeholder<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<placeholder<T>, ievoker<T> >(clone_impl(name));
 		}
 
+		// assign raw data according to 1 dimension representation of inner tensor
+		virtual ivariable<T>& assign (VAR_PTR<T> other);
+		virtual ivariable<T>& operator = (std::vector<T> data);
+		virtual ivariable<T>& operator = (const tensor<T>& data);
+
 		// replace with shared_ptr<unique_ptr<placeholder<T> > >...
 		void replace (const placeholder<T>& other);
-
-		// initialize does nothing
-		virtual tensor<T>& initialize (void) { return this->out; }
-		virtual tensor<T>& initialize (tensor_shape alloc_shape) { return this->out; }
 };
 
 template <typename T>

@@ -392,32 +392,14 @@ void ioperation<T>::update (tensor_shape candidate_shape) {
 // Elementary Operations
 
 template <typename T>
-void elementary<T>::make_gradient (void) {
-	VAR_PTR<T> g = der(args);
-	this->set_gradient(g);
-	// keep propagating gradients
-	std::shared_ptr<elementary<T> > elem = std::dynamic_pointer_cast<elementary<T> >(g);
-	if (nullptr != elem) {
-		std::list<VAR_PTR<T> > q(elem->args.begin(), elem->args.end());
-		while (false == q.empty()) {
-			VAR_PTR<T> arg = q.front();
-			elem = std::dynamic_pointer_cast<elementary<T> >(arg);
-			q.pop_front();
-			if (nullptr != elem && nullptr == arg->integral) {
-			// TODO distinguish first order derivative, second order deriv... etc.
-			// only make element integral connection between greater and lower order, not of the same order
-				elem->integral = this;
-				for (VAR_PTR<T> e : elem->args) {
-					q.insert(q.end(), e);
-				}
-			}
-		}
-	}
+void elementary<T>::make_gradient (VAR_PTR<T>& safety_ref) {
+	this->set_gradient(der(args));
+	safety_ref = this->grad;
 }
 
 template <typename T>
 EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
-	return std::make_shared<elementary<T> >(args, op, der, name);
+	return ivariable<T>::make_shared(new elementary(args, op, der, name));
 }
 
 template <typename T>
@@ -443,34 +425,6 @@ void elementary<T>::shape_eval (void) {
 }
 
 template <typename T>
-elementary<T>::elementary (VAR_PTR<T> arg,
-		std::function<void(T&, T)> op,
-		ELEMENTARY_DERIV<T> der,
-		std::string name) : op(op), der(der) {
-	this->name = name;
-	args.push_back(arg);
-	this->consume(*(arg.get()));
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
-}
-
-template <typename T>
-elementary<T>::elementary (VAR_PTR<T> arga, VAR_PTR<T> argb,
-		std::function<void(T&, T)> op,
-		ELEMENTARY_DERIV<T> der,
-		std::string name) : op(op), der(der) {
-	this->name = name;
-	args.push_back(arga);
-	args.push_back(argb);
-	this->consume(*(arga.get()));
-	this->consume(*(argb.get()));
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
-}
-
-template <typename T>
 elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
 		std::function<void(T&, T)> op,
 		ELEMENTARY_DERIV<T> der,
@@ -486,6 +440,10 @@ elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
 
 template <typename T>
 const tensor<T>& elementary<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	auto it = args.begin();
 	if (1 == args.size()) {
 		this->out = tensor<T>(0);
@@ -495,22 +453,6 @@ const tensor<T>& elementary<T>::eval (void) {
 	}
 	while (args.end() != it) {
 		this->elem_op(this->out, (*it)->eval(), op);
-		it++;
-	}
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& elementary<T>::calc_eval (VAR_PTR<T> active) {
-	auto it = args.begin();
-	if (1 == args.size()) {
-		this->out = tensor<T>(0);
-	} else {
-		this->out = (*it)->eval(active);
-		it++;
-	}
-	while (args.end() != it) {
-		this->elem_op(this->out, (*it)->eval(active), op);
 		it++;
 	}
 	return this->out;

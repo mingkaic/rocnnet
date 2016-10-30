@@ -42,10 +42,10 @@ layer_perceptron::layer_perceptron (
 	std::string scope)
 	: n_input(n_input), n_output(n_output) {
 	// inputs pipe into the rows of the weight
-	weights = std::make_shared<variable<double> >(
+	weights = variable<double>::make(
 		std::vector<size_t>{n_output, n_input},
 		rinit, scope+"_weights");
-	bias = std::make_shared<variable<double> >(
+	bias = variable<double>::make(
 		std::vector<size_t>{n_output},
 		zinit, scope+"_bias");
 }
@@ -61,8 +61,8 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 // outputs are expected to have shape output by batch_size
 VAR_PTR<double> layer_perceptron::operator () (VAR_PTR<double> input) {
 	// weights are n_output column by n_input rows
-	VAR_PTR<double> mres = std::make_shared<matmul<double> >(input, weights);
-	VAR_PTR<double> exbias = std::make_shared<extend<double> >(bias, mres); // adjust shape based on mres shape
+	VAR_PTR<double> mres = matmul<double>::make(input, weights);
+	VAR_PTR<double> exbias = extend<double>::make(bias, mres); // adjust shape based on mres shape
 	return mres + exbias;
 }
 

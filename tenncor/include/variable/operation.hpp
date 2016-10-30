@@ -35,10 +35,19 @@ class univar_func;
 template <typename T>
 class ioperation : public ivariable<T> {
 	protected:
+		// used in calc_gradient to toggle operations between returning eval and returning one
+		bool derive_this = false;
+		VAR_PTR<T> grad = nullptr;
+
+		virtual void set_gradient (VAR_PTR<T> g) {
+			if (nullptr == grad && nullptr != g) {
+				grad = g;
+				grad->integral = this->self_ref;
+			}
+		}
+
 		// TODO: find a way to move these functions out of here
-		// operator wrapper functions that handle variable scalar and shape
-		// differences. returned tensor's ownership transfers to caller
-		// reduce/filter functional
+		// utility shape operations
 		tensor_shape get_element_shape (
 			const tensor<T>& t1,
 			const tensor<T>& t2) const;
@@ -57,6 +66,9 @@ class ioperation : public ivariable<T> {
 			bool transposeA, bool transposeB,
 			size_t& common_dim) const;
 
+		// operator wrapper functions that handle variable scalar and shape
+		// differences. returned tensor's ownership transfers to caller
+		// reduce/filter functional
 		template <typename U>
 		void util_op (
 			U& out, const tensor<T>& in,
@@ -123,17 +135,23 @@ class ioperation : public ivariable<T> {
 		// implement unique method of consuming input variables
 		// to extract shape info
 		virtual void shape_eval (void) = 0;
-		virtual void make_gradient (void) = 0;
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
 
 		friend class ivariable<T>;
 		friend class placeholder<T>;
 		friend class univar_func<T>;
 
 	public:
-		ioperation (void) {}
 		// clone remains abstract
 		virtual ~ioperation (void) {}
 		// eval remains abstract
+
+		virtual VAR_PTR<T> get_gradient (void) {
+			VAR_PTR<T> safety_ref;
+			if (nullptr == this->grad) make_gradient(safety_ref);
+			else safety_ref = this->grad;
+			return safety_ref;
+		}
 };
 
 template <typename T>
@@ -146,49 +164,29 @@ class elementary : public ioperation<T> {
 		std::function<void(T&, T)> op;
 		ELEMENTARY_DERIV<T> der;
 
-		virtual void make_gradient (void);
+		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
 		virtual void shape_eval (void);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
-
-	public:
-		elementary (VAR_PTR<T> arg,
-					std::function<void(T&, T)> op,
-					ELEMENTARY_DERIV<T> der,
-					std::string name = "");
-		elementary (VAR_PTR<T> arga, VAR_PTR<T> argb,
-					std::function<void(T&, T)> op,
-					ELEMENTARY_DERIV<T> der,
-					std::string name = "");
 		elementary (std::vector<VAR_PTR<T> > args,
 					std::function<void(T&, T)> op,
 					ELEMENTARY_DERIV<T> der,
 					std::string name = "");
+
+	public:
+		static VAR_PTR<T> make (std::vector<VAR_PTR<T> > args,
+								std::function<void(T&, T)> op,
+								ELEMENTARY_DERIV<T> der,
+								std::string name = "") {
+			return ivariable<T>::make_shared(new elementary(args, op, der, name));
+		}
+
 		std::shared_ptr<elementary<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<elementary<T>, ievoker<T> >(clone_impl(name));
 		}
 
 		virtual const tensor<T>& eval (void);
 };
-
-// template <typename T>
-// tensor scatter_sub (IndexedSlices sparse_delta, use_locking = false);
-//
-// template <typename T>
-// void count_up_to (variable<T> value, size_t limit);
-//
-// template <typename T>
-// tensor<T>* product (const tensor<T>& t1, const tensor<T>& t2);
-//
-// template <typename T>
-// void contract (const tensor<T>& t);
-//
-// template <typename T>
-// void raise (const tensor<T>& t, size_t idx);
-//
-// template <typename T>
-// void lower (const tensor<T>& t, size_t idx);
 
 }
 

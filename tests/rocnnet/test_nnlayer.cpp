@@ -51,15 +51,15 @@ static void flatten (const std::vector<VECS>& samples,
 
 TEST(PERCEPTRON, layer_multiple_in) {
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::PLACEHOLDER_PTR<double> in1 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin1");
-	nnet::PLACEHOLDER_PTR<double> in2 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin2");
+	nnet::PLACEHOLDER_PTR<double> in1 = nnet::placeholder<double>::make((std::vector<size_t>{5}), "layerin1");
+	nnet::PLACEHOLDER_PTR<double> in2 = nnet::placeholder<double>::make((std::vector<size_t>{5}), "layerin2");
 	nnet::layer_perceptron layer = nnet::layer_perceptron(5, 5);
 	nnet::VAR_PTR<double> res1 = layer(in1);
 	nnet::VAR_PTR<double> res2 = layer(in2);
 	*in1 = std::vector<double>{1, 4, 8, 16, 32};
 	*in2 = std::vector<double>{5, 4, 3, 2, 1};
-	EXPOSE_PTR e1 = EXPOSE(res1);
-	EXPOSE_PTR e2 = EXPOSE(res2);
+	EXPOSE_PTR e1 = nnet::expose<double>::make(res1);
+	EXPOSE_PTR e2 = nnet::expose<double>::make(res2);
 	sess.initialize_all<double>();
 	std::vector<double> raw1 = e1->get_raw();
 	std::vector<double> raw2 = e2->get_raw();
@@ -75,9 +75,9 @@ TEST(PERCEPTRON, layer_action) {
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	std::vector<double> exout = {1, 2, 3};
 	nnet::layer_perceptron layer(vin.size(), exout.size());
-	nnet::PLACEHOLDER_PTR<double> var = MAKE_PLACEHOLDER(std::vector<size_t>{5}, "layerin");
+	nnet::PLACEHOLDER_PTR<double> var = nnet::placeholder<double>::make(std::vector<size_t>{5}, "layerin");
 	nnet::VAR_PTR<double> res = layer(var);
-	EXPOSE_PTR ex = EXPOSE(res);
+	EXPOSE_PTR ex = nnet::expose<double>::make(res);
 	// initialize variables
 	sess.initialize_all<double>();
 	*var = vin;
@@ -88,8 +88,8 @@ TEST(PERCEPTRON, layer_action) {
 
 TEST(PERCEPTRON, mlp_multiple_in) {
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::PLACEHOLDER_PTR<double> in1 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin1");
-	nnet::PLACEHOLDER_PTR<double> in2 = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin2");
+	nnet::PLACEHOLDER_PTR<double> in1 = nnet::placeholder<double>::make((std::vector<size_t>{5}), "layerin1");
+	nnet::PLACEHOLDER_PTR<double> in2 = nnet::placeholder<double>::make((std::vector<size_t>{5}), "layerin2");
 	std::vector<IN_PAIR> hiddens = {
 			// use same sigmoid in static memory once deep copy is established
 			IN_PAIR(5, nnet::sigmoid<double>),
@@ -101,8 +101,8 @@ TEST(PERCEPTRON, mlp_multiple_in) {
 	nnet::VAR_PTR<double> res2 = mlp(in2);
 	*in1 = std::vector<double>{1, 4, 8, 16, 32};
 	*in2 = std::vector<double>{5, 4, 3, 2, 1};
-	EXPOSE_PTR e1 = EXPOSE(res1);
-	EXPOSE_PTR e2 = EXPOSE(res2);
+	EXPOSE_PTR e1 = nnet::expose<double>::make(res1);
+	EXPOSE_PTR e2 = nnet::expose<double>::make(res2);
 	sess.initialize_all<double>();
 	std::vector<double> raw1 = e1->get_raw();
 	std::vector<double> raw2 = e2->get_raw();
@@ -128,9 +128,9 @@ TEST(PERCEPTRON, mlp_action) {
 	// mlp has ownership of activations
 	nnet::ml_perceptron mlp = nnet::ml_perceptron(vin.size(), hiddens);
 
-	nnet::PLACEHOLDER_PTR<double> var = MAKE_PLACEHOLDER((std::vector<size_t>{5}), "layerin");
+	nnet::PLACEHOLDER_PTR<double> var = nnet::placeholder<double>::make((std::vector<size_t>{5}), "layerin");
 	nnet::VAR_PTR<double> res = mlp(var);
-	EXPOSE_PTR ex = EXPOSE(res);
+	EXPOSE_PTR ex = nnet::expose<double>::make(res);
 	sess.initialize_all<double>();
 	*var = vin;
 	std::vector<double> raw = ex->get_raw();
@@ -162,9 +162,9 @@ TEST(PERCEPTRON, gd_train) {
 	size_t test_size = 100;
 	size_t train_size = 10000;
 	nnet::gd_net net(n_in, hiddens);
-	nnet::PLACEHOLDER_PTR<double> fanin = MAKE_PLACEHOLDER((std::vector<size_t>{n_in, batch_size}), "fanin");
+	nnet::PLACEHOLDER_PTR<double> fanin = nnet::placeholder<double>::make((std::vector<size_t>{n_in, batch_size}), "fanin");
 	nnet::VAR_PTR<double> fanout = net(fanin);
-	EXPOSE_PTR exposeout = EXPOSE(fanout);
+	EXPOSE_PTR exposeout = nnet::expose<double>::make(fanout);
 	sess.initialize_all<double>();
 
 	std::vector<VECS> samples;
@@ -217,9 +217,9 @@ TEST(PERCEPTRON, bgd_train) {
 	size_t test_size = 100;
 	size_t train_size = 5000;
 	nnet::gd_net net(n_in, hiddens);
-	nnet::PLACEHOLDER_PTR<double> fanin = MAKE_PLACEHOLDER((std::vector<size_t>{n_in}), "fanin");
+	nnet::PLACEHOLDER_PTR<double> fanin = nnet::placeholder<double>::make((std::vector<size_t>{n_in}), "fanin");
 	nnet::VAR_PTR<double> fanout = net(fanin);
-	EXPOSE_PTR exposeout = EXPOSE(fanout);
+	EXPOSE_PTR exposeout = nnet::expose<double>::make(fanout);
 	sess.initialize_all<double>();
 
 	std::vector<VECS> samples;

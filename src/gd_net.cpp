@@ -23,7 +23,9 @@ void gd_net::train_set_up (void) {
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
-		VAR_PTR<double> grad = std::make_shared<gradient<double> >(output, hypothesis);
+//		VAR_PTR<double> s = sigmoid(hypothesis);
+//		VAR_PTR<double> grad = s*(1.0-s);
+		VAR_PTR<double> grad = gradient<double>::make(output, hypothesis);
 		prime_out.push(grad);
 	}
 
@@ -31,6 +33,7 @@ void gd_net::train_set_up (void) {
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
 	VAR_PTR<double> diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
+	record = expose<double>::make(diff);
 	VAR_PTR<double> err = diff * prime_out.top();
 	prime_out.pop();
 	std::stack<VAR_PTR<double> > errs;
@@ -43,7 +46,7 @@ void gd_net::train_set_up (void) {
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
 		VAR_PTR<double> weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		VAR_PTR<double> mres = std::make_shared<matmul<double> >(err, weight_i, false ,true);
+		VAR_PTR<double> mres = matmul<double>::make(err, weight_i, false ,true);
 		err = mres * prime_out.top();
 		prime_out.pop();
 		errs.push(err);
@@ -57,11 +60,11 @@ void gd_net::train_set_up (void) {
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		VAR_PTR<double> cost = std::make_shared<matmul<double> >(output, err, true);
+		VAR_PTR<double> cost = matmul<double>::make(output, err, true);
 		VAR_PTR<double> dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
-		VAR_PTR<double> compressed_err = std::make_shared<compress<double> >(err, 1);
+		VAR_PTR<double> compressed_err = compress<double>::make(err, 1);
 		VAR_PTR<double> dbias = compressed_err * learn_batch;
 
 		// update weights and bias
@@ -95,9 +98,9 @@ gd_net::gd_net (size_t n_input,
 	std::string scope)
 	: ml_perceptron(n_input, hiddens, scope), n_input(n_input) {
 	size_t n_out = hiddens.back().first;
-	batch_size = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "batch_size");
-	train_in = std::make_shared<placeholder<double> >(std::vector<size_t>{n_input, 0}, "train_in");
-	expected_out = std::make_shared<placeholder<double> >(std::vector<size_t>{n_out, 0}, "expected_out");
+	batch_size = placeholder<double>::make(std::vector<size_t>{0}, "batch_size");
+	train_in = placeholder<double>::make(std::vector<size_t>{n_input, 0}, "train_in");
+	expected_out = placeholder<double>::make(std::vector<size_t>{n_out, 0}, "expected_out");
 	train_set_up();
 }
 
@@ -115,6 +118,15 @@ void gd_net::train (std::vector<double> train_in,
 	// trigger update
 	for (EVOKER_PTR<double> evoks : updates) {
 		evoks->eval();
+	}
+	if (record_training) {
+		std::vector<double> errs = record->get_raw();
+		double avg_err = 0;
+		for (double e : errs) {
+			avg_err += std::abs(e);
+		}
+		avg_err /= errs.size();
+		std::cout << "err: " << avg_err << "\n";
 	}
 }
 

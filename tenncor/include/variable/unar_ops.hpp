@@ -28,11 +28,13 @@ class iunar_ops : public ioperation<T> {
 		// operator () getters
 		virtual std::string get_symb (void) = 0;
 
+		void init (VAR_PTR<T> var);
+
 		friend class univar_func<T>;
 
 	public:
 		virtual ~iunar_ops (void) {}
-		virtual ivariable<T>& operator () (VAR_PTR<T> in);
+
 		virtual iunar_ops<T>& operator = (const ivariable<T>& other);
 
 		std::shared_ptr<iunar_ops<T> > clone (std::string name = "") {
@@ -46,19 +48,20 @@ template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (void) {
-			this->grad = this->var->get_gradient();
-		}
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {}
 
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
+		expose (VAR_PTR<T> var) { this->init(var); }
 
 		std::string get_symb (void) { return "expose"; }
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active) { return this->var->eval(active); }
 
 	public:
-		expose (void) {}
-		expose (VAR_PTR<T> var) { (*this)(var); }
+		static std::shared_ptr<expose<T> > make (VAR_PTR<T> var) {
+			VAR_PTR<T> inst = ivariable<T>::make_shared(new expose(var));
+			return std::static_pointer_cast<expose<T> >(inst);
+		}
+
 		virtual const tensor<T>& eval (void);
 
 		std::shared_ptr<expose<T> > clone (std::string name = "") {
@@ -68,7 +71,6 @@ class expose : public iunar_ops<T> {
 		// non-inheriteds
 		// evaluates consumed operation
 		virtual std::vector<T> get_raw (void);
-		virtual std::vector<T> get_raw (VAR_PTR<T> active);
 		// extracts derivative based on the LAST evaluation
 		// doesn't evaluate
 		virtual std::vector<T> get_derive (VAR_PTR<T> over) const;
@@ -91,22 +93,19 @@ class gradient : public iunar_ops<T> {
 			return nullptr;
 		}
 		gradient (ivariable<T>& var, std::string name) { this->copy(var, name); }
+		gradient (VAR_PTR<T> func, VAR_PTR<T> over) { this->over = over; this->init(func); }
 
 		std::string get_symb (void) { return "/gradient?"; }
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
-		virtual void make_gradient (void) {}
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {}
 
 	public:
-		gradient (VAR_PTR<T> func) {
-			(*this)(func->get_gradient());
+		static VAR_PTR<T> make (VAR_PTR<T> func, VAR_PTR<T> over = nullptr) {
+			return ivariable<T>::make_shared(new gradient(func, over));
 		}
-		gradient (VAR_PTR<T> func, VAR_PTR<T> over) : over(over) {
-			(*this)(func->get_gradient());
-		}
-		virtual const tensor<T>& eval (void);
 
+		virtual const tensor<T>& eval (void);
 		void set_over (VAR_PTR<T> over) { this->over = over; }
 
 		std::shared_ptr<gradient<T> > clone (std::string name = "") {
@@ -120,7 +119,6 @@ template <typename T>
 class iunar_elem_ops : public iunar_ops<T> {
 	protected:
 		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
-		virtual const tensor<T>& calc_eval (VAR_PTR<T> active);
 
 	public:
 		virtual ~iunar_elem_ops (void) {}
@@ -141,19 +139,22 @@ class clip_by_value : public iunar_elem_ops<T> {
 
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (void) {
-			this->set_gradient(std::make_shared<clip_by_value<T> >(this->var->get_gradient(), min, max));
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
+			this->set_gradient(clip_by_value<T>::make(this->var->get_gradient(), min, max));
+			safety_ref = this->grad;
 		}
 
 		clip_by_value (ivariable<T>& var, std::string name) { this->copy(var, name); }
+		clip_by_value (VAR_PTR<T> var, T min, T max) : min(min), max(max) { this->init(var); }
 
 		std::string get_symb (void) { return "clip_val"; }
 		std::function<T(T)> get_op (void);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
-		clip_by_value (void) {}
-		clip_by_value (VAR_PTR<T> var, T min, T max) : min(min), max(max) { (*this)(var); }
+		static VAR_PTR<T> make (VAR_PTR<T> var, T min, T max) {
+			return ivariable<T>::make_shared(new clip_by_value(var, min, max));
+		}
 		virtual ~clip_by_value (void) {}
 
 		void set_bounds (T min, T max) { this->min = min; this->max = max; }
@@ -170,19 +171,22 @@ class clip_by_norm : public iunar_elem_ops<T> {
 
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (void) {
-			this->set_gradient(std::make_shared<clip_by_norm<T> >(this->var->get_gradient(), cap));
+		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
+			this->set_gradient(clip_by_norm<T>::make(this->var->get_gradient(), cap));
+			safety_ref = this->grad;
 		}
 
 		clip_by_norm (ivariable<T>& var, std::string name) { this->copy(var, name); }
+		clip_by_norm (VAR_PTR<T> var, T cap) : cap(cap) { this->init(var); }
 
 		std::string get_symb (void) { return "clip_norm"; }
 		std::function<T(T)> get_op (void);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
-		clip_by_norm (void) {}
-		clip_by_norm (VAR_PTR<T> var, T cap) : cap(cap) { (*this)(var); }
+		static VAR_PTR<T> make (VAR_PTR<T> var, T cap) {
+			return ivariable<T>::make_shared(new clip_by_norm(var, cap));
+		}
 		virtual ~clip_by_norm (void) {}
 
 		void set_bounds (T min, T max) { this->min = min; this->max = max; }

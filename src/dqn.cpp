@@ -21,7 +21,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	// ===============================
 	VAR_PTR<double> action_scores = (*target_net)(observation);
 	predicted_actions = // max arg index
-			std::make_shared<compress<double> >(action_scores, 1, [](const std::vector<double>& v) {
+			compress<double>::make(action_scores, 1, [](const std::vector<double>& v) {
 				size_t big_idx = 0;
 				for (size_t i = 1; i < v.size(); i++) {
 					if (v[big_idx] < v[i]) {
@@ -30,12 +30,13 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 				}
 				return big_idx;
 			});
+	action_expose = expose<double>::make(predicted_actions);
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
 	VAR_PTR<double> next_action_scores = (*target_net)(next_observation);
 	VAR_PTR<double> target_values = // reduce max
-			std::make_shared<compress<double> >(next_action_scores, 1,
+			compress<double>::make(next_action_scores, 1,
 												[](const std::vector<double>& v) {
 													double big;
 													auto it = v.begin();
@@ -51,8 +52,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	// PREDICT ERROR
 	// ===============================
 	VAR_PTR<double> masked_action_score = // reduce sum
-			std::make_shared<compress<double> >(
-			action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
+			compress<double>::make(action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
 												[](const std::vector<double>& v) {
 													double accum;
 													for (double d : v) {
@@ -61,7 +61,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													return accum;
 												});
 	VAR_PTR<double> diff = masked_action_score - future_rewards;
-	prediction_error = std::make_shared<compress<double> >(diff * diff); // reduce mean
+	prediction_error = compress<double>::make(diff * diff); // reduce mean
 	// minimize error
 	optimizer->ignore(next_action_scores);
 	std::vector<nnet::GRAD<double> > gradients = optimizer->compute_grad(prediction_error);
@@ -70,7 +70,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 		VAR_PTR<double> grad = gradients[i].first;
 		VAR_PTR<double> var = gradients[i].second;
 		if (nullptr != grad) {
-			gradients[i] = GRAD<double>(std::make_shared<clip_by_norm<double> >(grad, 5), var);
+			gradients[i] = GRAD<double>(clip_by_norm<double>::make(grad, 5), var);
 		}
 	}
 
@@ -158,13 +158,12 @@ dq_net::dq_net (
 	// fanin setup
 	target_net = q_net->clone("target_network");
 	tensor_shape in_shape = std::vector<size_t>{n_input};
-	observation = std::make_shared<placeholder<double> >(in_shape, "observation");
-	next_observation = std::make_shared<placeholder<double> >(in_shape, "next_observation");
+	observation = placeholder<double>::make(in_shape, "observation");
+	next_observation = placeholder<double>::make(in_shape, "next_observation");
 	// mask and reward shape depends on batch size
-	next_observation_mask = std::make_shared<placeholder<double> >(
-			std::vector<size_t>{n_observations, 0}, "new_observation_mask");
-	rewards = std::make_shared<placeholder<double> >(std::vector<size_t>{0}, "rewards");
-	action_mask = std::make_shared<placeholder<double> >(std::vector<size_t>{n_actions, 0}, "action_mask");
+	next_observation_mask = placeholder<double>::make(std::vector<size_t>{n_observations, 0}, "new_observation_mask");
+	rewards = placeholder<double>::make(std::vector<size_t>{0}, "rewards");
+	action_mask = placeholder<double>::make(std::vector<size_t>{n_actions, 0}, "action_mask");
 
 	variable_setup(optimizer);
 
@@ -185,9 +184,8 @@ std::vector<double> dq_net::operator () (std::vector<double>& observations) {
 		return act_score;
 	}
 
-	(*observation) = observations;
-	expose<double> out(predicted_actions);
-	return out.get_raw();
+	*observation = observations;
+	return action_expose->get_raw();
 }
 
 void dq_net::store (std::vector<double> observation,

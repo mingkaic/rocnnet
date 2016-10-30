@@ -15,7 +15,7 @@ namespace nnet {
 template <typename T>
 VAR_PTR<T> operator + (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = +other; },
 	[](std::vector<VAR_PTR<T> > args) { return +args.front()->get_gradient(); },
 	nnutils::formatter() << "abs(" << a->get_name() << ")");
@@ -25,7 +25,7 @@ VAR_PTR<T> operator + (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> operator - (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = -other; },
 	[](std::vector<VAR_PTR<T> > args) { return -args.front()->get_gradient(); },
 	nnutils::formatter() << "neg(" << a->get_name() << ")");
@@ -35,7 +35,7 @@ VAR_PTR<T> operator - (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> sin (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = std::sin(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// sin'(f(x)) = f'(x)*cos(f(x))
@@ -48,7 +48,7 @@ VAR_PTR<T> sin (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> cos (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = std::cos(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// cos'(f(x)) = -f'(x)*sin(f(x))
@@ -61,7 +61,7 @@ VAR_PTR<T> cos (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> tan (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = std::tan(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// sec'(f(x)) = f'(x)*sec^2(f(x))
@@ -76,7 +76,7 @@ VAR_PTR<T> tan (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> csc (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = 1/std::sin(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
@@ -90,7 +90,7 @@ VAR_PTR<T> csc (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> sec (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = 1/std::cos(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
@@ -104,7 +104,7 @@ VAR_PTR<T> sec (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> cot (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = 1/std::tan(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
@@ -118,7 +118,7 @@ VAR_PTR<T> cot (const VAR_PTR<T>& a) {
 template <typename T>
 VAR_PTR<T> exp (const VAR_PTR<T>& a) {
 	if (nullptr == a) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a},
 	[](T& collector, T other) { collector = std::exp(other); },
 	[](std::vector<VAR_PTR<T> > args) {
 		// exp'(f(x)) = f'(x)*exp(f(x))
@@ -130,12 +130,12 @@ VAR_PTR<T> exp (const VAR_PTR<T>& a) {
 
 template<typename T>
 VAR_PTR<T> operator + (T a, const VAR_PTR<T>& b) {
-	return VAR_PTR<T>(new variable<T>(a)) + b;
+	return constant<T>::make(a) + b;
 }
 
 template<typename T>
 VAR_PTR<T> operator + (const VAR_PTR<T>& a, T b) {
-	return a + VAR_PTR<T>(new variable<T>(b));
+	return a + constant<T>::make(b);
 }
 
 template <typename T>
@@ -143,7 +143,7 @@ VAR_PTR<T> operator + (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 	if (nullptr == a) return b;
 	else if (nullptr == b) return a;
 
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a, b,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a, b},
 	[](T& collector, T other) { collector += other; },
 	[](std::vector<VAR_PTR<T> > args) {
 		// h'(f(x), g(x)) = f'(x) + g'(x)
@@ -153,18 +153,18 @@ VAR_PTR<T> operator + (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 			res = res + (*it)->get_gradient();
 		}
 		return res;
-	}, nnutils::formatter() << a->get_name() << "+" << b->get_name());
+	}, nnutils::formatter() << "(" << a->get_name() << "+" << b->get_name() << ")");
 	return op;
 }
 
 template<typename T>
 VAR_PTR<T> operator - (T a, const VAR_PTR<T>& b) {
-	return VAR_PTR<T>(new variable<T>(a)) - b;
+	return constant<T>::make(a) - b;
 }
 
 template<typename T>
 VAR_PTR<T> operator - (const VAR_PTR<T>& a, T b) {
-	return a - VAR_PTR<T>(new variable<T>(b));
+	return a - constant<T>::make(b);
 }
 
 template <typename T>
@@ -172,7 +172,7 @@ VAR_PTR<T> operator - (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 	if (nullptr == a) return b;
 	else if (nullptr == b) return a;
 
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a, b,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a, b},
 	[](T& collector, T other) { collector -= other; },
 	[](std::vector<VAR_PTR<T> > args) {
 		// h'(f(x), g(x)) = f'(x) - g'(x)
@@ -182,24 +182,24 @@ VAR_PTR<T> operator - (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 			res = res - (*it)->get_gradient();
 		}
 		return res;
-	}, nnutils::formatter() << a->get_name() << "-" << b->get_name());
+	}, nnutils::formatter() << "(" << a->get_name() << "-" << b->get_name() << ")");
 	return op;
 }
 
 template<typename T>
 VAR_PTR<T> operator * (T a, const VAR_PTR<T>& b) {
-	return VAR_PTR<T>(new variable<T>(a)) * b;
+	return constant<T>::make(a) * b;
 }
 
 template<typename T>
 VAR_PTR<T> operator * (const VAR_PTR<T>& a, T b) {
-	return a * VAR_PTR<T>(new variable<T>(b));
+	return a * constant<T>::make(b);
 }
 
 template <typename T>
 VAR_PTR<T> operator * (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 	if (nullptr == a || nullptr == b) return nullptr;
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a, b,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a, b},
 	[](T& collector, T other) { collector *= other; },
 	[](std::vector<VAR_PTR<T> > args) {
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
@@ -212,12 +212,12 @@ VAR_PTR<T> operator * (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 
 template<typename T>
 VAR_PTR<T> operator / (T a, const VAR_PTR<T>& b) {
-	return VAR_PTR<T>(new variable<T>(a)) / b;
+	return constant<T>::make(a) / b;
 }
 
 template<typename T>
 VAR_PTR<T> operator / (const VAR_PTR<T>& a, T b) {
-	return a / VAR_PTR<T>(new variable<T>(b));
+	return a / constant<T>::make(b);
 }
 
 template <typename T>
@@ -225,7 +225,7 @@ VAR_PTR<T> operator / (const VAR_PTR<T>& a, const VAR_PTR<T>& b) {
 	if (nullptr == a) return nullptr;
 	assert (nullptr != b); // don't allow infinity
 
-	VAR_PTR<T> op = std::make_shared<elementary<T> >(a, b,
+	VAR_PTR<T> op = elementary<T>::make(std::vector<VAR_PTR<T> >{a, b},
 	[](T& collector, T other) { collector /= other; },
 	[](std::vector<VAR_PTR<T> > args) {
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)

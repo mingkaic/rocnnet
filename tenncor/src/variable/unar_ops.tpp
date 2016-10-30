@@ -34,16 +34,15 @@ void iunar_ops<T>::shape_eval (void) {
 }
 
 template <typename T>
-ivariable<T>& iunar_ops<T>::operator () (VAR_PTR<T> var) {
-    std::stringstream ns;
-    ns << "<" << get_symb() << ">(" << var->get_name() << ")";
-    this->name = ns.str();
-    this->consume(*(var.get()));
-    this->var = var;
+void iunar_ops<T>::init (VAR_PTR<T> var) {
+	std::stringstream ns;
+	ns << "<" << get_symb() << ">(" << var->get_name() << ")";
+	this->name = ns.str();
+	this->consume(*(var.get()));
+	this->var = var;
 	if (session::pre_shape_eval()) {
 		shape_eval();
 	}
-    return *this;
 }
 
 template <typename T>
@@ -58,11 +57,15 @@ iunar_ops<T>& iunar_ops<T>::operator = (const ivariable<T>& other) {
 
 template <typename T>
 EVOKER_PTR<T> expose<T>::clone_impl (std::string name) {
-	return std::shared_ptr<expose<T> >(new expose(*this, name));
+	return ivariable<T>::make_shared(new expose(*this, name));
 }
 
 template <typename T>
 const tensor<T>& expose<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	return this->var->eval();
 }
 
@@ -73,55 +76,37 @@ std::vector<T> expose<T>::get_raw (void) {
 }
 
 template <typename T>
-std::vector<T> expose<T>::get_raw (VAR_PTR<T> active) {
-	return this->get_vec(this->var->eval(active));
-}
-
-template <typename T>
 std::vector<T> expose<T>::get_derive (VAR_PTR<T> over) const {
-	VAR_PTR<T> g = this->var->get_gradient();
-	const tensor<T>& tense = g->eval(over);
-	std::vector<T> vec = this->get_vec(tense);
-	return vec;
+	return this->get_vec(this->var->calc_gradient(over));
 }
 
 // GRADIENT NODE
 
 template <typename T>
 EVOKER_PTR<T> gradient<T>::clone_impl (std::string name) {
-	return std::shared_ptr<gradient<T> >(new gradient(*this, name));
+	return ivariable<T>::make_shared(new gradient(*this, name));;
 }
 
 template <typename T>
 const tensor<T>& gradient<T>::eval (void) {
-	const tensor<T>& prime = this->var->eval(over);
-	this->out = prime;
-	return prime;
-}
-
-template <typename T>
-const tensor<T>& gradient<T>::calc_eval (VAR_PTR<T> active) {
-	const tensor<T>& prime = this->var->eval(active);
-	this->out = prime;
-	return prime;
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
+	this->out = this->var->calc_gradient(over);
+	return this->out;
 }
 
 // USED FOR ELEMENT WISE OPERATIONS ONLY
 
 template <typename T>
 const tensor<T>& iunar_elem_ops<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
 	assert(nullptr != this->var);
 	const tensor<T>& evar = this->var->eval();
-	tensor<T>* eptr = this->util_op(evar, get_op());
-	this->out = *eptr;
-	delete eptr;
-	return this->out;
-}
-
-template <typename T>
-const tensor<T>& iunar_elem_ops<T>::calc_eval (VAR_PTR<T> active) {
-	assert(nullptr != this->var);
-	const tensor<T>& evar = this->var->eval(active);
 	tensor<T>* eptr = this->util_op(evar, get_op());
 	this->out = *eptr;
 	delete eptr;
@@ -141,7 +126,7 @@ std::function<T(T)> clip_by_value<T>::get_op (void) {
 
 template <typename T>
 EVOKER_PTR<T> clip_by_value<T>::clone_impl (std::string name) {
-	return std::shared_ptr<clip_by_value<T> >(new clip_by_value(*this, name));
+	return ivariable<T>::make_shared(new clip_by_value(*this, name));
 }
 
 template <typename T>
@@ -158,7 +143,7 @@ std::function<T(T)> clip_by_norm<T>::get_op (void) {
 
 template <typename T>
 EVOKER_PTR<T> clip_by_norm<T>::clone_impl (std::string name) {
-	return std::shared_ptr<clip_by_norm<T> >(new clip_by_norm(*this, name));
+	return ivariable<T>::make_shared(new clip_by_norm(*this, name));
 }
 
 }

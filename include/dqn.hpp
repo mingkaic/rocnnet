@@ -67,6 +67,8 @@ class dq_net {
 		PLACEHOLDER_PTR<double> next_observation_mask;
 		PLACEHOLDER_PTR<double> rewards;
 		PLACEHOLDER_PTR<double> action_mask;
+
+		EXPOSE_PTR action_expose;
 		// fanouts
 		VAR_PTR<double> predicted_actions;
 		VAR_PTR<double> prediction_error;
