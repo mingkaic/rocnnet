@@ -25,7 +25,7 @@ void gd_net::train_set_up (void) {
 		// act'(z_i)
 //		VAR_PTR<double> s = sigmoid(hypothesis);
 //		VAR_PTR<double> grad = s*(1.0-s);
-		VAR_PTR<double> grad = gradient<double>::make(output, hypothesis);
+		VAR_PTR<double> grad = derive<double>::make(output, hypothesis);
 		prime_out.push(grad);
 	}
 
@@ -105,7 +105,6 @@ gd_net::gd_net (size_t n_input,
 }
 
 // batch gradient descent
-// TODO upgrade to using ioperation's gradient method for cost function (determine speedup before "upgrade")
 // 1/m*sum_m(Err(X, Y)) once matrix operations support auto derivation
 // then apply cost funct to grad desc alg:
 // new weight = old weight - learning_rate * cost func gradient over old weight

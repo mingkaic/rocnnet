@@ -11,7 +11,6 @@
 #include "tenncor/tenncor.hpp"
 #include "gtest/gtest.h"
 
-// TODO: standardize these by implementing factories
 #define EXPOSE_PTR std::shared_ptr<nnet::expose<double> >
 
 #endif //CNNET_UTILS_HPP

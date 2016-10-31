@@ -22,7 +22,8 @@ TEST(DQN, forward) {
 			IN_PAIR(n_out, nnet::sigmoid<double>),
 	};
 
-	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::rms_prop_optimizer>(0.001);
+//	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::rms_prop_optimizer>(0.001);
+	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::gd_optimizer>(0.001);
 
 	nnet::dq_net net(vin.size(), hiddens, optimizer);
 

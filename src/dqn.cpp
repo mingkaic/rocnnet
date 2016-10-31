@@ -64,13 +64,13 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	prediction_error = compress<double>::make(diff * diff); // reduce mean
 	// minimize error
 	optimizer->ignore(next_action_scores);
-	std::vector<nnet::GRAD<double> > gradients = optimizer->compute_grad(prediction_error);
+	GRAD_MAP<double> gradients = optimizer->compute_grad(prediction_error);
 
-	for (size_t i = 0; i <  gradients.size(); i++) {
-		VAR_PTR<double> grad = gradients[i].first;
-		VAR_PTR<double> var = gradients[i].second;
+	for (auto it = gradients.begin(); gradients.end() != it; it++) {
+		VAR_PTR<double> var = (*it).first;
+		VAR_PTR<double> grad = (*it).second;
 		if (nullptr != grad) {
-			gradients[i] = GRAD<double>(clip_by_norm<double>::make(grad, 5), var);
+			(*it).second = clip_by_norm<double>::make(grad, 5);
 		}
 	}
 

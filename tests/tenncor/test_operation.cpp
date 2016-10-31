@@ -830,6 +830,7 @@ TEST(DERIV, complex) {
 }
 
 
+// tests deriving with respect to leaf (variable) nodes using sigmoid
 TEST(DERIV, sigmoid_complex) {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
@@ -864,6 +865,7 @@ TEST(DERIV, sigmoid_complex) {
 }
 
 
+// tests deriving with respect to operation nodes
 TEST(DERIV, operation_derive) {
 	const size_t limit = 523;
 	const size_t edge = 10;
@@ -876,7 +878,7 @@ TEST(DERIV, operation_derive) {
 
 	nnet::VAR_PTR<double> o = nnet::sigmoid(mul);
 	nnet::VAR_PTR<double> better_grad = o*(1.0-o);
-	nnet::VAR_PTR<double> grad = nnet::gradient<double>::make(o, mul);
+	nnet::VAR_PTR<double> grad = nnet::derive<double>::make(o, mul);
 	EXPOSE_PTR oex = nnet::expose<double>::make(o);
 	EXPOSE_PTR ex = nnet::expose<double>::make(grad);
 	EXPOSE_PTR better_ex = nnet::expose<double>::make(better_grad);

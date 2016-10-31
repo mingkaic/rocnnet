@@ -20,50 +20,39 @@
 namespace nnet {
 
 template <typename T>
-using BUFFER = std::vector<T>;
-
-static alloc_attrib default_attr;
-
+class ievoker;
 template <typename T>
 class initializer;
-template <typename T>
-class ioperation;
-template <typename T>
-class update;
+
+static alloc_attrib default_attr; // TODO consider removing to make thread safe
 
 template <typename T>
 class tensor {
 	private:
 		// meta data (not as template)
-		tensor_shape allowed_shape;
-		tensor_shape alloc_shape;
+		tensor_shape _allowed_shape;
+		tensor_shape _alloc_shape;
+		std::shared_ptr<iallocator> _alloc = nullptr;
 
 		void copy (const tensor<T>& other);
 
 	protected:
-		std::shared_ptr<iallocator> alloc = nullptr;
-		// TODO make unique at some point
-		T* raw_data = nullptr;
+		T* _raw_data = nullptr; // TODO make unique at some point
 
+		friend class ievoker<T>;
 		friend class initializer<T>;
-		friend class ioperation<T>;
-		friend class update<T>;
 
 	public:
-		// name identifier
-		std::string name;
+		std::string name; // identifier
 
 		// creates a rank 0 tensor
 		tensor (void);
 		tensor (const tensor_shape shape);
-
 		// allocate raw_data on construction
 		tensor (std::shared_ptr<iallocator> alloc, const tensor_shape shape);
 		tensor (std::shared_ptr<iallocator> alloc, const tensor_shape shape, alloc_attrib const & attrib);
-
 		// makes a scalar
 		tensor (T scalar);
-
 		// rule of three
 		tensor (const tensor<T>& other);
 		virtual ~tensor (void);
@@ -74,10 +63,9 @@ class tensor {
 		void allocate (std::shared_ptr<iallocator> allocer);
 		void allocate (std::shared_ptr<iallocator> allocer, const alloc_attrib& attrib);
 		void allocate (std::shared_ptr<iallocator> allocer, const tensor_shape shape);
-		void allocate (
-			std::shared_ptr<iallocator> allocer,
-			const tensor_shape shape,
-			const alloc_attrib& attrib);
+		void allocate (std::shared_ptr<iallocator> allocer,
+						const tensor_shape shape,
+						const alloc_attrib& attrib);
 
 		// shape info getters
 		// get tensor shape
@@ -88,15 +76,15 @@ class tensor {
 		size_t n_dims (void) const;
 		// get the amount of T elements allocated, 0 if uninitialized
 		size_t n_elems (void) const;
-		// checks if tensorshape is aligned
-		// (e.g.: same number of column for each row)
-		bool is_aligned (void) const;
-
-		tensor_shape guess_shape (std::vector<T> data) const;
 		bool is_compatible_with (std::vector<T> data) const;
 		bool is_compatible_with (const tensor<T>& other) const;
 		// checks if input tensor has a compatible allowed tensor_shape
 		bool is_same_size (const tensor<T>& other) const;
+		// guess shape from the data based on the current shape (allowed if unallocated, allocated otherwise)
+		tensor_shape guess_shape (std::vector<T> data) const;
+		// checks if tensorshape is aligned
+		// (e.g.: same number of column for each row)
+		bool is_aligned (void) const;
 
 		// memory info getter
 		// check if memory is allocated
@@ -126,6 +114,6 @@ using TENSOR_PTR = std::shared_ptr<tensor<T> >;
 
 }
 
-#include "../src/tensor.tpp"
+#include "../src/tensor.ipp"
 
 #endif /* tensor_hpp */

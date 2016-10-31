@@ -1,5 +1,5 @@
 //
-//  elementary.tpp
+//  elementary.ipp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-10-24.
@@ -10,6 +10,75 @@
 #include <iostream>
 
 namespace nnet {
+
+// Elementary Operations
+
+template <typename T>
+void elementary<T>::make_gradient (VAR_PTR<T>& safety_ref) {
+	this->set_gradient(der(args));
+	safety_ref = this->grad;
+}
+
+template <typename T>
+EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
+	return ivariable<T>::make_shared(new elementary(args, op, der, name));
+}
+
+template <typename T>
+void elementary<T>::replace (ivariable<T>* food, VAR_PTR<T> newfood) {
+	for (size_t i = 0; i < args.size(); i++) {
+		if (args[i].get() == food) args[i] = newfood;
+	}
+}
+
+template <typename T>
+void elementary<T>::shape_eval (void) {
+	auto it = args.begin();
+	tensor_shape first = this->get_eval(*it).get_shape();
+	if (first.is_fully_defined()) {
+		for (it++; args.end() != it; it++) {
+			tensor_shape ts = this->get_eval(*it).get_shape();
+			assert(first.is_compatible_with(ts) ||
+				   1 == ts.n_dims() || 1 == first.n_dims());
+			if (ts.n_dims() > first.n_dims()) first = ts;
+		}
+		this->update(first);
+	}
+}
+
+template <typename T>
+elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
+std::function<void(T&, T)> op,
+		ELEMENTARY_DERIV<T> der,
+std::string name) : op(op), der(der), args(args) {
+	this->name = name;
+	for (VAR_PTR<T> a : args) {
+		this->consume(*(a.get()));
+	}
+	if (session::pre_shape_eval()) {
+		shape_eval();
+	}
+}
+
+template <typename T>
+const tensor<T>& elementary<T>::eval (void) {
+	static tensor<T> one(1);
+	if (this->derive_this) {
+		return one;
+	}
+	auto it = args.begin();
+	if (1 == args.size()) {
+		this->_out = tensor<T>(0);
+	} else {
+		this->_out = (*it)->eval();
+		it++;
+	}
+	while (args.end() != it) {
+		this->elem_op(this->_out, (*it)->eval(), op);
+		it++;
+	}
+	return this->_out;
+}
 
 // nulls are treated as 0
 template <typename T>

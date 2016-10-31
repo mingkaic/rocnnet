@@ -12,28 +12,18 @@
 
 namespace nnet {
 
-// separate minimize into the steps
-std::vector<GRAD<double> > gd_optimizer::compute_grad (VAR_PTR<double> fanout) {
-	VAR_PTR<double> grad_tree = fanout->get_gradient();
-
-	// get list of gradients from grad_tree
-
+// update variables not covered by ignore
+EVOKER_PTR<double> gd_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
 	// assume that input fanout is some cost function J
-
 	// gradient of J[v] gives delta J[v] for each variable v
 	// including placeholders. (ignore placeholders and update variables only)
 
-	return std::vector<GRAD<double> >();
-}
-
-// update variables not covered by ignore
-EVOKER_PTR<double> gd_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
 	// update by equation var_new = var_old - learning * delta(J(var_old))
 	// for each weight/bias var in graph
 
-	for (GRAD<double> g : gradients) {
-		VAR_PTR<double> old_var = g.second;
-		VAR_PTR<double> delta = g.first;
+	for (auto it = gradients.begin(); gradients.end() != it; it++) {
+		VAR_PTR<double> old_var = (*it).first;
+		VAR_PTR<double> delta = (*it).second;
 
 		EVOKER_PTR<double> evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(old_var), delta);
@@ -44,14 +34,8 @@ EVOKER_PTR<double> gd_optimizer::apply_grad (std::vector<GRAD<double> > gradient
 	return nullptr;
 }
 
-// separate minimize into the steps
-std::vector<GRAD<double> > rms_prop_optimizer::compute_grad (VAR_PTR<double> fanout) {
-
-	return std::vector<GRAD<double> >();
-}
-
 // update variables not covered by ignore
-EVOKER_PTR<double> rms_prop_optimizer::apply_grad (std::vector<GRAD<double> > gradients) {
+EVOKER_PTR<double> rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
 	return nullptr;
 }
 

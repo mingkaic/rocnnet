@@ -7,30 +7,32 @@
 //
 
 #include <vector>
-#include "../variable/variable.hpp"
+#include <map>
+#include "graph/variable/variable.hpp"
+#include "graph/operation/unary/iunar_ops.hpp"
 
 #pragma once
 #ifndef optimizer_hpp
 #define optimizer_hpp
 
 #include "update.hpp"
+#include "../graph/operation/unary/derive.hpp"
 
 namespace nnet {
 
 template <typename T>
-using GRAD = std::pair<VAR_PTR<T>, VAR_PTR <T> >;
+using GRAD_MAP = std::map<VAR_PTR<T>, VAR_PTR<T> >;
 
 template <typename T>
 class ioptimizer {
 	protected:
-		std::unordered_set<VAR_PTR<T> > ignore_set;
-
+		nnutils::WEAK_SET<ivariable<T> > ignore_set;
 		double learning_rate;
 
 	public:
 		virtual ~ioptimizer (void) {}
 
-		void ignore (VAR_PTR<T> ig_var) { ignore_set.emplace(ig_var); }
+		void ignore (VAR_PTR<T> ig_var) { ignore_set.insert(ig_var); }
 
 		// two step process in one
 		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
@@ -38,9 +40,20 @@ class ioptimizer {
 		}
 
 		// separate minimize into the steps
-		virtual std::vector<GRAD<T> > compute_grad (VAR_PTR<T> fanout) = 0;
+		virtual GRAD_MAP<T> compute_grad (VAR_PTR<T> fanout) {
+			GRAD_MAP<T> res;
+			nnutils::WEAK_SET<ivariable<T> >& leaves = fanout->_leaves;
+
+			for (WEAK_VAR_PTR<T> leaf : leaves) {
+				if (ignore_set.end() == ignore_set.find(leaf)) {
+					std::pair<VAR_PTR<T>, VAR_PTR<T> > end_point(leaf.lock(), derive<T>::make(fanout, leaf.lock()));
+					res.insert(end_point);
+				}
+			}
+			return res;
+		}
 		// update variables not covered by ignore
-		virtual EVOKER_PTR<T> apply_grad (std::vector<GRAD<T> > gradients) = 0;
+		virtual EVOKER_PTR<T> apply_grad (GRAD_MAP<T>& gradients) = 0;
 };
 
 template <typename T>
@@ -49,10 +62,14 @@ using OPTIMIZER = std::shared_ptr<ioptimizer<T> >;
 // gradient descent
 class gd_optimizer : public ioptimizer<double> {
 	public:
-		// separate minimize into the steps
-		virtual std::vector<GRAD<double> > compute_grad (VAR_PTR<double> fanout);
+	gd_optimizer (double learning_rate) {
+			this->learning_rate = learning_rate;
+		}
+
+		// inherits compute_grad from ioptimizer
+
 		// update variables not covered by ignore
-		virtual EVOKER_PTR<double> apply_grad (std::vector<GRAD<double> > gradients);
+		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
 };
 
 // rms prop
@@ -71,10 +88,10 @@ class rms_prop_optimizer : public ioptimizer<double> {
 			this->learning_rate = learning_rate;
 		}
 
-		// separate minimize into the steps
-		virtual std::vector<GRAD<double> > compute_grad (VAR_PTR<double> fanout);
+		// inherits compute_grad from ioptimizer
+
 		// update variables not covered by ignore
-		virtual EVOKER_PTR<double> apply_grad (std::vector<GRAD<double> > gradients);
+		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
 };
 
 }

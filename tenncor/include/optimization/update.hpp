@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../evoker.hpp"
+#include "graph/evoker.hpp"
 
 #ifndef update_hpp
 #define update_hpp
@@ -54,6 +54,6 @@ class update_sub : public update<T> {
 
 }
 
-#include "../../src/optimization/update.tpp"
+#include "../../src/optimization/update.ipp"
 
 #endif /* update_hpp */

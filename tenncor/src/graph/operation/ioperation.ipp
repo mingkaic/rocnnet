@@ -1,5 +1,5 @@
 //
-//  operation.tpp
+//  operation.ipp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-08-29.
@@ -137,7 +137,7 @@ template <typename U>
 void ioperation<T>::util_op (
 	U& out, const tensor<T>& in,
 	std::function<void(U&, T)> op) const {
-	T* inraw = in.raw_data;
+	const T* inraw = this->get_raw(in);
 	size_t limit = in.n_elems();
 	for (size_t i = 0; i < limit; i++) {
 		op(out, inraw[i]);
@@ -151,19 +151,19 @@ void ioperation<T>::elem_op (
 		std::function<void(T&, T)> op) const {
 	size_t outs = out.n_elems();
 	size_t ins = in.n_elems();
-	const T* inraw = in.raw_data;
+	const T* inraw = this->get_raw(in);
 
 	if (outs < ins && 1 == outs) {
-		T scalar = out.raw_data[0];
+		T scalar = out.get({0});
 		out = in;
-		T* outraw = out.raw_data;
+		T* outraw = this->get_raw(out);
 		for (size_t i = 0; i < ins; i++) {
 			T buffer = scalar;
 			op(buffer, inraw[i]);
 			outraw[i] = buffer;
 		}
 	} else {
-		T* outraw = out.raw_data;
+		T* outraw = this->get_raw(out);
 		if (1 == ins) {
 			for (size_t i = 0; i < outs; i++) {
 				op(outraw[i], inraw[0]);
@@ -181,7 +181,7 @@ void ioperation<T>::elem_op (
 
 template <typename T>
 tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
-	std::vector<size_t> tv = in.out.get_shape().as_list();
+	std::vector<size_t> tv = in._out.get_shape().as_list();
 	size_t n_col = tv[0];
 	size_t len_trace;
 	if (tv[0] > tv[1]) {
@@ -192,8 +192,8 @@ tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
 		tv[1] = 1;
 	}
 	tensor<T>* ans = new tensor<T>(tv);
-	T* inraw = in.out.raw_data;
-	T* outraw = ans->raw_data;
+	T* inraw = this->get_raw(in._out);
+	T* outraw = this->get_raw(*ans);
 	for (size_t i = 0; i < len_trace; i++) {
 		outraw[i] = inraw[i * (1 + n_col)];
 	}
@@ -205,8 +205,8 @@ tensor<T>* ioperation<T>::util_op (
 	const tensor<T>& in,
 	std::function<T(T)> op) const {
 	tensor<T>* ans = new tensor<T>(in.get_shape());
-	T* inraw = in.raw_data;
-	T* outraw = ans->raw_data;
+	T* outraw = this->get_raw(*ans);
+	const T* inraw = this->get_raw(in);
 	for (size_t i = 0; i < ans->n_elems(); i++) {
 		outraw[i] = op(inraw[i]);
 	}
@@ -225,22 +225,22 @@ tensor<T>* ioperation<T>::util_op (
 
 	if (1 == a.n_elems()) {
 		T scalar = a.get({0});
-		T* in = b.raw_data;
-		T* out = ans->raw_data;
+		const T* in = this->get_raw(b);
+		T* out = this->get_raw(ans);
 		for (size_t i = 0; i < ans->n_elems(); i++) {
 			out[i] = op(scalar, in[i]);
 		}
 	} else if (1 == b.n_elems()) {
-		T* in = a.raw_data;
+		const T* in = this->get_raw(a);
 		T scalar = b.get({0});
 		T* out = ans->raw_data;
 		for (size_t i = 0; i < ans->n_elems(); i++) {
 			out[i] = op(in[i], scalar);
 		}
 	} else if (a.is_same_size(b)) {
-		T* ina = a.raw_data;
-		T* inb = b.raw_data;
-		T* out = ans->raw_data;
+		const T* ina = this->get_raw(a);
+		const T* inb = this->get_raw(b);
+		T* out = this->get_raw(*ans);
 		for (size_t i = 0; i < ans->n_elems(); i++) {
 			out[i] = op(ina[i], inb[i]);
 		}
@@ -260,8 +260,8 @@ tensor<T>* ioperation<T>::transpose_op (
 	size_t dimY = inl[0];
 	size_t dimX = inl[1];
 	tensor<T>* ans = new tensor<T>(news); // new shape
-	T* rawin = in.raw_data;
-	T* rawout = ans->raw_data;
+	const T* rawin = this->get_raw(in);
+	T* rawout = this->get_raw(*ans);
 	// not in place so x = y+1 doesn't work
 	for (size_t y = 0; y < dimY; y++) {
 		for (size_t x = 0; x < dimX; x++) {
@@ -287,9 +287,9 @@ tensor<T>* ioperation<T>::matmul_op (
 	size_t dimY = dims[1];
 	tensor<T>* ans = new tensor<T>(std::vector<size_t>{dimX, dimY});
 
-	T* rawa = a.raw_data;
-	T* rawb = b.raw_data;
-	T* rawr = ans->raw_data;
+	const T* rawa = this->get_raw(a);
+	const T* rawb = this->get_raw(b);
+	T* rawr = this->get_raw(*ans);
 	for (size_t y = 0; y < dimY; y++) {
 		for (size_t x = 0; x < dimX; x++) {
 			rawr[x+y*dimX] = 0;
@@ -315,11 +315,11 @@ tensor<T>* ioperation<T>::extend_op (const tensor<T>& in, size_t index, size_t m
 	size_t above_dim = in.n_elems() / below_dim;
 	if (0 == above_dim) above_dim = 1; // remember that extension can increase dimensionality
 	// copy over data
-	T* src_data = in.raw_data;
-	T* dest_data = ans->raw_data;
+	T* dest_data = this->get_raw(*ans);
+	const T* src_data = this->get_raw(in);
 	for (size_t i = 0; i < above_dim; i++) {
 		// copy data multiplier times
-		T* src_addr = src_data + i * below_dim;
+		const T* src_addr = src_data + i * below_dim;
 		for (size_t j = 0; j < multiplier; j++) {
 			T* dest_addr = dest_data + below_dim * (multiplier * i + j);
 			std::memcpy(dest_addr, src_addr, below_dim * sizeof(T));
@@ -336,20 +336,16 @@ tensor<T>* ioperation<T>::compress_op (
 	std::function<T(const std::vector<T>&)> collector) const {
 	size_t total = in.n_elems();
 	if (index < 0) { // if index is negative compress all values
-		tensor<T>* ans = new tensor<T>(std::vector<size_t>{1}); // basically scalar
-		T* raw = ans->raw_data;
-		T* src_data = in.raw_data;
+		const T* src_data = this->get_raw(in);
 		std::vector<T> gather;
 		for (size_t i = 0; i < total; i++) {
 			gather.push_back(src_data[i]);
 		}
-		*raw = collector(gather);
-		return ans;
+		return new tensor<T>(collector(gather));
 	}
 	if (index >= in.n_dims()) {
 		// compressing an non-existent dimension...
-		tensor<T>* ans = new tensor<T>(in);
-		return ans;
+		return new tensor<T>(in);
 	}
 	size_t cline;
 	size_t below_dim;
@@ -359,8 +355,8 @@ tensor<T>* ioperation<T>::compress_op (
 
 	size_t above_dim = total / (below_dim*cline);
 	// copy over data
-	T* src_data = in.raw_data;
-	T* dest_data = ans->raw_data;
+	T* dest_data = this->get_raw(*ans);
+	const T* src_data = this->get_raw(in);
 	for (size_t i = 0; i < above_dim; i++) {
 		for (size_t j = 0; j < below_dim; j++) {
 			// apply compression to each element along cline dimension
@@ -381,81 +377,12 @@ template <typename T>
 void ioperation<T>::update (tensor_shape candidate_shape) {
 	// no point in propagating if the shape is undefined
 	if (0 != candidate_shape.n_dims()) {
-		this->out.set_shape(candidate_shape);
+		this->_out.set_shape(candidate_shape);
 		// propagate to consumers
 		for (ioperation<T>* consumer : this->consumers) {
 			consumer->shape_eval();
 		}
 	}
-}
-
-// Elementary Operations
-
-template <typename T>
-void elementary<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	this->set_gradient(der(args));
-	safety_ref = this->grad;
-}
-
-template <typename T>
-EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new elementary(args, op, der, name));
-}
-
-template <typename T>
-void elementary<T>::replace (ivariable<T>* food, VAR_PTR<T> newfood) {
-	for (size_t i = 0; i < args.size(); i++) {
-		if (args[i].get() == food) args[i] = newfood;
-	}
-}
-
-template <typename T>
-void elementary<T>::shape_eval (void) {
-	auto it = args.begin();
-	tensor_shape first = this->get_eval(*it).get_shape();
-	if (first.is_fully_defined()) {
-		for (it++; args.end() != it; it++) {
-			tensor_shape ts = this->get_eval(*it).get_shape();
-			assert(first.is_compatible_with(ts) ||
-				1 == ts.n_dims() || 1 == first.n_dims());
-			if (ts.n_dims() > first.n_dims()) first = ts;
-		}
-		this->update(first);
-	}
-}
-
-template <typename T>
-elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
-		std::function<void(T&, T)> op,
-		ELEMENTARY_DERIV<T> der,
-		std::string name) : op(op), der(der), args(args) {
-	this->name = name;
-	for (VAR_PTR<T> a : args) {
-		this->consume(*(a.get()));
-	}
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
-}
-
-template <typename T>
-const tensor<T>& elementary<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	auto it = args.begin();
-	if (1 == args.size()) {
-		this->out = tensor<T>(0);
-	} else {
-		this->out = (*it)->eval();
-		it++;
-	}
-	while (args.end() != it) {
-		this->elem_op(this->out, (*it)->eval(), op);
-		it++;
-	}
-	return this->out;
 }
 
 }

@@ -18,8 +18,7 @@
 #ifndef operation_hpp
 #define operation_hpp
 
-#include "variable.hpp"
-#include "shared_ops.hpp"
+#include "graph/variable/variable.hpp"
 
 namespace nnet {
 
@@ -42,11 +41,11 @@ class ioperation : public ivariable<T> {
 		virtual void set_gradient (VAR_PTR<T> g) {
 			if (nullptr == grad && nullptr != g) {
 				grad = g;
-				grad->integral = this->self_ref;
+				grad->integral = this->_self_ref;
 			}
 		}
 
-		// TODO: find a way to move these functions out of here
+		// TODO: find a way to move shape evaluation functions out of here
 		// utility shape operations
 		tensor_shape get_element_shape (
 			const tensor<T>& t1,
@@ -105,15 +104,10 @@ class ioperation : public ivariable<T> {
 			signed index,
 			std::function<T(const std::vector<T>&)> collector) const;
 
-		std::vector<T> get_vec (const tensor<T>& in) const {
-			T* raw = in.raw_data;
-			size_t limit = in.n_elems();
-			return std::vector<T>(raw, raw + limit);
-		}
 		// share friend priviledge with ivariable and tensor to descendants
 		// retrieve the last evaluated tensor
 		tensor<T>& get_eval (VAR_PTR<T> var) const {
-			return var->out;
+			return var->_out;
 		}
 
 		// clears input
@@ -124,6 +118,7 @@ class ioperation : public ivariable<T> {
 		// note keeping: record self as consumer of food
 		void consume (ivariable<T>& food) {
 			food.consumers.emplace(this);
+			this->_leaves.insert(food._leaves.begin(), food._leaves.end());
 		}
 
 		// changes input
@@ -154,42 +149,8 @@ class ioperation : public ivariable<T> {
 		}
 };
 
-template <typename T>
-using ELEMENTARY_DERIV = std::function<VAR_PTR<T>(std::vector<VAR_PTR<T> >)>;
-
-template <typename T>
-class elementary : public ioperation<T> {
-	protected:
-		std::vector<VAR_PTR<T> > args; // order matters
-		std::function<void(T&, T)> op;
-		ELEMENTARY_DERIV<T> der;
-
-		virtual void make_gradient (VAR_PTR<T>& safety_ref);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
-		virtual void shape_eval (void);
-		elementary (std::vector<VAR_PTR<T> > args,
-					std::function<void(T&, T)> op,
-					ELEMENTARY_DERIV<T> der,
-					std::string name = "");
-
-	public:
-		static VAR_PTR<T> make (std::vector<VAR_PTR<T> > args,
-								std::function<void(T&, T)> op,
-								ELEMENTARY_DERIV<T> der,
-								std::string name = "") {
-			return ivariable<T>::make_shared(new elementary(args, op, der, name));
-		}
-
-		std::shared_ptr<elementary<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<elementary<T>, ievoker<T> >(clone_impl(name));
-		}
-
-		virtual const tensor<T>& eval (void);
-};
-
 }
 
-#include "../../src/variable/operation.tpp"
+#include "../../../src/graph/operation/ioperation.ipp"
 
 #endif /* operation_hpp */

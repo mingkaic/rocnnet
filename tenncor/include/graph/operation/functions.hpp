@@ -10,7 +10,7 @@
 #ifndef functions_ops
 #define functions_ops
 
-#include "elementary.hpp"
+#include "graph/operation/elementary.hpp"
 
 namespace nnet {
 

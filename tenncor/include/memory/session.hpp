@@ -82,7 +82,6 @@ class session {
         template <typename T>
         void save_all (void); // TODO implement
 
-		// TODO implement shape eval and what to do when tensors aren't fully defined
         // controls whether to shape evaluate at object construction during runtime
         // potentially save space when running slow operations
         // this option is not always desirable since full shape definition is required for shape evaluation
