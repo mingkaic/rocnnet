@@ -23,8 +23,6 @@ void gd_net::train_set_up (void) {
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
-//		VAR_PTR<double> s = sigmoid(hypothesis);
-//		VAR_PTR<double> grad = s*(1.0-s);
 		VAR_PTR<double> grad = derive<double>::make(output, hypothesis);
 		prime_out.push(grad);
 	}

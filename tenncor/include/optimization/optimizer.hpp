@@ -16,6 +16,8 @@
 #define optimizer_hpp
 
 #include "update.hpp"
+#include "../graph/group.hpp"
+#include "../graph/operation/elementary.hpp"
 #include "../graph/operation/unary/derive.hpp"
 
 namespace nnet {

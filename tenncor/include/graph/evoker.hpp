@@ -43,8 +43,9 @@ class ievoker {
 
 	public:
 		virtual ~ievoker (void) {}
-		std::shared_ptr<ievoker<T> > clone (std::string name = "") { return clone_impl(name); }
+		EVOKER_PTR<T> clone (std::string name = "") { return clone_impl(name); }
 
+		// TODO consider changing return type to a pointer (shared)
 		virtual const tensor<T>& eval (void) = 0;
 };
 

@@ -66,6 +66,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	optimizer->ignore(next_action_scores);
 	GRAD_MAP<double> gradients = optimizer->compute_grad(prediction_error);
 
+	// clip the gradients to reduce outliers
 	for (auto it = gradients.begin(); gradients.end() != it; it++) {
 		VAR_PTR<double> var = (*it).first;
 		VAR_PTR<double> grad = (*it).second;
@@ -89,8 +90,8 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dwt);
 		EVOKER_PTR<double> b_evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbt);
-		update_ops.push_back(w_evok);
-		update_ops.push_back(b_evok);
+		net_train.add(w_evok);
+		net_train.add(b_evok);
 	}
 }
 
@@ -253,9 +254,7 @@ void dq_net::train (std::vector<std::vector<double> > train_batch) {
 		train_op->eval();
 
 		// update q nets
-		for (EVOKER_PTR<double> update : update_ops) {
-			update->eval();
-		}
+		net_train.eval();
 
 		iteration++;
 	}

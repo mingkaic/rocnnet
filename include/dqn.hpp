@@ -73,8 +73,8 @@ class dq_net {
 		VAR_PTR<double> predicted_actions;
 		VAR_PTR<double> prediction_error;
 		// update
-		nnet::EVOKER_PTR<double> train_op;
-		std::vector<EVOKER_PTR<double> > update_ops;
+		EVOKER_PTR<double> train_op;
+		group<double> net_train;
 
 		void variable_setup (nnet::OPTIMIZER<double> optimizer);
 		double get_random (void);
