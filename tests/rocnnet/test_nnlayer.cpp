@@ -200,6 +200,63 @@ TEST(PERCEPTRON, gd_train) {
 }
 
 
+// test with gradient descent optimizer
+TEST(PERCEPTRON, gd_optimizer_train) {
+	nnet::session& sess = nnet::session::get_instance();
+	sess.seed_rand_eng(1);
+	size_t n_in = 10;
+	size_t n_out = n_in/2;
+	size_t n_hidden = 8;
+	std::vector<IN_PAIR> hiddens = {
+		// use same sigmoid in static memory once deep copy is established
+		IN_PAIR(n_hidden, nnet::sigmoid<double>),
+		IN_PAIR(n_hidden, nnet::sigmoid<double>),
+		IN_PAIR(n_out, nnet::sigmoid<double>),
+	};
+	size_t batch_size = 1;
+	size_t test_size = 100;
+	size_t train_size = 10000;
+
+	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::gd_optimizer>(0.001);
+	nnet::gd_net net(n_in, hiddens, optimizer);
+	nnet::PLACEHOLDER_PTR<double> fanin = nnet::placeholder<double>::make((std::vector<size_t>{n_in, batch_size}), "fanin");
+	nnet::VAR_PTR<double> fanout = net(fanin);
+	EXPOSE_PTR exposeout = nnet::expose<double>::make(fanout);
+	sess.initialize_all<double>();
+
+	std::vector<VECS> samples;
+	for (size_t i = 0; i < train_size; i++) {
+		std::cout << "training " << i << "\n";
+		samples.clear();
+		fill_binary_samples(samples, n_in, batch_size);
+		net.train(samples[0].first, samples[0].second);
+	}
+
+	size_t fails = 0;
+	double err = 0;
+	for (size_t i = 0; i < test_size; i++) {
+		std::cout << "testing " << i << "\n";
+		samples.clear();
+		fill_binary_samples(samples, n_in, test_size);
+
+		*fanin = samples[0].first;
+		std::vector<double> res = exposeout->get_raw();
+		std::vector<double> expect = samples[0].second;
+		for (size_t i = 0; i < res.size(); i++) {
+			err += std::abs(expect[i] - res[i]);
+			if (expect[i] != std::round(res[i])) {
+				fails++;
+			}
+		}
+	}
+	double successrate = 1.0-(double)fails/(test_size*n_out);
+	err /= (test_size*n_out);
+	ASSERT_GE(successrate, 0.80); // TODO increase to 90
+	std::cout << "average err: " << err << std::endl;
+	std::cout << "success rate: " << successrate << std::endl;
+}
+
+
 // test with batch gradient descent
 TEST(PERCEPTRON, bgd_train) {
 	nnet::session& sess = nnet::session::get_instance();

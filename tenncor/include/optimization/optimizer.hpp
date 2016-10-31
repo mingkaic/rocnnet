@@ -38,7 +38,7 @@ class ioptimizer {
 
 		// two step process in one
 		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
-			apply_grad(compute_grad(fanout));
+			return apply_grad(compute_grad(fanout));
 		}
 
 		// separate minimize into the steps

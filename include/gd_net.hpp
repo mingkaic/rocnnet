@@ -32,15 +32,16 @@ class gd_net : public ml_perceptron {
 		PLACEHOLDER_PTR<double> expected_out = nullptr;
 		PLACEHOLDER_PTR<double> batch_size = nullptr;
 		// output
-		std::vector<EVOKER_PTR<double> > updates;
+		EVOKER_PTR<double> updates;
 		EXPOSE_PTR record = nullptr;
 
-		void train_set_up (void);
+		void train_set_up (nnet::OPTIMIZER<double> optimizer);
 		gd_net (const gd_net& net, std::string scope);
 
 	public:
 		gd_net (size_t n_input,
 			std::vector<IN_PAIR> hiddens,
+			nnet::OPTIMIZER<double> optimizer = nullptr,
 			std::string scope = "MLP");
 		virtual ~gd_net (void) {}
 		virtual gd_net* clone (std::string scope = "MLP_COPY") { return new gd_net(*this, scope); }
