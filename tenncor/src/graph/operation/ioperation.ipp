@@ -181,7 +181,7 @@ void ioperation<T>::elem_op (
 
 template <typename T>
 tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
-	std::vector<size_t> tv = in._out.get_shape().as_list();
+	std::vector<size_t> tv = in. out_.get_shape().as_list();
 	size_t n_col = tv[0];
 	size_t len_trace;
 	if (tv[0] > tv[1]) {
@@ -192,7 +192,7 @@ tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
 		tv[1] = 1;
 	}
 	tensor<T>* ans = new tensor<T>(tv);
-	T* inraw = this->get_raw(in._out);
+	T* inraw = this->get_raw(in. out_);
 	T* outraw = this->get_raw(*ans);
 	for (size_t i = 0; i < len_trace; i++) {
 		outraw[i] = inraw[i * (1 + n_col)];
@@ -377,7 +377,7 @@ template <typename T>
 void ioperation<T>::update (tensor_shape candidate_shape) {
 	// no point in propagating if the shape is undefined
 	if (0 != candidate_shape.n_dims()) {
-		this->_out.set_shape(candidate_shape);
+		this-> out_.set_shape(candidate_shape);
 		// propagate to consumers
 		for (ioperation<T>* consumer : this->consumers) {
 			consumer->shape_eval();

@@ -38,7 +38,7 @@ using WEAK_SET = std::unordered_set<std::weak_ptr<T>, weak_ptr_hash<T>, weak_ptr
 
 class formatter {
 	private:
-		std::stringstream _stream;
+		std::stringstream stream_;
 
 		formatter(const formatter &);
 		formatter & operator = (formatter &);
@@ -52,20 +52,20 @@ class formatter {
 
 		template <typename T>
 		formatter & operator << (const T & value) {
-			_stream << value;
+			stream_ << value;
 			return *this;
 		}
 
 		std::string str() const {
-			return _stream.str();
+			return stream_.str();
 		}
 
 		operator std::string () const {
-			return _stream.str();
+			return stream_.str();
 		}
 
 		std::string operator >> (convert_to_string) {
-			return _stream.str();
+			return stream_.str();
 		}
 };
 

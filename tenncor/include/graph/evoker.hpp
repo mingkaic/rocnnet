@@ -36,8 +36,8 @@ using EVOKER_PTR = std::shared_ptr<ievoker<T> >;
 template <typename T>
 class ievoker {
 	protected:
-		virtual T* get_raw (tensor<T>& t) const { return t._raw_data; }
-		virtual const T* get_raw (const tensor<T>& t) const { return t._raw_data; }
+		virtual T* get_raw (tensor<T>& t) const { return t.raw_data_; }
+		virtual const T* get_raw (const tensor<T>& t) const { return t.raw_data_; }
 
 		virtual EVOKER_PTR<T> clone_impl (std::string name) = 0;
 

@@ -15,7 +15,7 @@ namespace nnet {
 template <typename T>
 void const_init<T>::operator () (tensor<T>& in) {
 	this->delegate_task(in, [this](T* raw_data, size_t size) {
-		std::fill(raw_data, raw_data+size, _value);
+		std::fill(raw_data, raw_data+size, value_);
 	});
 }
 
@@ -23,7 +23,7 @@ template <typename T>
 void random_uniform<T>::operator () (tensor<T>& in) {
 	this->delegate_task(in, [this](T* raw_data, size_t size) {
 		for (size_t i = 0; i < size; i++) {
-			raw_data[i] = _distribution(session::get_generator());
+			raw_data[i] =  distribution_(session::get_generator());
 		}
 	});
 }
@@ -34,7 +34,7 @@ template <typename T>
 void ivariable<T>::copy (
 	ivariable<T> const & other,
 	std::string name) {
-	_out = other._out;
+	 out_ = other. out_;
 	if (0 == name.size()) {
 		name = other.name+"_cpy";
 	}
@@ -71,14 +71,14 @@ template <typename T>
 class ivariable<T>::gradient_leaf : public ivar_init<T> {
 	private:
 		gradient_leaf (WEAK_VAR_PTR<T> integral) {
-			this->_out.set_shape(std::vector<size_t>{1});
-			this->_out.allocate(std::make_shared<memory_alloc>());
+			this-> out_.set_shape(std::vector<size_t>{1});
+			this-> out_.allocate(std::make_shared<memory_alloc>());
 			this->is_init = true;
 
 			this->name = "leaf<" + integral.lock()->get_name() + ">";
 			this->integral = integral;
 			typename ivar_init<T>::open_init* assigner;
-			this->init = assigner = new typename ivar_init<T>::open_init(this->_out);
+			this->init = assigner = new typename ivar_init<T>::open_init(this-> out_);
 			*assigner = std::vector<T>{0}; // initialize as zero
 		}
 
@@ -95,8 +95,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 		virtual ~gradient_leaf (void) {}
 
 		virtual void activate (VAR_PTR<T> active) {
-			if (false == this->_out.is_alloc()) {
-				this->_out.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
+			if (false == this-> out_.is_alloc()) {
+				this-> out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
 			}
 			// perform matrix calculus when necessary
 			// when tensor variables can encasulate other variables
@@ -109,8 +109,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 		}
 
 		virtual void deactivate (void) {
-			if (false == this->_out.is_alloc()) {
-				this->_out.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
+			if (false == this-> out_.is_alloc()) {
+				this-> out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
 			}
 			// when tensor variables can encasulate other variables
 			// e.g.: A = [x y] where dA/dx is possible

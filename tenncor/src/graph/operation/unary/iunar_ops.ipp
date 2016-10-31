@@ -64,9 +64,9 @@ const tensor <T> &iunar_elem_ops<T>::eval(void) {
 	assert(nullptr != this->var);
 	const tensor<T> &evar = this->var->eval();
 	tensor<T> *eptr = this->util_op(evar, get_op());
-	this->_out = *eptr;
+	this-> out_ = *eptr;
 	delete eptr;
-	return this->_out;
+	return this-> out_;
 }
 
 }

@@ -17,16 +17,16 @@ namespace nnet {
 template <typename T>
 class group : public ievoker<T> {
 	private:
-		std::vector<EVOKER_PTR<T> > _acts;
+		std::vector<EVOKER_PTR<T> > acts_;
 
 	protected:
 		virtual EVOKER_PTR<T> clone_impl (std::string name) {
-			return std::shared_ptr<group<T> >(new group(_acts));
+			return std::shared_ptr<group<T> >(new group(acts_));
 		}
 
 	public:
 		group (void) {}
-		group (std::vector<EVOKER_PTR<T> > acts) : _acts(acts) {}
+		group (std::vector<EVOKER_PTR<T> > acts) : acts_(acts) {}
 		virtual ~group (void) {}
 
 		std::shared_ptr<group<T> > clone (std::string name = "") {
@@ -34,12 +34,12 @@ class group : public ievoker<T> {
 		}
 
 		void add (EVOKER_PTR<T> evok) {
-			_acts.push_back(evok);
+			acts_.push_back(evok);
 		}
 
 		virtual const tensor<T>& eval (void) {
 			const tensor<T>* ptr;
-			for (EVOKER_PTR<T> evok : _acts) {
+			for (EVOKER_PTR<T> evok : acts_) {
 				ptr = &(evok->eval());
 			}
 			return *ptr;

@@ -41,7 +41,7 @@ class ioperation : public ivariable<T> {
 		virtual void set_gradient (VAR_PTR<T> g) {
 			if (nullptr == grad && nullptr != g) {
 				grad = g;
-				grad->integral = this->_self_ref;
+				grad->integral = this-> self_ref_;
 			}
 		}
 
@@ -107,7 +107,7 @@ class ioperation : public ivariable<T> {
 		// share friend priviledge with ivariable and tensor to descendants
 		// retrieve the last evaluated tensor
 		tensor<T>& get_eval (VAR_PTR<T> var) const {
-			return var->_out;
+			return var-> out_;
 		}
 
 		// clears input
@@ -118,7 +118,7 @@ class ioperation : public ivariable<T> {
 		// note keeping: record self as consumer of food
 		void consume (ivariable<T>& food) {
 			food.consumers.emplace(this);
-			this->_leaves.insert(food._leaves.begin(), food._leaves.end());
+			this-> leaves_.insert(food. leaves_.begin(), food. leaves_.end());
 		}
 
 		// changes input

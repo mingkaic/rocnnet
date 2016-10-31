@@ -68,20 +68,20 @@ TEST(DIMENSION, merge_with) {
 	nnet::dimension d00 = d0.merge_with(d0);
 	nnet::dimension d01 = d0.merge_with(d1);
 	nnet::dimension d02 = d0.merge_with(d2);
-	EXPECT_EQ(d00._value, d0._value);
-	EXPECT_EQ(d01._value, d1._value);
-	EXPECT_EQ(d02._value, d2._value);
+	EXPECT_EQ(d00.value_, d0.value_);
+	EXPECT_EQ(d01.value_, d1.value_);
+	EXPECT_EQ(d02.value_, d2.value_);
 
 	nnet::dimension d10 = d1.merge_with(d0);
 	nnet::dimension d11 = d1.merge_with(d1);
-	EXPECT_EQ(d10._value, d1._value);
-	EXPECT_EQ(d11._value, d1._value);
+	EXPECT_EQ(d10.value_, d1.value_);
+	EXPECT_EQ(d11.value_, d1.value_);
 	EXPECT_THROW({ d1.merge_with(d2); }, std::logic_error);
 
 	nnet::dimension d20 = d2.merge_with(d0);
 	nnet::dimension d22 = d2.merge_with(d2);
-	EXPECT_EQ(d20._value, d2._value);
-	EXPECT_EQ(d22._value, d2._value);
+	EXPECT_EQ(d20.value_, d2.value_);
+	EXPECT_EQ(d22.value_, d2.value_);
 	ASSERT_THROW({ d2.merge_with(d1); }, std::logic_error);
 }
 
@@ -194,7 +194,7 @@ TEST(TENSORSHAPE, dims) {
 	std::vector<nnet::dimension> vout = ts.dims();
 	ASSERT_EQ(v.size(), vout.size());
 	for (int i = 0; i < v.size(); i++) {
-		EXPECT_EQ(v[i], vout[i]._value);
+		EXPECT_EQ(v[i], vout[i].value_);
 	}
 	ASSERT_EQ(incom_ts.dims().size(), 0);
 }

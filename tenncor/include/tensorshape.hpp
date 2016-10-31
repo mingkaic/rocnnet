@@ -19,10 +19,10 @@ namespace nnet {
 
 // zero dimension denotes unknown
 struct dimension {
-	size_t _value;
+	size_t value_;
 
-	dimension (size_t value) : _value(value) {}
-	explicit operator size_t() { return _value; }
+	dimension (size_t value) : value_(value) {}
+	explicit operator size_t() { return value_; }
 
 	dimension merge_with (const dimension& other) const;
 	bool is_compatible_with (const dimension& other) const;
@@ -31,7 +31,7 @@ struct dimension {
 
 class tensor_shape {
 	private:
-		std::vector<dimension> _dimensions;
+		std::vector<dimension>  dimensions_;
 
 	public:
 		tensor_shape (void) {}

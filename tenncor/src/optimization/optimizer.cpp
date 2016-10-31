@@ -12,15 +12,8 @@
 
 namespace nnet {
 
-// update variables not covered by ignore
+// updates position on error manifold
 EVOKER_PTR<double> gd_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
-	// assume that input fanout is some cost function J
-	// gradient of J[v] gives delta J[v] for each variable v
-	// including placeholders. (ignore placeholders and update variables only)
-
-	// update by equation var_new = var_old - learning * delta(J(var_old))
-	// for each weight/bias var in graph
-
 	std::shared_ptr<group<double> > g_ptr = std::make_shared<group<double> >();
 
 	for (auto it = gradients.begin(); gradients.end() != it; it++) {
@@ -28,15 +21,28 @@ EVOKER_PTR<double> gd_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
 		VAR_PTR<double> delta = (*it).second;
 
 		EVOKER_PTR<double> evok = std::make_shared<update_sub<double> >(
-			std::static_pointer_cast<variable<double>, ivariable<double> >(old_var), this->learning_rate * delta);
+			std::static_pointer_cast<variable<double>, ivariable<double> >(old_var), this->learning_rate_ * delta);
 		g_ptr->add(evok);
 	}
 
 	return g_ptr;
 }
 
-// update variables not covered by ignore
+// MOMENTUM BASED OPTIMIZATION
+// updates velocity of positional update on error manifold
+
+EVOKER_PTR<double> ada_delta_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	
+	return nullptr;
+}
+
+EVOKER_PTR<double> ada_grad_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	
+	return nullptr;
+}
+
 EVOKER_PTR<double> rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	
 	return nullptr;
 }
 

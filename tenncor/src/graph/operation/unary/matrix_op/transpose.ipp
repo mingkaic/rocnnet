@@ -46,9 +46,9 @@ const tensor<T>& transpose<T>::eval (void) {
 	assert(nullptr != this->var);
 	const tensor<T>& in = this->var->eval();
 	tensor<T>* ans = this->transpose_op(in);
-	this->_out = *ans;
+	this-> out_ = *ans;
 	delete ans;
-	return this->_out;
+	return this-> out_;
 }
 
 }

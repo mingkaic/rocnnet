@@ -32,7 +32,7 @@ update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src,
 
 template <typename T>
 const tensor<T>& update<T>::eval (void) {
-	tensor<T>& out = dest->_out;
+	tensor<T>& out = dest-> out_;
 	const tensor<T>& in = src->eval();
 	assert(out.is_same_size(in));
 

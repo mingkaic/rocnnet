@@ -21,7 +21,7 @@ class initializer {
 	protected:
 		void delegate_task(tensor<T>& value,
 						   std::function<void(T*, size_t)> op) {
-			op(value._raw_data, value.n_elems());
+			op(value.raw_data_, value.n_elems());
 		}
 
 	public:
@@ -34,30 +34,30 @@ class initializer {
 template <typename T>
 class const_init : public initializer<T> {
 	private:
-		T _value;
+		T value_;
 
 	public:
-		const_init (T value) : _value(value) {}
+		const_init (T value) : value_(value) {}
 
 		virtual void operator () (tensor<T>& in);
 		virtual initializer<T>* clone (void) {
-			return new const_init(_value);
+			return new const_init(value_);
 		}
 };
 
 template <typename T>
 class random_uniform : public initializer<T> {
 	private:
-		std::uniform_real_distribution<T> _distribution;
+		std::uniform_real_distribution<T>  distribution_;
 
 	public:
 		random_uniform (T min, T max) {
-			_distribution = std::uniform_real_distribution<T>(min, max);
+			 distribution_ = std::uniform_real_distribution<T>(min, max);
 		}
 
 		virtual void operator () (tensor<T>& in);
 		virtual initializer<T>* clone (void) {
-			return new random_uniform(_distribution.min(), _distribution.max());
+			return new random_uniform( distribution_.min(),  distribution_.max());
 		}
 };
 
@@ -82,14 +82,14 @@ template <typename T>
 class ivariable : public ievoker<T> {
 	protected:
 		// weak pointer to this
-		WEAK_VAR_PTR<T> _self_ref;
+		WEAK_VAR_PTR<T>  self_ref_;
 
-		size_t _grad_order = 0; // TODO IMPLEMENT ON GRADIENTS TO DISTINGUISH INTEGRALS AND GRADS
-		tensor<T> _out;
+		size_t grad_order_ = 0; // TODO IMPLEMENT ON GRADIENTS TO DISTINGUISH INTEGRALS AND GRADS
+		tensor<T>  out_;
 		std::string name;
 		WEAK_VAR_PTR<T> integral;
 
-		nnutils::WEAK_SET<ivariable<T> > _leaves;
+		nnutils::WEAK_SET<ivariable<T> > leaves_;
 		// TODO make weak
 		std::unordered_set<ioperation<T>*> consumers; // next
 
@@ -102,9 +102,9 @@ class ivariable : public ievoker<T> {
 
 		static VAR_PTR<T> make_shared(ivariable<T>* ptr, bool add_leaf = false) {
 			VAR_PTR<T> inst = VAR_PTR<T>(ptr);
-			inst->_self_ref = inst;
+			inst-> self_ref_ = inst;
 			if (add_leaf) {
-				inst->_leaves.insert(inst);
+				inst-> leaves_.insert(inst);
 			}
 			return inst;
 		}
@@ -132,7 +132,7 @@ class ivariable : public ievoker<T> {
 		}
 
 		std::string get_name (void) const { return name; }
-		virtual tensor_shape get_shape (void) const { return this->_out.get_shape(); }
+		virtual tensor_shape get_shape (void) const { return this-> out_.get_shape(); }
 
 		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 
@@ -171,14 +171,14 @@ class ivar_init : public ivariable<T> {
 		WEAK_VAR_PTR<T> grad;
 
 		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			this->integral = this->grad = this->_self_ref;
-			safety_ref = this->_self_ref.lock();
+			this->integral = this->grad = this-> self_ref_;
+			safety_ref = this-> self_ref_.lock();
 		}
 
 		virtual void set_gradient (VAR_PTR<T> g) {
 			if (grad.expired() && nullptr != g) {
 				grad = g;
-				g->integral = this->_self_ref;
+				g->integral = this-> self_ref_;
 			}
 		}
 
@@ -207,7 +207,7 @@ class ivar_init : public ivariable<T> {
 		bool can_init (void) const { return init != nullptr; }
 		virtual const tensor<T>& eval (void) {
 			assert(is_init);
-			return this->_out;
+			return this-> out_;
 		}
 
 		virtual VAR_PTR<T> get_gradient (void) {

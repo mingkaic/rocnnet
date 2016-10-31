@@ -30,14 +30,14 @@ template <typename T>
 class tensor {
 	private:
 		// meta data (not as template)
-		tensor_shape _allowed_shape;
-		tensor_shape _alloc_shape;
-		std::shared_ptr<iallocator> _alloc = nullptr;
+		tensor_shape allowed_shape_;
+		tensor_shape alloc_shape_;
+		std::shared_ptr<iallocator> alloc_ = nullptr;
 
 		void copy (const tensor<T>& other);
 
 	protected:
-		T* _raw_data = nullptr; // TODO make unique at some point
+		T* raw_data_ = nullptr; // TODO make unique at some point
 
 		friend class ievoker<T>;
 		friend class initializer<T>;

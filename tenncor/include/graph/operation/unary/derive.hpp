@@ -20,12 +20,12 @@ namespace nnet {
 template <typename T>
 class derive : public iunar_ops<T> {
 	private:
-		VAR_PTR<T> _over = nullptr;
+		VAR_PTR<T> over_ = nullptr;
 
 	protected:
 		derive (ivariable<T>& var, std::string name) { this->copy(var, name); } // copy constructor
 		derive (VAR_PTR<T> func, VAR_PTR<T> over) {
-			this->_over = over;
+			this->over_ = over;
 			this->init(func);
 		}
 

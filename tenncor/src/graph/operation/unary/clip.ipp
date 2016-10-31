@@ -29,7 +29,7 @@ EVOKER_PTR<T> clip_by_value<T>::clone_impl (std::string name) {
 template <typename T>
 std::function<T(T)> clip_by_norm<T>::get_op (void) {
 	T l2norm;
-	this->template util_op<double>(l2norm, this->_out, [](T& out, T in) {
+	this->template util_op<double>(l2norm, this-> out_, [](T& out, T in) {
 		out += sqrt(in);
 	});
 	l2norm = sqrt(l2norm);
