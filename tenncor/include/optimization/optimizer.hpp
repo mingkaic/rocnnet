@@ -93,6 +93,7 @@ class gd_optimizer : public ioptimizer<double> {
 
 // MOMENTUM BASED OPTIMIZATION
 // overview: http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+// updates velocity of positional update on error manifold
 
 // Standard momentum:
 // 1. velocity_t = discount * velocity_(t-1) - learning * J'[v]
@@ -144,16 +145,13 @@ class ada_grad_optimizer : public gd_optimizer {
 };
 
 // Root Mean Square Propagation Algorithm
+// rms_delta = J'(v)_t
+// rms_t = (1 - discount) * rms_t-1 + discount * rms_delta^2
+// delta(var) = v_t = learning * rms_delta / rms_t
 
-// r_t = (1 - discount) * (J'(v))^2 + discount * r_(t-1)
-// delta(var) = v_t = learning * J'(v) / r_t
+// there maybe momentum implementation to...
+// change to rms_delta
 
-// Nestrov approach:
-// delta(var) = momentum * v_t-1
-// rms_t = (1 - discount) * (J'(v))^2 + discount * rms_(t-1)
-// delta(var) = v_t = momentum * v_(t-1) + learning * J'(v) / sqrt(rms_t)
-
-// updates velocity of positional update on error manifold
 class rms_prop_optimizer : public gd_optimizer {
 	private:
 		// input variables

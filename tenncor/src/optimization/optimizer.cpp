@@ -42,6 +42,18 @@ EVOKER_PTR<double> ada_grad_optimizer::apply_grad (GRAD_MAP<double>& gradients) 
 }
 
 EVOKER_PTR<double> rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	for (auto it = gradients.begin(); gradients.end() != it; it++) {
+		VAR_PTR<double> old_var = (*it).first;
+		VAR_PTR<double> rms_delta = (*it).second;
+		
+		// additional optimization?
+		
+		//VAR_PTR<double> rms = variable<double>::make(rms_delta);
+		// std::make_shared<update<double> >(rms, rms_delta, 
+		//	[this](double& out, double in) { rms = (1-discount) * rms + discount * rms_delta * rms_delta; }
+	}
+	
+	// plug into gd_optimizer::apply_gradient
 	
 	return nullptr;
 }
