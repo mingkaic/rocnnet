@@ -37,7 +37,6 @@ template <typename T>
 class ioptimizer {
 	protected:
 		nnutils::WEAK_SET<ivariable<T> > ignore_set_;
-		double learning_rate_;
 
 	public:
 		virtual ~ioptimizer (void) {}
@@ -46,7 +45,8 @@ class ioptimizer {
 
 		// two step process in one
 		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
-			return apply_grad(compute_grad(fanout));
+			GRAD_MAP<T> buffer = compute_grad(fanout);
+			return apply_grad(buffer);
 		}
 
 		// separate minimize into 2 steps:
@@ -80,11 +80,11 @@ using OPTIMIZER = std::shared_ptr<ioptimizer<T> >;
 // where delta(var) = learning * J'[var_(t-1)]
 
 class gd_optimizer : public ioptimizer<double> {
+	private:
+		double learning_rate_;
+
 	public:
-		gd_optimizer (double learning_rate,
-					size_t mini_batch_size = 1) :) {
-			this->learning_rate_ = learning_rate;
-		}
+		gd_optimizer (double learning_rate) : learning_rate_(learning_rate) {}
 
 		// inherits compute_grad from ioptimizer
 
@@ -120,9 +120,7 @@ class ada_delta_optimizer : public gd_optimizer {
 		ada_delta_optimizer (double learning_rate,
 							double rho = 0.95,
 							double epsilon = std::numeric_limits<double>::epsilon()) :
-			rho_(rho), epsilon_(epsilon) {
-			this->learning_rate_ = learning_rate;
-		}
+			gd_optimizer(learning_rate), rho_(rho), epsilon_(epsilon) {}
 
 		// inherits compute_grad from ioptimizer
 
@@ -135,9 +133,8 @@ class ada_grad_optimizer : public gd_optimizer {
 
 	public:
 		ada_grad_optimizer (double learning_rate,
-							double init_accum = 0.1,) : init_accum_(init_accum) {
-			this->learning_rate_ = learning_rate;
-		}
+							double init_accum = 0.1) :
+				gd_optimizer(learning_rate), init_accum_(init_accum) {}
 
 		// inherits compute_grad from ioptimizer
 
@@ -159,17 +156,15 @@ class rms_prop_optimizer : public gd_optimizer {
 		double momentum_;
 		double epsilon_; // for adaptive learning rates
 
-		// internal variables
-		double _rms;
-
 	public:
 		rms_prop_optimizer (double learning_rate,
 							double discount_factor = 0.9,
 							double momentum = 0.0,
 							double epsilon = std::numeric_limits<double>::epsilon()) :
-			_discount_factor(discount_factor), momentum_(momentum), epsilon_(epsilon) {
-			this->learning_rate_ = learning_rate;
-		}
+				gd_optimizer(learning_rate),
+				discount_factor_(discount_factor),
+				momentum_(momentum),
+				epsilon_(epsilon) {}
 
 		// inherits compute_grad from ioptimizer
 

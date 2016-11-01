@@ -98,6 +98,7 @@ tensor_shape ioperation<T>::get_matrix_shape (
 	tensor_shape ts_out;
 	tensor_shape t1s = t1.get_shape();
 	tensor_shape t2s = t2.get_shape();
+
 	if (2 >= t1s.n_dims() &&
 		2 >= t2s.n_dims()) {
 		std::vector<size_t> al = t1s.as_list();

@@ -42,19 +42,32 @@ EVOKER_PTR<double> ada_grad_optimizer::apply_grad (GRAD_MAP<double>& gradients) 
 }
 
 EVOKER_PTR<double> rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	// declare order update here
+	// TODO: make ordered update group (first then...)
+	GRAD_MAP<double> intermediates;
+
 	for (auto it = gradients.begin(); gradients.end() != it; it++) {
 		VAR_PTR<double> old_var = (*it).first;
 		VAR_PTR<double> rms_delta = (*it).second;
 		
 		// additional optimization?
-		
-		//VAR_PTR<double> rms = variable<double>::make(rms_delta);
-		// std::make_shared<update<double> >(rms, rms_delta, 
-		//	[this](double& out, double in) { rms = (1-discount) * rms + discount * rms_delta * rms_delta; }
+
+		// TODO: determine initial value?
+		VAR_PTR<double> rms = variable<double>::make(1);
+		intermediates[old_var] = rms_delta / rms;
+
+		EVOKER_PTR<double> evok = std::make_shared<update<double> >(
+			std::static_pointer_cast<variable<double> >(rms), rms_delta,
+			[this](double& out, double in) {
+				out = (1-discount_factor_) * out + discount_factor_ * in * in;
+			});
+		// insert evok to order update
 	}
-	
-	// plug into gd_optimizer::apply_gradient
-	
+
+	EVOKER_PTR<double> wb_update = gd_optimizer::apply_grad(intermediates);
+
+	// wrap evok then wb_update
+
 	return nullptr;
 }
 

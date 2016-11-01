@@ -7,6 +7,7 @@
 //
 
 #ifdef matop_hpp
+#include <iostream>
 
 namespace nnet {
 
@@ -14,9 +15,17 @@ namespace nnet {
 
 template <typename T>
 void matmul<T>::make_gradient (VAR_PTR<T>& safety_ref) {
+	// same as multiplication
+	// matmul'(f, g) = matmul(f',g) + matmul(f,g')
 	VAR_PTR<T> ga = this->a->get_gradient();
 	VAR_PTR<T> gb = this->b->get_gradient();
-	this->set_gradient(matmul<T>::make(ga, gb, transposeA, transposeB));
+	// force ga and ba to conform to their respective shapes
+	VAR_PTR<T> ea = extend<T>::make(ga, a);
+	VAR_PTR<T> eb = extend<T>::make(gb, b);
+
+	VAR_PTR<T> ma = matmul<T>::make(ea, b, transposeA, transposeB);
+	VAR_PTR<T> mb = matmul<T>::make(a, eb, transposeA, transposeB);
+	this->set_gradient(ma + mb);
 	safety_ref = this->grad;
 }
 

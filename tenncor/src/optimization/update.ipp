@@ -7,6 +7,7 @@
 //
 
 #ifdef update_hpp
+#include <iostream>
 
 namespace nnet {
 
@@ -34,6 +35,15 @@ template <typename T>
 const tensor<T>& update<T>::eval (void) {
 	tensor<T>& out = dest-> out_;
 	const tensor<T>& in = src->eval();
+
+	std::cout << "update shapes:\n" << dest->get_name() << ": ";
+	for (size_t s : out.get_shape().as_list()) {
+		std::cout << s << " ";
+	} std::cout << std::endl << src->get_name() << ": ";
+	for (size_t s : in.get_shape().as_list()) {
+		std::cout << s << " ";
+	} std::cout << std::endl;
+
 	assert(out.is_same_size(in));
 
 	T* old_data = this->get_raw(out);

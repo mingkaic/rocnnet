@@ -12,20 +12,23 @@
 
 namespace nnet {
 
-EVOKER_PTR<double> ad_hoc_gd_setup (VAR_PTR<double> diff_func,
-					VAR__PTR<double> batch_size,
+EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
+					VAR_PTR<double> train_in,
+					VAR_PTR<double> diff_func,
+					VAR_PTR<double> batch_size,
+					std::vector<HID_PAIR>& layers,
 					std::queue<VAR_PTR<double> >& layer_out,
 					std::stack<VAR_PTR<double> >& prime_out) {
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
-	VAR_PTR<double> err = diff * prime_out.top();
+	VAR_PTR<double> err = diff_func * prime_out.top();
 	prime_out.pop();
 	std::stack<VAR_PTR<double> > errs;
 	errs.push(err);
 
-	auto term = --this->layers.rend();
-	for (auto rit = this->layers.rbegin();
+	auto term = --layers.rend();
+	for (auto rit = layers.rbegin();
 		 term != rit; rit++) {
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
@@ -37,10 +40,10 @@ EVOKER_PTR<double> ad_hoc_gd_setup (VAR_PTR<double> diff_func,
 		errs.push(err);
 	}
 
-	VAR_PTR<double> learn_batch = learning_rate / PLACEHOLDER_TO_VAR<double>(batch_size);
-	EVOKER_PTR<double> updates = std::make_shared<group<double> >();
-	output = train_in;
-	for (HID_PAIR hp : this->layers) {
+	VAR_PTR<double> learn_batch = learning_rate / batch_size;
+	std::shared_ptr<group<double> > updates = std::make_shared<group<double> >();
+	VAR_PTR<double> output = train_in;
+	for (HID_PAIR hp : layers) {
 		err = errs.top();
 		errs.pop();
 
@@ -71,7 +74,7 @@ EVOKER_PTR<double> ad_hoc_gd_setup (VAR_PTR<double> diff_func,
 	return updates;
 }
 
-void gd_net::train_set_up (nnet::OPTIMIZER<double> optimizer) {
+void gd_net::train_set_up () {
 	// follow () operator for ml_perceptron except store hypothesis
 	std::queue<VAR_PTR<double> > layer_out;
 	std::stack<VAR_PTR<double> > prime_out;
@@ -91,10 +94,14 @@ void gd_net::train_set_up (nnet::OPTIMIZER<double> optimizer) {
 	VAR_PTR<double> diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
 	record = expose<double>::make(diff);
 
-	if (nullptr == optimizer) {
-		updates = ad_hoc_gd_setup (diff, batch_size, layer_out, prime_out);
+	if (nullptr == optimizer_) {
+		updates = ad_hoc_gd_setup (
+			learning_rate,
+			train_in, diff,
+			batch_size, this->layers,
+			layer_out, prime_out);
 	} else {
-		updates = optimizer->minimize(diff);
+		updates = optimizer_->minimize(diff);
 	}
 }
 
@@ -109,14 +116,14 @@ gd_net::gd_net (const gd_net& net, std::string scope) : ml_perceptron(net, scope
 
 gd_net::gd_net (size_t n_input,
 	std::vector<IN_PAIR> hiddens,
-	nnet::OPTIMIZER<double> optimizer = nullptr,
+	OPTIMIZER<double> optimizer,
 	std::string scope)
-	: ml_perceptron(n_input, hiddens, scope), n_input(n_input) {
+	: ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) {
 	size_t n_out = hiddens.back().first;
 	batch_size = placeholder<double>::make(std::vector<size_t>{0}, "batch_size");
 	train_in = placeholder<double>::make(std::vector<size_t>{n_input, 0}, "train_in");
 	expected_out = placeholder<double>::make(std::vector<size_t>{n_out, 0}, "expected_out");
-	train_set_up(optimizer);
+	train_set_up();
 }
 
 // batch gradient descent

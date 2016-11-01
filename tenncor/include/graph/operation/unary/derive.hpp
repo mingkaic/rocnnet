@@ -29,7 +29,7 @@ class derive : public iunar_ops<T> {
 			this->init(func);
 		}
 
-		std::string get_symb (void) { return "/gradient?"; }
+		std::string get_symb (void) { return "/derive(" + over_->get_name() + ")?"; }
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
