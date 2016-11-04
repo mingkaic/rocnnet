@@ -31,12 +31,6 @@ class constant : public ivar_init<T> {
 		constant (const constant<T>& other, std::string name);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			VAR_PTR<T> g = std::shared_ptr<constant<T> >(new constant(0));
-			this->set_gradient(g);
-			safety_ref = g;
-		}
-
 	public:
 		static VAR_PTR<T> make (T scalar) {
 			return ivariable<T>::make_shared(new constant(scalar));

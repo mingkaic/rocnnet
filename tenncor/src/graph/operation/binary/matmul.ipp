@@ -99,9 +99,9 @@ const tensor<T>& matmul<T>::eval (void) {
 	const tensor<T>& at = this->a->eval();
 	const tensor<T>& bt = this->b->eval();
 	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
-	this-> out_ = *ans;
+	this->out_ = *ans;
 	delete ans;
-	return this-> out_;
+	return this->out_;
 }
 
 }

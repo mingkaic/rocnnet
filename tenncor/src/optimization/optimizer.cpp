@@ -49,7 +49,7 @@ EVOKER_PTR<double> rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients) 
 	for (auto it = gradients.begin(); gradients.end() != it; it++) {
 		VAR_PTR<double> old_var = (*it).first;
 		VAR_PTR<double> rms_delta = (*it).second;
-		
+
 		// additional optimization?
 
 		// TODO: determine initial value?

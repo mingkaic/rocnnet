@@ -23,8 +23,8 @@ const tensor<T>& derive<T>::eval (void) {
 	if (this->derive_this) {
 		return one;
 	}
-	this-> out_ = this->var->calc_gradient(over_);
-	return this-> out_;
+	this->out_ = this->var->calc_gradient(over_);
+	return this->out_;
 }
 
 }

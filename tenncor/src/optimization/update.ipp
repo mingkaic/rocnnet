@@ -33,7 +33,7 @@ update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src,
 
 template <typename T>
 const tensor<T>& update<T>::eval (void) {
-	tensor<T>& out = dest-> out_;
+	tensor<T>& out = dest->out_;
 	const tensor<T>& in = src->eval();
 
 	std::cout << "update shapes:\n" << dest->get_name() << ": ";
