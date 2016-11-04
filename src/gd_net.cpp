@@ -13,6 +13,7 @@
 namespace nnet {
 
 EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
+					VAR_PTR<double> expect_out, // TESTING
 					VAR_PTR<double> train_in,
 					VAR_PTR<double> diff_func,
 					VAR_PTR<double> batch_size,
@@ -23,6 +24,8 @@ EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
 	VAR_PTR<double> err = diff_func * prime_out.top();
+//	// initial error according to MY derivative
+//	VAR_PTR<double> err = prime_out.top() - expect_out;
 	prime_out.pop();
 	std::stack<VAR_PTR<double> > errs;
 	errs.push(err);
@@ -97,6 +100,7 @@ void gd_net::train_set_up (void) {
 	if (nullptr == optimizer_) {
 		updates = ad_hoc_gd_setup (
 			learning_rate,
+			expected_out,
 			train_in, diff,
 			batch_size, this->layers,
 			layer_out, prime_out);

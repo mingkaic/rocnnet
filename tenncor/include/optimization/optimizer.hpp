@@ -90,14 +90,14 @@ class gd_optimizer : public ioptimizer<double> {
 			// delta(var) = diff * grad(var)
 			// do here instead of in apply_grad since we have fanout and grad and fanout are same shape
 			GRAD_MAP<double> gm = ioptimizer<double>::compute_grad(fanout);
-			for (auto gpair : gm) {
-				VAR_PTR<double> leaf = gm.first;
-				VAR_PTR<double> grad = gm.second;
+			for (auto& gpair : gm) {
+				VAR_PTR<double> leaf = gpair.first;
+				VAR_PTR<double> grad = gpair.second;
 				
 				// reshape initial gradient to fit leaf shape
 				VAR_PTR<double> leaf_grad = fanout->push_to(grad * fanout, leaf);
-		
-				gm.second = leaf_grad;
+
+				gpair.second = leaf_grad;
 			}
 			return gm;
 		}

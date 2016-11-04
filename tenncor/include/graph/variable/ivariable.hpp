@@ -225,7 +225,7 @@ class ivar_init : public ivariable<T> {
 		}
 		
 		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
-			if (self_ref_.lock == end_node) {
+			if (this->self_ref_.lock() == end_node) {
 				return in_grad;
 			}
 			return nullptr;
