@@ -159,6 +159,10 @@ class ivariable : public ievoker<T> {
 			static tensor<T> zero(0);
 			return zero;
 		}
+		
+		// push in_grad through all shape modifying operations until in_grad reaches end_node
+		// end_node must be a leaf node (no children)
+		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) = 0;
 };
 
 // INITIALIZER MANAGING INTERFACE
@@ -215,6 +219,13 @@ class ivar_init : public ivariable<T> {
 			if (this->grad.expired()) make_gradient(safety_ref);
 			else safety_ref = this->grad.lock();
 			return safety_ref;
+		}
+		
+		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
+			if (self_ref_.lock == end_node) {
+				return in_grad;
+			}
+			return nullptr;
 		}
 };
 

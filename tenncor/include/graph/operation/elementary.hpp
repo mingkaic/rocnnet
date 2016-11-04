@@ -19,9 +19,9 @@ using ELEMENTARY_DERIV = std::function<VAR_PTR<T>(std::vector<VAR_PTR<T> >)>;
 template <typename T>
 class elementary : public ioperation<T> {
 	protected:
-		std::vector<VAR_PTR<T> > args; // order matters
-		std::function<void(T&, T)> op;
-		ELEMENTARY_DERIV<T> der;
+		std::vector<VAR_PTR<T> > args_; // order matters
+		std::function<void(T&, T)> op_;
+		ELEMENTARY_DERIV<T> der_;
 
 		virtual void make_gradient (VAR_PTR<T>& safety_ref);
 		virtual EVOKER_PTR<T> clone_impl (std::string name);
@@ -45,6 +45,23 @@ class elementary : public ioperation<T> {
 		}
 
 		virtual const tensor<T>& eval (void);
+		
+		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
+			VAR_PTR<T> buffer;
+			std::vector<VAR_PTR<T> > record;
+			for (VAR_PTR<T> a : args_) {
+				buffer = a->push_to(in_grad, end_node);
+				if (nullptr != buffer) {
+					record.push_back(buffer);
+				}
+			}
+			if (true == record.empty()) {
+				return nullptr;
+			} else if (1 == record.size()) {
+				return record[0];
+			}
+			return elementary<T>::make(record, op_, der_);
+		}
 };
 
 // operators that will replace elementary operation objects

@@ -15,28 +15,28 @@ namespace nnet {
 
 template <typename T>
 void elementary<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	this->set_gradient(der(args));
+	this->set_gradient(der_(args_));
 	safety_ref = this->grad;
 }
 
 template <typename T>
 EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new elementary(args, op, der, name));
+	return ivariable<T>::make_shared(new elementary(args_, op_, der_, name));
 }
 
 template <typename T>
 void elementary<T>::replace (ivariable<T>* food, VAR_PTR<T> newfood) {
-	for (size_t i = 0; i < args.size(); i++) {
-		if (args[i].get() == food) args[i] = newfood;
+	for (size_t i = 0; i < args_.size(); i++) {
+		if (args_[i].get() == food) args_[i] = newfood;
 	}
 }
 
 template <typename T>
 void elementary<T>::shape_eval (void) {
-	auto it = args.begin();
+	auto it = args_.begin();
 	tensor_shape first = this->get_eval(*it).get_shape();
 	if (first.is_fully_defined()) {
-		for (it++; args.end() != it; it++) {
+		for (it++; args_.end() != it; it++) {
 			tensor_shape ts = this->get_eval(*it).get_shape();
 			assert(first.is_compatible_with(ts) ||
 				   1 == ts.n_dims() || 1 == first.n_dims());
@@ -48,11 +48,11 @@ void elementary<T>::shape_eval (void) {
 
 template <typename T>
 elementary<T>::elementary (std::vector<VAR_PTR<T> > args,
-std::function<void(T&, T)> op,
+		std::function<void(T&, T)> op,
 		ELEMENTARY_DERIV<T> der,
-std::string name) : op(op), der(der), args(args) {
+		std::string name) : op_(op), der_(der), args_(args) {
 	this->name = name;
-	for (VAR_PTR<T> a : args) {
+	for (VAR_PTR<T> a : args_) {
 		this->consume(*(a.get()));
 	}
 	if (session::pre_shape_eval()) {
@@ -66,15 +66,15 @@ const tensor<T>& elementary<T>::eval (void) {
 	if (this->derive_this) {
 		return one;
 	}
-	auto it = args.begin();
-	if (1 == args.size()) {
+	auto it = args_.begin();
+	if (1 == args_.size()) {
 		this-> out_ = tensor<T>(0);
 	} else {
 		this-> out_ = (*it)->eval();
 		it++;
 	}
-	while (args.end() != it) {
-		this->elem_op(this-> out_, (*it)->eval(), op);
+	while (args_.end() != it) {
+		this->elem_op(this-> out_, (*it)->eval(), op_);
 		it++;
 	}
 	return this-> out_;

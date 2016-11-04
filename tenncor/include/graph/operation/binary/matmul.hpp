@@ -53,6 +53,18 @@ class matmul : public ioperation<T> {
 		}
 
 		virtual const tensor<T>& eval (void);
+		
+		// literally the only meaningful push_to
+		// transpose non-in_grad weights to obtain the proper shape
+		// a lot of optimization can occur here...
+		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
+			VAR_PTR<T> agrad = matmul<T>::make(a, in_grad, !transposeA, transposeB);
+			VAR_PTR<T> bgrad = matmul<T>::make(in_grad, b, transposeA, !transposeB);
+			VAR_PTR<T> enda = a->push_to(agrad, end_node);
+			VAR_PTR<T> endb = b->push_to(bgrad, end_node);
+			// assert that endpoint shapes are equivalent
+			return enda + endb;
+		}
 };
 
 }

@@ -40,6 +40,14 @@ class iunar_ops : public ioperation<T> {
 		std::shared_ptr<iunar_ops<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<iunar_ops<T>, ievoker<T> >(this->clone_impl(name));
 		}
+		
+		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
+			VAR_PTR<T> buffer = var->push_to(in_grad, end_node);
+			if (nullptr == buffer) {
+				return nullptr;
+			}
+			return buffer;
+		}
 };
 
 // USED FOR ELEMENT WISE OPERATIONS ONLY

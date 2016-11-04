@@ -45,7 +45,7 @@ class ioptimizer {
 
 		// two step process in one
 		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
-			GRAD_MAP<T> buffer = compute_grad(fanout);
+			GRAD_MAP<T> buffer = this->compute_grad(fanout);
 			return apply_grad(buffer);
 		}
 
@@ -86,7 +86,21 @@ class gd_optimizer : public ioptimizer<double> {
 	public:
 		gd_optimizer (double learning_rate) : learning_rate_(learning_rate) {}
 
-		// inherits compute_grad from ioptimizer
+		virtual GRAD_MAP<double> compute_grad (VAR_PTR<double> fanout) {
+			// delta(var) = diff * grad(var)
+			// do here instead of in apply_grad since we have fanout and grad and fanout are same shape
+			GRAD_MAP<double> gm = ioptimizer<double>::compute_grad(fanout);
+			for (auto gpair : gm) {
+				VAR_PTR<double> leaf = gm.first;
+				VAR_PTR<double> grad = gm.second;
+				
+				// reshape initial gradient to fit leaf shape
+				VAR_PTR<double> leaf_grad = fanout->push_to(grad * fanout, leaf);
+		
+				gm.second = leaf_grad;
+			}
+			return gm;
+		}
 
 		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
 };
