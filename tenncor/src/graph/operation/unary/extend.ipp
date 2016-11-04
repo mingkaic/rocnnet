@@ -101,28 +101,28 @@ const tensor<T>& extend<T>::eval (void) {
 	const tensor<T>& in = this->var->eval();
 	if (nullptr == watch.lock()) {
 		tensor<T> *ans = this->extend_op(in, index, multiplier);
-		this-> out_ = *ans;
+		this->out_ = *ans;
 		delete ans;
 	} else {
-		this-> out_ = in;
+		this->out_ = in;
 		std::vector<size_t> target = watch.lock()->get_shape().as_list();
 		std::vector<size_t> orig = in.get_shape().as_list();
 		// this actually get expensive for big shapes, TODO: refactor/change anti-pattern
 		for (size_t i = 0; i < target.size(); i++) {
 			if (i < orig.size()) {
 				if (target[i] > orig[i]) {
-					tensor<T> *ans = this->extend_op(in, i, orig[i]/target[i]);
-					this-> out_ = *ans;
+					tensor<T> *ans = this->extend_op(in, i, target[i]/orig[i]);
+					this->out_ = *ans;
 					delete ans;
 				}
 			} else {
 				tensor<T>* ans = this->extend_op(in, i, target[i]);
-				this-> out_ = *ans;
+				this->out_ = *ans;
 				delete ans;
 			}
 		}
 	}
-	return this-> out_;
+	return this->out_;
 }
 
 }

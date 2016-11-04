@@ -74,7 +74,7 @@ EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
 	return updates;
 }
 
-void gd_net::train_set_up () {
+void gd_net::train_set_up (void) {
 	// follow () operator for ml_perceptron except store hypothesis
 	std::queue<VAR_PTR<double> > layer_out;
 	std::stack<VAR_PTR<double> > prime_out;

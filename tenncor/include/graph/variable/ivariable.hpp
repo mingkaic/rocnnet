@@ -76,6 +76,9 @@ class elementary;
 template <typename T>
 class ioptimizer;
 
+template <typename T>
+class constant;
+
 // VARIABLE INTERFACE
 
 template <typename T>
@@ -132,7 +135,7 @@ class ivariable : public ievoker<T> {
 		}
 
 		std::string get_name (void) const { return name; }
-		virtual tensor_shape get_shape (void) const { return this-> out_.get_shape(); }
+		virtual tensor_shape get_shape (void) const { return this->out_.get_shape(); }
 
 		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 
@@ -175,8 +178,8 @@ class ivar_init : public ivariable<T> {
 		WEAK_VAR_PTR<T> grad;
 
 		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			this->integral = this->grad = this-> self_ref_;
-			safety_ref = this-> self_ref_.lock();
+			safety_ref = constant<T>::make(0);
+			this->set_gradient(safety_ref);
 		}
 
 		virtual void set_gradient (VAR_PTR<T> g) {
@@ -211,7 +214,7 @@ class ivar_init : public ivariable<T> {
 		bool can_init (void) const { return init != nullptr; }
 		virtual const tensor<T>& eval (void) {
 			assert(is_init);
-			return this-> out_;
+			return this->out_;
 		}
 
 		virtual VAR_PTR<T> get_gradient (void) {

@@ -107,7 +107,7 @@ class ioperation : public ivariable<T> {
 		// share friend priviledge with ivariable and tensor to descendants
 		// retrieve the last evaluated tensor
 		tensor<T>& get_eval (VAR_PTR<T> var) const {
-			return var-> out_;
+			return var->out_;
 		}
 
 		// clears input

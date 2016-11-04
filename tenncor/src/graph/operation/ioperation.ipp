@@ -378,7 +378,7 @@ template <typename T>
 void ioperation<T>::update (tensor_shape candidate_shape) {
 	// no point in propagating if the shape is undefined
 	if (0 != candidate_shape.n_dims()) {
-		this-> out_.set_shape(candidate_shape);
+		this->out_.set_shape(candidate_shape);
 		// propagate to consumers
 		for (ioperation<T>* consumer : this->consumers) {
 			consumer->shape_eval();

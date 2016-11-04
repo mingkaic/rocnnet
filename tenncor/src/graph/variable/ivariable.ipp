@@ -71,14 +71,14 @@ template <typename T>
 class ivariable<T>::gradient_leaf : public ivar_init<T> {
 	private:
 		gradient_leaf (WEAK_VAR_PTR<T> integral) {
-			this-> out_.set_shape(std::vector<size_t>{1});
-			this-> out_.allocate(std::make_shared<memory_alloc>());
+			this->out_.set_shape(std::vector<size_t>{1});
+			this->out_.allocate(std::make_shared<memory_alloc>());
 			this->is_init = true;
 
 			this->name = "leaf<" + integral.lock()->get_name() + ">";
 			this->integral = integral;
 			typename ivar_init<T>::open_init* assigner;
-			this->init = assigner = new typename ivar_init<T>::open_init(this-> out_);
+			this->init = assigner = new typename ivar_init<T>::open_init(this->out_);
 			*assigner = std::vector<T>{0}; // initialize as zero
 		}
 
@@ -95,8 +95,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 		virtual ~gradient_leaf (void) {}
 
 		virtual void activate (VAR_PTR<T> active) {
-			if (false == this-> out_.is_alloc()) {
-				this-> out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
+			if (false == this->out_.is_alloc()) {
+				this->out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
 			}
 			// perform matrix calculus when necessary
 			// when tensor variables can encasulate other variables
@@ -109,8 +109,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 		}
 
 		virtual void deactivate (void) {
-			if (false == this-> out_.is_alloc()) {
-				this-> out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
+			if (false == this->out_.is_alloc()) {
+				this->out_.allocate(std::make_shared<memory_alloc>(), std::vector<size_t>{1});
 			}
 			// when tensor variables can encasulate other variables
 			// e.g.: A = [x y] where dA/dx is possible

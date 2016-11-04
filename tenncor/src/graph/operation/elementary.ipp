@@ -66,18 +66,20 @@ const tensor<T>& elementary<T>::eval (void) {
 	if (this->derive_this) {
 		return one;
 	}
+
 	auto it = args_.begin();
 	if (1 == args_.size()) {
-		this-> out_ = tensor<T>(0);
+		this->out_ = tensor<T>(0);
 	} else {
-		this-> out_ = (*it)->eval();
+		this->out_ = (*it)->eval();
 		it++;
 	}
+
 	while (args_.end() != it) {
-		this->elem_op(this-> out_, (*it)->eval(), op_);
+		this->elem_op(this->out_, (*it)->eval(), op_);
 		it++;
 	}
-	return this-> out_;
+	return this->out_;
 }
 
 // nulls are treated as 0
