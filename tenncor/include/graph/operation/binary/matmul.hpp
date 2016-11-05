@@ -58,11 +58,18 @@ class matmul : public ioperation<T> {
 		// transpose non-in_grad weights to obtain the proper shape
 		// a lot of optimization can occur here...
 		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
-			VAR_PTR<T> agrad = matmul<T>::make(a, in_grad, !transposeA, transposeB);
-			VAR_PTR<T> bgrad = matmul<T>::make(in_grad, b, transposeA, !transposeB);
-			VAR_PTR<T> enda = a->push_to(agrad, end_node);
-			VAR_PTR<T> endb = b->push_to(bgrad, end_node);
-			// assert that endpoint shapes are equivalent
+			VAR_PTR<T> enda = nullptr;
+			VAR_PTR<T> endb = nullptr;
+			// perform a look ahead to see if a and b leads to the desired leaf node end_node
+			if (a->leaves_.end() != a->leaves_.find()) {
+				VAR_PTR<T> agrad = matmul<T>::make(in_grad, b, transposeA, !transposeB);
+				enda = a->push_to(agrad, end_node);
+			}
+			if (b->leaves_.end() != b->leaves_.find()) {
+				VAR_PTR<T> bgrad = matmul<T>::make(a, in_grad, !transposeA, transposeB);
+				endb = b->push_to(bgrad, end_node);
+			}
+			// assert that endpoint shapes are equivalent (or one of them is nullptr)
 			return enda + endb;
 		}
 };

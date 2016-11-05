@@ -49,10 +49,13 @@ class elementary : public ioperation<T> {
 		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
 			VAR_PTR<T> buffer;
 			std::vector<VAR_PTR<T> > record;
-			for (VAR_PTR<T> a : args_) {
-				buffer = a->push_to(in_grad, end_node);
-				if (nullptr != buffer) {
-					record.push_back(buffer);
+			for (VAR_PTR<T> ar : args_) {
+				// perform a look ahead to see if ar leads to the desired leaf node end_node
+				if (ar->leaves_.end() != ar->leaves_.find()) {
+					buffer = ar->push_to(in_grad, end_node);
+					if (nullptr != buffer) {
+						record.push_back(buffer);
+					}
 				}
 			}
 			if (true == record.empty()) {

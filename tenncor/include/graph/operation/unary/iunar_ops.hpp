@@ -42,9 +42,11 @@ class iunar_ops : public ioperation<T> {
 		}
 		
 		virtual VAR_PTR<T> push_to (VAR_PTR<T> in_grad, VAR_PTR<T> end_node) {
-			VAR_PTR<T> buffer = var->push_to(in_grad, end_node);
-			if (nullptr == buffer) {
-				return nullptr;
+			// perform a look ahead to see if var leads to the desired leaf node end_node
+			// this->leaves_ is same as var->leaves_
+			VAR_PTR<T> buffer = nullptr;
+			if (this->leaves_.end() != this->leaves_.find()) {
+				buffer = var->push_to(in_grad, end_node);
 			}
 			return buffer;
 		}
