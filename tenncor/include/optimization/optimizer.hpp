@@ -53,7 +53,7 @@ class ioptimizer {
 		// calculate the gradient
 		virtual GRAD_MAP<T> compute_grad (VAR_PTR<T> fanout) {
 			GRAD_MAP<T> res;
-			nnutils::WEAK_SET<ivariable<T> >& leaves = fanout-> leaves_;
+			nnutils::WEAK_SET<ivariable<T> >& leaves = fanout->leaves_;
 
 			for (WEAK_VAR_PTR<T> leaf : leaves) {
 				if (ignore_set_.end() == ignore_set_.find(leaf)) {
@@ -86,21 +86,7 @@ class gd_optimizer : public ioptimizer<double> {
 	public:
 		gd_optimizer (double learning_rate) : learning_rate_(learning_rate) {}
 
-		virtual GRAD_MAP<double> compute_grad (VAR_PTR<double> fanout) {
-			// delta(var) = diff * grad(var)
-			// do here instead of in apply_grad since we have fanout and grad and fanout are same shape
-			GRAD_MAP<double> gm = ioptimizer<double>::compute_grad(fanout);
-			for (auto& gpair : gm) {
-				VAR_PTR<double> leaf = gpair.first;
-				VAR_PTR<double> grad = gpair.second;
-				
-				// reshape initial gradient to fit leaf shape
-				VAR_PTR<double> leaf_grad = fanout->push_to(grad * fanout, leaf);
-
-				gpair.second = leaf_grad;
-			}
-			return gm;
-		}
+		// inherits compute_grad from ioptimizer
 
 		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
 };
@@ -148,7 +134,7 @@ class ada_grad_optimizer : public gd_optimizer {
 	public:
 		ada_grad_optimizer (double learning_rate,
 							double init_accum = 0.1) :
-				gd_optimizer(learning_rate), init_accum_(init_accum) {}
+			gd_optimizer(learning_rate), init_accum_(init_accum) {}
 
 		// inherits compute_grad from ioptimizer
 
@@ -175,10 +161,10 @@ class rms_prop_optimizer : public gd_optimizer {
 							double discount_factor = 0.9,
 							double momentum = 0.0,
 							double epsilon = std::numeric_limits<double>::epsilon()) :
-				gd_optimizer(learning_rate),
-				discount_factor_(discount_factor),
-				momentum_(momentum),
-				epsilon_(epsilon) {}
+			gd_optimizer(learning_rate),
+			discount_factor_(discount_factor),
+			momentum_(momentum),
+			epsilon_(epsilon) {}
 
 		// inherits compute_grad from ioptimizer
 

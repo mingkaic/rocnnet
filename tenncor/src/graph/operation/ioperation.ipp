@@ -182,7 +182,7 @@ void ioperation<T>::elem_op (
 
 template <typename T>
 tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
-	std::vector<size_t> tv = in. out_.get_shape().as_list();
+	std::vector<size_t> tv = this->get_tensor_from(in).get_shape().as_list();
 	size_t n_col = tv[0];
 	size_t len_trace;
 	if (tv[0] > tv[1]) {
@@ -193,7 +193,7 @@ tensor<T>* ioperation<T>::get_trace (const ivariable<T>& in) const {
 		tv[1] = 1;
 	}
 	tensor<T>* ans = new tensor<T>(tv);
-	T* inraw = this->get_raw(in. out_);
+	T* inraw = this->get_raw(this->get_tensor_from(in));
 	T* outraw = this->get_raw(*ans);
 	for (size_t i = 0; i < len_trace; i++) {
 		outraw[i] = inraw[i * (1 + n_col)];

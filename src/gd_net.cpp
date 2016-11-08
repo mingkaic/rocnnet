@@ -105,7 +105,7 @@ void gd_net::train_set_up (void) {
 			batch_size, this->layers,
 			layer_out, prime_out);
 	} else {
-		updates = optimizer_->minimize(diff);
+		updates = optimizer_->minimize(diff*diff);
 	}
 }
 

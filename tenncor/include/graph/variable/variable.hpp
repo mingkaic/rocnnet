@@ -64,7 +64,7 @@ class variable : public ivar_init<T> {
 
 		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
 			// no need to set_gradient, gradient sets this as integral
-			this->grad = safety_ref = ivariable<T>::gradient_leaf::make(this-> self_ref_);
+			this->grad = safety_ref = ivariable<T>::gradient_leaf::make(this->self_ref_);
 		}
 
 	public:

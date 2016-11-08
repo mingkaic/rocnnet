@@ -111,12 +111,12 @@ const tensor<T>& extend<T>::eval (void) {
 		for (size_t i = 0; i < target.size(); i++) {
 			if (i < orig.size()) {
 				if (target[i] > orig[i]) {
-					tensor<T> *ans = this->extend_op(in, i, target[i]/orig[i]);
+					tensor<T> *ans = this->extend_op(this->out_, i, target[i]/orig[i]);
 					this->out_ = *ans;
 					delete ans;
 				}
 			} else {
-				tensor<T>* ans = this->extend_op(in, i, target[i]);
+				tensor<T>* ans = this->extend_op(this->out_, i, target[i]);
 				this->out_ = *ans;
 				delete ans;
 			}

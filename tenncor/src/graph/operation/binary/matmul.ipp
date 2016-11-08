@@ -7,7 +7,6 @@
 //
 
 #ifdef matop_hpp
-#include <iostream>
 
 namespace nnet {
 
@@ -15,17 +14,14 @@ namespace nnet {
 
 template <typename T>
 void matmul<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	// same as multiplication
-	// matmul'(f, g) = matmul(f',g) + matmul(f,g')
-	VAR_PTR<T> ga = this->a->get_gradient();
-	VAR_PTR<T> gb = this->b->get_gradient();
-	// force ga and ba to conform to their respective shapes
-	VAR_PTR<T> ea = extend<T>::make(ga, a);
-	VAR_PTR<T> eb = extend<T>::make(gb, b);
-
-	VAR_PTR<T> ma = matmul<T>::make(ea, b, transposeA, transposeB);
-	VAR_PTR<T> mb = matmul<T>::make(a, eb, transposeA, transposeB);
-	this->set_gradient(ma + mb);
+	// matmul'(f, g) = inherited(matmul(k, g^T) * f' + matmul(f^T, k) * g')
+	VAR_PTR<T> g = jacobian<T>::make([this](VAR_PTR<T> channel) {
+		VAR_PTR<T> ga = this->a->get_gradient();
+		VAR_PTR<T> gb = this->b->get_gradient();
+		return matmul<T>::make(channel, this->b, transposeA, !transposeB) * ga +
+				matmul<T>::make(this->a, channel, !transposeA, transposeB)  * gb;
+	});
+	this->set_gradient(g);
 	safety_ref = this->grad;
 }
 
@@ -36,8 +32,8 @@ void matmul<T>::shape_eval (void) {
 		b->get_shape().is_fully_defined()) {
 		size_t common_dim;
 		tensor_shape ts = this->get_matrix_shape(
-				this->get_eval(a),
-				this->get_eval(b),
+				this->get_tensor_from(a),
+				this->get_tensor_from(b),
 				transposeA, transposeB, common_dim);
 		assert(ts.is_fully_defined()); // assert initial shape is at least valid (re-checked at eval time)
 		this->update(ts);

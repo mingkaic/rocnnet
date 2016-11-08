@@ -34,10 +34,10 @@ void elementary<T>::replace (ivariable<T>* food, VAR_PTR<T> newfood) {
 template <typename T>
 void elementary<T>::shape_eval (void) {
 	auto it = args_.begin();
-	tensor_shape first = this->get_eval(*it).get_shape();
+	tensor_shape first = this->get_tensor_from(*it).get_shape();
 	if (first.is_fully_defined()) {
 		for (it++; args_.end() != it; it++) {
-			tensor_shape ts = this->get_eval(*it).get_shape();
+			tensor_shape ts = this->get_tensor_from(*it).get_shape();
 			assert(first.is_compatible_with(ts) ||
 				   1 == ts.n_dims() || 1 == first.n_dims());
 			if (ts.n_dims() > first.n_dims()) first = ts;

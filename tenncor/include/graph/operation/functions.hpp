@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <queue>
+
 #pragma once
 #ifndef functions_ops
 #define functions_ops

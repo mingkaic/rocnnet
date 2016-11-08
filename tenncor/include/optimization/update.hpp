@@ -18,7 +18,7 @@ namespace nnet {
 template <typename T>
 class update : public ievoker<T> {
 	protected:
-		std::shared_ptr<variable<T> > dest;
+		std::shared_ptr<variable<T> > dest_;
 		VAR_PTR<T> src;
 		// determines how element-wise assignment works, defaults to direct assignment
 		std::function<void(T&,T)> assign = [](T& left, T right) { left = right; };

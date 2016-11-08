@@ -34,7 +34,7 @@ template <typename T>
 void ivariable<T>::copy (
 	ivariable<T> const & other,
 	std::string name) {
-	 out_ = other. out_;
+	 out_ = other.out_;
 	if (0 == name.size()) {
 		name = other.name+"_cpy";
 	}

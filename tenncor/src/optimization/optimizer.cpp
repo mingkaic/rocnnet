@@ -14,12 +14,20 @@ namespace nnet {
 
 // updates position on error manifold
 EVOKER_PTR<double> gd_optimizer::apply_grad (GRAD_MAP<double>& gradients) {
+	GRAD_MAP<double> local_grad;
 	std::shared_ptr<group<double> > g_ptr = std::make_shared<group<double> >();
 
-	for (auto it = gradients.begin(); gradients.end() != it; it++) {
-		VAR_PTR<double> old_var = (*it).first;
-		VAR_PTR<double> delta = (*it).second;
+	for (auto& g : gradients) {
+		VAR_PTR<double> old_var = g.first;
+		VAR_PTR<double> delta = g.second;
+		// calculate all delta BEFORE updating
+		g_ptr->add(std::static_pointer_cast<ievoker<double> >(delta));
+		local_grad[old_var] = std::make_shared<var_buffer<double> >(delta);
+	}
 
+	for (auto& g : local_grad) {
+		VAR_PTR<double> old_var = g.first;
+		VAR_PTR<double> delta = g.second;
 		EVOKER_PTR<double> evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(old_var), this->learning_rate_ * delta);
 		g_ptr->add(evok);

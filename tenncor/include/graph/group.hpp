@@ -55,13 +55,13 @@ class async_group : public ievoker<T> {
 
 	protected:
 		virtual EVOKER_PTR<T> clone_impl (std::string name) {
-			return std::shared_ptr<group<T> >(new async_group(acts_));
+			return std::shared_ptr<async_group<T> >(new async_group(acts_));
 		}
 
 	public:
 		async_group (void) {}
 		async_group (std::unordered_set<EVOKER_PTR<T> > acts) : acts_(acts) {}
-		virtual ~group (void) {}
+		virtual ~async_group (void) {}
 
 		std::shared_ptr<async_group<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<async_group<T>, ievoker<T> >(clone_impl(name));
@@ -73,5 +73,7 @@ class async_group : public ievoker<T> {
 
 		virtual const tensor<T>& eval (void);
 };
+
+}
 
 #endif /* group_hpp */

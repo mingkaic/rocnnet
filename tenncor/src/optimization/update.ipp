@@ -13,7 +13,7 @@ namespace nnet {
 
 template <typename T>
 update<T>::update (update<T>& other) {
-	this->dest = other.dest;
+	this->dest_ = other.dest_;
 	this->src = other.src;
 	this->assign = other.assign;
 }
@@ -24,26 +24,17 @@ EVOKER_PTR<T> update<T>::clone_impl (std::string name) {
 }
 
 template <typename T>
-update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src) : dest(dest), src(src) {}
+update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src) : dest_(dest), src(src) {}
 
 template <typename T>
 update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src,
 					std::function<void(T&,T)> assign) :
-					dest(dest), src(src), assign(assign) {}
+	dest_(dest), src(src), assign(assign) {}
 
 template <typename T>
 const tensor<T>& update<T>::eval (void) {
-	tensor<T>& out = dest->out_;
+	tensor<T>& out = dest_->grab_tensor();
 	const tensor<T>& in = src->eval();
-
-	std::cout << "update shapes:\n" << dest->get_name() << ": ";
-	for (size_t s : out.get_shape().as_list()) {
-		std::cout << s << " ";
-	} std::cout << std::endl << src->get_name() << ": ";
-	for (size_t s : in.get_shape().as_list()) {
-		std::cout << s << " ";
-	} std::cout << std::endl;
-
 	assert(out.is_same_size(in));
 
 	T* old_data = this->get_raw(out);
@@ -60,9 +51,7 @@ const tensor<T>& update<T>::eval (void) {
 
 template <typename T>
 update_sub<T>::update_sub (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src) :
-update<T>(dest, src, [](T& dest, T src) {
-	dest -= src;
-}) {}
+	update<T>(dest, src, [](T& d, T s) { d -= s; }) {}
 
 }
 

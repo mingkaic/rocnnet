@@ -872,13 +872,14 @@ TEST(DERIV, operation_derive) {
 	const size_t supersize = edge*edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
+
 	nnet::VAR_PTR<double> x = nnet::variable<double>::make((std::vector<size_t>{edge, edge}), rinit, "p1");
 	nnet::PLACEHOLDER_PTR<double> place = nnet::placeholder<double>::make(std::vector<size_t>{edge, edge}, "in");
-	nnet::VAR_PTR<double> mul = nnet::matmul<double>::make(x, place);
+	nnet::VAR_PTR<double> mul = nnet::matmul<double>::make(x, place); // <X, IN>
 
-	nnet::VAR_PTR<double> o = nnet::sigmoid(mul);
-	nnet::VAR_PTR<double> better_grad = o*(1.0-o);
-	nnet::VAR_PTR<double> grad = nnet::derive<double>::make(o, mul);
+	nnet::VAR_PTR<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
+	nnet::VAR_PTR<double> better_grad = o*(1.0-o); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
+	nnet::VAR_PTR<double> grad = nnet::derive<double>::make(o, mul); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
 	EXPOSE_PTR oex = nnet::expose<double>::make(o);
 	EXPOSE_PTR ex = nnet::expose<double>::make(grad);
 	EXPOSE_PTR better_ex = nnet::expose<double>::make(better_grad);
@@ -891,7 +892,6 @@ TEST(DERIV, operation_derive) {
 	*place = placeholder_in;
 
 	std::vector<double> xin = nnet::expose<double>::make(mul)->get_raw();
-
 	std::function<double(double)> sig = [](double x) {
 		return 1 / (1 + std::exp(-x));
 	};

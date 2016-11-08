@@ -64,6 +64,6 @@ class extend : public iunar_ops<T> {
 
 }
 
-#include "../../../../../src/graph/operation/unary/extend.ipp"
+#include "../../../../../src/graph/operation/unary/matrix_op/extend.ipp"
 
 #endif /* extend_hpp */

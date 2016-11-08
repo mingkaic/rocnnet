@@ -11,7 +11,6 @@
 #include <random>
 #include <functional>
 #include <limits>
-#include <queue>
 #include <memory>
 
 #pragma once
@@ -41,7 +40,7 @@ class ioperation : public ivariable<T> {
 		virtual void set_gradient (VAR_PTR<T> g) {
 			if (nullptr == grad && nullptr != g) {
 				grad = g;
-				grad->integral = this-> self_ref_;
+				ivariable<T>::set_gradient(grad);
 			}
 		}
 
@@ -104,22 +103,11 @@ class ioperation : public ivariable<T> {
 			signed index,
 			std::function<T(const std::vector<T>&)> collector) const;
 
-		// share friend priviledge with ivariable and tensor to descendants
-		// retrieve the last evaluated tensor
-		tensor<T>& get_eval (VAR_PTR<T> var) const {
-			return var->out_;
-		}
-
+		// consume control
 		// clears input
-		void deconsume (ivariable<T>& food) {
-			food.consumers.erase(this);
-		}
-
+		void deconsume (ivariable<T>& food) { this->remove_consumer(food, *this); }
 		// note keeping: record self as consumer of food
-		void consume (ivariable<T>& food) {
-			food.consumers.emplace(this);
-			this-> leaves_.insert(food. leaves_.begin(), food. leaves_.end());
-		}
+		void consume (ivariable<T>& food) { this->add_consumer(food, *this); }
 
 		// changes input
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) = 0;

@@ -52,6 +52,6 @@ class expose : public iunar_ops<T> {
 
 }
 
-#include "../../../../src/graph/operation/unary/matrix_op/expose.ipp"
+#include "../../../../src/graph/operation/unary/expose.ipp"
 
 #endif /* expose_hpp */

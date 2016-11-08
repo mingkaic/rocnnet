@@ -147,13 +147,13 @@ EVOKER_PTR<T> placeholder<T>::clone_impl (std::string name) {
 template <typename T>
 ivariable<T>& placeholder<T>::assign (VAR_PTR<T> other) {
 	if (this != other.get()) {
-		bool reshape_needed = false == other->out_.is_same_size(this->out_);
+		bool reshape_needed = false == this->get_tensor_from(other).is_same_size(this->out_);
 		if (false == this->out_.is_alloc()) {
 			this->out_.allocate(
 				std::make_shared<memory_alloc>(),
 				other->get_shape());
 		}
-		this->out_ = other->out_;
+		this->out_ = this->get_tensor_from(other);
 		if (reshape_needed) {
 			consumer_reshape();
 		}
@@ -204,7 +204,7 @@ void placeholder<T>::replace (const placeholder<T>& other) {
 	for (ioperation<T>* cons : this->consumers) {
 		cons->replace(this, &other);
 	}
-	if (false == other. out_.is_same_size(this->out_)) {
+	if (false == other.out_.is_same_size(this->out_)) {
 		consumer_reshape();
 	}
 }

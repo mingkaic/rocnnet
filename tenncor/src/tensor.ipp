@@ -194,8 +194,11 @@ bool tensor<T>::is_compatible_with (const tensor<T>& other) const {
 
 template<typename T>
 bool tensor<T>::is_same_size (const tensor <T> &other) const {
+	tensor_shape simp_shape = alloc_shape_.trim();
+	tensor_shape other_simp = other.alloc_shape_.trim();
+
 	return (this->is_alloc() && other.is_alloc() &&
-			alloc_shape_.is_compatible_with(other.alloc_shape_)) ||
+			simp_shape.is_compatible_with(other_simp)) ||
 		   (this->allowed_shape_.is_compatible_with(other.allowed_shape_));
 }
 

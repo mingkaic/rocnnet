@@ -22,7 +22,7 @@ struct dimension {
 	size_t value_;
 
 	dimension (size_t value) : value_(value) {}
-	explicit operator size_t() { return value_; }
+	explicit operator size_t (void) const { return value_; }
 
 	dimension merge_with (const dimension& other) const;
 	bool is_compatible_with (const dimension& other) const;
@@ -51,6 +51,9 @@ class tensor_shape {
 		size_t n_dims (void) const;
 		std::vector<dimension> dims (void) const; // deep copy
 		std::vector<size_t> as_list (void) const;
+
+		// returns a new shape with leading and padding ones removed
+		tensor_shape trim (void) const;
 
 		// tensor_shape_proto* as_proto (void) const; // serialize
 
