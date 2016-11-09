@@ -17,21 +17,21 @@ namespace ccoms {
 
 // AKA root
 
-class observer {
+class iobserver {
 	protected:
 		std::vector<subject*> dependencies_;
 
 	public:
-		observer (std::vector<subject*> dependencies) :
+		iobserver (std::vector<subject*> dependencies) :
 			dependencies_(dependencies) {
 			for (subject* dep : dependencies) {
-				dep.attach(this);
+				dep->attach(this);
 			}
 		}
 		
-		virtual ~observer (void) {
+		virtual ~iobserver (void) {
 			for (subject* dep : dependencies_) {
-				dep->detach();
+				dep->detach(this);
 			}
 		}
 		

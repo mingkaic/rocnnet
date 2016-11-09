@@ -41,19 +41,21 @@ class extend : public iunar_ops<T> {
 
 	public:
 		static VAR_PTR<T> make(VAR_PTR<T> in, WEAK_VAR_PTR<T> watch) {
-			VAR_PTR<T> root = ivariable<T>::make_shared(new extend(in, watch));
+			VAR_PTR<T> o = ivariable<T>::make_shared(new extend(in, watch));
+			VAR_PTR<T>* root = &o;
 			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
 			// have each argument evaluate interaction root
-			in->interact(root);
-			return root;
+			ivariable<T>::set_interaction(in, root);
+			return *root;
 		}
 
 		static VAR_PTR<T> make(VAR_PTR<T> in, size_t index = 0, size_t multiplier = 1) {
-			VAR_PTR<T> root = ivariable<T>::make_shared(new extend(in, index, multiplier));
+			VAR_PTR<T> o = ivariable<T>::make_shared(new extend(in, index, multiplier));
+			VAR_PTR<T>* root = &o;
 			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
 			// have each argument evaluate interaction root
-			in->interact(root);
-			return root;
+			ivariable<T>::set_interaction(in, root);
+			return *root;
 		}
 
 		virtual extend<T> &operator=(const ivariable<T> &other);

@@ -85,10 +85,10 @@ void extend<T>::set_ext_info (size_t index, size_t multiplier) {
 	this->index = index;
 	this->multiplier = multiplier;
 	watch = nullptr;
-	std::unordered_set<ioperation<T>*> cons = watch->get_consumers();
-	if (cons.end() != cons.find(this)) {
-		cons.erase(this);
-	}
+//	std::unordered_set<ioperation<T>*> cons = watch->get_consumers();
+//	if (cons.end() != cons.find(this)) {
+//		cons.erase(this);
+//	}
 }
 
 template <typename T>

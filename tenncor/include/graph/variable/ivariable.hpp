@@ -11,6 +11,7 @@
 #define ivariable_hpp
 
 #include "../evoker.hpp"
+#include "../observer/subject.hpp"
 
 namespace nnet {
 
@@ -76,7 +77,7 @@ class constant;
 template <typename T>
 class matmul;
 template <typename T>
-class iunar_ops;
+class iunar_ops;;
 
 // deprecated once evaluation identification is implemented
 template <typename T>
@@ -111,7 +112,7 @@ class var_buffer : public ivariable<T> {
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable : public ievoker<T> {
+class ivariable : public ievoker<T>  {
 	protected:
 		// weak pointer to this
 		WEAK_VAR_PTR<T>  self_ref_;
@@ -120,10 +121,6 @@ class ivariable : public ievoker<T> {
 		tensor<T>  out_;
 		std::string name;
 		WEAK_VAR_PTR<T> integral;
-
-		nnutils::WEAK_SET<ivariable<T> > leaves_;
-		// TODO make weak
-		std::unordered_set<ioperation<T>*> consumers; // next
 
 		// backward chaining for AD
 		void copy (const ivariable<T>& other, std::string name = "");
@@ -137,25 +134,23 @@ class ivariable : public ievoker<T> {
 		static VAR_PTR<T> make_shared(ivariable<T>* ptr, bool add_leaf = false) {
 			VAR_PTR<T> inst = VAR_PTR<T>(ptr);
 			inst->self_ref_ = inst;
-			if (add_leaf) {
-				inst->leaves_.insert(inst);
-			}
+//			if (add_leaf) {
+//				inst->leaves_.insert(inst);
+//			}
 			return inst;
 		}
 
 		// interaction control
 		// TODO: place when making operations to pass back Jacobian
-		virtual void interact (VAR_PTR<T>& op) {}
+		virtual void interact (VAR_PTR<T>* op) {}
+		static void set_interaction (VAR_PTR<T> arg, VAR_PTR<T>* op) {
+			arg->interact(op);
+		}
+
 		// defaults to Inherited attribute behavior
 		// overload for Synthesized attribute
 		virtual tensor<T>& grab_tensor (void) { return out_; }
 		tensor<T>& get_tensor_from (VAR_PTR<T> var) { return var->grab_tensor(); }
-
-		void remove_consumer (ivariable<T>& food, ioperation<T>& master) { food.consumers.erase(&master); }
-		void add_consumer (ivariable<T>& food, ioperation<T>& master) {
-			food.consumers.emplace(&master);
-			master.leaves_.insert(food.leaves_.begin(), food.leaves_.end());
-		}
 
 		ivariable (void);
 
@@ -166,6 +161,17 @@ class ivariable : public ievoker<T> {
 		// protected members need to be accessed by other operations
 		friend class update<T>;
 		friend class ioptimizer<T>;
+
+		// DEPRECATED
+//		nnutils::WEAK_SET<ivariable<T> > leaves_;
+//		// TODO make weak
+//		std::unordered_set<ioperation<T>*> consumers; // next
+//
+//	void remove_consumer (ivariable<T>& food, ioperation<T>& master) { food.consumers.erase(&master); }
+//	void add_consumer (ivariable<T>& food, ioperation<T>& master) {
+//		food.consumers.emplace(&master);
+//		master.leaves_.insert(food.leaves_.begin(), food.leaves_.end());
+//	}
 
 	public:
 		virtual ~ivariable (void);
@@ -178,7 +184,7 @@ class ivariable : public ievoker<T> {
 		std::string get_name (void) const { return name; }
 		virtual tensor_shape get_shape (void) const { return this->out_.get_shape(); }
 
-		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
+//		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 
 		virtual const tensor<T>& eval (void) = 0;
 
@@ -208,7 +214,7 @@ class ivariable : public ievoker<T> {
 // INITIALIZER MANAGING INTERFACE
 
 template <typename T>
-class ivar_init : public ivariable<T> {
+class ivar_init : public ivariable<T>, public ccoms::subject {
 	protected:
 		bool is_init = false;
 		initializer<T>* init = nullptr;

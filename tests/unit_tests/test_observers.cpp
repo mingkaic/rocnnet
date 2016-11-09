@@ -1,3 +1,5 @@
+
+#include "gtest/gtest.h"
 #include "graph/observer/node.hpp"
 #include "graph/observer/observer.hpp"
 #include "graph/observer/subject.hpp"
@@ -21,14 +23,14 @@ class div_subject : public ccoms::subject {
 		}
 };
 
-class div_observer: public ccoms::observer {
+class div_observer: public ccoms::iobserver {
 	private:
 		size_t div_;
 		size_t out_;
 	
 	public:
 		div_observer (div_subject* mod, int div) : 
-			ccnnet::observer({mod}), div_(div) {}
+			ccoms::iobserver({mod}), div_(div) {}
 			
 		size_t get_out (void) { return out_; }
 		
@@ -40,14 +42,14 @@ class div_observer: public ccoms::observer {
 		}
 };
 
-class mod_observer: public ccoms::observer {
+class mod_observer: public ccoms::iobserver {
 	private:
 		size_t div_;
 		size_t out_;
 
 	public:
-		mod_observer (div_subject* mod, int div) : 
-			ccnnet::observer({mod}), div_(div) {}
+		mod_observer (div_subject* mod, int div) :
+			ccoms::iobserver({mod}), div_(div) {}
 			
 		size_t get_out (void) { return out_; }
 			
@@ -64,7 +66,7 @@ TEST(COMS, observer) {
 	div_observer div_obs1(&subj, 4);
 	div_observer div_obs2(&subj, 3);
 	mod_observer mod_obs3(&subj, 3);
-	subj.setVal(14);
+	subj.set_val(14);
 	ASSERT_EQ(14/4, div_obs1.get_out());
 	ASSERT_EQ(14/3, div_obs2.get_out());
 	ASSERT_EQ(14%3, mod_obs3.get_out());

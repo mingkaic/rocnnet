@@ -17,7 +17,8 @@
 #ifndef operation_hpp
 #define operation_hpp
 
-#include "graph/variable/variable.hpp"
+#include "../variable/variable.hpp"
+#include "../observer/node.hpp"
 
 namespace nnet {
 
@@ -31,7 +32,7 @@ template <typename T>
 class univar_func;
 
 template <typename T>
-class ioperation : public ivariable<T> {
+class ioperation : public ivariable<T>, public ccoms::inode {
 	protected:
 		// used in calc_gradient to toggle operations between returning eval and returning one
 		bool derive_this = false;
@@ -105,9 +106,9 @@ class ioperation : public ivariable<T> {
 
 		// consume control
 		// clears input
-		void deconsume (ivariable<T>& food) { this->remove_consumer(food, *this); }
-		// note keeping: record self as consumer of food
-		void consume (ivariable<T>& food) { this->add_consumer(food, *this); }
+//		void deconsume (ivariable<T>& food) { this->remove_consumer(food, *this); }
+//		// note keeping: record self as consumer of food
+//		void consume (ivariable<T>& food) { this->add_consumer(food, *this); }
 
 		// changes input
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) = 0;

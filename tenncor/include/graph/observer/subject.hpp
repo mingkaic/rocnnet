@@ -14,43 +14,35 @@
 
 namespace ccoms {
 
-class observer;
+class iobserver;
+class inode;
 
 // AKA leaf
 
 class subject {
 	private:
-		std::unordered_set<observer*> audience_;
+		std::unordered_set<iobserver*> audience_;
 		// raw_data
 		
 	protected:
-		virtual void add_leaves (std::unordered_set<subject*>& src) const {
+		virtual void merge_leaves (std::unordered_set<subject*>& src) {
 			src.emplace(this);
 		}
+
+		friend class inode;
 		
 	public:
-		virtual ~subject (void) {
-			auto it = audience_.begin();
-			while (audience_.end() != it) {
-				observer* captive = *it;
-				it++;
-				delete captive;
-			}
-		}
+		virtual ~subject (void);
 	
-		void attach (observer* viewer) {
+		void attach (iobserver* viewer) {
 			audience_.emplace(viewer);
 		}
 		
-		void detach (observer* viewer) {
+		void detach (iobserver* viewer) {
 			audience_.erase(viewer);
 		}
 		
-		void notify (void) {
-			for (observer viewer : audience_) {
-				viewer->update();
-			}
-		}
+		virtual void notify (void);
 };
 
 }

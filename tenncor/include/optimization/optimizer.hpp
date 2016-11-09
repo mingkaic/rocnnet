@@ -19,11 +19,12 @@
 #include "graph/operation/elementary.hpp"
 #include "graph/operation/unary/iunar_ops.hpp"
 #include "graph/operation/unary/derive.hpp"
+#include "graph/observer/node.hpp"
 
 namespace nnet {
 
 template <typename T>
-using GRAD_MAP = std::map<VAR_PTR<T>, VAR_PTR<T> >;
+using GRAD_MAP = std::map<ivar_init<T>*, VAR_PTR<T> >;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -36,12 +37,12 @@ using GRAD_MAP = std::map<VAR_PTR<T>, VAR_PTR<T> >;
 template <typename T>
 class ioptimizer {
 	protected:
-		nnutils::WEAK_SET<ivariable<T> > ignore_set_;
+		std::unordered_set<ccoms::inode*> ignore_set_;
 
 	public:
 		virtual ~ioptimizer (void) {}
 
-		void ignore (VAR_PTR<T> ig_var) { ignore_set_.insert(ig_var); }
+		void ignore (VAR_PTR<T> ig_var) { ignore_set_.insert(ig_var.get()); }
 
 		// two step process in one
 		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
@@ -53,14 +54,14 @@ class ioptimizer {
 		// calculate the gradient
 		virtual GRAD_MAP<T> compute_grad (VAR_PTR<T> fanout) {
 			GRAD_MAP<T> res;
-			nnutils::WEAK_SET<ivariable<T> >& leaves = fanout->leaves_;
-
-			for (WEAK_VAR_PTR<T> leaf : leaves) {
+			fanout->leaves_collect ([&res, this](ccoms::subject* leaf) {
 				if (ignore_set_.end() == ignore_set_.find(leaf)) {
-					std::pair<VAR_PTR<T>, VAR_PTR<T> > end_point(leaf.lock(), derive<T>::make(fanout, leaf.lock()));
+					std::pair<VAR_PTR<T>, VAR_PTR<T> > end_point(
+						dynamic_cast<ivar_init<T>*>(leaf),
+						derive<T>::make(fanout, leaf));
 					res.insert(end_point);
 				}
-			}
+			});
 			return res;
 		}
 		// actual update step

@@ -38,11 +38,12 @@ class clip_by_value : public iunar_elem_ops<T> {
 
 	public:
 		static VAR_PTR<T> make (VAR_PTR<T> var, T min, T max) {
-			VAR_PTR<T> root = ivariable<T>::make_shared(new clip_by_value(var, min, max));
+			VAR_PTR<T> o = ivariable<T>::make_shared(new clip_by_value(var, min, max));
+			VAR_PTR<T>* root = &o;
 			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
 			// have each argument evaluate interaction root
-			var->interact(root);
-			return root;
+			ivariable<T>::set_interaction(var, root);
+			return *root;
 		}
 		virtual ~clip_by_value (void) {}
 
@@ -74,11 +75,12 @@ class clip_by_norm : public iunar_elem_ops<T> {
 
 	public:
 		static VAR_PTR<T> make (VAR_PTR<T> var, T cap) {
-			VAR_PTR<T> root = ivariable<T>::make_shared(new clip_by_norm(var, cap));
+			VAR_PTR<T> o = ivariable<T>::make_shared(new clip_by_norm(var, cap));
+			VAR_PTR<T>* root = &o;
 			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
 			// have each argument evaluate interaction root
-			var->interact(root);
-			return root;
+			ivariable<T>::set_interaction(var, root);
+			return *root;
 		}
 		virtual ~clip_by_norm (void) {}
 

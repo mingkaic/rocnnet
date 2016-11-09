@@ -27,7 +27,8 @@ endif()
 #-------------------
 FILE(GLOB TenncorSources
     ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/src/*/*.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/src/*/*.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/*/*/*.cpp)
 set(PROJECT_LIB_NAME tenncor)
 set(TENNCOR_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
 include_directories(${TENNCOR_INCLUDE_DIR})

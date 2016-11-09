@@ -38,7 +38,10 @@ class jacobian : public inherited_variable<T> {
 		virtual void set_gradient (VAR_PTR<T> g) {}
 
 		// interaction control
-		virtual void interact (VAR_PTR<T>& op) { op = this->self_ref_; }
+		virtual void interact (VAR_PTR<T>* op) {
+			VAR_PTR<T> v = this->self_ref_.lock();
+			op = &v;
+		}
 		virtual tensor<T>& grab_tensor (void) { return this->get_tensor_from(to_root_); }
 
 		jacobian (std::function<VAR_PTR<T>(VAR_PTR<T>)> construction) {
