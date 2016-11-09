@@ -44,7 +44,13 @@ class matmul : public ioperation<T> {
 
 	public:
 		static VAR_PTR<T> make (VAR_PTR<T> a, VAR_PTR<T> b, bool transposeA = false, bool transposeB = false) {
-			return ivariable<T>::make_shared(new matmul(a, b, transposeA, transposeB));
+			VAR_PTR<T> root = ivariable<T>::make_shared(new matmul(a, b, transposeA, transposeB));
+			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
+			// have each argument evaluate interaction root
+			// multiple inherited attributes is currently undefined behavior... (probably going to return bad tensor)
+			a->interact(root);
+			b->interact(root);
+			return root;
 		}
 
 		virtual matmul<T>& operator = (const ivariable<T>& other);

@@ -27,7 +27,11 @@ class transpose : public iunar_ops<T> {
 
 	public:
 		static VAR_PTR<T> make (VAR_PTR<T> in) {
-			return ivariable<T>::make_shared(new transpose(in));
+			VAR_PTR<T> root = ivariable<T>::make_shared(new transpose(in));
+			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
+			// have each argument evaluate interaction root
+			in->interact(root);
+			return root;
 		}
 
 		std::shared_ptr<transpose<T> > clone (std::string name = "") {

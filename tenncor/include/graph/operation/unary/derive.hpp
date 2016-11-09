@@ -38,7 +38,11 @@ class derive : public iunar_ops<T> {
 
 	public:
 		static VAR_PTR<T> make (VAR_PTR<T> func, VAR_PTR<T> over) {
-			return ivariable<T>::make_shared(new derive(func, over));
+			VAR_PTR<T> root = ivariable<T>::make_shared(new derive(func, over));
+			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
+			// have each argument evaluate interaction root
+			func->interact(root);
+			return root;
 		}
 		virtual const tensor<T>& eval (void);
 		std::shared_ptr<derive<T> > clone (std::string name = "") {

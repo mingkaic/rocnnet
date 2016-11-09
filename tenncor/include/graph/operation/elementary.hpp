@@ -37,7 +37,14 @@ class elementary : public ioperation<T> {
 								std::function<void(T&, T)> op,
 								ELEMENTARY_DERIV<T> der,
 								std::string name = "") {
-			return ivariable<T>::make_shared(new elementary(args, op, der, name));
+			VAR_PTR<T> root = ivariable<T>::make_shared(new elementary(args, op, der, name));
+			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
+			// have each argument evaluate interaction root
+			for (VAR_PTR<T> a : args) {
+				// multiple inherited attributes is currently undefined behavior... (probably going to return bad tensor)
+				a->interact(root);
+			}
+			return root;
 		}
 
 		std::shared_ptr<elementary<T> > clone (std::string name = "") {
