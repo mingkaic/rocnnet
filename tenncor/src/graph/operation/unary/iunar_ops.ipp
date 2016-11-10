@@ -13,25 +13,19 @@ namespace nnet {
 // UNARY OPERATIONS
 
 template<typename T>
-void iunar_ops<T>::copy(const ivariable <T> &other, std::string name) {
-	if (const iunar_ops<T> *uptr = dynamic_cast<const iunar_ops<T> *>(&other)) {
-		var = uptr->var;
-	}
-	ivariable<T>::copy(other, name);
-}
-
-template<typename T>
 void iunar_ops<T>::shape_eval(void) {
-	tensor_shape ts = var->get_shape();
-	if (ts.is_fully_defined()) {
-		this->update(ts);
+    if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(this->dependencies_[0])) {
+        tensor_shape ts = var->get_shape();
+        if (ts.is_fully_defined()) {
+            this->update(ts);
+        }
 	}
 }
 
 // USED FOR ELEMENT WISE OPERATIONS ONLY
 
 template<typename T>
-const void &iunar_elem_ops<T>::update(void) {
+void iunar_elem_ops<T>::update(void) {
 	ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	assert(nullptr != arg);
 	const tensor<T> &evar = arg->eval();

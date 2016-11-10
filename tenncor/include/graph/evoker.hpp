@@ -25,25 +25,16 @@ template <typename T>
 class placeholder;
 
 template <typename T>
-using VAR_PTR = std::shared_ptr<ivariable<T> >;
-
-template <typename T>
-using WEAK_VAR_PTR = std::weak_ptr<ivariable<T> >;
-
-template <typename T>
-using EVOKER_PTR = std::shared_ptr<ievoker<T> >;
-
-template <typename T>
 class ievoker {
 	protected:
 		virtual T* get_raw (tensor<T>& t) const { return t.raw_data_; }
 		virtual const T* get_raw (const tensor<T>& t) const { return t.raw_data_; }
 
-		virtual EVOKER_PTR<T> clone_impl (std::string name) = 0;
+		virtual ievoker<T>* clone_impl (std::string name) = 0;
 
 	public:
 		virtual ~ievoker (void) {}
-		EVOKER_PTR<T> clone (std::string name = "") { return clone_impl(name); }
+		ievoker<T>* clone (std::string name = "") { return clone_impl(name); }
 
 		// TODO consider changing return type to a pointer (shared)
 		virtual const tensor<T>& eval (void) = 0;

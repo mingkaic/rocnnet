@@ -24,7 +24,7 @@
 
 namespace nnet {
 
-#define WB_PAIR std::pair<VAR_PTR<double>, VAR_PTR<double>>
+#define WB_PAIR std::pair<ivariable<double>*, VAR_PTR<double>>
 #define IN_PAIR std::pair<size_t, nnet::TEN_FUNC<double> >
 #define HID_PAIR std::pair<layer_perceptron*, nnet::TEN_FUNC<double> >
 
@@ -41,8 +41,8 @@ class layer_perceptron {
 		size_t n_input;
 		size_t n_output;
 		// any allowed size
-		VAR_PTR<double> weights = nullptr;
-		VAR_PTR<double> bias = nullptr;
+		nnet::ivariable<double>* weights = nullptr;
+		nnet::ivariable<double>* bias = nullptr;
 
 		void copy (const layer_perceptron& other, std::string scope);
 
@@ -57,7 +57,7 @@ class layer_perceptron {
 
 		// input are expected to have shape n_input by batch_size
 		// outputs are expected to have shape output by batch_size
-		VAR_PTR<double> operator () (VAR_PTR<double>);
+		nnet::ivariable<double>* operator () (ivariable<double>*);
 
 		size_t get_n_input (void) const { return n_input; }
 		size_t get_n_output (void) const { return n_output; }
@@ -87,7 +87,7 @@ class ml_perceptron {
 
 		// input are expected to have shape n_input by batch_size
 		// outputs are expected to have shape output by batch_size
-		VAR_PTR<double> operator () (PLACEHOLDER_PTR<double> input);
+		nnet::ivariable<double>* operator () (placeholder<double>* input);
 		std::vector<WB_PAIR> get_variables (void);
 };
 

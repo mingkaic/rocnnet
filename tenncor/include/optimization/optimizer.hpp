@@ -24,7 +24,7 @@
 namespace nnet {
 
 template <typename T>
-using GRAD_MAP = std::map<ileaf<T>*, VAR_PTR<T> >;
+using GRAD_MAP = std::map<ileaf<T>*, derive<T>*>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -42,30 +42,30 @@ class ioptimizer {
 	public:
 		virtual ~ioptimizer (void) {}
 
-		void ignore (VAR_PTR<T> ig_var) { ignore_set_.insert(ig_var.get()); }
+		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
 
 		// two step process in one
-		EVOKER_PTR<T> minimize (VAR_PTR<T> fanout) {
+		ievoker<T>*minimize (ivariable<T>* fanout) {
 			GRAD_MAP<T> buffer = this->compute_grad(fanout);
 			return apply_grad(buffer);
 		}
 
 		// separate minimize into 2 steps:
 		// calculate the gradient
-		virtual GRAD_MAP<T> compute_grad (VAR_PTR<T> fanout) {
+		virtual GRAD_MAP<T> compute_grad (ivariable<T>* fanout) {
 			GRAD_MAP<T> res;
-			fanout->leaves_collect ([&res, this](ccoms::subject* leaf) {
+			fanout->leaves_collect ([&res, &fanout, this](ccoms::subject* leaf) {
 				if (ignore_set_.end() == ignore_set_.find(leaf)) {
-					std::pair<VAR_PTR<T>, VAR_PTR<T> > end_point(
+					std::pair<ivariable<T>*, ivariable<T>* > end_point(
 						dynamic_cast<ileaf<T>*>(leaf),
-						derive<T>::make(fanout, leaf));
+						new derive<T>(fanout, leaf));
 					res.insert(end_point);
 				}
 			});
 			return res;
 		}
 		// actual update step
-		virtual EVOKER_PTR<T> apply_grad (GRAD_MAP<T>& gradients) = 0;
+		virtual ievoker<double>* apply_grad (GRAD_MAP<T>& gradients) = 0;
 };
 
 template <typename T>
@@ -89,7 +89,7 @@ class gd_optimizer : public ioptimizer<double> {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
+		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 // MOMENTUM BASED OPTIMIZATION
@@ -125,7 +125,7 @@ class ada_delta_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
+		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 class ada_grad_optimizer : public gd_optimizer {
@@ -139,7 +139,7 @@ class ada_grad_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
+		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 // Root Mean Square Propagation Algorithm
@@ -169,7 +169,7 @@ class rms_prop_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual EVOKER_PTR<double> apply_grad (GRAD_MAP<double>& gradients);
+		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 }

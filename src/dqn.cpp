@@ -19,23 +19,24 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 
 	// ACTION SCORE COMPUTATION
 	// ===============================
-	VAR_PTR<double> action_scores = (*target_net)(observation);
-	predicted_actions = // max arg index
-			compress<double>::make(action_scores, 1, [](const std::vector<double>& v) {
-				size_t big_idx = 0;
-				for (size_t i = 1; i < v.size(); i++) {
-					if (v[big_idx] < v[i]) {
-						big_idx = i;
-					}
-				}
-				return big_idx;
-			});
-	action_expose = expose<double>::make(predicted_actions);
+	nnet::ivariable<double>* action_scores = (*target_net)(observation);
+	predicted_actions = new compress<double>(action_scores, 1,
+	    [](const std::vector<double>& v) {
+            // max arg index
+            size_t big_idx = 0;
+            for (size_t i = 1; i < v.size(); i++) {
+                if (v[big_idx] < v[i]) {
+                    big_idx = i;
+                }
+            }
+            return big_idx;
+        });
+	action_expose = new expose<double>(predicted_actions);
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	VAR_PTR<double> next_action_scores = (*target_net)(next_observation);
-	VAR_PTR<double> target_values = // reduce max
+	nnet::ivariable<double>* next_action_scores = (*target_net)(next_observation);
+	nnet::ivariable<double>* target_values = // reduce max
 			compress<double>::make(next_action_scores, 1,
 												[](const std::vector<double>& v) {
 													double big;
@@ -47,11 +48,11 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													return big;
 												});
 	// future rewards = rewards + discount * target action
-	VAR_PTR<double> future_rewards = PLACEHOLDER_TO_VAR<double>(rewards) + (discount_rate * target_values);
+	nnet::ivariable<double>* future_rewards = PLACEHOLDER_TO_VAR<double>(rewards) + (discount_rate * target_values);
 
 	// PREDICT ERROR
 	// ===============================
-	VAR_PTR<double> masked_action_score = // reduce sum
+	nnet::ivariable<double>* masked_action_score = // reduce sum
 			compress<double>::make(action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
 												[](const std::vector<double>& v) {
 													double accum;
@@ -60,7 +61,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													}
 													return accum;
 												});
-	VAR_PTR<double> diff = masked_action_score - future_rewards;
+	nnet::ivariable<double>* diff = masked_action_score - future_rewards;
 	prediction_error = compress<double>::make(diff * diff); // reduce mean
 	// minimize error
 	optimizer->ignore(next_action_scores);
@@ -68,8 +69,8 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 
 	// clip the gradients to reduce outliers
 	for (auto it = gradients.begin(); gradients.end() != it; it++) {
-		VAR_PTR<double> var = (*it).first;
-		VAR_PTR<double> grad = (*it).second;
+		nnet::ivariable<double>* var = (*it).first;
+		nnet::ivariable<double>* grad = (*it).second;
 		if (nullptr != grad) {
 			(*it).second = clip_by_norm<double>::make(grad, 5);
 		}
@@ -82,13 +83,13 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	std::vector<WB_PAIR> q_net_var = q_net->get_variables();
 	std::vector<WB_PAIR> target_q_net_var = q_net->get_variables();
 	for (size_t i = 0; i < q_net_var.size(); i++) {
-		VAR_PTR<double> dwt = update_rate * (q_net_var[i].first - target_q_net_var[i].first);
-		VAR_PTR<double> dbt = update_rate * (q_net_var[i].second - target_q_net_var[i].second);
+		nnet::ivariable<double>* dwt = update_rate * (q_net_var[i].first - target_q_net_var[i].first);
+		nnet::ivariable<double>* dbt = update_rate * (q_net_var[i].second - target_q_net_var[i].second);
 
 		WB_PAIR wb = target_q_net_var[i];
-		EVOKER_PTR<double> w_evok = std::make_shared<update_sub<double> >(
+		ievoker<double>* w_evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dwt);
-		EVOKER_PTR<double> b_evok = std::make_shared<update_sub<double> >(
+		ievoker<double>* b_evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbt);
 		net_train.add(w_evok);
 		net_train.add(b_evok);

@@ -14,7 +14,7 @@ namespace nnet {
 
 template <typename T>
 constant<T>::constant (T scalar) :
-	ileaf(std::vector<size_t>{1}, 
+	    ileaf<T>(std::vector<size_t>{1},
 		new const_init<T>(scalar), 
 		nnutils::formatter() << scalar) {
 	this->out_.allocate(std::make_shared<memory_alloc>());
@@ -24,7 +24,7 @@ constant<T>::constant (T scalar) :
 
 template <typename T>
 constant<T>::constant (std::vector<T> raw, tensor_shape shape) :
-	ileaf(shape, 
+	    ileaf<T>(shape,
 		new typename ileaf<T>::open_init(this->out_), 
 		nnutils::formatter() << raw.front() << ".." << raw.back() << raw.end()) {
 	this->out_.allocate(std::make_shared<memory_alloc>());
@@ -38,8 +38,8 @@ constant<T>::constant (const constant<T>& other, std::string name) {
 }
 
 template <typename T>
-EVOKER_PTR<T> constant<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new constant(*this, name));
+ievoker<T>* constant<T>::clone_impl (std::string name) {
+	return new constant(*this, name);
 }
 
 // VARIABLE IMPLEMENTATION
@@ -50,8 +50,8 @@ variable<T>::variable (const variable<T>& other, std::string name) {
 }
 
 template <typename T>
-EVOKER_PTR<T> variable<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new variable(*this, name), true);
+ievoker<T>* variable<T>::clone_impl (std::string name) {
+	return new variable(*this, name);
 }
 
 template <typename T>

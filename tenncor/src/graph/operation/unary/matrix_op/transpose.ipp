@@ -15,7 +15,7 @@ namespace nnet {
 template <typename T>
 void transpose<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
-	for (subject* child : this->dependencies_) {
+	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
 			this->grad = transpose<T>::make(arg->get_gradient());
 		}
@@ -33,25 +33,21 @@ void transpose<T>::shape_eval (void) {
 }
 
 template <typename T>
-transpose<T>::transpose (VAR_PTR<T> in) { this->init(in); }
+transpose<T>::transpose (ivariable<T>* in) : iunar_ops(in) {}
 
 template <typename T>
-EVOKER_PTR<T> transpose<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new transpose(*this, name));
+ievoker<T>* transpose<T>::clone_impl (std::string name) {
+	return new transpose(*this, name);
 }
 
 template <typename T>
-const tensor<T>& transpose<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval();
+void transpose<T>::update (void) {
+    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	assert(arg);
+	const tensor<T>& in = arg->get_eval();
 	tensor<T>* ans = this->transpose_op(in);
 	this->out_ = *ans;
 	delete ans;
-	return this->out_;
 }
 
 }

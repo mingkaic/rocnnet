@@ -43,7 +43,7 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 		// used in calc_gradient to toggle operations between returning eval and returning one
 		// bool derive_this = false;
 		
-		// virtual void set_gradient (VAR_PTR<T> g) {
+		// virtual void set_gradient (ivariable<T>* g) {
 		// 	if (nullptr == grad && nullptr != g) {
 		// 		grad = g;
 		// 		ivariable<T>::set_gradient(grad);
@@ -130,8 +130,8 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 		friend class univar_func<T>;
 
 	public:
-		ioperation (std::vector<subject*> dependencies, std::string name)
-			: ivariable (std::vector<size_t>{}, name) {
+		ioperation (std::vector<ccoms::subject*> dependencies, std::string name) :
+				ivariable<T>(std::vector<size_t>{}, name) {
 			this->short_circuit = false;
 		}
 		virtual ~ioperation (void) {
@@ -141,8 +141,8 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 		}
 		
 		virtual const tensor<T>& get_eval (void) {
-			if (short_circuit) {
-				return constant<T>::make(1);
+			if (this->short_circuit) {
+				return this->ones;
 			}
 			return this->out_;
 		}

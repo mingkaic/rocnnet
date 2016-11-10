@@ -15,26 +15,26 @@
 namespace ccoms {
 	
 // intermediate communication object, most commonly used
-	
+
 class inode : public subject, public iobserver {
 	private:
 		std::unordered_set<subject*> leaves_;
 
 	protected:
-		virtual void merge_leaves (std::unordered_set<subject*>& src) {
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
 			src.insert(leaves_.begin(), leaves_.end());
 		}
 	
 	public:
-		inode (std::vector<subject*> dependencies) :
+		inode (std::vector<ccoms::subject*> dependencies) :
 			iobserver(dependencies) {
-			for (subject* dep : dependencies) {
+			for (ccoms::subject* dep : dependencies) {
 				dep->merge_leaves(leaves_);
 			}
 		}
 
-		void leaves_collect (std::function<void(subject*)> collector) {
-			for (subject* leaf : leaves_) {
+		void leaves_collect (std::function<void(ccoms::subject*)> collector) {
+			for (ccoms::subject* leaf : leaves_) {
 				collector(leaf);
 			}
 		}

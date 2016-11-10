@@ -35,22 +35,6 @@ struct ileaf<T>::open_init : public initializer<T> {
 		}
 };
 
-template <typename T>
-ileaf<T>& ileaf<T>::operator = (const VAR_PTR<T>& other) {
-	if (this != other.get()) {
-		if (nullptr != this->init_) {
-			delete this->init_;
-		}
-
-		if (const std::shared_ptr<ileaf<T> > vptr = std::dynamic_pointer_cast<ivar_init<T> >(other)) {
-			this->copy(*vptr);
-		} else {
-			ivariable<T>::copy(*other);
-		}
-	}
-	return *this;
-}
-
 }
 
 #endif

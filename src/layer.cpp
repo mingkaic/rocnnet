@@ -59,10 +59,10 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
-VAR_PTR<double> layer_perceptron::operator () (VAR_PTR<double> input) {
+ivariable<double>* layer_perceptron::operator () (ivariable<double>* input) {
 	// weights are n_output column by n_input rows
-	VAR_PTR<double> mres = matmul<double>::make(input, weights);
-	VAR_PTR<double> exbias = extend<double>::make(bias, mres); // adjust shape based on mres shape
+	nnet::ivariable<double>* mres = matmul<double>::make(input, weights);
+	nnet::ivariable<double>* exbias = extend<double>::make(bias, mres); // adjust shape based on mres shape
 	return mres + exbias;
 }
 
@@ -125,12 +125,12 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
-VAR_PTR<double> ml_perceptron::operator () (PLACEHOLDER_PTR<double> input) {
+ivariable<double>* ml_perceptron::operator () (placeholder<double>* input) {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
-	VAR_PTR<double> output = input;
+	nnet::ivariable<double>* output = input;
 	for (HID_PAIR hp : layers) {
-		VAR_PTR<double> hypothesis = (*hp.first)(output);
+		nnet::ivariable<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 	}
 	return output;

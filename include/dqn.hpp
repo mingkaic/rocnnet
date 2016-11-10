@@ -62,18 +62,18 @@ class dq_net {
 		size_t n_train_called;
 
 		// fanins
-		PLACEHOLDER_PTR<double> observation;
-		PLACEHOLDER_PTR<double> next_observation;
-		PLACEHOLDER_PTR<double> next_observation_mask;
-		PLACEHOLDER_PTR<double> rewards;
-		PLACEHOLDER_PTR<double> action_mask;
+		nnet::placeholder<double>* observation;
+		nnet::placeholder<double>* next_observation;
+		nnet::placeholder<double>* next_observation_mask;
+		nnet::placeholder<double>* rewards;
+		nnet::placeholder<double>* action_mask;
 
-		EXPOSE_PTR action_expose;
+		nnet::expose<double>* action_expose;
 		// fanouts
-		VAR_PTR<double> predicted_actions;
-		VAR_PTR<double> prediction_error;
+		nnet::ivariable<double>* predicted_actions;
+		nnet::ivariable<double>* prediction_error;
 		// update
-		EVOKER_PTR<double> train_op;
+		ievoker<double>* train_op;
 		group<double> net_train;
 
 		void variable_setup (nnet::OPTIMIZER<double> optimizer);
@@ -95,7 +95,13 @@ class dq_net {
 				size_t mini_batch_size = 32,
 				size_t max_exp = 30000);
 
-		virtual ~dq_net (void) {}
+		virtual ~dq_net (void) {
+			delete observation;
+			delete next_observation;
+			delete next_observation_mask;
+			delete rewards;
+			delete action_mask;
+		}
 
 		std::vector<double> operator () (std::vector<double>& input);
 

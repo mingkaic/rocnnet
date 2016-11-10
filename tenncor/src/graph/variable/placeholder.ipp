@@ -31,13 +31,13 @@ placeholder<T>::placeholder (const placeholder<T>& other, std::string name) {
 }
 
 template <typename T>
-EVOKER_PTR<T> placeholder<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new placeholder(*this, name));
+ievoker<T>* placeholder<T>::clone_impl (std::string name) {
+	return new placeholder(*this, name);
 }
 
 // changes shape
 template <typename T>
-ivariable<T>& placeholder<T>::operator = (VAR_PTR<T> other) {
+ivariable<T>& placeholder<T>::operator = (ivariable<T>* other) {
 	if (this != other.get()) {
 	    if (false == this->out_.is_alloc()) {
 			this->out_.allocate(

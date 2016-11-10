@@ -7,7 +7,6 @@
 //
 
 #ifdef elementary_hpp
-#include <iostream>
 
 namespace nnet {
 
@@ -16,7 +15,7 @@ namespace nnet {
 template <typename T>
 void elementary<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
-	for (subject* child : this->dependencies_) {
+	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
 			args.push_back(arg);
 		}
@@ -25,20 +24,26 @@ void elementary<T>::setup_gradient (void) {
 }
 
 template <typename T>
-EVOKER_PTR<T> elementary<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new elementary(args_, for_each_, der_, name));
+ievoker<T>* elementary<T>::clone_impl (std::string name) {
+	return new elementary(std::vector<ivariable<T>*>(
+        this->dependencies_.begin(), this->dependencies_.end()),
+        for_each_, der_, name);
 }
 
 template <typename T>
 void elementary<T>::shape_eval (void) {
-	auto it = args_.begin();
-	tensor_shape first = this->get_tensor_from(*it).get_shape();
+	auto it = this->dependencies_.begin();
+    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(*it);
+    assert(arg);
+	tensor_shape first = this->get_tensor_from(arg).get_shape();
 	if (first.is_fully_defined()) {
-		for (it++; args_.end() != it; it++) {
-			tensor_shape ts = this->get_tensor_from(*it).get_shape();
-			assert(first.is_compatible_with(ts) ||
-				   1 == ts.n_dims() || 1 == first.n_dims());
-			if (ts.n_dims() > first.n_dims()) first = ts;
+		for (it++; this->dependencies_.end() != it; it++) {
+		    if ((arg = dynamic_cast<ivariable<T>*>(*it))) {
+                tensor_shape ts = this->get_tensor_from(*it).get_shape();
+                assert(first.is_compatible_with(ts) ||
+                       1 == ts.n_dims() || 1 == first.n_dims());
+                if (ts.n_dims() > first.n_dims()) first = ts;
+			}
 		}
 		this->update(first);
 	}
@@ -49,7 +54,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 		std::function<void(T&, T)> op,
 		BUILD_DERIVE<T> der,
 		std::string name) : 
-			ioperation(std::vector<subject*>(args.begin(), args.end()), name),
+			ioperation<T>(std::vector<ccoms::subject*>(args.begin(), args.end()), name),
 			for_each_(op), 
 			der_(der) {
 	if (session::pre_shape_eval()) {
@@ -65,15 +70,21 @@ void elementary<T>::update (void) {
 		this->out_ = tensor<T>(0);
 	} else {
 		// n-nary operator. init with first object
-		this->out_ = (*it)->get_eval();
+        ivariable<T>* arg = dynamic_cast<ivariable<T>*>(*it);
+		this->out_ = arg->get_eval();
 		it++;
 	}
 
 	while (this->dependencies_.end() != it) {
-		this->elem_op(this->out_, (*it)->get_eval(), op_);
+	    if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(*it)) {
+		    this->elem_op(this->out_, arg->get_eval(), for_each_);
+		}
 		it++;
 	}
+	this->notify();
 }
+
+// ELEMENTARY OPERATIONS
 
 // nulls are treated as 0
 template <typename T>
@@ -81,7 +92,7 @@ ivariable<T>* operator + (const ivariable<T>* a) {
 	if (nullptr == a) return nullptr;
 	ivariable<T> op = new elementary<T>(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other) { collector = +other; },
-		[](std::vector<ivariable<T>* args) { 
+		[](std::vector<ivariable<T>*> args) {
 			return +(args.front()->get_gradient()); 
 		},
 	nnutils::formatter() << "abs(" << a->get_name() << ")");

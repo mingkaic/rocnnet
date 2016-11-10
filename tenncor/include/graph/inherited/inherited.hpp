@@ -6,7 +6,7 @@
 #ifndef inherited_hpp
 #define inherited_hpp
 
-#include "../variable/ivariable.hpp"
+#include "graph/ivariable.hpp"
 
 namespace nnet {
 
@@ -16,11 +16,6 @@ namespace nnet {
 
 template <typename T>
 class inherited_variable : public ivariable<T> {
-	protected:
-		// DEPRECATED
-		// virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
-		// virtual void set_gradient (VAR_PTR<T> g) = 0;
-
 	public:
 		virtual ~inherited_variable (void) {}
 		// eval remains abstract
@@ -32,35 +27,35 @@ class inherited_variable : public ivariable<T> {
 template <typename T>
 class jacobian : public inherited_variable<T> {
 	protected:
-		VAR_PTR<T> to_root_;
-		VAR_PTR<T> to_leaf_;
+		ivariable<T>* to_root_;
+		ivariable<T>* to_leaf_;
 
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {}
-		virtual void set_gradient (VAR_PTR<T> g) {}
+		virtual void make_gradient (ivariable<T>*& safety_ref) {}
+		virtual void set_gradient (ivariable<T>* g) {}
 
 		// interaction control
-		virtual void interact (VAR_PTR<T>* op) {
-			VAR_PTR<T> v = this->self_ref_.lock();
+		virtual void interact (ivariable<T>* op) {
+			ivariable<T>* v = this->self_ref_.lock();
 			op = &v;
 		}
 		virtual tensor<T>& grab_tensor (void) { return this->get_tensor_from(to_root_); }
 
-		jacobian (std::function<VAR_PTR<T>(VAR_PTR<T>)> construction) {
+		jacobian (std::function<ivariable<T>*(ivariable<T>*)> construction) {
 			to_root_ = variable<T>::make(1);
 			to_leaf_ = construction(to_root_);
 			this->name = "J(" + to_leaf_->get_name() + ")";
 		}
 
-		virtual EVOKER_PTR<T> clone_impl (std::string name) {
-			return std::shared_ptr<ievoker<T> >(nullptr); // make deep copy later
+		virtual ievoker<T>* clone_impl (std::string name) {
+			return nullptr; // make deep copy later
 		}
 
 	public:
-		static VAR_PTR<T> make (std::function<VAR_PTR<T>(VAR_PTR<T>)> construction) {
+		static ivariable<T>* make (std::function<ivariable<T>*(ivariable<T>*)> construction) {
 			return ivariable<T>::make_shared(new jacobian(construction));
 		}
 
-		VAR_PTR<T> clone (std::string name = "") {
+		ivariable<T>* clone (std::string name = "") {
 			return std::static_pointer_cast<jacobian<T>, ievoker<T> >(clone_impl(name));
 		}
 

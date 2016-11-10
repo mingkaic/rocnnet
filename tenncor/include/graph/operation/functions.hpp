@@ -17,31 +17,31 @@
 namespace nnet {
 
 template <typename T>
-using TEN_FUNC = std::function<VAR_PTR<T>(VAR_PTR<T>)>;
+using TEN_FUNC = std::function<ivariable<T>*(ivariable<T>*)>;
 
 template <typename T>
-VAR_PTR<T> sigmoid (VAR_PTR<T> x) {
+ivariable<T>* sigmoid (ivariable<T>* x) {
 	// f(x) = 1/(1+e^-x)
 	return 1.0 / (1.0 + nnet::exp(-x));
 }
 
 template <typename T>
-VAR_PTR<T> tanh (VAR_PTR<T> x) {
+ivariable<T>* tanh (ivariable<T>* x) {
 	// f(x) = (e^(2*x)+1)/(e^(2*x)-1)
-	VAR_PTR<T> etx = nnet::exp(2.0 * x);
+	ivariable<T>* etx = nnet::exp(2.0 * x);
 	return (etx + 1.0) / (etx - 1.0);
 }
 
 template <typename T>
 // clones every node from root to anything in leaf_set_src
-VAR_PTR<T> clone (VAR_PTR<T> src_root,
-			std::unordered_set<VAR_PTR<T> > leaf_set_src,
-			std::unordered_set<VAR_PTR<T> >& leaf_set_dest) {
-	std::queue<WEAK_VAR_PTR<T> > q;
-	std::unordered_map<WEAK_VAR_PTR<T>, WEAK_VAR_PTR<T> > src_to_dest;
-	VAR_PTR<T> dest_root = src_root->clone();
-	WEAK_VAR_PTR<T> cur = src_root;
-	WEAK_VAR_PTR<T> cpy = dest_root;
+ivariable<T>* clone (ivariable<T>* src_root,
+			std::unordered_set<ivariable<T>* > leaf_set_src,
+			std::unordered_set<ivariable<T>* >& leaf_set_dest) {
+	std::queue<ivariable<T>* > q;
+	std::unordered_map<ivariable<T>*, ivariable<T>* > src_to_dest;
+	ivariable<T>* dest_root = src_root->clone();
+	ivariable<T>* cur = src_root;
+	ivariable<T>* cpy = dest_root;
 	// storage
 	q.push(src_root);
 	src_to_dest[src_root] = dest_root;

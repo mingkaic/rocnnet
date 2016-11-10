@@ -21,7 +21,7 @@ class expose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void) {}
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual ievoker<T>* clone_impl (std::string name);
 
 		std::vector<T> get_vec (const tensor<T>& in) const;
 
@@ -33,8 +33,8 @@ class expose : public iunar_ops<T> {
 		expose (ivariable<T>* var) { this->init(var); }
 
 		// COPY
-		std::shared_ptr<expose<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<expose<T>, ievoker<T> >(clone_impl(name));
+        expose<T>* clone (std::string name = "") {
+			return static_cast<expose<T>*>(clone_impl(name));
 		}
 		
 		// MOVES
@@ -47,7 +47,7 @@ class expose : public iunar_ops<T> {
 		virtual std::vector<T> get_raw (void);
 		// extracts derivative based on the LAST evaluation
 		// doesn't evaluate
-		virtual std::vector<T> get_derive (VAR_PTR<T> over) const;
+		virtual std::vector<T> get_derive (ivariable<T>* over) const;
 };
 
 }

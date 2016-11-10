@@ -25,8 +25,8 @@ std::function<T(T)> clip_by_norm<T>::get_op (void) {
 }
 
 template <typename T>
-EVOKER_PTR<T> clip_by_norm<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new clip_by_norm(*this, name));
+ievoker<T>* clip_by_norm<T>::clone_impl (std::string name) {
+	return new clip_by_norm(*this, name);
 }
 
 }

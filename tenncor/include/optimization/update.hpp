@@ -17,25 +17,33 @@ namespace nnet {
 
 template <typename T>
 class update : public ievoker<T> {
-	protected:
-		std::shared_ptr<variable<T> > dest_;
-		VAR_PTR<T> src;
-		// determines how element-wise assignment works, defaults to direct assignment
-		std::function<void(T&,T)> assign = [](T& left, T right) { left = right; };
-
+	private:
 		update (update<T>& other);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
+
+	protected:
+		variable<T>* dest_;
+		ivariable<T>* src_;
+
+		// determines how element-wise assignment works, defaults to direct assignment
+		std::function<void(T&,T)> assign_ = [](T& left, T right) { left = right; };
+
+		void copy (update<T>& other);
+
+		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
-		update (std::shared_ptr<variable<T> > dest,
-				VAR_PTR<T> src);
-		update (std::shared_ptr<variable<T> > dest,
-				VAR_PTR<T> src,
+		update (variable<T>* dest,
+				ivariable<T>* src);
+		update (variable<T>* dest,
+				ivariable<T>* src,
 				std::function<void(T&,T)> assign);
-		virtual ~update (void) {}
+		virtual ~update (void) {
+			delete dest_;
+			delete src_;
+		}
 
-		std::shared_ptr<update<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<update<T>, ievoker<T> >(clone_impl(name));
+        update<T>* clone (std::string name = "") {
+			return static_cast<update<T>*>(this->clone_impl(name));
 		}
 
 		virtual const tensor<T>& eval (void);
@@ -43,12 +51,17 @@ class update : public ievoker<T> {
 
 template <typename T>
 class update_sub : public update<T> {
-	public:
-		update_sub (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src);
-		virtual ~update_sub (void) {}
+	private:
+		update_sub (update_sub<T>& other);
 
-		std::shared_ptr<update<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<update_sub<T>, ievoker<T> >(this->clone_impl(name));
+    protected:
+        virtual ievoker<T>* clone_impl (std::string name);
+
+	public:
+		update_sub (variable<T>* dest, ivariable<T>* src);
+
+        update_sub<T>* clone (std::string name = "") {
+			return static_cast<update_sub<T>*>(this->clone_impl(name));
 		}
 };
 

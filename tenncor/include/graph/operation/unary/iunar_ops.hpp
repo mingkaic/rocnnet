@@ -27,7 +27,7 @@ class iunar_ops : public ioperation<T> {
 
 	public:
 		iunar_ops (ivariable<T>* arg)
-				: ioperation (std::vector<subject*>{arg}, 
+				: ioperation<T>(std::vector<ccoms::subject*>{arg},
 				nnutils::formatter() << "<" << get_symb() << ">(" << arg->get_name() << ")") {
 			if (session::pre_shape_eval()) {
 				shape_eval();

@@ -15,9 +15,9 @@ namespace nnet {
 template <typename T>
 void extend<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
-	for (subject* child : this->dependencies_) {
+	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
-			VAR_PTR<T> g = arg->get_gradient();
+			ivariable<T>* g = arg->get_gradient();
 			if (nullptr == watch.lock()) {
 				this->grad = extend<T>::make(g, index, multiplier);
 			} else {
@@ -50,22 +50,24 @@ void extend<T>::copy (const ivariable<T>& other, std::string name) {
 }
 
 template <typename T>
-extend<T>::extend (VAR_PTR<T> in, WEAK_VAR_PTR<T> watch) : watch(watch) {
-	this->init(in);
-	this->consume(*(watch.lock().get()));
-	shape_eval();
+extend<T>::extend (ivariable<T>* in, ivariable<T>* watch) :
+        iunar_ops(in), watch(watch) {
+	if (session::pre_shape_eval()) {
+	    shape_eval();
+    }
 }
 
 template <typename T>
-extend<T>::extend (VAR_PTR<T> in, size_t index, size_t multiplier)
-		: index(index), multiplier(multiplier) {
-	this->init(in);
-	shape_eval();
+extend<T>::extend (ivariable<T>* in, size_t index, size_t multiplier) :
+        iunar_ops(in), index(index), multiplier(multiplier) {
+	if (session::pre_shape_eval()) {
+	    shape_eval();
+    }
 }
 
 template <typename T>
-EVOKER_PTR<T> extend<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new extend(*this, name));
+ievoker<T>* extend<T>::clone_impl (std::string name) {
+	return new extend(*this, name);
 }
 
 template <typename T>
@@ -77,7 +79,7 @@ extend<T>& extend<T>::operator = (const ivariable<T>& other) {
 }
 
 template <typename T>
-void extend<T>::set_ext_info (WEAK_VAR_PTR<T> watch) {
+void extend<T>::set_ext_info (ivariable<T>* watch) {
 	this->index = 0;
 	this->multiplier = 0;
 	this->consume(*(watch.get()));
@@ -96,13 +98,10 @@ void extend<T>::set_ext_info (size_t index, size_t multiplier) {
 }
 
 template <typename T>
-const tensor<T>& extend<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval();
+void extend<T>::update (void) {
+    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	assert(arg);
+	const tensor<T>& in = arg->get_eval();
 	if (nullptr == watch.lock()) {
 		tensor<T> *ans = this->extend_op(in, index, multiplier);
 		this->out_ = *ans;

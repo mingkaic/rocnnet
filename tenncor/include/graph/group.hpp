@@ -18,29 +18,29 @@ namespace nnet {
 template <typename T>
 class group : public ievoker<T> {
 	private:
-		std::vector<EVOKER_PTR<T> > acts_;
+		std::vector<ievoker<T>*> acts_;
 
 	protected:
-		virtual EVOKER_PTR<T> clone_impl (std::string name) {
-			return std::shared_ptr<group<T> >(new group(acts_));
+		virtual ievoker<T>* clone_impl (std::string name) {
+			return new group(acts_);
 		}
 
 	public:
 		group (void) {}
-		group (std::vector<EVOKER_PTR<T> > acts) : acts_(acts) {}
+		group (std::vector<ievoker<T>*> acts) : acts_(acts) {}
 		virtual ~group (void) {}
 
-		std::shared_ptr<group<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<group<T>, ievoker<T> >(clone_impl(name));
+		group<T>* clone (std::string name = "") {
+			return static_cast<group<T>*>(clone_impl(name));
 		}
 
-		void add (EVOKER_PTR<T> evok) {
+		void add (ievoker<T>*evok) {
 			acts_.push_back(evok);
 		}
 
 		virtual const tensor<T>& eval (void) {
 			const tensor<T>* ptr;
-			for (EVOKER_PTR<T> evok : acts_) {
+			for (ievoker<T>*evok : acts_) {
 				ptr = &(evok->eval());
 			}
 			return *ptr;
@@ -51,23 +51,23 @@ class group : public ievoker<T> {
 template <typename T>
 class async_group : public ievoker<T> {
 	private:
-		std::unordered_set<EVOKER_PTR<T> > acts_;
+		std::unordered_set<ievoker<T>*> acts_;
 
 	protected:
-		virtual EVOKER_PTR<T> clone_impl (std::string name) {
-			return std::shared_ptr<async_group<T> >(new async_group(acts_));
+		virtual ievoker<T>* clone_impl (std::string name) {
+			return new async_group(acts_);
 		}
 
 	public:
 		async_group (void) {}
-		async_group (std::unordered_set<EVOKER_PTR<T> > acts) : acts_(acts) {}
+		async_group (std::unordered_set<ievoker<T>*> acts) : acts_(acts) {}
 		virtual ~async_group (void) {}
 
-		std::shared_ptr<async_group<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<async_group<T>, ievoker<T> >(clone_impl(name));
+        async_group<T>* clone (std::string name = "") {
+			return static_cast<async_group<T>*>(clone_impl(name));
 		}
 
-		void add (EVOKER_PTR<T> evok) {
+		void add (ievoker<T>*evok) {
 			acts_.emplace(evok);
 		}
 

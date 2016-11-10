@@ -20,34 +20,42 @@ namespace nnet {
 template <typename T>
 class derive : public iunar_ops<T> {
 	private:
-		VAR_PTR<T> over_ = nullptr;
+		ivariable<T>* over_ = nullptr;
+
+		derive (ivariable<T>* var, std::string name) { this->copy(var, name); } // copy constructor
 
 	protected:
-		derive (ivariable<T>& var, std::string name) { this->copy(var, name); } // copy constructor
-		derive (VAR_PTR<T> func, VAR_PTR<T> over) {
-			this->over_ = over;
-			this->init(func);
-		}
-
 		std::string get_symb (void) { return "/derive(" + over_->get_name() + ")?"; }
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
+		virtual ievoker<T>* clone_impl (std::string name);
 		virtual void setup_gradient (void) {
 			// TODO implement second order calc_gradient
 		}
 
 	public:
-		static VAR_PTR<T> make (VAR_PTR<T> func, VAR_PTR<T> over) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new derive(func, over));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(func, root);
-			return *root;
+		derive (ivariable<T>* func, ivariable<T>* over) :
+			iunar_ops<T>(func->get_derive()), over_(over) {}
+
+		virtual const tensor<T>& get_eval (void) {
+			if (this->short_circuit) {
+				return this->ones;
+			}
+			if (ioperation<T>* func = dynamic_cast<ioperation<T>*>(this->dependencies_[0])) {
+				func->leaves_collect([this](ccoms::subject* sub){
+					if (over_ != sub) {
+						if (ivariable<T> *leaf = dynamic_cast<ivariable<T> *>(sub)) {
+							leaf->short_circuit = false;
+						}
+					}
+				});
+			}
+			over_->notify();
+			return this->out_;
 		}
-		virtual const tensor<T>& eval (void);
-		std::shared_ptr<derive<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<derive<T>, ievoker<T> >(clone_impl(name));
+
+		virtual void update (void);
+        derive<T>* clone (std::string name = "") {
+			return static_cast<derive<T>*>(clone_impl(name));
 		}
 };
 

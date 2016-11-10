@@ -27,7 +27,7 @@ class subject {
 		// raw_data
 		
 	protected:
-		virtual void merge_leaves (std::unordered_set<subject*>& src) {
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
 			src.emplace(this);
 		}
 		

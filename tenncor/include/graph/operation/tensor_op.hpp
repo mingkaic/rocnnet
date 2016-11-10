@@ -13,34 +13,36 @@
 
 namespace nnet {
 
-// template <typename T>
-// class collect_op : public ioperation<T> {
-// 	protected:
-// 		std::function<void(T&, T, size_t)> collect_;
-// 		BUILD_DERIVE<T> der_;
+template <typename T>
+class collect_op : public ioperation<T> {
+	protected:
+		std::function<void(T&, T, size_t)> collect_;
+		BUILD_DERIVE<T> der_;
 
-// 		virtual void setup_gradient (void);
-// 		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual void setup_gradient (void);
+		virtual ievoker<T>* clone_impl (std::string name);
 
-// 		virtual void shape_eval (void);
+		virtual void shape_eval (void);
 
-// 	public:
-// 		tensor_op (std::vector<ivariable<T>*> args,
-// 					std::function<void(T&, T)> op,
-// 					BUILD_DERIVE<T> der,
-// 					std::string name = "");
+	public:
+		collect_op (std::vector<ivariable<T>*> args,
+					std::function<void(T&, T, size_t)> op,
+					BUILD_DERIVE<T> der,
+					std::string name = "");
 
-// 		// COPY
-// 		std::shared_ptr<tensor_op<T> > clone (std::string name = "") {
-// 			return std::static_pointer_cast<tensor_op<T>, ievoker<T> >(clone_impl(name));
-// 		}
-		
-// 		// MOVES
-// 		// TODO: implement
+		// COPY
+        tensor_op<T>* clone (std::string name = "") {
+			return static_cast<tensor_op<T>*>(clone_impl(name));
+		}
 
-// 		virtual void update (void);
-// };
+		// MOVES
+		// TODO: implement
+
+		virtual void update (void);
+};
 
 }
+
+#include "../../../src/graph/operation/tensor_op.ipp"
 
 #endif /* tensor_op_hpp */

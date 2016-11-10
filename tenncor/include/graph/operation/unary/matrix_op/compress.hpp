@@ -22,44 +22,30 @@ class compress : public iunar_ops<T> {
 		// first parameter is the collecting buffer, second is the gathered data
 		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
+		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
+
 	protected:
 		virtual void setup_gradient (void);
 		virtual std::string get_symb (void) { return "compress"; }
 
 		virtual void shape_eval (void);
 		void copy (const ivariable<T>& other, std::string name = "");
-		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
-		compress (VAR_PTR<T> in, size_t index);
-		compress (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector);
 
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
-		static VAR_PTR<T> make (VAR_PTR<T> in, size_t index = 0) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new compress(in, index));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(in, root);
-			return *root;
-		}
-		static VAR_PTR<T> make (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new compress(in, index, collector));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(in, root);
-			return *root;
-		}
+		compress (ivariable<T>* in, size_t index);
+		compress (ivariable<T>* in, size_t index, std::function<T(const std::vector<T>&)> collector);
+
 		virtual compress<T>& operator = (const ivariable<T>& other);
 
-		std::shared_ptr<compress<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<compress<T>, ievoker<T> >(clone_impl(name));
+        compress<T>* clone (std::string name = "") {
+			return static_cast<compress<T>*>(clone_impl(name));
 		}
 
 		void set_cmpr_info (size_t index, std::function<T(const std::vector<T>&)> collector);
 
-		virtual const tensor<T>& eval (void);
+		virtual void update (void);
 };
 
 }

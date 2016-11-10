@@ -12,22 +12,22 @@
 
 namespace nnet {
 
-EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
-					VAR_PTR<double> expect_out, // TESTING
-					VAR_PTR<double> train_in,
-					VAR_PTR<double> diff_func,
-					VAR_PTR<double> batch_size,
+ievoker<double>* ad_hoc_gd_setup (double learning_rate,
+					nnet::ivariable<double>* expect_out, // TESTING
+					nnet::ivariable<double>* train_in,
+					nnet::ivariable<double>* diff_func,
+					nnet::ivariable<double>* batch_size,
 					std::vector<HID_PAIR>& layers,
-					std::queue<VAR_PTR<double> >& layer_out,
-					std::stack<VAR_PTR<double> >& prime_out) {
+					std::queue<ivariable<double>* >& layer_out,
+					std::stack<ivariable<double>* >& prime_out) {
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
-	VAR_PTR<double> err = diff_func * prime_out.top();
+	nnet::ivariable<double>* err = diff_func * prime_out.top();
 //	// initial error according to MY derivative
-//	VAR_PTR<double> err = prime_out.top() - expect_out;
+//	nnet::ivariable<double>* err = prime_out.top() - expect_out;
 	prime_out.pop();
-	std::stack<VAR_PTR<double> > errs;
+	std::stack<ivariable<double>* > errs;
 	errs.push(err);
 
 	auto term = --layers.rend();
@@ -35,36 +35,36 @@ EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
 		 term != rit; rit++) {
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
-		VAR_PTR<double> weight_i = hp.first->get_variables().first;
+		nnet::ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		VAR_PTR<double> mres = matmul<double>::make(err, weight_i, false ,true);
+		nnet::ivariable<double>* mres = matmul<double>::make(err, weight_i, false ,true);
 		err = mres * prime_out.top();
 		prime_out.pop();
 		errs.push(err);
 	}
 
-	VAR_PTR<double> learn_batch = learning_rate / batch_size;
+	nnet::ivariable<double>* learn_batch = learning_rate / batch_size;
 	std::shared_ptr<group<double> > updates = std::make_shared<group<double> >();
-	VAR_PTR<double> output = train_in;
+	nnet::ivariable<double>* output = train_in;
 	for (HID_PAIR hp : layers) {
 		err = errs.top();
 		errs.pop();
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		VAR_PTR<double> cost = matmul<double>::make(output, err, true);
-		VAR_PTR<double> dweights = cost * learn_batch;
+		nnet::ivariable<double>* cost = matmul<double>::make(output, err, true);
+		nnet::ivariable<double>* dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
-		VAR_PTR<double> compressed_err = compress<double>::make(err, 1);
-		VAR_PTR<double> dbias = compressed_err * learn_batch;
+		nnet::ivariable<double>* compressed_err = compress<double>::make(err, 1);
+		nnet::ivariable<double>* dbias = compressed_err * learn_batch;
 
 		// update weights and bias
 		// weights -= dweights, bias -= dbias
 		WB_PAIR wb = hp.first->get_variables();
-		EVOKER_PTR<double> w_evok = std::make_shared<update_sub<double> >(
+		ievoker<double>* w_evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dweights);
-		EVOKER_PTR<double> b_evok = std::make_shared<update_sub<double> >(
+		ievoker<double>* b_evok = std::make_shared<update_sub<double> >(
 			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbias);
 
 		// store for update
@@ -79,22 +79,22 @@ EVOKER_PTR<double> ad_hoc_gd_setup (double learning_rate,
 
 void gd_net::train_set_up (void) {
 	// follow () operator for ml_perceptron except store hypothesis
-	std::queue<VAR_PTR<double> > layer_out;
-	std::stack<VAR_PTR<double> > prime_out;
+	std::queue<ivariable<double>* > layer_out;
+	std::stack<ivariable<double>* > prime_out;
 
 	// not so generic setup
-	VAR_PTR<double> output = std::dynamic_pointer_cast<ivariable<double> >(train_in);
+	nnet::ivariable<double>* output = std::dynamic_pointer_cast<ivariable<double> >(train_in);
 	for (HID_PAIR hp : layers) {
-		VAR_PTR<double> hypothesis = (*hp.first)(output);
+		nnet::ivariable<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
-		VAR_PTR<double> grad = derive<double>::make(output, hypothesis);
+		nnet::ivariable<double>* grad = derive<double>::make(output, hypothesis);
 		prime_out.push(grad);
 	}
 
 	// preliminary setup for any update algorithm
-	VAR_PTR<double> diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
+	nnet::ivariable<double>* diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
 	record = expose<double>::make(diff);
 
 	if (nullptr == optimizer_) {

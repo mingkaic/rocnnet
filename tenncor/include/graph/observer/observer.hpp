@@ -19,18 +19,18 @@ namespace ccoms {
 
 class iobserver {
 	protected:
-		std::vector<subject*> dependencies_;
+		std::vector<ccoms::subject*> dependencies_;
 
 	public:
-		iobserver (std::vector<subject*> dependencies) :
+		iobserver (std::vector<ccoms::subject*> dependencies) :
 			dependencies_(dependencies) {
-			for (subject* dep : dependencies) {
+			for (ccoms::subject* dep : dependencies) {
 				dep->attach(this);
 			}
 		}
 		
 		virtual ~iobserver (void) {
-			for (subject* dep : dependencies_) {
+			for (ccoms::subject* dep : dependencies_) {
 				dep->detach(this);
 			}
 		}

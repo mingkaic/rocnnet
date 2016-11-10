@@ -15,8 +15,6 @@
 
 namespace nnet {
 
-#define EXPOSE_PTR std::shared_ptr<nnet::expose<double> >
-
 // wrapper for
 // gradient descent
 // TODO transform into a tensor operation "optimizer" similar to tf.optimizer
@@ -28,12 +26,12 @@ class gd_net : public ml_perceptron {
 		double learning_rate = 0.5; // implement setter
 		bool record_training = false;
 		// input
-		PLACEHOLDER_PTR<double> train_in = nullptr;
-		PLACEHOLDER_PTR<double> expected_out = nullptr;
-		PLACEHOLDER_PTR<double> batch_size = nullptr;
+		nnet::placeholder<double>* train_in = nullptr;
+		nnet::placeholder<double>* expected_out = nullptr;
+		nnet::placeholder<double>* batch_size = nullptr;
 		// output
-		EVOKER_PTR<double> updates;
-		EXPOSE_PTR record = nullptr;
+		ievoker<double>* updates;
+		nnet::expose<double>* record = nullptr;
 		OPTIMIZER<double> optimizer_ = nullptr;
 
 		void train_set_up (void);

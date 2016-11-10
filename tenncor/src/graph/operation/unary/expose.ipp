@@ -13,13 +13,16 @@ namespace nnet {
 // OUT NODE
 
 template <typename T>
-EVOKER_PTR<T> expose<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new expose(*this, name));
+ievoker<T>* expose<T>::clone_impl (std::string name) {
+	return new expose(*this, name);
 }
 
 template <typename T>
 void expose<T>::update (void) {
-	this->out_ = this->dependencies_->eval();
+    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	assert(arg);
+	this->out_ = arg->get_eval();
+	this->notify();
 }
 
 template <typename T>
@@ -36,7 +39,7 @@ std::vector<T> expose<T>::get_raw (void) {
 }
 
 template <typename T>
-std::vector<T> expose<T>::get_derive (VAR_PTR<T> over) const {
+std::vector<T> expose<T>::get_derive (ivariable<T>* over) const {
 	return get_vec(this->var->calc_gradient(over));
 }
 

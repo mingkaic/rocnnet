@@ -11,6 +11,6 @@
 #include "tenncor/tenncor.hpp"
 #include "gtest/gtest.h"
 
-#define EXPOSE_PTR std::shared_ptr<nnet::expose<double> >
+#define expose<double>* std::shared_ptr<nnet::expose<double> >
 
 #endif //CNNET_UTILS_HPP

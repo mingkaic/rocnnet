@@ -21,7 +21,7 @@ class elementary : public ioperation<T> {
 		
 	protected:
 		virtual void setup_gradient (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual ievoker<T>* clone_impl (std::string name);
 
 		virtual void shape_eval (void);
 
@@ -32,8 +32,8 @@ class elementary : public ioperation<T> {
 					std::string name = "");
 
 		// COPY
-		std::shared_ptr<elementary<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<elementary<T>, ievoker<T> >(clone_impl(name));
+        elementary<T>* clone (std::string name = "") {
+			return static_cast<elementary<T>*>(clone_impl(name));
 		}
 		
 		// MOVES
@@ -44,7 +44,7 @@ class elementary : public ioperation<T> {
 
 // operators that will replace elementary operation objects
 template<typename T>
-ivariable<T>* operator + (const ivariable<T>* a) { return &(+*a); }
+ivariable<T>* operator + (const ivariable<T>* a);
 
 template<typename T>
 ivariable<T>* operator - (const ivariable<T>* a);

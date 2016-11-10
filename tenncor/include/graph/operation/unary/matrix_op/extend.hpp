@@ -21,7 +21,9 @@ class extend : public iunar_ops<T> {
 	private:
 		size_t index = 0;
 		size_t multiplier = 0;
-		WEAK_VAR_PTR<T> watch;
+		ivariable<T>* watch_ = nullptr;
+
+        void copy(const ivariable<T> &other, std::string name = "");
 
 	protected:
 		virtual void setup_gradient(void);
@@ -30,46 +32,26 @@ class extend : public iunar_ops<T> {
 
 		virtual void shape_eval(void);
 
-		void copy(const ivariable<T> &other, std::string name = "");
-
 		extend(const ivariable<T> &other, std::string name) { this->copy(other, name); }
 
-		extend(VAR_PTR<T> in, WEAK_VAR_PTR<T> watch); // extend to fit shape
-		extend(VAR_PTR<T> in, size_t index, size_t multiplier);
-
-		virtual EVOKER_PTR<T> clone_impl(std::string name);
+		virtual ievoker<T>*clone_impl(std::string name);
 
 	public:
-		static VAR_PTR<T> make(VAR_PTR<T> in, WEAK_VAR_PTR<T> watch) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new extend(in, watch));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(in, root);
-			return *root;
-		}
+        extend (ivariable<T>* in, ivariable<T>* watch); // extend to fit shape
+        extend (ivariable<T>* in, size_t index, size_t multiplier);
 
-		static VAR_PTR<T> make(VAR_PTR<T> in, size_t index = 0, size_t multiplier = 1) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new extend(in, index, multiplier));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(in, root);
-			return *root;
-		}
-
-		virtual extend<T>& operator=(const ivariable<T> &other);
+		virtual extend<T>& operator = (const ivariable<T> &other);
 
 		std::shared_ptr<extend<T> > clone(std::string name = "") {
 			return std::static_pointer_cast<extend<T>, ievoker<T> >(clone_impl(name));
 		}
 
 		// set data
-		void set_ext_info(WEAK_VAR_PTR<T> watch);
+		void set_ext_info(ivariable<T>* watch);
 
 		void set_ext_info(size_t index, size_t multiplier);
 
-		virtual const tensor<T> &eval(void);
+		virtual void update (void);
 };
 
 }

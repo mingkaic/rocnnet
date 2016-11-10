@@ -12,36 +12,42 @@
 namespace nnet {
 
 template <typename T>
-update<T>::update (update<T>& other) {
+void update<T>::copy (update<T>& other) {
 	this->dest_ = other.dest_;
-	this->src = other.src;
-	this->assign = other.assign;
+	this->src_ = other.src_;
+	this->assign_ = other.assign_;
 }
 
 template <typename T>
-EVOKER_PTR<T> update<T>::clone_impl (std::string name) {
-	return std::shared_ptr<update<T> >(new update(*this));
+update<T>::update (update<T>& other) {
+    copy(other);
 }
 
 template <typename T>
-update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src) : dest_(dest), src(src) {}
+ievoker<T>* update<T>::clone_impl (std::string name) {
+	return new update(*this);
+}
 
 template <typename T>
-update<T>::update (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src,
-					std::function<void(T&,T)> assign) :
-	dest_(dest), src(src), assign(assign) {}
+update<T>::update (variable<T>* dest, ivariable<T>* src) : dest_(dest), src_(src) {}
+
+template <typename T>
+update<T>::update (variable<T>* dest,
+    ivariable<T>* src,
+    std::function<void(T&,T)> assign) :
+	    dest_(dest), src_(src), assign_(assign) {}
 
 template <typename T>
 const tensor<T>& update<T>::eval (void) {
 	tensor<T>& out = dest_->grab_tensor();
-	const tensor<T>& in = src->eval();
+	const tensor<T>& in = src_->eval();
 	assert(out.is_same_size(in));
 
 	T* old_data = this->get_raw(out);
 	const T* new_data = this->get_raw(in);
 	size_t total = in.n_elems();
 	for (size_t i = 0; i < total; i++) {
-		assign(old_data[i], new_data[i]);
+		assign_(old_data[i], new_data[i]);
 	}
 
 	return out;
@@ -50,7 +56,17 @@ const tensor<T>& update<T>::eval (void) {
 // assign sub
 
 template <typename T>
-update_sub<T>::update_sub (std::shared_ptr<variable<T> > dest, VAR_PTR<T> src) :
+update_sub<T>::update_sub (update_sub<T>& other) {
+    copy(other);
+}
+
+template <typename T>
+ievoker<T>* update_sub<T>::clone_impl (std::string name) {
+	return new update_sub(*this);
+}
+
+template <typename T>
+update_sub<T>::update_sub (variable<T>* dest, ivariable<T>* src) :
 	update<T>(dest, src, [](T& d, T s) { d -= s; }) {}
 
 }

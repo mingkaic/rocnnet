@@ -13,18 +13,15 @@ namespace nnet {
 // GRADIENT NODE
 
 template <typename T>
-EVOKER_PTR<T> derive<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new derive(*this, name));;
+ievoker<T>* derive<T>::clone_impl (std::string name) {
+	return new derive(*this, name);
 }
 
 template <typename T>
-const tensor<T>& derive<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	this->out_ = this->var->calc_gradient(over_);
-	return this->out_;
+void derive<T>::update (void) {
+    ioperation<T>* func = dynamic_cast<ioperation<T>*>(this->dependencies_[0]);
+    assert(func);
+	this->out_ = func->get_eval();
 }
 
 }

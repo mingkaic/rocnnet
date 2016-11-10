@@ -13,11 +13,11 @@ namespace nnet {
 // MATRIX MULTIPLICATION
 
 template <typename T>
-void matmul<T>::make_gradient (VAR_PTR<T>& safety_ref) {
+void matmul<T>::make_gradient (ivariable<T>*& safety_ref) {
 	// matmul'(f, g) = inherited(matmul(k, g^T) * f' + matmul(f^T, k) * g')
-	VAR_PTR<T> g = jacobian<T>::make([this](VAR_PTR<T> channel) {
-		VAR_PTR<T> ga = this->a->get_gradient();
-		VAR_PTR<T> gb = this->b->get_gradient();
+	ivariable<T>* g = jacobian<T>::make([this](ivariable<T>* channel) {
+		ivariable<T>* ga = this->a->get_gradient();
+		ivariable<T>* gb = this->b->get_gradient();
 		return matmul<T>::make(channel, this->b, transposeA, !transposeB) * ga +
 				matmul<T>::make(this->a, channel, !transposeA, transposeB)  * gb;
 	});
@@ -29,9 +29,9 @@ void matmul<T>::setup_gradient (void) {
 	ivariable<T>* arga = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	ivariable<T>* argb = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
 	assert(arga && argb);
-	return jacobian<T>::make([arga, argb, this](VAR_PTR<T> channel) {
-		VAR_PTR<T> ga = arga->get_gradient();
-		VAR_PTR<T> gb = argb->get_gradient();
+	return jacobian<T>::make([arga, argb, this](ivariable<T>* channel) {
+		ivariable<T>* ga = arga->get_gradient();
+		ivariable<T>* gb = argb->get_gradient();
 		return matmul<T>::make(channel, argb, transposeA, !transposeB) * ga +
 				matmul<T>::make(arga, channel, !transposeA, transposeB) * gb;
 	}
@@ -62,7 +62,7 @@ matmul<T>::matmul (const matmul<T>& other, std::string name) {
 }
 
 template <typename T>
-matmul<T>::matmul (VAR_PTR<T> a, VAR_PTR<T> b,
+matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 					bool transposeA, bool transposeB) {
 	std::stringstream ns;
 	ns << a->get_name() << "•" << b->get_name();
@@ -79,8 +79,8 @@ matmul<T>::matmul (VAR_PTR<T> a, VAR_PTR<T> b,
 }
 
 template <typename T>
-EVOKER_PTR<T> matmul<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new matmul(*this, name));
+ievoker<T>* matmul<T>::clone_impl (std::string name) {
+	return new matmul(*this, name);
 }
 
 template <typename T>

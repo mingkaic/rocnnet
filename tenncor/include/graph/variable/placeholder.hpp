@@ -26,7 +26,7 @@ class placeholder : public ileaf<T> {
 		placeholder (const placeholder<T>& other, std::string name);
 
 	protected:
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
+		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
 		placeholder (const tensor_shape& shape, std::string name = "");
@@ -35,13 +35,13 @@ class placeholder : public ileaf<T> {
 			std::string name = "");
 			
 		// COPY
-		std::shared_ptr<placeholder<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<placeholder<T>, ievoker<T> >(clone_impl(name));
+        placeholder<T>* clone (std::string name = "") {
+			return static_cast<placeholder<T>*>(clone_impl(name));
 		}
 
 		// DATA ASSIGNMENT
 		// remember to notify after change
-		virtual placeholder<T>& operator = (VAR_PTR<T> other);
+		virtual placeholder<T>& operator = (ivariable<T>* other);
 		// assign raw data according to 1 dimension representation of inner tensor
 		virtual placeholder<T>& operator = (std::vector<T> data);
 		virtual placeholder<T>& operator = (const tensor<T>& data);
@@ -52,11 +52,11 @@ class placeholder : public ileaf<T> {
 
 		// FACTORIES
 		static std::shared_ptr<placeholder<T> > make (std::string name = "") {
-			VAR_PTR<T> inst = ivariable<T>::make_shared(new placeholder(name));
+			ivariable<T>* inst = ivariable<T>::make_shared(new placeholder(name));
 			return std::static_pointer_cast<placeholder<T> >(inst);
 		}
 		static std::shared_ptr<placeholder<T> > make (const tensor_shape& shape, std::string name = "") {
-			VAR_PTR<T> inst = ivariable<T>::make_shared(new placeholder(shape, name));
+			ivariable<T>* inst = ivariable<T>::make_shared(new placeholder(shape, name));
 			return std::static_pointer_cast<placeholder<T> >(inst);
 		}
 };

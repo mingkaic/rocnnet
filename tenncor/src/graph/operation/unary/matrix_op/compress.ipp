@@ -15,7 +15,7 @@ namespace nnet {
 template <typename T>
 void compress<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
-	for (subject* child : this->dependencies_) {
+	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
 			this->grad = std::shared_ptr<compress<T> >(
 				new compress(arg->get_gradient(), index, collector));
@@ -46,7 +46,8 @@ void compress<T>::copy (const ivariable<T>& other, std::string name) {
 }
 
 template <typename T>
-compress<T>::compress (VAR_PTR<T> in, size_t index) : compress(in, index, [](const std::vector<T>& data) {
+compress<T>::compress (ivariable<T>* in, size_t index) :
+        compress(in, index, [](const std::vector<T>& data) {
 	T ans = 0;
 	for (T raw : data) {
 		ans += raw;
@@ -56,15 +57,16 @@ compress<T>::compress (VAR_PTR<T> in, size_t index) : compress(in, index, [](con
 }) {}
 
 template <typename T>
-compress<T>::compress (VAR_PTR<T> in, size_t index, std::function<T(const std::vector<T>&)> collector)
-		: index(index), collector(collector) {
-	this->init(in);
-	shape_eval();
+compress<T>::compress (ivariable<T>* in, size_t index, std::function<T(const std::vector<T>&)> collector) :
+        iunar_ops(in), index(index), collector(collector) {
+	if (session::pre_shape_eval()) {
+	    shape_eval();
+    }
 }
 
 template <typename T>
-EVOKER_PTR<T> compress<T>::clone_impl (std::string name) {
-	return ivariable<T>::make_shared(new compress(*this, name));
+ievoker<T>* compress<T>::clone_impl (std::string name) {
+	return new compress(*this, name);
 }
 
 template <typename T>
@@ -79,17 +81,16 @@ template <typename T>
 void compress<T>::set_cmpr_info (size_t index, std::function<T(const std::vector<T>&)> collector) {
 	this->index = index;
 	this->collector = collector;
-	shape_eval(); // re-eval
+	if (session::pre_shape_eval()) {
+	    shape_eval();
+    } // re-eval
 }
 
 template <typename T>
-const tensor<T>& compress<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	assert(nullptr != this->var);
-	const tensor<T>& in = this->var->eval();
+void compress<T>::update (void) {
+    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	assert(arg);
+	const tensor<T>& in = arg->get_eval();
 	tensor<T>* ans = this->compress_op(in, index, collector);
 	this->out_ = *ans;
 	delete ans;
