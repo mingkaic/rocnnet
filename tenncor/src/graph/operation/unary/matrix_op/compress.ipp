@@ -13,10 +13,14 @@ namespace nnet {
 // TENSOR COMPRESSION
 
 template <typename T>
-void compress<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	VAR_PTR<T> g = this->var->get_gradient();
-	this->set_gradient(std::shared_ptr<compress<T> >(new compress(g, index, collector)));
-	safety_ref = this->grad;
+void compress<T>::setup_gradient (void) {
+	std::vector<ivariable<T>*> args;
+	for (subject* child : this->dependencies_) {
+		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
+			this->grad = std::shared_ptr<compress<T> >(
+				new compress(arg->get_gradient(), index, collector));
+		}
+	}
 }
 
 template <typename T>

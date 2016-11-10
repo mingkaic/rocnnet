@@ -17,13 +17,14 @@ namespace nnet {
 template <typename T>
 class inherited_variable : public ivariable<T> {
 	protected:
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
-		virtual void set_gradient (VAR_PTR<T> g) = 0;
+		// DEPRECATED
+		// virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
+		// virtual void set_gradient (VAR_PTR<T> g) = 0;
 
 	public:
 		virtual ~inherited_variable (void) {}
 		// eval remains abstract
-		virtual VAR_PTR<T> get_gradient (void) = 0;
+		virtual ivariable<T>* get_gradient (void) = 0;
 };
 
 // all operations on jacobian will pass as operations on to_leaf_
@@ -69,7 +70,7 @@ class jacobian : public inherited_variable<T> {
 
 		// jacobian is inherently a gradient agent (it exists in some first order or above derivative function)
 		// TODO will do nothing until second/nth order derivative is implemented
-		virtual VAR_PTR<T> get_gradient (void) { return nullptr; }
+		virtual ivariable<T>* get_gradient (void) { return nullptr; }
 };
 
 }

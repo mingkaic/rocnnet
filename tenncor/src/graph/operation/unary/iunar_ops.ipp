@@ -21,11 +21,6 @@ void iunar_ops<T>::copy(const ivariable <T> &other, std::string name) {
 }
 
 template<typename T>
-void iunar_ops<T>::replace(ivariable <T> *food, VAR_PTR <T> newfood) {
-	if (var.get() == food) var = newfood;
-}
-
-template<typename T>
 void iunar_ops<T>::shape_eval(void) {
 	tensor_shape ts = var->get_shape();
 	if (ts.is_fully_defined()) {
@@ -33,40 +28,16 @@ void iunar_ops<T>::shape_eval(void) {
 	}
 }
 
-template<typename T>
-void iunar_ops<T>::init(VAR_PTR <T> var) {
-	std::stringstream ns;
-	ns << "<" << get_symb() << ">(" << var->get_name() << ")";
-	this->name = ns.str();
-	this->consume(*(var.get()));
-	this->var = var;
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
-}
-
-template<typename T>
-iunar_ops <T> &iunar_ops<T>::operator=(const ivariable <T> &other) {
-	if (this != &other) {
-		copy(other);
-	}
-	return *this;
-}
-
 // USED FOR ELEMENT WISE OPERATIONS ONLY
 
 template<typename T>
-const tensor <T> &iunar_elem_ops<T>::eval(void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	assert(nullptr != this->var);
-	const tensor<T> &evar = this->var->eval();
+const void &iunar_elem_ops<T>::update(void) {
+	ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	assert(nullptr != arg);
+	const tensor<T> &evar = arg->eval();
 	tensor<T> *eptr = this->util_op(evar, get_op());
 	this->out_ = *eptr;
 	delete eptr;
-	return this->out_;
 }
 
 }

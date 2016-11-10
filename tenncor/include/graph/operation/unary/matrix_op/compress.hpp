@@ -23,7 +23,7 @@ class compress : public iunar_ops<T> {
 		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
 	protected:
-		virtual void make_gradient (VAR_PTR<T>& safety_ref);
+		virtual void setup_gradient (void);
 		virtual std::string get_symb (void) { return "compress"; }
 
 		virtual void shape_eval (void);

@@ -20,27 +20,27 @@ template <typename T>
 class expose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {}
+		virtual void setup_gradient (void) {}
+		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 		std::vector<T> get_vec (const tensor<T>& in) const;
 
 		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
-		expose (VAR_PTR<T> var) { this->init(var); }
 
 		std::string get_symb (void) { return "expose"; }
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
 
 	public:
-		static std::shared_ptr<expose<T> > make (VAR_PTR<T> var) {
-			VAR_PTR<T> inst = ivariable<T>::make_shared(new expose(var));
-			return std::static_pointer_cast<expose<T> >(inst);
-		}
+		expose (ivariable<T>* var) { this->init(var); }
 
-		virtual const tensor<T>& eval (void);
-
+		// COPY
 		std::shared_ptr<expose<T> > clone (std::string name = "") {
 			return std::static_pointer_cast<expose<T>, ievoker<T> >(clone_impl(name));
 		}
+		
+		// MOVES
+		// TODO: implement
+
+		virtual void update (void);
 
 		// non-inheriteds
 		// evaluates consumed operation

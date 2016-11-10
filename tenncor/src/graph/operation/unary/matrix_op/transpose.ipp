@@ -13,10 +13,13 @@ namespace nnet {
 // MATRIX TRANSPOSE
 
 template <typename T>
-void transpose<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	VAR_PTR<T> g = this->var->get_gradient();
-	this->set_gradient(transpose<T>::make(g));
-	safety_ref = this->grad;
+void transpose<T>::setup_gradient (void) {
+	std::vector<ivariable<T>*> args;
+	for (subject* child : this->dependencies_) {
+		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
+			this->grad = transpose<T>::make(arg->get_gradient());
+		}
+	}
 }
 
 template <typename T>

@@ -24,7 +24,7 @@
 namespace nnet {
 
 template <typename T>
-using GRAD_MAP = std::map<ivar_init<T>*, VAR_PTR<T> >;
+using GRAD_MAP = std::map<ileaf<T>*, VAR_PTR<T> >;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -57,7 +57,7 @@ class ioptimizer {
 			fanout->leaves_collect ([&res, this](ccoms::subject* leaf) {
 				if (ignore_set_.end() == ignore_set_.find(leaf)) {
 					std::pair<VAR_PTR<T>, VAR_PTR<T> > end_point(
-						dynamic_cast<ivar_init<T>*>(leaf),
+						dynamic_cast<ileaf<T>*>(leaf),
 						derive<T>::make(fanout, leaf));
 					res.insert(end_point);
 				}

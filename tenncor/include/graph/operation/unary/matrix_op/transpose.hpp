@@ -16,7 +16,7 @@ template <typename T>
 class transpose : public iunar_ops<T> {
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (VAR_PTR<T>& safety_ref);
+		virtual void setup_gradient (void);
 		virtual std::string get_symb (void) { return "transpose"; }
 
 		virtual void shape_eval (void);

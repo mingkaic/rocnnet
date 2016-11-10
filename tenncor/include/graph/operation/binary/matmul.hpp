@@ -30,7 +30,7 @@ class matmul : public ioperation<T> {
 
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (VAR_PTR<T>& safety_ref);
+		virtual void setup_gradient (void);
 		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) {
 			if (a.get() == food) a = newfood;
 			if (b.get() == food) b = newfood;

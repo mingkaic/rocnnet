@@ -18,6 +18,8 @@ class iobserver;
 class inode;
 
 // AKA leaf
+// subject retains control over all its observers,
+// once destroyed, all observers are destroyed
 
 class subject {
 	private:
@@ -27,6 +29,10 @@ class subject {
 	protected:
 		virtual void merge_leaves (std::unordered_set<subject*>& src) {
 			src.emplace(this);
+		}
+		
+		virtual bool no_audience (void) {
+			return audience_.empty();
 		}
 
 		friend class inode;
@@ -38,7 +44,7 @@ class subject {
 			audience_.emplace(viewer);
 		}
 		
-		void detach (iobserver* viewer) {
+		virtual void detach (iobserver* viewer) {
 			audience_.erase(viewer);
 		}
 		

@@ -22,6 +22,9 @@
 
 namespace nnet {
 
+template <typename T>
+using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
+
 // INTERFACE OPERATION
 
 template <typename T>
@@ -34,16 +37,18 @@ class univar_func;
 template <typename T>
 class ioperation : public ivariable<T>, public ccoms::inode {
 	protected:
-		// used in calc_gradient to toggle operations between returning eval and returning one
-		bool derive_this = false;
-		VAR_PTR<T> grad = nullptr;
+		ivariable<T>* grad = nullptr;
 
-		virtual void set_gradient (VAR_PTR<T> g) {
-			if (nullptr == grad && nullptr != g) {
-				grad = g;
-				ivariable<T>::set_gradient(grad);
-			}
-		}
+		// DEPRECATED
+		// used in calc_gradient to toggle operations between returning eval and returning one
+		// bool derive_this = false;
+		
+		// virtual void set_gradient (VAR_PTR<T> g) {
+		// 	if (nullptr == grad && nullptr != g) {
+		// 		grad = g;
+		// 		ivariable<T>::set_gradient(grad);
+		// 	}
+		// }
 
 		// TODO: find a way to move shape evaluation functions out of here
 		// utility shape operations
@@ -110,31 +115,43 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 //		// note keeping: record self as consumer of food
 //		void consume (ivariable<T>& food) { this->add_consumer(food, *this); }
 
-		// changes input
-		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) = 0;
-
 		// check if candidate_shape is worth propagating to consumers
 		// before assigning consumers with new shapes to consume
 		void update (tensor_shape candidate_shape);
 		// implement unique method of consuming input variables
 		// to extract shape info
 		virtual void shape_eval (void) = 0;
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
+		
+		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
+		virtual void setup_gradient (void) = 0;
 
 		friend class ivariable<T>;
 		friend class placeholder<T>;
 		friend class univar_func<T>;
 
 	public:
-		// clone remains abstract
-		virtual ~ioperation (void) {}
-		// eval remains abstract
+		ioperation (std::vector<subject*> dependencies, std::string name)
+			: ivariable (std::vector<size_t>{}, name) {
+			this->short_circuit = false;
+		}
+		virtual ~ioperation (void) {
+			if (grad) {
+				delete grad;
+			}
+		}
+		
+		virtual const tensor<T>& get_eval (void) {
+			if (short_circuit) {
+				return constant<T>::make(1);
+			}
+			return this->out_;
+		}
 
-		virtual VAR_PTR<T> get_gradient (void) {
-			VAR_PTR<T> safety_ref;
-			if (nullptr == this->grad) make_gradient(safety_ref);
-			else safety_ref = this->grad;
-			return safety_ref;
+		virtual ivariable<T>* get_gradient (void) {
+			if (nullptr == grad) {
+				setup_gradient();
+			}
+			return grad;
 		}
 };
 

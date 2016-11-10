@@ -13,14 +13,18 @@ namespace nnet {
 // TENSOR EXTENSION
 
 template <typename T>
-void extend<T>::make_gradient (VAR_PTR<T>& safety_ref) {
-	VAR_PTR<T> g = this->var->get_gradient();
-	if (nullptr == watch.lock()) {
-		this->set_gradient(extend<T>::make(g, index, multiplier));
-	} else {
-		this->set_gradient(extend<T>::make(g, watch));
+void extend<T>::setup_gradient (void) {
+	std::vector<ivariable<T>*> args;
+	for (subject* child : this->dependencies_) {
+		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
+			VAR_PTR<T> g = arg->get_gradient();
+			if (nullptr == watch.lock()) {
+				this->grad = extend<T>::make(g, index, multiplier);
+			} else {
+				this->grad = extend<T>::make(g, watch);
+			}
+		}
 	}
-	safety_ref = this->grad;
 }
 
 template <typename T>

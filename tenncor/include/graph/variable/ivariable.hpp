@@ -63,7 +63,7 @@ class random_uniform : public initializer<T> {
 };
 
 template <typename T>
-class ivar_init;
+class ileaf;
 template <typename T>
 class ioperation;
 template <typename T>
@@ -100,11 +100,11 @@ class var_buffer : public ivariable<T> {
 			return std::static_pointer_cast<var_buffer<T>, ievoker<T> >(clone_impl(name));
 		}
 
-		virtual const tensor<T>& eval (void) {
+		virtual const tensor<T>& get_eval (void) {
 			return this->get_tensor_from(var_);
 		}
 
-		virtual VAR_PTR<T> get_gradient (void) { return nullptr; }
+		virtual ivariable<T>* get_gradient (void) { return nullptr; }
 };
 
 // VARIABLE INTERFACE
@@ -112,25 +112,31 @@ class var_buffer : public ivariable<T> {
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable : public ievoker<T>  {
+class ivariable : public ievoker<T>, public ccoms::subject  {
 	protected:
 		// weak pointer to this
 		WEAK_VAR_PTR<T>  self_ref_;
 
+		// GRADIENT INFO
+		bool short_circuit = true;
 		size_t grad_order_ = 0; // TODO IMPLEMENT ON GRADIENTS TO DISTINGUISH INTEGRALS AND GRADS
-		tensor<T>  out_;
-		std::string name;
 		WEAK_VAR_PTR<T> integral;
+		
+		// WRAPPER CONTENT
+		tensor<T>  out_;
+		std::string name_;
 
 		// backward chaining for AD
 		void copy (const ivariable<T>& other, std::string name = "");
 
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
-		// different depending on leaf node or not
-		virtual void set_gradient (VAR_PTR<T> g) {
-			g->integral = this->self_ref_;
-		}
+		// DEPRECATED
+		// virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
+		// // different depending on leaf node or not
+		// virtual void set_gradient (VAR_PTR<T> g) {
+		// 	g->integral = this->self_ref_;
+		// }
 
+// TODO MAKE DEPRECATED FROM HERE ==>
 		static VAR_PTR<T> make_shared(ivariable<T>* ptr, bool add_leaf = false) {
 			VAR_PTR<T> inst = VAR_PTR<T>(ptr);
 			inst->self_ref_ = inst;
@@ -139,7 +145,6 @@ class ivariable : public ievoker<T>  {
 //			}
 			return inst;
 		}
-
 		// interaction control
 		// TODO: place when making operations to pass back Jacobian
 		virtual void interact (VAR_PTR<T>* op) {}
@@ -151,6 +156,7 @@ class ivariable : public ievoker<T>  {
 		// overload for Synthesized attribute
 		virtual tensor<T>& grab_tensor (void) { return out_; }
 		tensor<T>& get_tensor_from (VAR_PTR<T> var) { return var->grab_tensor(); }
+// TO HERE <==
 
 		ivariable (void);
 
@@ -174,6 +180,9 @@ class ivariable : public ievoker<T>  {
 //	}
 
 	public:
+		ivariable (const tensor_shape& shape, std::string name) : name_(name) {
+			out_.set_shape(shape);
+		}
 		virtual ~ivariable (void);
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
 
@@ -185,87 +194,46 @@ class ivariable : public ievoker<T>  {
 		virtual tensor_shape get_shape (void) const { return this->out_.get_shape(); }
 
 //		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
-
-		virtual const tensor<T>& eval (void) = 0;
-
-		virtual VAR_PTR<T> get_gradient (void) = 0;
-
-		virtual const tensor<T>& calc_gradient (VAR_PTR<T> active) {
-			if (VAR_PTR<T> g = this->get_gradient()) {
-				if (std::shared_ptr<gradient_leaf> leaf_ptr =
-							std::dynamic_pointer_cast<gradient_leaf>(active->get_gradient())) {
-					leaf_ptr->activate(active);
-					const tensor<T> &res = g->eval();
-					leaf_ptr->deactivate();
-					return res;
-				} else if (std::shared_ptr<ioperation<T> > op_ptr =
-								   std::dynamic_pointer_cast<ioperation<T> >(active->get_gradient())) { // if active isn't a leaf
-					op_ptr->derive_this = true;
-					const tensor<T> &res = g->eval();
-					op_ptr->derive_this = false;
-					return res;
-				}
+		
+		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		virtual const tensor<T>& get_eval (void) {
+			if (short_circuit) {
+				return this->out_;
 			}
-			static tensor<T> zero(0);
-			return zero;
-		}
-};
-
-// INITIALIZER MANAGING INTERFACE
-
-template <typename T>
-class ivar_init : public ivariable<T>, public ccoms::subject {
-	protected:
-		bool is_init = false;
-		initializer<T>* init = nullptr;
-		WEAK_VAR_PTR<T> grad;
-
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			safety_ref = constant<T>::make(0);
-			this->set_gradient(safety_ref);
+			return constant<T>::make(0);
 		}
 
-		virtual void set_gradient (VAR_PTR<T> g) {
-			if (grad.expired() && nullptr != g) {
-				grad = g;
-				ivariable<T>::set_gradient(g);
-			}
+		virtual ivariable<T>* get_gradient (void) = 0;
+		
+		// propagate this node's gradient up the tree
+		virtual void back_accum (void) {
+			backward_state = true;
+			this->notify();
+			backward_state = false;
 		}
 
-		// used by assignment operators to freely initialized inner tensor
-		struct open_init;
+		// DEPRECATED 
+		// virtual const tensor<T>& eval (void) = 0;
 
-		void copy (const ivar_init<T>& other,
-				   std::string name = "") {
-			init = other.init->clone();
-			ivariable<T>::copy(other, name);
-		}
-
-	public:
-		virtual ~ivar_init (void) {
-			if (nullptr != this->init) {
-				delete this->init;
-			}
-		}
-
-		virtual ivar_init<T>& operator = (const VAR_PTR<T>& other);
-
-		std::shared_ptr<ivar_init<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<ivar_init<T>, ievoker<T> >(this->clone_impl(name));
-		}
-
-		bool can_init (void) const { return init != nullptr; }
-		virtual const tensor<T>& eval (void) {
-			assert(is_init);
-			return this->out_;
-		}
-
-		virtual VAR_PTR<T> get_gradient (void) {
-			VAR_PTR<T> safety_ref;
-			if (this->grad.expired()) make_gradient(safety_ref);
-			else safety_ref = this->grad.lock();
-			return safety_ref;
-		}
+		// virtual const tensor<T>& calc_gradient (VAR_PTR<T> active) {
+		// 	if (VAR_PTR<T> g = this->get_gradient()) {
+		// 		if (std::shared_ptr<gradient_leaf> leaf_ptr =
+		// 					std::dynamic_pointer_cast<gradient_leaf>(active->get_gradient())) {
+		// 			leaf_ptr->activate(active);
+		// 			const tensor<T> &res = g->eval();
+		// 			leaf_ptr->deactivate();
+		// 			return res;
+		// 		} else if (std::shared_ptr<ioperation<T> > op_ptr =
+		// 						   std::dynamic_pointer_cast<ioperation<T> >(active->get_gradient())) { // if active isn't a leaf
+		// 			op_ptr->derive_this = true;
+		// 			const tensor<T> &res = g->eval();
+		// 			op_ptr->derive_this = false;
+		// 			return res;
+		// 		}
+		// 	}
+		// 	static tensor<T> zero(0);
+		// 	return zero;
+		// }
 };
 
 }

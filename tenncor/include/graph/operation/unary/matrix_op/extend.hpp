@@ -24,7 +24,7 @@ class extend : public iunar_ops<T> {
 		WEAK_VAR_PTR<T> watch;
 
 	protected:
-		virtual void make_gradient(VAR_PTR<T> &safety_ref);
+		virtual void setup_gradient(void);
 
 		virtual std::string get_symb(void) { return "extend"; }
 
@@ -58,7 +58,7 @@ class extend : public iunar_ops<T> {
 			return *root;
 		}
 
-		virtual extend<T> &operator=(const ivariable<T> &other);
+		virtual extend<T>& operator=(const ivariable<T> &other);
 
 		std::shared_ptr<extend<T> > clone(std::string name = "") {
 			return std::static_pointer_cast<extend<T>, ievoker<T> >(clone_impl(name));

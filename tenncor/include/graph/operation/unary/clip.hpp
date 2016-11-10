@@ -17,53 +17,18 @@ namespace nnet {
 // CLIP
 
 template <typename T>
-class clip_by_value : public iunar_elem_ops<T> {
-	private:
-		T min;
-		T max;
-
-	protected:
-		// backward chaining for AD
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			this->set_gradient(clip_by_value<T>::make(this->var->get_gradient(), min, max));
-			safety_ref = this->grad;
-		}
-
-		clip_by_value (ivariable<T>& var, std::string name) { this->copy(var, name); }
-		clip_by_value (VAR_PTR<T> var, T min, T max) : min(min), max(max) { this->init(var); }
-
-		std::string get_symb (void) { return "clip_val"; }
-		std::function<T(T)> get_op (void);
-		virtual EVOKER_PTR<T> clone_impl (std::string name);
-
-	public:
-		static VAR_PTR<T> make (VAR_PTR<T> var, T min, T max) {
-			VAR_PTR<T> o = ivariable<T>::make_shared(new clip_by_value(var, min, max));
-			VAR_PTR<T>* root = &o;
-			// TODO: come up with a dryer solution to handling inherited attribute nodes (perhaps treat every node as inherited?)
-			// have each argument evaluate interaction root
-			ivariable<T>::set_interaction(var, root);
-			return *root;
-		}
-		virtual ~clip_by_value (void) {}
-
-		void set_bounds (T min, T max) { this->min = min; this->max = max; }
-
-		std::shared_ptr<clip_by_value<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<clip_by_value<T>, ievoker<T> >(clone_impl(name));
-		}
-};
-
-template <typename T>
 class clip_by_norm : public iunar_elem_ops<T> {
 	private:
 		T cap;
 
 	protected:
 		// backward chaining for AD
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) {
-			this->set_gradient(clip_by_norm<T>::make(this->var->get_gradient(), cap));
-			safety_ref = this->grad;
+		virtual void setup_gradient (void) {
+			for (subject* child : this->dependencies_) {
+				if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
+					this->grad = clip_by_norm<T>::make(arg->get_gradient(), cap);
+				}
+			}
 		}
 
 		clip_by_norm (ivariable<T>& var, std::string name) { this->copy(var, name); }

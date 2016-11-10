@@ -19,26 +19,19 @@ namespace nnet {
 template <typename T>
 class iunar_ops : public ioperation<T> {
 	protected:
-		// avoid calling ivariable's assignment multiple time
-		VAR_PTR<T> var = nullptr;
-
-		void copy (const ivariable<T>& other, std::string name = "");
-		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood);
 		virtual void shape_eval (void);
-		// operator () getters
+		
 		virtual std::string get_symb (void) = 0;
-
-		void init (VAR_PTR<T> var);
 
 		friend class univar_func<T>;
 
 	public:
-		virtual ~iunar_ops (void) {}
-
-		virtual iunar_ops<T>& operator = (const ivariable<T>& other);
-
-		std::shared_ptr<iunar_ops<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<iunar_ops<T>, ievoker<T> >(this->clone_impl(name));
+		iunar_ops (ivariable<T>* arg)
+				: ioperation (std::vector<subject*>{arg}, 
+				nnutils::formatter() << "<" << get_symb() << ">(" << arg->get_name() << ")") {
+			if (session::pre_shape_eval()) {
+				shape_eval();
+			}
 		}
 };
 
@@ -50,12 +43,7 @@ class iunar_elem_ops : public iunar_ops<T> {
 		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
 
 	public:
-		virtual ~iunar_elem_ops (void) {}
-		std::shared_ptr<iunar_elem_ops<T> > clone (std::string name = "") {
-			return std::static_pointer_cast<iunar_elem_ops<T>, ievoker<T> >(this->clone_impl(name));
-		}
-
-		virtual const tensor<T>& eval (void);
+		virtual void update (void);
 };
 
 }

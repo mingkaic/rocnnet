@@ -18,12 +18,8 @@ EVOKER_PTR<T> expose<T>::clone_impl (std::string name) {
 }
 
 template <typename T>
-const tensor<T>& expose<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	return this->var->eval();
+void expose<T>::update (void) {
+	this->out_ = this->dependencies_->eval();
 }
 
 template <typename T>

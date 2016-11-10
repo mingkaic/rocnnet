@@ -68,7 +68,7 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
 // variable interface inner class
 
 template <typename T>
-class ivariable<T>::gradient_leaf : public ivar_init<T> {
+class ivariable<T>::gradient_leaf : public ileaf<T> {
 	private:
 		gradient_leaf (WEAK_VAR_PTR<T> integral) {
 			this->out_.set_shape(std::vector<size_t>{1});
@@ -77,8 +77,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 
 			this->name = "leaf<" + integral.lock()->get_name() + ">";
 			this->integral = integral;
-			typename ivar_init<T>::open_init* assigner;
-			this->init = assigner = new typename ivar_init<T>::open_init(this->out_);
+			typename ileaf<T>::open_init* assigner;
+			this->init_ = assigner = new typename ileaf<T>::open_init(this->out_);
 			*assigner = std::vector<T>{0}; // initialize as zero
 		}
 
@@ -101,8 +101,8 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 			// perform matrix calculus when necessary
 			// when tensor variables can encasulate other variables
 			// e.g.: A = [x y] where dA/dx is possible
-			typename ivar_init<T>::open_init* assigner =
-				dynamic_cast<typename ivar_init<T>::open_init*>(this->init);
+			typename ileaf<T>::open_init* assigner =
+				dynamic_cast<typename ileaf<T>::open_init*>(this->init_);
 			if (active == this->integral.lock()) {
 				*assigner = std::vector<T>{1};
 			}
@@ -114,52 +114,11 @@ class ivariable<T>::gradient_leaf : public ivar_init<T> {
 			}
 			// when tensor variables can encasulate other variables
 			// e.g.: A = [x y] where dA/dx is possible
-			typename ivar_init<T>::open_init* assigner =
-					dynamic_cast<typename ivar_init<T>::open_init*>(this->init);
+			typename ileaf<T>::open_init* assigner =
+					dynamic_cast<typename ileaf<T>::open_init*>(this->init_);
 			*assigner = std::vector<T>{0};
 		}
 };
-
-// INITIALIZER MANAGING INTERFACE
-
-template <typename T>
-struct ivar_init<T>::open_init : public initializer<T> {
-	private:
-		tensor<T>* hold = nullptr;
-
-	public:
-		open_init (tensor<T>& in) : hold(&in) {}
-
-		virtual void operator () (tensor<T>& in) {
-			hold = &in;
-		}
-		virtual initializer<T>* clone (void) {
-			return new open_init(*hold);
-		}
-
-		virtual ivar_init<T>::open_init& operator = (const std::vector<T>& in) {
-			this->delegate_task(*hold, [&in](T* raw_data, size_t size) {
-				std::copy(in.begin(), in.end(), raw_data);
-			});
-			return *this;
-		}
-};
-
-template <typename T>
-ivar_init<T>& ivar_init<T>::operator = (const VAR_PTR<T>& other) {
-	if (this != other.get()) {
-		if (nullptr != this->init) {
-			delete this->init;
-		}
-
-		if (const std::shared_ptr<ivar_init<T> > vptr = std::dynamic_pointer_cast<ivar_init<T> >(other)) {
-			this->copy(*vptr);
-		} else {
-			ivariable<T>::copy(*other);
-		}
-	}
-	return *this;
-}
 
 }
 

@@ -24,6 +24,18 @@ void matmul<T>::make_gradient (VAR_PTR<T>& safety_ref) {
 	this->set_gradient(g);
 	safety_ref = this->grad;
 }
+void matmul<T>::setup_gradient (void) {
+	// matmul'(f, g) = inherited(matmul(k, g^T) * f' + matmul(f^T, k) * g')
+	ivariable<T>* arga = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	ivariable<T>* argb = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
+	assert(arga && argb);
+	return jacobian<T>::make([arga, argb, this](VAR_PTR<T> channel) {
+		VAR_PTR<T> ga = arga->get_gradient();
+		VAR_PTR<T> gb = argb->get_gradient();
+		return matmul<T>::make(channel, argb, transposeA, !transposeB) * ga +
+				matmul<T>::make(arga, channel, !transposeA, transposeB) * gb;
+	}
+}
 
 template <typename T>
 void matmul<T>::shape_eval (void) {

@@ -38,8 +38,6 @@ class inode : public subject, public iobserver {
 				collector(leaf);
 			}
 		}
-		
-		virtual void update (void) = 0;
 };
 	
 }
