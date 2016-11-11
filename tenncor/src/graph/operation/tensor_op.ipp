@@ -20,7 +20,7 @@ void collect_op<T>::setup_gradient (void) {
 			args.push_back(arg);
 		}
 	}
-	this->grad = der_(args);
+	this->grad_ = der_(args);
 }
 
 template <typename T>

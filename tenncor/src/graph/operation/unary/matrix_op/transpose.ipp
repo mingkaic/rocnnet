@@ -17,7 +17,7 @@ void transpose<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
-			this->grad = transpose<T>::make(arg->get_gradient());
+			this->grad_ = new transpose<T>(arg->get_gradient());
 		}
 	}
 }

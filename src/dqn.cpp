@@ -37,7 +37,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	// ===============================
 	nnet::ivariable<double>* next_action_scores = (*target_net)(next_observation);
 	nnet::ivariable<double>* target_values = // reduce max
-			compress<double>::make(next_action_scores, 1,
+			new compress<double>(next_action_scores, 1,
 												[](const std::vector<double>& v) {
 													double big;
 													auto it = v.begin();
@@ -53,7 +53,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 	// PREDICT ERROR
 	// ===============================
 	nnet::ivariable<double>* masked_action_score = // reduce sum
-			compress<double>::make(action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
+			new compress<double>(action_scores * PLACEHOLDER_TO_VAR<double>(action_mask), 1,
 												[](const std::vector<double>& v) {
 													double accum;
 													for (double d : v) {
@@ -62,7 +62,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													return accum;
 												});
 	nnet::ivariable<double>* diff = masked_action_score - future_rewards;
-	prediction_error = compress<double>::make(diff * diff); // reduce mean
+	prediction_error = new compress<double>(diff * diff); // reduce mean
 	// minimize error
 	optimizer->ignore(next_action_scores);
 	GRAD_MAP<double> gradients = optimizer->compute_grad(prediction_error);
@@ -72,7 +72,7 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 		nnet::ivariable<double>* var = (*it).first;
 		nnet::ivariable<double>* grad = (*it).second;
 		if (nullptr != grad) {
-			(*it).second = clip_by_norm<double>::make(grad, 5);
+			(*it).second = new clip_by_norm<double>(grad, 5);
 		}
 	}
 
@@ -160,12 +160,12 @@ dq_net::dq_net (
 	// fanin setup
 	target_net = q_net->clone("target_network");
 	tensor_shape in_shape = std::vector<size_t>{n_input};
-	observation = placeholder<double>::make(in_shape, "observation");
-	next_observation = placeholder<double>::make(in_shape, "next_observation");
+	observation = new placeholder<double>(in_shape, "observation");
+	next_observation = new placeholder<double>(in_shape, "next_observation");
 	// mask and reward shape depends on batch size
-	next_observation_mask = placeholder<double>::make(std::vector<size_t>{n_observations, 0}, "new_observation_mask");
-	rewards = placeholder<double>::make(std::vector<size_t>{0}, "rewards");
-	action_mask = placeholder<double>::make(std::vector<size_t>{n_actions, 0}, "action_mask");
+	next_observation_mask = new placeholder<double>(std::vector<size_t>{n_observations, 0}, "new_observation_mask");
+	rewards = new placeholder<double>(std::vector<size_t>{0}, "rewards");
+	action_mask = new placeholder<double>(std::vector<size_t>{n_actions, 0}, "action_mask");
 
 	variable_setup(optimizer);
 

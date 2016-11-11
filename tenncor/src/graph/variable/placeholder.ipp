@@ -14,42 +14,29 @@ namespace nnet {
 
 template <typename T>
 placeholder<T>::placeholder (const tensor_shape& shape, std::string name) :
-    ileaf(shape, new typename ileaf<T>::open_init(this->out_), name) {}
+    ileaf<T>(shape, new typename ileaf<T>::dyn_init(this->out_), name) {}
 
 template <typename T>
 placeholder<T>::placeholder (const tensor_shape& shape, 
     initializer<T>* init, 
-    std::string name = "") : ileaf(shape, init, name) {
+    std::string name = "") : ileaf<T>(shape, init.clone(), name) {
 	this->out_.allocate(std::make_shared<memory_alloc>());
-	this->init_(this->out_);
+	// initialize right away
+	(*this->init_)(this->out_); 
+	// change initializer to dynamic
+	delete this->init_;
+	this->init_ = new typename ileaf<T>::dyn_init(this->out_); 
 	this->is_init = true;
 }
 		    
 template <typename T>
 placeholder<T>::placeholder (const placeholder<T>& other, std::string name) {
-	this->copy(other, name);
+	ileaf<T>::copy(other, name);
 }
 
 template <typename T>
 ievoker<T>* placeholder<T>::clone_impl (std::string name) {
 	return new placeholder(*this, name);
-}
-
-// changes shape
-template <typename T>
-ivariable<T>& placeholder<T>::operator = (ivariable<T>* other) {
-	if (this != other.get()) {
-	    if (false == this->out_.is_alloc()) {
-			this->out_.allocate(
-				std::make_shared<memory_alloc>(),
-				other->get_shape());
-		}
-		this->out_ = this->get_tensor_from(other);
-	}
-
-	this->is_init = other->is_init;
-	this->notify();
-	return *this;
 }
 
 // maintains shape
@@ -64,8 +51,8 @@ ivariable<T>& placeholder<T>::operator = (std::vector<T> data) {
 			std::make_shared<memory_alloc>(),
 			this->out_.guess_shape(data));
 	}
-	typename ileaf<T>::open_init* assigner =
-			dynamic_cast<typename ileaf<T>::open_init*>(this->init_);
+	typename ileaf<T>::dyn_init* assigner =
+			dynamic_cast<typename ileaf<T>::dyn_init*>(this->init_);
 	*assigner = data;
 
 	this->is_init = true;

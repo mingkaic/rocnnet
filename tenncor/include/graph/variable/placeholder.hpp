@@ -30,9 +30,7 @@ class placeholder : public ileaf<T> {
 
 	public:
 		placeholder (const tensor_shape& shape, std::string name = "");
-		placeholder (const tensor_shape& shape, 
-			initializer<T>* init, 
-			std::string name = "");
+		placeholder (const tensor_shape& shape, initializer<T>& init, std::string name = "");
 			
 		// COPY
         placeholder<T>* clone (std::string name = "") {
@@ -40,32 +38,13 @@ class placeholder : public ileaf<T> {
 		}
 
 		// DATA ASSIGNMENT
-		// remember to notify after change
-		virtual placeholder<T>& operator = (ivariable<T>* other);
 		// assign raw data according to 1 dimension representation of inner tensor
 		virtual placeholder<T>& operator = (std::vector<T> data);
 		virtual placeholder<T>& operator = (const tensor<T>& data);
 
 		// MOVES
 		// todo: implement move clone
-		virtual placeholder<T>& operator = (placeholder<T>&& other) = default;
-
-		// FACTORIES
-		static std::shared_ptr<placeholder<T> > make (std::string name = "") {
-			ivariable<T>* inst = ivariable<T>::make_shared(new placeholder(name));
-			return std::static_pointer_cast<placeholder<T> >(inst);
-		}
-		static std::shared_ptr<placeholder<T> > make (const tensor_shape& shape, std::string name = "") {
-			ivariable<T>* inst = ivariable<T>::make_shared(new placeholder(shape, name));
-			return std::static_pointer_cast<placeholder<T> >(inst);
-		}
 };
-
-template <typename T>
-using PLACEHOLDER_PTR = std::shared_ptr<placeholder<T> >;
-
-template <typename T>
-constexpr auto PLACEHOLDER_TO_VAR = std::static_pointer_cast<ivariable<T>, placeholder<T> >;
 
 }
 

@@ -22,30 +22,29 @@ class compress : public iunar_ops<T> {
 		// first parameter is the collecting buffer, second is the gathered data
 		std::function<T(const std::vector<T>&)> collector; // default to average sum
 
-		compress (const ivariable<T>& other, std::string name) { this->copy(other, name); }
+		compress (const compress<T>& other, std::string name) { copy(other, name); }
 
 	protected:
 		virtual void setup_gradient (void);
-		virtual std::string get_symb (void) { return "compress"; }
-
-		virtual void shape_eval (void);
-		void copy (const ivariable<T>& other, std::string name = "");
-
 		virtual ievoker<T>* clone_impl (std::string name);
+		virtual std::string get_symb (void) { return "compress"; }
+		virtual void shape_eval (void);
+		
+		void copy (const ivariable<T>& other, std::string name = "");
 
 	public:
 		compress (ivariable<T>* in, size_t index);
 		compress (ivariable<T>* in, size_t index, std::function<T(const std::vector<T>&)> collector);
 
-		virtual compress<T>& operator = (const ivariable<T>& other);
-
+		// COPY
         compress<T>* clone (std::string name = "") {
 			return static_cast<compress<T>*>(clone_impl(name));
 		}
+		virtual compress<T>& operator = (const ivariable<T>& other);
+		
+		virtual void update (void);
 
 		void set_cmpr_info (size_t index, std::function<T(const std::vector<T>&)> collector);
-
-		virtual void update (void);
 };
 
 }

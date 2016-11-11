@@ -19,7 +19,9 @@ namespace nnet {
 template <typename T>
 class iunar_ops : public ioperation<T> {
 	protected:
+		// setup_gradient remains abstract
 		virtual void shape_eval (void);
+		// clone_impl remains abstract
 		
 		virtual std::string get_symb (void) = 0;
 
@@ -27,23 +29,12 @@ class iunar_ops : public ioperation<T> {
 
 	public:
 		iunar_ops (ivariable<T>* arg)
-				: ioperation<T>(std::vector<ccoms::subject*>{arg},
+				: ioperation<T>(std::vector<ivariable<T>*>{arg},
 				nnutils::formatter() << "<" << get_symb() << ">(" << arg->get_name() << ")") {
 			if (session::pre_shape_eval()) {
 				shape_eval();
 			}
 		}
-};
-
-// USED FOR ELEMENT WISE OPERATIONS ONLY
-
-template <typename T>
-class iunar_elem_ops : public iunar_ops<T> {
-	protected:
-		virtual std::function<T(T)> get_op (void) = 0; // these are for elementary and simple operations
-
-	public:
-		virtual void update (void);
 };
 
 }

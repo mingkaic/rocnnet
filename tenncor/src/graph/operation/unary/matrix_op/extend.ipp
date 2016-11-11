@@ -19,9 +19,9 @@ void extend<T>::setup_gradient (void) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
 			ivariable<T>* g = arg->get_gradient();
 			if (nullptr == watch.lock()) {
-				this->grad = extend<T>::make(g, index, multiplier);
+				this->grad_ = new extend<T>(g, index, multiplier);
 			} else {
-				this->grad = extend<T>::make(g, watch);
+				this->grad_ = new extend<T>(g, watch);
 			}
 		}
 	}
@@ -41,12 +41,11 @@ void extend<T>::shape_eval (void) {
 }
 
 template <typename T>
-void extend<T>::copy (const ivariable<T>& other, std::string name) {
-	if (const extend<T>* eptr = dynamic_cast<const extend<T>*>(&other)) {
-		index = eptr->index;
-		multiplier = eptr->multiplier;
-	}
-	iunar_ops<T>::copy(other, name);
+void extend<T>::copy (const extend<T>& other, std::string name) {
+	index = other.index;
+	multiplier = other.multiplier;
+	watch_ = other.watch_;
+	ioperation<T>::copy(other, name);
 }
 
 template <typename T>

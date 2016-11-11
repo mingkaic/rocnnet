@@ -13,27 +13,16 @@ namespace nnet {
 // MATRIX MULTIPLICATION
 
 template <typename T>
-void matmul<T>::make_gradient (ivariable<T>*& safety_ref) {
-	// matmul'(f, g) = inherited(matmul(k, g^T) * f' + matmul(f^T, k) * g')
-	ivariable<T>* g = jacobian<T>::make([this](ivariable<T>* channel) {
-		ivariable<T>* ga = this->a->get_gradient();
-		ivariable<T>* gb = this->b->get_gradient();
-		return matmul<T>::make(channel, this->b, transposeA, !transposeB) * ga +
-				matmul<T>::make(this->a, channel, !transposeA, transposeB)  * gb;
-	});
-	this->set_gradient(g);
-	safety_ref = this->grad;
-}
 void matmul<T>::setup_gradient (void) {
 	// matmul'(f, g) = inherited(matmul(k, g^T) * f' + matmul(f^T, k) * g')
 	ivariable<T>* arga = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	ivariable<T>* argb = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
 	assert(arga && argb);
-	return jacobian<T>::make([arga, argb, this](ivariable<T>* channel) {
+	this->grad_ = new jacobian<T>([arga, argb, this](ivariable<T>* channel) {
 		ivariable<T>* ga = arga->get_gradient();
 		ivariable<T>* gb = argb->get_gradient();
-		return matmul<T>::make(channel, argb, transposeA, !transposeB) * ga +
-				matmul<T>::make(arga, channel, !transposeA, transposeB) * gb;
+		return new matmul<T>(channel, argb, transposeA, !transposeB) * ga +
+				new matmul<T>(arga, channel, !transposeA, transposeB) * gb;
 	}
 }
 
@@ -54,28 +43,17 @@ void matmul<T>::shape_eval (void) {
 
 template <typename T>
 matmul<T>::matmul (const matmul<T>& other, std::string name) {
-	a = other.a;
-	b = other.b;
 	transposeA = other.transposeA;
 	transposeB = other.transposeB;
-	ivariable<T>::copy(other, name);
+	ioperation<T>::copy(other, name);
 }
 
 template <typename T>
 matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
-					bool transposeA, bool transposeB) {
-	std::stringstream ns;
-	ns << a->get_name() << "•" << b->get_name();
-	this->name = ns.str();
-	this->consume(*(a.get())); this->consume(*(b.get()));
-	this->a = a;
-	this->b = b;
-	this->transposeA = transposeA;
-	this->transposeB = transposeB;
-	size_t common_dim;
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
+					bool transposeA, bool transposeB) :
+		ioperation<T>(std::vector<ivariable<T>*>{a, b},
+		nnutils::formatter() << "(" << a->get_name() << "•" 
+		<< b->get_name() << ")"), transposeA_(transposeA), transposeB_(transposeB) {
 }
 
 template <typename T>
@@ -98,18 +76,15 @@ matmul<T>& matmul<T>::operator = (const ivariable<T>& other) {
 }
 
 template <typename T>
-const tensor<T>& matmul<T>::eval (void) {
-	static tensor<T> one(1);
-	if (this->derive_this) {
-		return one;
-	}
-	assert(nullptr != a && nullptr != b);
-	const tensor<T>& at = this->a->eval();
-	const tensor<T>& bt = this->b->eval();
+void matmul<T>::update (void) {
+	ivariable<T>* a = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	ivariable<T>* b = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
+	const tensor<T>& at = a->get_eval();
+	const tensor<T>& bt = b->get_eval();
 	tensor<T>* ans = this->matmul_op(at, bt, transposeA, transposeB);
 	this->out_ = *ans;
 	delete ans;
-	return this->out_;
+	this->notify();
 }
 
 }

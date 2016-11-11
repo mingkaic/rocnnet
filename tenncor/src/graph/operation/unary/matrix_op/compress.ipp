@@ -17,7 +17,7 @@ void compress<T>::setup_gradient (void) {
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_) {
 		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
-			this->grad = std::shared_ptr<compress<T> >(
+			this->grad_ = std::shared_ptr<compress<T> >(
 				new compress(arg->get_gradient(), index, collector));
 		}
 	}
@@ -37,12 +37,10 @@ void compress<T>::shape_eval (void) {
 }
 
 template <typename T>
-void compress<T>::copy (const ivariable<T>& other, std::string name) {
-	if (const compress<T>* cptr = dynamic_cast<const compress<T>*>(&other)) {
-		index = cptr->index;
-		collector = cptr->collector;
-	}
-	iunar_ops<T>::copy(other, name);
+void compress<T>::copy (const compress<T>& other, std::string name) {
+	index = other.index;
+	collector = other.collector;
+	ioperation<T>::copy(other, name);
 }
 
 template <typename T>

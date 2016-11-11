@@ -15,27 +15,30 @@
 namespace ccoms {
 
 class iobserver;
-class inode;
+
+class ileaf_handler {
+	protected:
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) = 0;
+}
 
 // AKA leaf
 // subject retains control over all its observers,
 // once destroyed, all observers are destroyed
 
-class subject {
+class subject : public ileaf_handler {
 	private:
 		std::unordered_set<iobserver*> audience_;
-		// raw_data
 		
 	protected:
 		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
 			src.emplace(this);
 		}
-		
+
 		virtual bool no_audience (void) {
 			return audience_.empty();
 		}
 
-		friend class inode;
+		friend class iobserver;
 		
 	public:
 		virtual ~subject (void);

@@ -37,7 +37,7 @@ ievoker<double>* ad_hoc_gd_setup (double learning_rate,
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
 		nnet::ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		nnet::ivariable<double>* mres = matmul<double>::make(err, weight_i, false ,true);
+		nnet::ivariable<double>* mres = new matmul<double>(err, weight_i, false ,true);
 		err = mres * prime_out.top();
 		prime_out.pop();
 		errs.push(err);
@@ -52,11 +52,11 @@ ievoker<double>* ad_hoc_gd_setup (double learning_rate,
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		nnet::ivariable<double>* cost = matmul<double>::make(output, err, true);
+		nnet::ivariable<double>* cost = new matmul<double>(output, err, true);
 		nnet::ivariable<double>* dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
-		nnet::ivariable<double>* compressed_err = compress<double>::make(err, 1);
+		nnet::ivariable<double>* compressed_err = new compress<double>`(err, 1);
 		nnet::ivariable<double>* dbias = compressed_err * learn_batch;
 
 		// update weights and bias
@@ -89,13 +89,13 @@ void gd_net::train_set_up (void) {
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
-		nnet::ivariable<double>* grad = derive<double>::make(output, hypothesis);
+		nnet::ivariable<double>* grad = new derive<double>(output, hypothesis);
 		prime_out.push(grad);
 	}
 
 	// preliminary setup for any update algorithm
 	nnet::ivariable<double>* diff = output - PLACEHOLDER_TO_VAR<double>(expected_out);
-	record = expose<double>::make(diff);
+	record = new expose<double>(diff);
 
 	if (nullptr == optimizer_) {
 		updates = ad_hoc_gd_setup (
@@ -124,9 +124,9 @@ gd_net::gd_net (size_t n_input,
 	std::string scope)
 	: ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) {
 	size_t n_out = hiddens.back().first;
-	batch_size = placeholder<double>::make(std::vector<size_t>{0}, "batch_size");
-	train_in = placeholder<double>::make(std::vector<size_t>{n_input, 0}, "train_in");
-	expected_out = placeholder<double>::make(std::vector<size_t>{n_out, 0}, "expected_out");
+	batch_size = new placeholder<double>(std::vector<size_t>{0}, "batch_size");
+	train_in = new placeholder<double>(std::vector<size_t>{n_input, 0}, "train_in");
+	expected_out = new placeholder<double>(std::vector<size_t>{n_out, 0}, "expected_out");
 	train_set_up();
 }
 

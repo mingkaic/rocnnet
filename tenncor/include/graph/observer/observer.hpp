@@ -15,11 +15,21 @@
 
 namespace ccoms {
 
-// AKA root
+// AKA root / intermediate node
 
-class iobserver {
+class iobserver : public ileaf_handler {
+	private:
+		// remember that once leaf subjects are destroyed, 
+		// then everyone in this graph including this is destroyed
+		// so we don't need to bother with cleaning leaves_
+		std::unordered_set<subject*> leaves_;
+
 	protected:
-		std::vector<ccoms::subject*> dependencies_;
+		std::vector<subject*> dependencies_;
+		
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
+			src.insert(this->leaves_.begin(), this->leaves_.end());
+		}
 
 	public:
 		iobserver (std::vector<ccoms::subject*> dependencies) :
@@ -27,11 +37,20 @@ class iobserver {
 			for (ccoms::subject* dep : dependencies) {
 				dep->attach(this);
 			}
+			for (ccoms::subject* dep : dependencies) {
+				dep->merge_leaves(leaves_);
+			}
 		}
 		
 		virtual ~iobserver (void) {
 			for (ccoms::subject* dep : dependencies_) {
 				dep->detach(this);
+			}
+		}
+		
+		void leaves_collect (std::function<void(ccoms::subject*)> collector) {
+			for (ccoms::subject* leaf : leaves_) {
+				collector(leaf);
 			}
 		}
 		

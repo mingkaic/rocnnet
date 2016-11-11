@@ -22,29 +22,36 @@ class derive : public iunar_ops<T> {
 	private:
 		ivariable<T>* over_ = nullptr;
 
-		derive (ivariable<T>* var, std::string name) { this->copy(var, name); } // copy constructor
+		derive (derive<T>& other, std::string name) {
+			over_ = other.over_
+			ioperation<T>::copy(var, name);
+		}
 
 	protected:
-		std::string get_symb (void) { return "/derive(" + over_->get_name() + ")?"; }
-
-		virtual ievoker<T>* clone_impl (std::string name);
 		virtual void setup_gradient (void) {
 			// TODO implement second order calc_gradient
 		}
+		std::string get_symb (void) { return "/derive(" + over_->get_name() + ")?"; }
+		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
 		derive (ivariable<T>* func, ivariable<T>* over) :
-			iunar_ops<T>(func->get_derive()), over_(over) {}
+			iunar_ops<T>(func->get_gradient()), over_(over) {}
+			
+		// COPY
+        derive<T>* clone (std::string name = "") {
+			return static_cast<derive<T>*>(clone_impl(name));
+		}
 
 		virtual const tensor<T>& get_eval (void) {
-			if (this->short_circuit) {
+			if (this->short_circuit_) {
 				return this->ones;
 			}
 			if (ioperation<T>* func = dynamic_cast<ioperation<T>*>(this->dependencies_[0])) {
 				func->leaves_collect([this](ccoms::subject* sub){
 					if (over_ != sub) {
 						if (ivariable<T> *leaf = dynamic_cast<ivariable<T> *>(sub)) {
-							leaf->short_circuit = false;
+							leaf->short_circuit_ = false;
 						}
 					}
 				});
@@ -54,9 +61,6 @@ class derive : public iunar_ops<T> {
 		}
 
 		virtual void update (void);
-        derive<T>* clone (std::string name = "") {
-			return static_cast<derive<T>*>(clone_impl(name));
-		}
 };
 
 }

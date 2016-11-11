@@ -101,7 +101,7 @@ class var_buffer : public ivariable<T> {
 		}
 
 		virtual const tensor<T>& get_eval (void) {
-			return this->get_tensor_from(var_);
+			return var_->get_eval();
 		}
 
 		virtual ivariable<T>* get_gradient (void) { return nullptr; }
@@ -112,23 +112,25 @@ class var_buffer : public ivariable<T> {
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable : public ievoker<T>, public ccoms::subject  {
+class ivariable : public ievoker<T>, public ccoms::subject {
+	private:
+		std::string name_;
+		
 	protected:
 	    // ZEROS, ONES, TODO remove once get_eval returns pointer
         tensor<T> zeros;
         tensor<T> ones;
 
 		// GRADIENT INFO
-		bool short_circuit = true;
-		size_t grad_order_ = 0; // TODO IMPLEMENT ON GRADIENTS TO DISTINGUISH INTEGRALS AND GRADS
-		ivariable<T>* integral;
+		bool short_circuit_ = true;
 		
 		// WRAPPER CONTENT
 		tensor<T>  out_;
-		std::string name_;
 
 		// backward chaining for AD
 		void copy (const ivariable<T>& other, std::string name = "");
+
+		virtual ievoker<T>* clone_impl (std::string name) = 0;
 
 		// protected members need to be accessed by other operations
 		friend class update<T>;
@@ -140,16 +142,23 @@ class ivariable : public ievoker<T>, public ccoms::subject  {
             sess.register_obj(*this);
 		}
 		virtual ~ivariable (void);
+		
+		// COPY
+		// call abstract cloner
+		ivariable<T>* clone (std::string name = "") {
+			return static_cast<ivariable<T>*>(clone_impl(name));
+		}
 		virtual ivariable<T>& operator = (const ivariable<T>& other);
+		
+		// MOVER
+		// TODO Implement
 
 		std::string get_name (void) const { return name_; }
 		virtual tensor_shape get_shape (void) const { return this->out_.get_shape(); }
-
-//		std::unordered_set<ioperation<T>*>& get_consumers (void) { return consumers; }
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual const tensor<T>& get_eval (void) {
-			if (short_circuit) {
+		virtual const tensor<T>& get_eval (void) const {
+			if (short_circuit_) {
 				return this->out_;
 			}
 			return zeros;

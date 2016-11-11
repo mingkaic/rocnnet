@@ -26,8 +26,8 @@ void layer_perceptron::copy (
 		scope = other.scope + "_cpy";
 	}
 	this->scope = scope;
-	weights = other.weights->clone(scope);
-	bias = other.bias->clone(scope);
+	weights_ = other.weights_->clone(scope);
+	bias_ = other.bias_->clone(scope);
 }
 
 layer_perceptron::layer_perceptron (
@@ -36,18 +36,11 @@ layer_perceptron::layer_perceptron (
 	copy(other, scope);
 }
 
-layer_perceptron::layer_perceptron (
-	size_t n_input,
-	size_t n_output,
-	std::string scope)
-	: n_input(n_input), n_output(n_output) {
-	// inputs pipe into the rows of the weight
-	weights = variable<double>::make(
-		std::vector<size_t>{n_output, n_input},
-		rinit, scope+"_weights");
-	bias = variable<double>::make(
-		std::vector<size_t>{n_output},
-		zinit, scope+"_bias");
+// weights are <output, input>
+layer_perceptron::layer_perceptron (size_t n_input, size_t n_output, std::string scope) : 
+		n_input(n_input), n_output(n_output) {
+	weights_ = new nnet::ivariable<double>(std::vector<size_t>{n_output, n_input}, rinit, scope+"_weights");
+	bias_ = new nnet::ivariable<double>(std::vector<size_t>{n_output}, zinit, scope+"_bias");
 }
 
 layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
@@ -61,8 +54,8 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 // outputs are expected to have shape output by batch_size
 ivariable<double>* layer_perceptron::operator () (ivariable<double>* input) {
 	// weights are n_output column by n_input rows
-	nnet::ivariable<double>* mres = matmul<double>::make(input, weights);
-	nnet::ivariable<double>* exbias = extend<double>::make(bias, mres); // adjust shape based on mres shape
+	nnet::ivariable<double>* mres = new matmul<double>(input, weights_);
+	nnet::ivariable<double>* exbias = new extend<double>(bias_, mres); // adjust shape based on mres shape
 	return mres + exbias;
 }
 

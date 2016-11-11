@@ -17,35 +17,45 @@ namespace nnet {
 // CLIP
 
 template <typename T>
-class clip_by_norm : public iunar_elem_ops<T> {
+class clip_by_norm : public iunar_ops<T> {
 	private:
 		T cap;
+
+		clip_by_norm (clip_by_norm<T>& other, std::string name) {
+			cap = other.cap;
+			ioperation<T>::copy(other, name);
+		}
 
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void) {
 			for (ccoms::subject* child : this->dependencies_) {
 				if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child)) {
-					this->grad = clip_by_norm<T>::make(arg->get_gradient(), cap);
+					this->grad_ = new clip_by_norm<T>(arg->get_gradient(), cap);
 				}
 			}
 		}
-
-		clip_by_norm (ivariable<T>& var, std::string name) { this->copy(var, name); }
 		std::string get_symb (void) { return "clip_norm"; }
-
-		std::function<T(T)> get_op (void);
 		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
 		clip_by_norm (ivariable<T>* var, T cap) :
 			iunar_ops(var), cap(cap) {}
 
-		void set_bounds (T min, T max) { this->min = min; this->max = max; }
-
         clip_by_norm<T>* clone (std::string name = "") {
 			return static_cast<clip_by_norm<T>*>(clone_impl(name));
 		}
+		clip_by_norm& operator = (const clip_by_norm& other) {
+			if (this != &other) {
+				cap = other.cap;
+				ioperation<T>::copy(other);
+			}
+			return *this;
+		}
+
+		void set_bounds (T min, T max) { this->min = min; this->max = max; }
+		
+		virtual void update (void);
 };
 
 }

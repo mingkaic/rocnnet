@@ -38,11 +38,6 @@ std::vector<T> expose<T>::get_raw (void) {
 	return get_vec(this->eval());
 }
 
-template <typename T>
-std::vector<T> expose<T>::get_derive (ivariable<T>* over) const {
-	return get_vec(this->var->calc_gradient(over));
-}
-
 }
 
 #endif

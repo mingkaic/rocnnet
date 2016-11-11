@@ -37,7 +37,7 @@ using GRAD_MAP = std::map<ileaf<T>*, derive<T>*>;
 template <typename T>
 class ioptimizer {
 	protected:
-		std::unordered_set<ccoms::inode*> ignore_set_;
+		std::unordered_set<ccoms::subject*> ignore_set_;
 
 	public:
 		virtual ~ioptimizer (void) {}

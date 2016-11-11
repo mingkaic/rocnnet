@@ -34,28 +34,15 @@ class ibin_ops;
 template <typename T>
 class univar_func;
 
+// inheritance join at ileaf_handler
 template <typename T>
-class ioperation : public ivariable<T>, public ccoms::inode {
+class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver {
 	protected:
-		ivariable<T>* grad = nullptr;
+		ivariable<T>* grad_ = nullptr;
 
-		// DEPRECATED
-		// used in calc_gradient to toggle operations between returning eval and returning one
-		// bool derive_this = false;
-		
-		// virtual void set_gradient (ivariable<T>* g) {
-		// 	if (nullptr == grad && nullptr != g) {
-		// 		grad = g;
-		// 		ivariable<T>::set_gradient(grad);
-		// 	}
-		// }
-
+// DEPRECATE THESE TOO
 		// TODO: find a way to move shape evaluation functions out of here
 		// utility shape operations
-		tensor_shape get_element_shape (
-			const tensor<T>& t1,
-			const tensor<T>& t2) const;
-
 		tensor_shape transpose_shape (const tensor_shape& ins) const;
 
 		tensor_shape change_shape (
@@ -83,41 +70,28 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 			const tensor<T>& in,
 			std::function<void(T&, T)> op) const;
 
-		// TODO get rid of these in favor of collectors (no need to allocate new tensors)
+// TODO DEPRECATE FROM HERE ==>
 		tensor<T>* get_trace (const ivariable<T>& in) const;
 		// 1 to 1 map functional
 		tensor<T>* util_op (
 			const tensor<T>& in,
 			std::function<T(T)> op) const;
-		// 2 to 1 map functional
-		tensor<T>* util_op (
-			const tensor<T>& a,
-			const tensor<T>& b,
-			std::function<T(T, T)> op) const;
 		// operator wrapper functions that restricts shapes to matrices and
 		// retrieve raw value
 		tensor<T>* transpose_op (
 		    tensor<T> const & in) const;
-		tensor<T>* matmul_op (
-			const tensor<T>& a,
-			const tensor<T>& b,
-		    bool transposeA,
-		    bool transposeB) const;
 		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier) const;
 		tensor<T>* compress_op (
 			const tensor<T>& in,
 			signed index,
 			std::function<T(const std::vector<T>&)> collector) const;
+		tensor<T>* matmul_op (
+			const tensor<T>& a,
+			const tensor<T>& b,
+		    bool transposeA,
+		    bool transposeB) const;
+// TO HERE <==
 
-		// consume control
-		// clears input
-//		void deconsume (ivariable<T>& food) { this->remove_consumer(food, *this); }
-//		// note keeping: record self as consumer of food
-//		void consume (ivariable<T>& food) { this->add_consumer(food, *this); }
-
-		// check if candidate_shape is worth propagating to consumers
-		// before assigning consumers with new shapes to consume
-		void update (tensor_shape candidate_shape);
 		// implement unique method of consuming input variables
 		// to extract shape info
 		virtual void shape_eval (void) = 0;
@@ -125,33 +99,56 @@ class ioperation : public ivariable<T>, public ccoms::inode {
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
 		virtual void setup_gradient (void) = 0;
 
+		virtual void copy (const ioperation<T>& other,
+				   std::string name = "") {
+			// if grad is not being observed, then and only then delete
+			if (nullptr != grad_ && grad_->no_audience()) {
+				delete grad_;
+			}
+			// shallow copy
+			grad_ = other.grad_;
+			ivariable<T>::copy(other, name);
+		}
+		
+		virtual ievoker<T>* clone_impl (std::string name) = 0;
+
 		friend class ivariable<T>;
 		friend class placeholder<T>;
 		friend class univar_func<T>;
 
 	public:
-		ioperation (std::vector<ccoms::subject*> dependencies, std::string name) :
-				ivariable<T>(std::vector<size_t>{}, name) {
-			this->short_circuit = false;
-		}
-		virtual ~ioperation (void) {
-			if (grad) {
-				delete grad;
+		ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
+				ivariable<T>(std::vector<size_t>{}, name), 
+				iobserver(std::vector<ccoms::subject*>(dependencies_.begin(), dependencies_.end())) {
+			this->short_circuit_ = false;
+			if (session::pre_shape_eval()) {
+				shape_eval();
 			}
 		}
+		virtual ~ioperation (void) {
+			if (nullptr != grad_) {
+				delete grad_;
+			}
+		}
+
+		// COPY
+        ioperation<T>* clone (std::string name = "") {
+			return static_cast<ioperation<T>*>(clone_impl(name));
+		}
+		virtual ioperation<T>& operator = (const ioperation<T>& other);
 		
 		virtual const tensor<T>& get_eval (void) {
-			if (this->short_circuit) {
+			if (this->short_circuit_) {
 				return this->ones;
 			}
 			return this->out_;
 		}
 
 		virtual ivariable<T>* get_gradient (void) {
-			if (nullptr == grad) {
+			if (nullptr == grad_) {
 				setup_gradient();
 			}
-			return grad;
+			return grad_;
 		}
 };
 

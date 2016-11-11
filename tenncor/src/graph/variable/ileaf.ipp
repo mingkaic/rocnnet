@@ -13,27 +13,35 @@ namespace nnet {
 // INITIALIZER MANAGING INTERFACE
 
 template <typename T>
-struct ileaf<T>::open_init : public initializer<T> {
+struct ileaf<T>::dyn_init : public initializer<T> {
 	private:
 		tensor<T>* hold = nullptr;
 
 	public:
-		open_init (tensor<T>& in) : hold(&in) {}
+		dyn_init (tensor<T>& in) : hold(&in) {}
 
 		virtual void operator () (tensor<T>& in) {
 			hold = &in;
 		}
 		virtual initializer<T>* clone (void) {
-			return new open_init(*hold);
+			return new dyn_init(*hold);
 		}
 
-		virtual ileaf<T>::open_init& operator = (const std::vector<T>& in) {
+		virtual ileaf<T>::dyn_init& operator = (const std::vector<T>& in) {
 			this->delegate_task(*hold, [&in](T* raw_data, size_t size) {
 				std::copy(in.begin(), in.end(), raw_data);
 			});
 			return *this;
 		}
 };
+
+template <typename T>
+ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other) {
+	if (this != &other) {
+		copy(other);
+	}
+	return *this;
+}
 
 }
 

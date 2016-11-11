@@ -31,14 +31,15 @@ void random_uniform<T>::operator () (tensor<T>& in) {
 // VARIABLE INTERFACE
 
 template <typename T>
-void ivariable<T>::copy (
-	ivariable<T> const & other,
-	std::string name) {
-	 out_ = other.out_;
+void ivariable<T>::copy (ivariable<T> const & other, std::string name) {
+	short_circuit_ = other.short_circuit_;
+	
+	out_ = other.out_;
 	if (0 == name.size()) {
-		name = other.name+"_cpy";
+		name_ = other.name_+"_cpy";
+	} else {
+		name_ = name;
 	}
-	this->name = name;
 }
 
 template <typename T>

@@ -27,6 +27,7 @@ class placeholder;
 template <typename T>
 class ievoker {
 	protected:
+		// TODO: move this outta here
 		virtual T* get_raw (tensor<T>& t) const { return t.raw_data_; }
 		virtual const T* get_raw (const tensor<T>& t) const { return t.raw_data_; }
 
@@ -37,7 +38,7 @@ class ievoker {
 		ievoker<T>* clone (std::string name = "") { return clone_impl(name); }
 
 		// TODO consider changing return type to a pointer (shared)
-		virtual const tensor<T>& eval (void) = 0;
+		virtual const tensor<T>& get_eval (void) = 0;
 };
 
 }

@@ -13,19 +13,6 @@ namespace nnet {
 // OPERATION INTERFACE UTILITY FUNCTIONS
 
 template <typename T>
-tensor_shape ioperation<T>::get_element_shape (
-	const tensor<T>& a,
-	const tensor<T>& b) const {
-	tensor_shape ts_out;
-	if (1 == a.n_elems()) {
-		ts_out = b.get_shape();
-	} else if (1 == b.n_elems() || a.is_same_size(b)){
-		ts_out = a.get_shape();
-	}
-	return ts_out;
-}
-
-template <typename T>
 tensor_shape ioperation<T>::transpose_shape (const tensor_shape& ins) const {
 	// restrict shapes
 	assert(ins.n_dims() == 2);
@@ -375,15 +362,11 @@ tensor<T>* ioperation<T>::compress_op (
 }
 
 template <typename T>
-void ioperation<T>::update (tensor_shape candidate_shape) {
-	// no point in propagating if the shape is undefined
-	if (0 != candidate_shape.n_dims()) {
-		this->out_.set_shape(candidate_shape);
-		// propagate to consumers
-		for (ioperation<T>* consumer : this->consumers) {
-			consumer->shape_eval();
-		}
+ioperation<T>& ioperation<T>::operator = (const ioperation<T>& other) {
+	if (this != &other) {
+		copy(other);
 	}
+	return *this;
 }
 
 }

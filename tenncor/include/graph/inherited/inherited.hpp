@@ -40,19 +40,15 @@ class jacobian : public inherited_variable<T> {
 		}
 		virtual tensor<T>& grab_tensor (void) { return this->get_tensor_from(to_root_); }
 
-		jacobian (std::function<ivariable<T>*(ivariable<T>*)> construction) {
-			to_root_ = variable<T>::make(1);
-			to_leaf_ = construction(to_root_);
-			this->name = "J(" + to_leaf_->get_name() + ")";
-		}
-
 		virtual ievoker<T>* clone_impl (std::string name) {
 			return nullptr; // make deep copy later
 		}
 
 	public:
-		static ivariable<T>* make (std::function<ivariable<T>*(ivariable<T>*)> construction) {
-			return ivariable<T>::make_shared(new jacobian(construction));
+		jacobian (std::function<ivariable<T>*(ivariable<T>*)> construction) {
+			to_root_ = new variable<T>(1);
+			to_leaf_ = construction(to_root_);
+			this->name = "J(" + to_leaf_->get_name() + ")";
 		}
 
 		ivariable<T>* clone (std::string name = "") {

@@ -23,35 +23,33 @@ class extend : public iunar_ops<T> {
 		size_t multiplier = 0;
 		ivariable<T>* watch_ = nullptr;
 
-        void copy(const ivariable<T> &other, std::string name = "");
+		extend(const extend<T> &other, std::string name) { copy(other, name); }
 
 	protected:
 		virtual void setup_gradient(void);
-
+		virtual ievoker<T>*clone_impl(std::string name);
+		virtual void shape_eval(void);
+		
 		virtual std::string get_symb(void) { return "extend"; }
 
-		virtual void shape_eval(void);
-
-		extend(const ivariable<T> &other, std::string name) { this->copy(other, name); }
-
-		virtual ievoker<T>*clone_impl(std::string name);
+        void copy(const extend<T> &other, std::string name = "");
 
 	public:
         extend (ivariable<T>* in, ivariable<T>* watch); // extend to fit shape
         extend (ivariable<T>* in, size_t index, size_t multiplier);
 
+		// COPY
+		extend<T>* clone(std::string name = "") {
+			return static_cast<extend<T>*>(clone_impl(name));
+		}
 		virtual extend<T>& operator = (const ivariable<T> &other);
 
-		std::shared_ptr<extend<T> > clone(std::string name = "") {
-			return std::static_pointer_cast<extend<T>, ievoker<T> >(clone_impl(name));
-		}
+		virtual void update (void);
 
 		// set data
 		void set_ext_info(ivariable<T>* watch);
 
 		void set_ext_info(size_t index, size_t multiplier);
-
-		virtual void update (void);
 };
 
 }

@@ -18,15 +18,15 @@ namespace nnet {
 
 template <typename T>
 class expose : public iunar_ops<T> {
+	private:
+		expose (expose<T>& var, std::string name) { ioperation<T>::copy(var, name); }
+		
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void) {}
 		virtual ievoker<T>* clone_impl (std::string name);
 
 		std::vector<T> get_vec (const tensor<T>& in) const;
-
-		expose (ivariable<T>& var, std::string name) { this->copy(var, name); }
-
 		std::string get_symb (void) { return "expose"; }
 
 	public:
@@ -45,9 +45,6 @@ class expose : public iunar_ops<T> {
 		// non-inheriteds
 		// evaluates consumed operation
 		virtual std::vector<T> get_raw (void);
-		// extracts derivative based on the LAST evaluation
-		// doesn't evaluate
-		virtual std::vector<T> get_derive (ivariable<T>* over) const;
 };
 
 }

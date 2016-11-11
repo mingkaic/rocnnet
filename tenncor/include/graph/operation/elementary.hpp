@@ -21,9 +21,8 @@ class elementary : public ioperation<T> {
 		
 	protected:
 		virtual void setup_gradient (void);
-		virtual ievoker<T>* clone_impl (std::string name);
-
 		virtual void shape_eval (void);
+		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
 		elementary (std::vector<ivariable<T>*> args,
@@ -34,6 +33,14 @@ class elementary : public ioperation<T> {
 		// COPY
         elementary<T>* clone (std::string name = "") {
 			return static_cast<elementary<T>*>(clone_impl(name));
+		}
+		virtual elementary<T>& operator = (const elementary<T>& other) {
+			if (this != &other) {
+				for_each_ = other.for_each_;
+				der_ = other.der_;
+				ioperation<T>::copy(other);
+			}
+			return *this;
 		}
 		
 		// MOVES

@@ -20,7 +20,7 @@ void elementary<T>::setup_gradient (void) {
 			args.push_back(arg);
 		}
 	}
-	this->grad = der_(args);
+	this->grad_ = der_(args);
 }
 
 template <typename T>
@@ -32,35 +32,26 @@ ievoker<T>* elementary<T>::clone_impl (std::string name) {
 
 template <typename T>
 void elementary<T>::shape_eval (void) {
-	auto it = this->dependencies_.begin();
-    ivariable<T>* arg = dynamic_cast<ivariable<T>*>(*it);
-    assert(arg);
-	tensor_shape first = this->get_tensor_from(arg).get_shape();
-	if (first.is_fully_defined()) {
-		for (it++; this->dependencies_.end() != it; it++) {
-		    if ((arg = dynamic_cast<ivariable<T>*>(*it))) {
-                tensor_shape ts = this->get_tensor_from(*it).get_shape();
-                assert(first.is_compatible_with(ts) ||
-                       1 == ts.n_dims() || 1 == first.n_dims());
-                if (ts.n_dims() > first.n_dims()) first = ts;
-			}
+	tensor_shape first = std::vector<size_t>{1};
+	for (auto it = this->dependencies_.begin();; this->dependencies_.end() != it; it++) {
+	    if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(*it)) {
+            tensor_shape ts = arg.get_shape();
+            assert(1 == first.n_dims() ||
+                   1 == ts.n_dims() || 
+                   first.is_compatible_with(ts));
+            if (ts.n_dims() >= first.n_dims()) first = ts;
 		}
-		this->update(first);
 	}
 }
 
 template <typename T>
-elementary<T>::elementary (std::vector<ivariable<T>*> args,
-		std::function<void(T&, T)> op,
-		BUILD_DERIVE<T> der,
-		std::string name) : 
-			ioperation<T>(std::vector<ccoms::subject*>(args.begin(), args.end()), name),
-			for_each_(op), 
-			der_(der) {
-	if (session::pre_shape_eval()) {
-		shape_eval();
-	}
-}
+elementary<T>::elementary (
+	std::vector<ivariable<T>*> args,
+	std::function<void(T&, T)> op,
+	BUILD_DERIVE<T> der,
+	std::string name) : 
+		ioperation<T>(args, name),
+		for_each_(op), der_(der) {}
 
 template <typename T>
 void elementary<T>::update (void) {

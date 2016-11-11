@@ -6,6 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+// DEPRECATED TODO: replace with accumulator
 #pragma once
 #ifndef group_hpp
 #define group_hpp

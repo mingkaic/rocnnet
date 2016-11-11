@@ -31,6 +31,7 @@ namespace nnet {
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
 // TODO: make convolution neural net via multiple weights per layer
+// weights are <output, input>
 class layer_perceptron {
 	private:
 		static random_uniform<double> rinit;
@@ -41,8 +42,8 @@ class layer_perceptron {
 		size_t n_input;
 		size_t n_output;
 		// any allowed size
-		nnet::ivariable<double>* weights = nullptr;
-		nnet::ivariable<double>* bias = nullptr;
+		nnet::ivariable<double>* weights_ = nullptr;
+		nnet::ivariable<double>* bias_ = nullptr;
 
 		void copy (const layer_perceptron& other, std::string scope);
 
@@ -61,7 +62,7 @@ class layer_perceptron {
 
 		size_t get_n_input (void) const { return n_input; }
 		size_t get_n_output (void) const { return n_output; }
-		WB_PAIR get_variables (void) const { return WB_PAIR(weights, bias); }
+		WB_PAIR get_variables (void) const { return WB_PAIR(weights_, bias_); }
 };
 
 class ml_perceptron {

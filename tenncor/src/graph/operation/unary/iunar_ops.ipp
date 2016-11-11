@@ -16,22 +16,8 @@ template<typename T>
 void iunar_ops<T>::shape_eval(void) {
     if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(this->dependencies_[0])) {
         tensor_shape ts = var->get_shape();
-        if (ts.is_fully_defined()) {
-            this->update(ts);
-        }
+        assert(ts.is_fully_defined());
 	}
-}
-
-// USED FOR ELEMENT WISE OPERATIONS ONLY
-
-template<typename T>
-void iunar_elem_ops<T>::update(void) {
-	ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
-	assert(nullptr != arg);
-	const tensor<T> &evar = arg->eval();
-	tensor<T> *eptr = this->util_op(evar, get_op());
-	this->out_ = *eptr;
-	delete eptr;
 }
 
 }

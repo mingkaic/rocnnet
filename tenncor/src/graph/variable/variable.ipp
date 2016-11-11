@@ -10,43 +10,11 @@
 
 namespace nnet {
 
-// CONSTANT IMPLEMENTATION
-
-template <typename T>
-constant<T>::constant (T scalar) :
-	    ileaf<T>(std::vector<size_t>{1},
-		new const_init<T>(scalar), 
-		nnutils::formatter() << scalar) {
-	this->out_.allocate(std::make_shared<memory_alloc>());
-	this->init_(this->out_);
-	this->is_init = true;
-}
-
-template <typename T>
-constant<T>::constant (std::vector<T> raw, tensor_shape shape) :
-	    ileaf<T>(shape,
-		new typename ileaf<T>::open_init(this->out_), 
-		nnutils::formatter() << raw.front() << ".." << raw.back() << raw.end()) {
-	this->out_.allocate(std::make_shared<memory_alloc>());
-	(*this->init_) = raw;
-	this->is_init = true;
-}
-
-template <typename T>
-constant<T>::constant (const constant<T>& other, std::string name) {
-	this->copy(other, name);
-}
-
-template <typename T>
-ievoker<T>* constant<T>::clone_impl (std::string name) {
-	return new constant(*this, name);
-}
-
 // VARIABLE IMPLEMENTATION
 
 template <typename T>
 variable<T>::variable (const variable<T>& other, std::string name) {
-	this->copy(other, name);
+	ileaf<T>::copy(other, name);
 }
 
 template <typename T>
@@ -55,29 +23,20 @@ ievoker<T>* variable<T>::clone_impl (std::string name) {
 }
 
 template <typename T>
-variable<T>::variable (T scalar) {
-	this->out_.set_shape(std::vector<size_t>{1});
-	this->init_ = new const_init<T>(scalar);
-	this->name = nnutils::formatter() << scalar;
+variable<T>::variable (T scalar) :
+	    ileaf<T>(std::vector<size_t>{1},
+		new const_init<T>(scalar), 
+		nnutils::formatter() << scalar) {
 	initialize();
 }
 
 template <typename T>
-variable<T>::variable (std::string name) {
-	this->name = name;
-}
+variable<T>::variable (const tensor_shape& shape, std::string name) :
+		variable(shape, nullptr, name) {}
 
 template <typename T>
-variable<T>::variable (const tensor_shape& shape, std::string name) {
-	this->name = name;
-	this->out_.set_shape(shape);
-}
-
-template <typename T>
-variable<T>::variable (const tensor_shape& shape, initializer<T>& init, std::string name)
-	: variable(shape, name) {
-	this->init_ = init.clone();
-}
+variable<T>::variable (const tensor_shape& shape, initializer<T>& init, std::string name) :
+	    ileaf<T>(shape, init.clone(), name) {}
 
 template <typename T>
 tensor<T>& variable<T>::initialize (void) {
@@ -85,7 +44,7 @@ tensor<T>& variable<T>::initialize (void) {
 	if (false == this->out_.is_alloc()) { // if not alloc, allocate
 		this->out_.allocate(std::make_shared<memory_alloc>());
 	}
-	(*(this->init_))(this->out_);
+	(*this->init_)(this->out_);
 	this->is_init = true;
 	return this->out_;
 }
@@ -96,7 +55,7 @@ tensor<T>& variable<T>::initialize (tensor_shape alloc_shape) {
 	if (false == this->out_.is_alloc()) { // if not alloc, allocate
 		this->out_.allocate(std::make_shared<memory_alloc>(), alloc_shape);
 	}
-	(*(this->init_))(this->out_);
+	(*this->init_)(this->out_);
 	this->is_init = true;
 	return this->out_;
 }

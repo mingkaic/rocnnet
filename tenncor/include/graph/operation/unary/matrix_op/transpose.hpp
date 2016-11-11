@@ -15,16 +15,15 @@ namespace nnet {
 template <typename T>
 class transpose : public iunar_ops<T> {
 	private:
-		transpose (const ivariable<T>& other, std::string name) { this->copy(other, name); }
+		transpose (const transpose<T>& other, std::string name) { ioperation<T>::copy(other, name); }
 
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void);
+		virtual ievoker<T>* clone_impl (std::string name);
 		virtual std::string get_symb (void) { return "transpose"; }
 
 		virtual void shape_eval (void);
-
-		virtual ievoker<T>* clone_impl (std::string name);
 
 	public:
 		transpose (ivariable<T>* in);

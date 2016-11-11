@@ -23,8 +23,8 @@ class ileaf : public ivariable<T> {
 		initializer<T>* init_ = nullptr;
 		bool is_init = false;
 
-		// used by assignment operators to freely initialized inner tensor
-		struct open_init;
+		// used by assignment operators to dynamically initialize tensors
+		struct dyn_init;
 
 		virtual void copy (const ileaf<T>& other,
 				   std::string name = "") {
@@ -32,9 +32,11 @@ class ileaf : public ivariable<T> {
                 delete init_;
             }
 			init_ = other.init_->clone();
-			init_ = other.is_init;
+			is_init = other.is_init;
 			ivariable<T>::copy(other, name);
 		}
+
+		virtual ievoker<T>* clone_impl (std::string name) = 0;
 
 	public:
 		ileaf (const tensor_shape& shape, initializer<T>* init, std::string name) : 
@@ -44,6 +46,13 @@ class ileaf : public ivariable<T> {
 				delete init_;
 			}
 		}
+		
+		// COPY
+		// call abstract cloner
+		ileaf<T>* clone (std::string name = "") {
+			return static_cast<ileaf<T>*>(clone_impl(name));
+		}
+		virtual ileaf<T>& operator = (const ileaf<T>& other);
 
 		// MOVES
 		// todo: implement move clone
@@ -52,7 +61,6 @@ class ileaf : public ivariable<T> {
 		bool can_init (void) const { return init_ != nullptr; }
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-
 		virtual ivariable<T>* get_gradient (void) {
 			return this;
 		}
