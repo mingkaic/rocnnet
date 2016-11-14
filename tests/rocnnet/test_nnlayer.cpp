@@ -58,8 +58,8 @@ TEST(PERCEPTRON, layer_multiple_in) {
 	nnet::ivariable<double>* res2 = layer(in2);
 	*in1 = std::vector<double>{1, 4, 8, 16, 32};
 	*in2 = std::vector<double>{5, 4, 3, 2, 1};
-    nnet::expose<double>* e1 = new nnet::expose<double>(res1);
-    nnet::expose<double>* e2 = new nnet::expose<double>(res2);
+	nnet::expose<double>* e1 = new nnet::expose<double>(res1);
+	nnet::expose<double>* e2 = new nnet::expose<double>(res2);
 	sess.initialize_all<double>();
 	std::vector<double> raw1 = e1->get_raw();
 	std::vector<double> raw2 = e2->get_raw();
@@ -290,8 +290,8 @@ TEST(PERCEPTRON, gd_optimizer_train) {
 			}
 		}
 	}
-	double successrate = 1.0-(double)fails/(test_size*n_out);
-	err /= (test_size*n_out);
+	double successrate = 1.0-(double)fails/(test_size * n_out);
+	err /= (test_size * n_out);
 	ASSERT_GE(successrate, 0.80); // TODO increase to 90
 	std::cout << "average err: " << err << std::endl;
 	std::cout << "success rate: " << successrate << std::endl;
@@ -353,8 +353,8 @@ TEST(PERCEPTRON, bgd_train) {
 			}
 		}
 	}
-	double successrate = 1.0-(double)fails/(test_size*n_out);
-	err /= (test_size*n_out);
+	double successrate = 1.0-(double)fails/(test_size * n_out);
+	err /= (test_size * n_out);
 	// at least a weak classifier
 	ASSERT_GE(successrate, 0.55); // TODO: increase to 0.9
 	std::cout << "average err: " << err << std::endl;

@@ -73,7 +73,7 @@ class dq_net {
 		nnet::ivariable<double>* predicted_actions;
 		nnet::ivariable<double>* prediction_error;
 		// update
-		ievoker<double>* train_op;
+		iexecutor<double>* train_op;
 		group<double> net_train;
 
 		void variable_setup (nnet::OPTIMIZER<double> optimizer);

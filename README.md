@@ -7,14 +7,14 @@ Aside from a compiler supporting C++11 requirement, no dependencies are required
 
 There are two components to this library:
 - tensor manipulation
-    * Like tensorflow, main actors are variables, tensors, and operations.
-    * Variables hold tensors.
-    * Operations operate on variables. Operations are differentiable.
+	* Like tensorflow, main actors are variables, tensors, and operations.
+	* Variables hold tensors.
+	* Operations operate on variables. Operations are differentiable.
 
 - machine learning
 Some implemented mechanisms include:
-    * toy multilayer perceptron using linear regression
-    * deep q-neural nets https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
+	* toy multilayer perceptron using linear regression
+	* deep q-neural nets https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
 
 ## Examples
 

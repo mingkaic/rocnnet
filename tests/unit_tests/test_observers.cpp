@@ -1,8 +1,7 @@
 
 #include "gtest/gtest.h"
-#include "graph/observer/node.hpp"
-#include "graph/observer/observer.hpp"
-#include "graph/observer/subject.hpp"
+#include "graph/ccoms/iobserver.hpp"
+#include "graph/ccoms/subject.hpp"
 
 // test classes
 
@@ -34,7 +33,7 @@ class div_observer: public ccoms::iobserver {
 			
 		size_t get_out (void) { return out_; }
 		
-		void update (void) {
+		void update (ccoms::subject* caller) {
 			div_subject* sub = dynamic_cast<div_subject*>(this->dependencies_[0]);
 			assert(sub);
 			size_t v = sub->get_val();
@@ -53,7 +52,7 @@ class mod_observer: public ccoms::iobserver {
 			
 		size_t get_out (void) { return out_; }
 			
-		void update (void) {
+		void update (ccoms::subject* caller) {
 			div_subject* sub = dynamic_cast<div_subject*>(this->dependencies_[0]);
 			assert(sub);
 			size_t v = sub->get_val();

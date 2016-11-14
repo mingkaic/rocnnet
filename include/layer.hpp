@@ -6,6 +6,10 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#pragma once
+#ifndef layer_hpp
+#define layer_hpp
+
 #include <string>
 #include <vector>
 #include <random>
@@ -14,19 +18,13 @@
 #include <stack>
 
 #include "tenncor/tenncor.hpp"
-
-#include <iostream>
-#include <cassert>
-
-#pragma once
-#ifndef layer_hpp
-#define layer_hpp
+#include "graph/bridge/varptr.hpp"
 
 namespace nnet {
 
-#define WB_PAIR std::pair<ivariable<double>*, VAR_PTR<double>>
-#define IN_PAIR std::pair<size_t, nnet::TEN_FUNC<double> >
-#define HID_PAIR std::pair<layer_perceptron*, nnet::TEN_FUNC<double> >
+#define WB_PAIR std::pair<ivariable<double>*, ivariable<double>*>
+#define IN_PAIR std::pair<size_t, nnet::VAR_FUNC<double> >
+#define HID_PAIR std::pair<layer_perceptron*, nnet::VAR_FUNC<double> >
 
 // CONSTRAINTS: without tensors, all features are fed by vectors
 // higher dimensional features must be contracted to vector or reduced in some manner
@@ -42,9 +40,10 @@ class layer_perceptron {
 		size_t n_input;
 		size_t n_output;
 		// any allowed size
-		nnet::ivariable<double>* weights_ = nullptr;
-		nnet::ivariable<double>* bias_ = nullptr;
+		ivariable<double>* weights_ = nullptr;
+		ivariable<double>* bias_ = nullptr;
 
+	protected:
 		void copy (const layer_perceptron& other, std::string scope);
 
 	public:
@@ -71,9 +70,7 @@ class ml_perceptron {
 		std::string scope;
 		std::vector<HID_PAIR> layers;
 
-		void copy (
-			const ml_perceptron& other,
-			std::string scope);
+		void copy (const ml_perceptron& other, std::string scope);
 
 		ml_perceptron (const ml_perceptron& other, std::string scope);
 

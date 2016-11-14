@@ -21,26 +21,31 @@ template <typename T>
 class ileaf : public ivariable<T> {
 	protected:
 		initializer<T>* init_ = nullptr;
-		bool is_init = false;
+		bool is_init_ = false;
+
+		void copy (const ileaf<T>& other, std::string name = "") {
+			if (nullptr != init_) {
+				delete init_;
+			}
+			init_ = other.init_->clone();
+			is_init_ = other.is_init_;
+			ivariable<T>::copy(other, name);
+		}
+
+		ileaf (const ileaf<T>& other, std::string name) :
+			ivariable<T>(other, name),
+			init_(other.init_->clone()),
+			is_init_(other.is_init_) {}
+
+		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
 		// used by assignment operators to dynamically initialize tensors
 		struct dyn_init;
 
-		virtual void copy (const ileaf<T>& other,
-				   std::string name = "") {
-            if (nullptr != init_) {
-                delete init_;
-            }
-			init_ = other.init_->clone();
-			is_init = other.is_init;
-			ivariable<T>::copy(other, name);
-		}
-
-		virtual ievoker<T>* clone_impl (std::string name) = 0;
-
 	public:
-		ileaf (const tensor_shape& shape, initializer<T>* init, std::string name) : 
+		ileaf (const tensorshape& shape, initializer<T>* init, std::string name) :
 			ivariable<T>(shape, name), init_(init) {}
+
 		virtual ~ileaf (void) {
 			if (nullptr != init_) {
 				delete init_;

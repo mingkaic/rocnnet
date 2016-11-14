@@ -23,18 +23,17 @@ namespace nnet {
 // Never notifies... should consider inheriting from different parent
 template <typename T>
 class constant : public ileaf<T> {
-	private:
+	protected:
 		constant (const constant<T>& other, std::string name);
 
-	protected:
-		virtual ievoker<T>* clone_impl (std::string name);
+		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
 		constant (T scalar);
-		constant (std::vector<T> raw, tensor_shape shape);
+		constant (std::vector<T> raw, tensorshape shape);
 
 		// COPY
-        constant<T>* clone (std::string name = "") {
+		constant<T>* clone (std::string name = "") {
 			return static_cast<constant<T>*>(clone_impl(name));
 		}
 

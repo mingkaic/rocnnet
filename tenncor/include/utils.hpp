@@ -18,30 +18,12 @@
 
 namespace nnutils {
 
-template<typename T>
-struct weak_ptr_hash : public std::unary_function<std::weak_ptr<T>, size_t> {
-	size_t operator () (const std::weak_ptr<T>& wp) {
-		auto sp = wp.lock();
-		return std::hash<decltype(sp)>()(sp);
-	}
-};
-
-template<typename T>
-struct weak_ptr_equal : public std::unary_function<std::weak_ptr<T>, bool> {
-	bool operator () (const std::weak_ptr<T>& left, const std::weak_ptr<T>& right) {
-		return !left.owner_before(right) && !right.owner_before(left);
-	}
-};
-
-template <typename T>
-using WEAK_SET = std::unordered_set<std::weak_ptr<T>, weak_ptr_hash<T>, weak_ptr_equal<T> >;
-
 class formatter {
 	private:
 		std::stringstream stream_;
 
-		formatter(const formatter &);
-		formatter & operator = (formatter &);
+		formatter(const formatter&);
+		formatter& operator = (formatter&);
 	public:
 		enum convert_to_string {
 			to_str
@@ -51,7 +33,7 @@ class formatter {
 		~formatter() {}
 
 		template <typename T>
-		formatter & operator << (const T & value) {
+		formatter& operator << (const T& value) {
 			stream_ << value;
 			return *this;
 		}

@@ -33,19 +33,19 @@ void layer_perceptron::copy (
 layer_perceptron::layer_perceptron (
 		const layer_perceptron& other,
 		std::string scope) {
-	copy(other, scope);
+	this->copy(other, scope);
 }
 
 // weights are <output, input>
 layer_perceptron::layer_perceptron (size_t n_input, size_t n_output, std::string scope) : 
 		n_input(n_input), n_output(n_output) {
-	weights_ = new nnet::ivariable<double>(std::vector<size_t>{n_output, n_input}, rinit, scope+"_weights");
-	bias_ = new nnet::ivariable<double>(std::vector<size_t>{n_output}, zinit, scope+"_bias");
+	weights_ = new variable<double>(std::vector<size_t>{n_output, n_input}, rinit, scope+"_weights");
+	bias_ = new variable<double>(std::vector<size_t>{n_output}, zinit, scope+"_bias");
 }
 
 layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 	if (&other != this) {
-		copy(other, scope);
+		this->copy(other, scope);
 	}
 	return *this;
 }
@@ -54,9 +54,9 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other) {
 // outputs are expected to have shape output by batch_size
 ivariable<double>* layer_perceptron::operator () (ivariable<double>* input) {
 	// weights are n_output column by n_input rows
-	nnet::ivariable<double>* mres = new matmul<double>(input, weights_);
-	nnet::ivariable<double>* exbias = new extend<double>(bias_, mres); // adjust shape based on mres shape
-	return mres + exbias;
+	varptr<double> mres = new matmul<double>(input, weights_));
+	varptr<double> bias = fit(bias_, mres); // adjust shape based on mres shape
+	return mres + bias;
 }
 
 // MULTILAYER PERCEPTRON IMPLEMENTATION
@@ -70,11 +70,10 @@ void ml_perceptron::copy (
 	this->scope = scope;
 	size_t level = 0;
 	for (HID_PAIR hp : other.layers) {
-		std::string layername =
-			nnutils::formatter() << scope << ":hiddens" << level++;
 		layers.push_back(HID_PAIR(
-			new layer_perceptron(*hp.first, layername),
-			hp.second));
+			new layer_perceptron(*hp.first,
+				nnutils::formatter() << scope << ":hiddens" << level++),
+				hp.second));
 	}
 }
 
@@ -95,9 +94,9 @@ ml_perceptron::ml_perceptron (
 }
 
 ml_perceptron::ml_perceptron (
-	ml_perceptron const & other,
+	const ml_perceptron& other,
 	std::string scope) {
-	copy(other, scope);
+	this->copy(other, scope);
 }
 
 ml_perceptron::~ml_perceptron (void) {
@@ -111,7 +110,7 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 		for (HID_PAIR hp : layers) {
 			delete hp.first;
 		}
-		copy(other, scope);
+		this->copy(other, scope);
 	}
 	return *this;
 }
@@ -121,9 +120,9 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other) {
 ivariable<double>* ml_perceptron::operator () (placeholder<double>* input) {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
-	nnet::ivariable<double>* output = input;
+	varptr<double> output = input;
 	for (HID_PAIR hp : layers) {
-		nnet::ivariable<double>* hypothesis = (*hp.first)(output);
+		varptr<double> hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 	}
 	return output;

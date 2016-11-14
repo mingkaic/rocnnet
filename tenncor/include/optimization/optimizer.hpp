@@ -13,18 +13,16 @@
 #ifndef optimizer_hpp
 #define optimizer_hpp
 
-#include "update.hpp"
+#include "graph/bridge/assign.hpp"
 #include "graph/variable/variable.hpp"
-#include "graph/group.hpp"
-#include "graph/operation/elementary.hpp"
-#include "graph/operation/unary/iunar_ops.hpp"
-#include "graph/operation/unary/derive.hpp"
-#include "graph/observer/node.hpp"
+#include "graph/bridge/group.hpp"
+#include "graph/operation/general/elementary.hpp"
+#include "graph/bridge/gradient.hpp"
 
 namespace nnet {
 
 template <typename T>
-using GRAD_MAP = std::map<ileaf<T>*, derive<T>*>;
+using GRAD_MAP = std::map<ivariable<T>*, ivariable<T>*>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -37,15 +35,13 @@ using GRAD_MAP = std::map<ileaf<T>*, derive<T>*>;
 template <typename T>
 class ioptimizer {
 	protected:
-		std::unordered_set<ccoms::subject*> ignore_set_;
+		std::unordered_set<ccoms::subject*> ignore_set_; // does not own ownership
 
 	public:
-		virtual ~ioptimizer (void) {}
-
 		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
 
 		// two step process in one
-		ievoker<T>*minimize (ivariable<T>* fanout) {
+		group<T>* minimize (ivariable<T>* fanout) {
 			GRAD_MAP<T> buffer = this->compute_grad(fanout);
 			return apply_grad(buffer);
 		}
@@ -53,19 +49,18 @@ class ioptimizer {
 		// separate minimize into 2 steps:
 		// calculate the gradient
 		virtual GRAD_MAP<T> compute_grad (ivariable<T>* fanout) {
+			gradient<T>* grad = new gradient<T>(fanout);
+			grad->execute();
 			GRAD_MAP<T> res;
-			fanout->leaves_collect ([&res, &fanout, this](ccoms::subject* leaf) {
-				if (ignore_set_.end() == ignore_set_.find(leaf)) {
-					std::pair<ivariable<T>*, ivariable<T>* > end_point(
-						dynamic_cast<ileaf<T>*>(leaf),
-						new derive<T>(fanout, leaf));
-					res.insert(end_point);
-				}
+
+			grad->extract([&res](ivariable<T>* key,ivariable<T>* value) {
+				res[key] = value;
 			});
+
 			return res;
 		}
 		// actual update step
-		virtual ievoker<double>* apply_grad (GRAD_MAP<T>& gradients) = 0;
+		virtual group<double>* apply_grad (GRAD_MAP<T>& gradients) = 0;
 };
 
 template <typename T>
@@ -89,7 +84,7 @@ class gd_optimizer : public ioptimizer<double> {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 // MOMENTUM BASED OPTIMIZATION
@@ -125,7 +120,7 @@ class ada_delta_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 class ada_grad_optimizer : public gd_optimizer {
@@ -139,7 +134,7 @@ class ada_grad_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 // Root Mean Square Propagation Algorithm
@@ -169,7 +164,7 @@ class rms_prop_optimizer : public gd_optimizer {
 
 		// inherits compute_grad from ioptimizer
 
-		virtual ievoker<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
 }

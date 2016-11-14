@@ -13,7 +13,7 @@ void unaryElemTest (
 	std::function<double(double)> op) {
 	const size_t limit = 523;
 	const size_t edge = 10;
-	const size_t supersize = edge*edge*edge;
+	const size_t supersize = edge * edge * edge;
 	nnet::placeholder<double>* p = new nnet::placeholder<double>(std::vector<size_t>{edge, edge, edge}, "unar_in");
 
 	nnet::ivariable<double>* res = func(p);
@@ -33,14 +33,14 @@ void unaryElemTest (
 
 	nnet::expose<double>* ex = new nnet::expose<double>(res);
 	// evaluates
-    std::vector<double> raw = ex->get_raw();
+	std::vector<double> raw = ex->get_raw();
 
-    ASSERT_EQ(raw.size(), supersize);
+	ASSERT_EQ(raw.size(), supersize);
 
-    for (size_t i = 0; i < supersize; i++) {
-    	double err = std::abs(op(r[i]) - raw[i]);
+	for (size_t i = 0; i < supersize; i++) {
+		double err = std::abs(op(r[i]) - raw[i]);
 		EXPECT_LT(err, 0.001);
-    }
+	}
 }
 
 void binaryElemTest (
@@ -52,17 +52,17 @@ void binaryElemTest (
 	sess.enable_shape_eval();
 	const size_t limit = 523;
 	const size_t edge = 10;
-	const size_t badsize = edge*edge;
-	const size_t supersize = edge*edge*edge;
-	nnet::tensor_shape goodshape = std::vector<size_t>{edge, edge, edge};
+	const size_t badsize = edge * edge;
+	const size_t supersize = edge * edge * edge;
+	nnet::tensorshape goodshape = std::vector<size_t>{edge, edge, edge};
 	nnet::placeholder<double>* p1 = new nnet::placeholder<double>(goodshape, "bin_in1");
 	nnet::placeholder<double>* p2 = new nnet::placeholder<double>(goodshape, "bin_in2");
 	nnet::placeholder<double>* bad = new nnet::placeholder<double>((std::vector<size_t>{edge, edge}), "bad");
 
 	EXPECT_DEATH({ nnet::ivariable<double>* trouble1 = func(p1, bad); }, ".*"); // evaluates shapes at construction
-    EXPECT_DEATH({ nnet::ivariable<double>* trouble2 = func(bad, p1); }, ".*");
+	EXPECT_DEATH({ nnet::ivariable<double>* trouble2 = func(bad, p1); }, ".*");
 
-    nnet::ivariable<double>* res = func(p1, p2);
+	nnet::ivariable<double>* res = func(p1, p2);
 	nnet::ivariable<double>* res1 = func1(p1, 2);
 	nnet::ivariable<double>* _1res = func2(2, p1);
 
@@ -97,19 +97,19 @@ void binaryElemTest (
 	nnet::expose<double>* ex1 = new nnet::expose<double>(res1);
 	nnet::expose<double>* ex2 = new nnet::expose<double>(_1res);
 	// evaluates
-    std::vector<double> raw = ex->get_raw();
+	std::vector<double> raw = ex->get_raw();
 	std::vector<double> raw1 = ex1->get_raw();
 	std::vector<double> raw2 = ex2->get_raw();
 
-    ASSERT_EQ(raw.size(), supersize);
+	ASSERT_EQ(raw.size(), supersize);
 	ASSERT_EQ(raw1.size(), supersize);
 	ASSERT_EQ(raw2.size(), supersize);
 
-    for (size_t i = 0; i < supersize; i++) {
+	for (size_t i = 0; i < supersize; i++) {
 		EXPECT_EQ(op(r1[i], r2[i]), raw[i]);
 		EXPECT_EQ(op(r1[i], 2), raw1[i]);
 		EXPECT_EQ(op(2, r1[i]), raw2[i]);
-    }
+	}
 	sess.disable_shape_eval();
 }
 
@@ -189,10 +189,10 @@ TEST(OPERATION, sub) {
 
 TEST(OPERATION, mul) {
 	binaryElemTest(
-	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a*b; },
-	[](nnet::ivariable<double>* a, double b) { return a*b; },
-	[](double a, nnet::ivariable<double>* b) { return a*b; },
-	[](double a, double b) { return a*b; });
+	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a * b; },
+	[](nnet::ivariable<double>* a, double b) { return a * b; },
+	[](double a, nnet::ivariable<double>* b) { return a * b; },
+	[](double a, double b) { return a * b; });
 }
 
 
@@ -242,7 +242,7 @@ TEST(OPERATION, matmul) {
 		{599.6, 99.4, 463},
 		{219, 51, 78}
 	};
-	const size_t supersize = ncol*nrow;
+	const size_t supersize = ncol * nrow;
 	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "a");
 	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "b");
 	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{nrow, ncol}), "c");
@@ -262,22 +262,22 @@ TEST(OPERATION, matmul) {
 	nnet::expose<double>* res2 = new nnet::expose<double>(ans2);
 	nnet::expose<double>* res3 = new nnet::expose<double>(ans3);
 	// evaluates
-    nnet::tensor<double> t1 = res1->eval();
-	nnet::tensor_shape s1 = t1.get_shape();
+	nnet::tensor<double> t1 = res1->eval();
+	nnet::tensorshape s1 = t1.get_shape();
 	std::vector<size_t> v1 = s1.as_list();
 	ASSERT_EQ(v1.size(), 2);
 	ASSERT_EQ(v1[0], nrow);
 	ASSERT_EQ(v1[1], nrow);
 
-    nnet::tensor<double> t2 = res2->eval();
-	nnet::tensor_shape s2 = t2.get_shape();
+	nnet::tensor<double> t2 = res2->eval();
+	nnet::tensorshape s2 = t2.get_shape();
 	std::vector<size_t> v2 = s2.as_list();
 	ASSERT_EQ(v2.size(), 2);
 	ASSERT_EQ(v2[0], ncol);
 	ASSERT_EQ(v2[1], ncol);
 
-    nnet::tensor<double> t3 = res3->eval();
-	nnet::tensor_shape s3 = t3.get_shape();
+	nnet::tensor<double> t3 = res3->eval();
+	nnet::tensorshape s3 = t3.get_shape();
 	std::vector<size_t> v3 = s3.as_list();
 	ASSERT_EQ(v3.size(), 2);
 	ASSERT_EQ(v3[0], ncol);
@@ -287,13 +287,13 @@ TEST(OPERATION, matmul) {
 		for (size_t y = 0; y < nrow; y++) {
 			EXPECT_EQ(ex1[y][x], t1.get({x, y}));
 		}
-    }
-    for (size_t x = 0; x < ncol; x++) {
+	}
+	for (size_t x = 0; x < ncol; x++) {
 		for (size_t y = 0; y < ncol; y++) {
 			EXPECT_EQ(ex2[y][x], t2.get({x, y}));
 			EXPECT_EQ(ex3[y][x], t3.get({x, y}));
 		}
-    }
+	}
 }
 
 
@@ -353,8 +353,8 @@ TEST(OPERATION, matmul2) {
 	nnet::expose<double>* res2 = new nnet::expose<double>(ans2);
 	nnet::expose<double>* res3 = new nnet::expose<double>(ans3);
 	// evaluates
-    nnet::tensor<double> t1 = res1->eval();
-	nnet::tensor_shape s1 = t1.get_shape();
+	nnet::tensor<double> t1 = res1->eval();
+	nnet::tensorshape s1 = t1.get_shape();
 	std::vector<size_t> v1 = s1.as_list();
 	ASSERT_EQ(v1.size(), 2);
 	ASSERT_EQ(v1[0], 3);
@@ -363,32 +363,32 @@ TEST(OPERATION, matmul2) {
 		for (size_t y = 0; y < 2; y++) {
 			EXPECT_EQ(ex1[y][x], t1.get({x, y}));
 		}
-    }
+	}
 
-    nnet::tensor<double> t2 = res2->eval();
-	nnet::tensor_shape s2 = t2.get_shape();
+	nnet::tensor<double> t2 = res2->eval();
+	nnet::tensorshape s2 = t2.get_shape();
 	std::vector<size_t> v2 = s2.as_list();
 	ASSERT_EQ(v2.size(), 2);
 	ASSERT_EQ(v2[0], 5);
 	ASSERT_EQ(v2[1], 3);
 	std::stringstream res;
-    for (size_t x = 0; x < 5; x++) {
+	for (size_t x = 0; x < 5; x++) {
 		for (size_t y = 0; y < 3; y++) {
 			EXPECT_EQ(ex2[y][x], t2.get({x, y}));
 		}
-    }
+	}
 
-    nnet::tensor<double> t3 = res3->eval();
-	nnet::tensor_shape s3 = t3.get_shape();
+	nnet::tensor<double> t3 = res3->eval();
+	nnet::tensorshape s3 = t3.get_shape();
 	std::vector<size_t> v3 = s3.as_list();
 	ASSERT_EQ(v3.size(), 2);
 	ASSERT_EQ(v3[0], 2);
 	ASSERT_EQ(v3[1], 5);
 	for (size_t y = 0; y < 5; y++) {
-    	for (size_t x = 0; x < 2; x++) {
+		for (size_t x = 0; x < 2; x++) {
 			EXPECT_EQ(ex3[y][x], t3.get({x, y}));
 		}
-    }
+	}
 }
 
 
@@ -437,34 +437,34 @@ TEST(OPERATION, transpose) {
 	*B = bv;
 	*C = cv;
 	nnet::tensor<double> ta = resa->eval();
-	nnet::tensor_shape sa = ta.get_shape();
+	nnet::tensorshape sa = ta.get_shape();
 	std::vector<size_t> va = sa.as_list();
 	ASSERT_EQ(va.size(), 2);
 	ASSERT_EQ(va[0], 4);
 	ASSERT_EQ(va[1], 2);
-    for (size_t x = 0; x < 4; x++) {
+	for (size_t x = 0; x < 4; x++) {
 		for (size_t y = 0; y < 2; y++) {
 			EXPECT_EQ(ex1[y][x], ta.get({x, y}));
 		}
 	}
 	nnet::tensor<double> tb = resb->eval();
-	nnet::tensor_shape sb = tb.get_shape();
+	nnet::tensorshape sb = tb.get_shape();
 	std::vector<size_t> vb = sb.as_list();
 	ASSERT_EQ(vb.size(), 2);
 	ASSERT_EQ(vb[0], 4);
 	ASSERT_EQ(vb[1], 3);
-    for (size_t x = 0; x < 4; x++) {
+	for (size_t x = 0; x < 4; x++) {
 		for (size_t y = 0; y < 3; y++) {
 			EXPECT_EQ(ex2[y][x], tb.get({x, y}));
 		}
 	}
 	nnet::tensor<double> tc = resc->eval();
-	nnet::tensor_shape sc = tc.get_shape();
+	nnet::tensorshape sc = tc.get_shape();
 	std::vector<size_t> vc = sc.as_list();
 	ASSERT_EQ(vc.size(), 2);
 	ASSERT_EQ(vc[0], 5);
 	ASSERT_EQ(vc[1], 4);
-    for (size_t x = 0; x < 5; x++) {
+	for (size_t x = 0; x < 5; x++) {
 		for (size_t y = 0; y < 4; y++) {
 			EXPECT_EQ(ex3[y][x], tc.get({x, y}));
 		}
@@ -693,7 +693,7 @@ TEST(OPERATION, high_dim_mul) {
 
 TEST(DERIV, unary) {
 	const size_t edge = 10;
-	const size_t supersize = edge*edge*edge;
+	const size_t supersize = edge * edge * edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
 	nnet::ivariable<double>* in = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "in");
@@ -716,7 +716,7 @@ TEST(DERIV, unary) {
 		[](double e) { return -1; },
 		[](double e) { return cos(e); },
 		[](double e) { return -sin(e); },
-		[](double e) { return 1.0/(cos(e)*cos(e)); },
+		[](double e) { return 1.0/(cos(e) * cos(e)); },
 		[](double e) { return -1.0/(sin(e)*tan(e)); },
 		[](double e) { return tan(e)/cos(e); },
 		[](double e) { return -(1.0/sin(e))*(1.0/sin(e)); },
@@ -826,10 +826,10 @@ TEST(DERIV, complex) {
 	std::vector<double> dp1 = new nnet::expose<double>(grad1)->get_raw();
 	std::vector<double> dp2 = new nnet::expose<double>(grad2)->get_raw();
 
-    for (size_t i = 0; i < raw.size(); i++) {
+	for (size_t i = 0; i < raw.size(); i++) {
 		EXPECT_EQ(sin(r1[i])+r1[i]*r2[i], raw[i]);
-    }
-    for (size_t i = 0; i < dp1.size(); i++) {
+	}
+	for (size_t i = 0; i < dp1.size(); i++) {
 		EXPECT_EQ(cos(r1[i])+r2[i], dp1[i]);
 	}
 	for (size_t i = 0; i < dp2.size(); i++) {

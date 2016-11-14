@@ -13,17 +13,17 @@
 namespace nnet {
 
 session& session::get_instance (void) {
-    static session my_instance;
-    return my_instance;
+	static session my_instance;
+	return my_instance;
 }
 
 std::default_random_engine& session::get_generator (void) {
-    session& inst = session::get_instance();
-    return inst.get_rand_generator();
+	session& inst = session::get_instance();
+	return inst.get_rand_generator();
 }
 
 // void register_obj (ivariable<std::any>& obj) {
-//     registry.emplace(&obj);
+//	 registry.emplace(&obj);
 // }
 
 }

@@ -22,18 +22,17 @@ namespace nnet {
 
 template <typename T>
 class placeholder : public ileaf<T> {
-	private:
+	protected:
+		virtual ivariable<T>* clone_impl (std::string name);
+
 		placeholder (const placeholder<T>& other, std::string name);
 
-	protected:
-		virtual ievoker<T>* clone_impl (std::string name);
-
 	public:
-		placeholder (const tensor_shape& shape, std::string name = "");
-		placeholder (const tensor_shape& shape, initializer<T>& init, std::string name = "");
+		placeholder (const tensorshape& shape, std::string name = "");
+		placeholder (const tensorshape& shape, initializer<T>& init, std::string name = "");
 			
 		// COPY
-        placeholder<T>* clone (std::string name = "") {
+		placeholder<T>* clone (std::string name = "") {
 			return static_cast<placeholder<T>*>(clone_impl(name));
 		}
 

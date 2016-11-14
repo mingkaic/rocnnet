@@ -28,8 +28,8 @@ struct ileaf<T>::dyn_init : public initializer<T> {
 		}
 
 		virtual ileaf<T>::dyn_init& operator = (const std::vector<T>& in) {
-			this->delegate_task(*hold, [&in](T* raw_data, size_t size) {
-				std::copy(in.begin(), in.end(), raw_data);
+			this->delegate_task(*hold, [&in](T* raw, size_t len) {
+				std::copy(in.begin(), in.end(), raw);
 			});
 			return *this;
 		}
@@ -38,7 +38,7 @@ struct ileaf<T>::dyn_init : public initializer<T> {
 template <typename T>
 ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other) {
 	if (this != &other) {
-		copy(other);
+		this->copy(other);
 	}
 	return *this;
 }

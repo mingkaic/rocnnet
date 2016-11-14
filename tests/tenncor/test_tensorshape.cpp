@@ -9,9 +9,9 @@
 #include "tenncor/tenncor.hpp"
 #include "gtest/gtest.h"
 
-static bool tensor_shape_equal (
-	nnet::tensor_shape const & ts1,
-	nnet::tensor_shape const & ts2) {
+static bool tensorshape_equal (
+	const nnet::tensorshape& ts1,
+	const nnet::tensorshape& ts2) {
 	if (ts1.is_part_defined() && ts2.is_part_defined()) {
 		std::vector<size_t> dims1 = ts1.as_list();
 		std::vector<size_t> dims2 = ts2.as_list();
@@ -92,13 +92,13 @@ TEST(TENSORSHAPE, is_compatible_with) {
 	std::vector<size_t> part3 = {3, 0, 0};
 	std::vector<size_t> bad = {2, 0, 0};
 	std::vector<size_t> com = {3, 1, 2};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape com_ts1(com);
-	nnet::tensor_shape com_ts2(com);
-	nnet::tensor_shape p_ts1(part1);
-	nnet::tensor_shape p_ts2(part2);
-	nnet::tensor_shape p_ts3(part3);
-	nnet::tensor_shape bad_ts(bad);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape com_ts1(com);
+	nnet::tensorshape com_ts2(com);
+	nnet::tensorshape p_ts1(part1);
+	nnet::tensorshape p_ts2(part2);
+	nnet::tensorshape p_ts3(part3);
+	nnet::tensorshape bad_ts(bad);
 	EXPECT_TRUE(incom_ts.is_compatible_with(com_ts1));
 	EXPECT_TRUE(com_ts1.is_compatible_with(com_ts2));
 
@@ -116,8 +116,8 @@ TEST(TENSORSHAPE, is_compatible_with) {
 
 TEST(TENSORSHAPE, is_part_defined) {
 	std::vector<size_t> v = {0, 1, 2};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape com_ts(v);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape com_ts(v);
 	EXPECT_FALSE(incom_ts.is_part_defined());
 	ASSERT_TRUE(com_ts.is_part_defined());
 }
@@ -126,9 +126,9 @@ TEST(TENSORSHAPE, is_part_defined) {
 TEST(TENSORSHAPE, is_fully_defined) {
 	std::vector<size_t> v = {0, 1, 2};
 	std::vector<size_t> fv = {3, 1, 2};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape pcom_ts(v);
-	nnet::tensor_shape fcom_ts(fv);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape pcom_ts(v);
+	nnet::tensorshape fcom_ts(fv);
 	EXPECT_FALSE(incom_ts.is_fully_defined());
 	EXPECT_FALSE(pcom_ts.is_fully_defined());
 	EXPECT_TRUE(fcom_ts.is_fully_defined());
@@ -137,8 +137,8 @@ TEST(TENSORSHAPE, is_fully_defined) {
 
 TEST(TENSORSHAPE, assert_has_rank) {
 	std::vector<size_t> v = {0, 1, 2};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape com_ts(v);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape com_ts(v);
 	incom_ts.assert_has_rank(10);
 	com_ts.assert_has_rank(3);
 
@@ -150,10 +150,10 @@ TEST(TENSORSHAPE, assert_same_rank) {
 	std::vector<size_t> v1 = {0, 1, 2};
 	std::vector<size_t> v2 = {3, 4, 5};
 	std::vector<size_t> v3 = {3, 4};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape ts1(v1);
-	nnet::tensor_shape ts2(v2);
-	nnet::tensor_shape ts3(v3);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape ts1(v1);
+	nnet::tensorshape ts2(v2);
+	nnet::tensorshape ts3(v3);
 
 	incom_ts.assert_same_rank(ts1);
 	ts1.assert_same_rank(incom_ts);
@@ -167,9 +167,9 @@ TEST(TENSORSHAPE, assert_same_rank) {
 TEST(TENSORSHAPE, assert_is_fully_defined) {
 	std::vector<size_t> v = {0, 1, 2};
 	std::vector<size_t> fv = {3, 1, 2};
-	nnet::tensor_shape pcom_ts(v);
-	nnet::tensor_shape fcom_ts(fv);
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape pcom_ts(v);
+	nnet::tensorshape fcom_ts(fv);
+	nnet::tensorshape incom_ts;
 	fcom_ts.assert_is_fully_defined();
 	ASSERT_DEATH({ pcom_ts.assert_is_fully_defined(); }, ".*");
 	ASSERT_DEATH({ incom_ts.assert_is_fully_defined(); }, ".*");
@@ -178,8 +178,8 @@ TEST(TENSORSHAPE, assert_is_fully_defined) {
 
 TEST(TENSORSHAPE, n_dims) {
 	std::vector<size_t> v = {0, 1, 2};
-	nnet::tensor_shape ts(v);
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape ts(v);
+	nnet::tensorshape incom_ts;
 
 	EXPECT_EQ(incom_ts.n_dims(), 0);
 	ASSERT_EQ(ts.n_dims(), v.size());
@@ -188,8 +188,8 @@ TEST(TENSORSHAPE, n_dims) {
 
 TEST(TENSORSHAPE, dims) {
 	std::vector<size_t> v = {0, 1, 2};
-	nnet::tensor_shape ts(v);
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape ts(v);
+	nnet::tensorshape incom_ts;
 
 	std::vector<nnet::dimension> vout = ts.dims();
 	ASSERT_EQ(v.size(), vout.size());
@@ -202,8 +202,8 @@ TEST(TENSORSHAPE, dims) {
 
 TEST(TENSORSHAPE, as_list) {
 	std::vector<size_t> v = {0, 1, 2};
-	nnet::tensor_shape ts(v);
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape ts(v);
+	nnet::tensorshape incom_ts;
 
 	std::vector<size_t> vout = ts.as_list();
 	ASSERT_EQ(v.size(), vout.size());
@@ -219,15 +219,15 @@ TEST(TENSORSHAPE, merge_with) {
 	std::vector<size_t> bad2 = {10, 10, 10};
 	std::vector<size_t> part = {0, 1, 2};
 	std::vector<size_t> full = {3, 1, 2};
-	nnet::tensor_shape incom_ts;
-	nnet::tensor_shape bad_ts(bad);
-	nnet::tensor_shape bad_ts2(bad2);
-	nnet::tensor_shape part_ts(part);
-	nnet::tensor_shape full_ts(full);
+	nnet::tensorshape incom_ts;
+	nnet::tensorshape bad_ts(bad);
+	nnet::tensorshape bad_ts2(bad2);
+	nnet::tensorshape part_ts(part);
+	nnet::tensorshape full_ts(full);
 
 	// bad tensorshape of rank 1
-	std::vector<nnet::tensor_shape*> tss = {&part_ts, &full_ts};
-	for (nnet::tensor_shape* ts : tss) {
+	std::vector<nnet::tensorshape*> tss = {&part_ts, &full_ts};
+	for (nnet::tensorshape* ts : tss) {
 		EXPECT_THROW({ bad_ts.merge_with(*ts); }, std::logic_error);
 	}
 
@@ -235,39 +235,39 @@ TEST(TENSORSHAPE, merge_with) {
 	EXPECT_THROW({ bad_ts2.merge_with(full_ts); }, std::logic_error);
 
 	// incomplete shape test
-	for (nnet::tensor_shape* ts : tss) {
-		nnet::tensor_shape ts_cpy = incom_ts.merge_with(*ts);
-		EXPECT_TRUE(tensor_shape_equal(*ts, ts_cpy));
+	for (nnet::tensorshape* ts : tss) {
+		nnet::tensorshape ts_cpy = incom_ts.merge_with(*ts);
+		EXPECT_TRUE(tensorshape_equal(*ts, ts_cpy));
 	}
 
 	// fully known shape test
-	for (nnet::tensor_shape* ts : tss) {
-		nnet::tensor_shape full_cpy = full_ts.merge_with(*ts);
-		EXPECT_TRUE(tensor_shape_equal(full_ts, full_cpy));
+	for (nnet::tensorshape* ts : tss) {
+		nnet::tensorshape full_cpy = full_ts.merge_with(*ts);
+		EXPECT_TRUE(tensorshape_equal(full_ts, full_cpy));
 	}
 
 	// partially known test
-	nnet::tensor_shape part_cpy = part_ts.merge_with(incom_ts);
-	EXPECT_TRUE(tensor_shape_equal(part_ts, part_cpy));
-	nnet::tensor_shape full_cpy = part_ts.merge_with(full_ts);
-	ASSERT_TRUE(tensor_shape_equal(full_ts, full_cpy));
+	nnet::tensorshape part_cpy = part_ts.merge_with(incom_ts);
+	EXPECT_TRUE(tensorshape_equal(part_ts, part_cpy));
+	nnet::tensorshape full_cpy = part_ts.merge_with(full_ts);
+	ASSERT_TRUE(tensorshape_equal(full_ts, full_cpy));
 }
 
 
 TEST(TENSORSHAPE, concatenate) {
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape incom_ts;
 	std::vector<size_t> v1 = {1, 2, 3};
 	std::vector<size_t> v2 = {4, 5};
-	nnet::tensor_shape ts1(v1);
-	nnet::tensor_shape ts2(v2);
+	nnet::tensorshape ts1(v1);
+	nnet::tensorshape ts2(v2);
 
-	nnet::tensor_shape tnone1 = incom_ts.concatenate(ts1);
-	EXPECT_TRUE(tensor_shape_equal(incom_ts, tnone1));
-	nnet::tensor_shape tnone2 = ts1.concatenate(incom_ts);
-	EXPECT_TRUE(tensor_shape_equal(incom_ts, tnone2));
+	nnet::tensorshape tnone1 = incom_ts.concatenate(ts1);
+	EXPECT_TRUE(tensorshape_equal(incom_ts, tnone1));
+	nnet::tensorshape tnone2 = ts1.concatenate(incom_ts);
+	EXPECT_TRUE(tensorshape_equal(incom_ts, tnone2));
 
-	nnet::tensor_shape straight = ts1.concatenate(ts2);
-	nnet::tensor_shape backcat = ts2.concatenate(ts1);
+	nnet::tensorshape straight = ts1.concatenate(ts2);
+	nnet::tensorshape backcat = ts2.concatenate(ts1);
 
 	std::vector<size_t> d1 = straight.as_list();
 	std::vector<size_t> d2 = backcat.as_list();
@@ -289,23 +289,23 @@ TEST(TENSORSHAPE, concatenate) {
 
 
 TEST(TENSORSHAPE, with_rank) {
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape incom_ts;
 	std::vector<size_t> v1 = {1, 2, 3};
 	std::vector<size_t> v2 = {4, 5};
-	nnet::tensor_shape ts1(v1);
-	nnet::tensor_shape ts2(v2);
+	nnet::tensorshape ts1(v1);
+	nnet::tensorshape ts2(v2);
 
-	nnet::tensor_shape ts1_cpy = ts1.with_rank(3);
-	nnet::tensor_shape ts2_cpy = ts2.with_rank(2);
-	EXPECT_TRUE(tensor_shape_equal(ts1, ts1_cpy));
-	EXPECT_TRUE(tensor_shape_equal(ts2, ts2_cpy));
+	nnet::tensorshape ts1_cpy = ts1.with_rank(3);
+	nnet::tensorshape ts2_cpy = ts2.with_rank(2);
+	EXPECT_TRUE(tensorshape_equal(ts1, ts1_cpy));
+	EXPECT_TRUE(tensorshape_equal(ts2, ts2_cpy));
 
 	EXPECT_THROW({ ts1.with_rank(2); }, std::logic_error);
 
 	EXPECT_THROW({ ts1.with_rank(4); }, std::logic_error);
 
 	for (size_t i = 0; i < 3; i++) {
-		nnet::tensor_shape tsi = incom_ts.with_rank(i);
+		nnet::tensorshape tsi = incom_ts.with_rank(i);
 		std::vector<size_t> zeros = tsi.as_list();
 		EXPECT_EQ(zeros.size(), i);
 		for (size_t j : zeros) {
@@ -316,23 +316,23 @@ TEST(TENSORSHAPE, with_rank) {
 
 
 TEST(TENSORSHAPE, with_rank_at_least) {
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape incom_ts;
 	std::vector<size_t> v1 = {1, 2, 3};
 	std::vector<size_t> v2 = {4, 5};
-	nnet::tensor_shape ts1(v1);
-	nnet::tensor_shape ts2(v2);
+	nnet::tensorshape ts1(v1);
+	nnet::tensorshape ts2(v2);
 
-	nnet::tensor_shape ts1_cpy = ts1.with_rank_at_least(3);
-	nnet::tensor_shape ts2_cpy = ts2.with_rank_at_least(2);
-	nnet::tensor_shape ts1_cpy2 = ts1.with_rank_at_least(2);
-	EXPECT_TRUE(tensor_shape_equal(ts1, ts1_cpy));
-	EXPECT_TRUE(tensor_shape_equal(ts2, ts2_cpy));
-	EXPECT_TRUE(tensor_shape_equal(ts1, ts1_cpy2));
+	nnet::tensorshape ts1_cpy = ts1.with_rank_at_least(3);
+	nnet::tensorshape ts2_cpy = ts2.with_rank_at_least(2);
+	nnet::tensorshape ts1_cpy2 = ts1.with_rank_at_least(2);
+	EXPECT_TRUE(tensorshape_equal(ts1, ts1_cpy));
+	EXPECT_TRUE(tensorshape_equal(ts2, ts2_cpy));
+	EXPECT_TRUE(tensorshape_equal(ts1, ts1_cpy2));
 
 	EXPECT_THROW({ ts1.with_rank_at_least(4); }, std::logic_error);
 
 	for (size_t i = 0; i < 3; i++) {
-		nnet::tensor_shape tsi = incom_ts.with_rank_at_least(i);
+		nnet::tensorshape tsi = incom_ts.with_rank_at_least(i);
 		std::vector<size_t> zeros = tsi.as_list();
 		EXPECT_EQ(zeros.size(), i);
 		for (size_t j : zeros) {
@@ -343,23 +343,23 @@ TEST(TENSORSHAPE, with_rank_at_least) {
 
 
 TEST(TENSORSHAPE, with_rank_at_most) {
-	nnet::tensor_shape incom_ts;
+	nnet::tensorshape incom_ts;
 	std::vector<size_t> v1 = {1, 2, 3};
 	std::vector<size_t> v2 = {4, 5};
-	nnet::tensor_shape ts1(v1);
-	nnet::tensor_shape ts2(v2);
+	nnet::tensorshape ts1(v1);
+	nnet::tensorshape ts2(v2);
 
-	nnet::tensor_shape ts1_cpy = ts1.with_rank_at_most(3);
-	nnet::tensor_shape ts2_cpy = ts2.with_rank_at_most(2);
-	nnet::tensor_shape ts1_cpy2 = ts1.with_rank_at_most(4);
-	EXPECT_TRUE(tensor_shape_equal(ts1, ts1_cpy));
-	EXPECT_TRUE(tensor_shape_equal(ts2, ts2_cpy));
-	EXPECT_TRUE(tensor_shape_equal(ts1, ts1_cpy2));
+	nnet::tensorshape ts1_cpy = ts1.with_rank_at_most(3);
+	nnet::tensorshape ts2_cpy = ts2.with_rank_at_most(2);
+	nnet::tensorshape ts1_cpy2 = ts1.with_rank_at_most(4);
+	EXPECT_TRUE(tensorshape_equal(ts1, ts1_cpy));
+	EXPECT_TRUE(tensorshape_equal(ts2, ts2_cpy));
+	EXPECT_TRUE(tensorshape_equal(ts1, ts1_cpy2));
 
 	EXPECT_THROW({ ts1.with_rank_at_most(2); }, std::logic_error);
 
 	for (size_t i = 0; i < 3; i++) {
-		nnet::tensor_shape tsi = incom_ts.with_rank_at_most(i);
+		nnet::tensorshape tsi = incom_ts.with_rank_at_most(i);
 		std::vector<size_t> zeros = tsi.as_list();
 		EXPECT_EQ(zeros.size(), i);
 		for (size_t j : zeros) {

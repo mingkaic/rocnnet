@@ -18,130 +18,79 @@
 #define operation_hpp
 
 #include "../variable/variable.hpp"
-#include "../observer/node.hpp"
+#include "graph/ccoms/iobserver.hpp"
+#include "tensor/tensor_jacobi.hpp"
 
 namespace nnet {
+
+template <typename T>
+class gradient;
 
 template <typename T>
 using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 
 // INTERFACE OPERATION
 
-template <typename T>
-class iunar_ops;
-template <typename T>
-class ibin_ops;
-template <typename T>
-class univar_func;
-
 // inheritance join at ileaf_handler
 template <typename T>
 class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver {
 	protected:
+		bool valid_tensor_ = false;
 		ivariable<T>* grad_ = nullptr;
-
-// DEPRECATE THESE TOO
-		// TODO: find a way to move shape evaluation functions out of here
-		// utility shape operations
-		tensor_shape transpose_shape (const tensor_shape& ins) const;
-
-		tensor_shape change_shape (
-			const tensor_shape& ins,
-			size_t index,
-			double multiplier,
-			size_t& below_dim,
-			size_t& at_idx) const;
-
-		tensor_shape get_matrix_shape (
-			const tensor<T>& t1, const tensor<T>& t2,
-			bool transposeA, bool transposeB,
-			size_t& common_dim) const;
-
-		// operator wrapper functions that handle variable scalar and shape
-		// differences. returned tensor's ownership transfers to caller
-		// reduce/filter functional
-		template <typename U>
-		void util_op (
-			U& out, const tensor<T>& in,
-			std::function<void(U&, T)> op) const;
-		// collector functions while maintaining tensor shape
-		void elem_op (
-			tensor<T>& out,
-			const tensor<T>& in,
-			std::function<void(T&, T)> op) const;
-
-// TODO DEPRECATE FROM HERE ==>
-		tensor<T>* get_trace (const ivariable<T>& in) const;
-		// 1 to 1 map functional
-		tensor<T>* util_op (
-			const tensor<T>& in,
-			std::function<T(T)> op) const;
-		// operator wrapper functions that restricts shapes to matrices and
-		// retrieve raw value
-		tensor<T>* transpose_op (
-		    tensor<T> const & in) const;
-		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier) const;
-		tensor<T>* compress_op (
-			const tensor<T>& in,
-			signed index,
-			std::function<T(const std::vector<T>&)> collector) const;
-		tensor<T>* matmul_op (
-			const tensor<T>& a,
-			const tensor<T>& b,
-		    bool transposeA,
-		    bool transposeB) const;
-// TO HERE <==
 
 		// implement unique method of consuming input variables
 		// to extract shape info
-		virtual void shape_eval (void) = 0;
+		virtual tensorshape shape_eval (void) = 0;
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
 		virtual void setup_gradient (void) = 0;
 
-		virtual void copy (const ioperation<T>& other,
-				   std::string name = "") {
-			// if grad is not being observed, then and only then delete
-			if (nullptr != grad_ && grad_->no_audience()) {
-				delete grad_;
-			}
-			// shallow copy
-			grad_ = other.grad_;
-			ivariable<T>::copy(other, name);
-		}
+		void copy (const ioperation<T>& other, std::string name = "");
 		
-		virtual ievoker<T>* clone_impl (std::string name) = 0;
+		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
-		friend class ivariable<T>;
-		friend class placeholder<T>;
-		friend class univar_func<T>;
+		// used specifically to pass jacobian tensors up the tree... could make generic use in the future
+		virtual bool channel (std::stack<ivariable<T>*>& jacobi) {
+			// propagate channel
+			// did not implement jacobian conflicts resolution (when 2 jacobian nodes meeting at the same junction...)
+			// as such, this is undefined behavior for now and should throw error
+			size_t jacobi_count = 0;
+			for (ccoms::subject* sub : this->dependencies_) {
+				if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(sub)) {
+					if (o->channel(jacobi)) {
+						jacobi_count++;
+					}
+				}
+			}
+			if (jacobi_count > 1) {
+				throw std::logic_error("jacobian branch conflict occurred at " + this->get_name());
+			}
+			return jacobi_count != 0;
+		}
+
+		ioperation (const ioperation<T>& other, std::string name) :
+			ivariable<T>(other, name),
+			valid_tensor_(other.valid_tensor_),
+			grad_(other.grad_) {}
+
+		friend class gradient<T>;
 
 	public:
-		ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-				ivariable<T>(std::vector<size_t>{}, name), 
-				iobserver(std::vector<ccoms::subject*>(dependencies_.begin(), dependencies_.end())) {
-			this->short_circuit_ = false;
-			if (session::pre_shape_eval()) {
-				shape_eval();
-			}
-		}
-		virtual ~ioperation (void) {
-			if (nullptr != grad_) {
-				delete grad_;
-			}
-		}
+		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
+
+		virtual ~ioperation (void);
 
 		// COPY
-        ioperation<T>* clone (std::string name = "") {
+		ioperation<T>* clone (std::string name = "") {
 			return static_cast<ioperation<T>*>(clone_impl(name));
 		}
 		virtual ioperation<T>& operator = (const ioperation<T>& other);
 		
-		virtual const tensor<T>& get_eval (void) {
-			if (this->short_circuit_) {
-				return this->ones;
+		virtual tensor<T>* get_eval (void) {
+			if (false == valid_tensor_) {
+				return nullptr;
 			}
-			return this->out_;
+			return this->out_.get();
 		}
 
 		virtual ivariable<T>* get_gradient (void) {

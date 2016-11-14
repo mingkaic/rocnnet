@@ -24,19 +24,18 @@ namespace nnet {
 // also holds initializer (in operation)f
 template <typename T>
 class variable : public ileaf<T> {
-	private:
+	protected:
 		variable (const variable<T>& other, std::string name);
 
-	protected:
-		virtual ievoker<T>* clone_impl (std::string name);
+		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
 		variable (T scalar);
-		variable (const tensor_shape& shape, std::string name = "");
-		variable (const tensor_shape& shape, initializer<T>& init, std::string name = "");
+		variable (const tensorshape& shape, std::string name = "");
+		variable (const tensorshape& shape, initializer<T>& init, std::string name = "");
 
 		// COPY
-        variable<T>* clone (std::string name = "") {
+		variable<T>* clone (std::string name = "") {
 			return static_cast<variable<T>*>(clone_impl(name));
 		}
 
@@ -44,7 +43,7 @@ class variable : public ileaf<T> {
 		// initializer can be call multiple times to reset values
 		// TODO: allow session to flag variables as init once only to ensure safety
 		virtual tensor<T>& initialize (void);
-		virtual tensor<T>& initialize (tensor_shape alloc_shape);
+		virtual tensor<T>& initialize (tensorshape alloc_shape);
 };
 
 }

@@ -10,8 +10,10 @@
 #ifndef ivariable_hpp
 #define ivariable_hpp
 
-#include "evoker.hpp"
-#include "graph/observer/subject.hpp"
+#include "../memory/session.hpp"
+#include "tensor/tensor.hpp"
+#include "tensor/tensor_op.hpp"
+#include "graph/ccoms/subject.hpp"
 
 namespace nnet {
 
@@ -20,9 +22,8 @@ namespace nnet {
 template <typename T>
 class initializer {
 	protected:
-		void delegate_task(tensor<T>& value,
-						   std::function<void(T*, size_t)> op) {
-			op(value.raw_data_, value.n_elems());
+		void delegate_task(tensor<T>& ten, std::function<void(T*, size_t)> op) {
+			op(ten.get_raw(), ten.n_elems());
 		}
 
 	public:
@@ -76,70 +77,43 @@ template <typename T>
 class constant;
 template <typename T>
 class matmul;
-template <typename T>
-class iunar_ops;
-
-// deprecated once evaluation identification is implemented
-template <typename T>
-class var_buffer : public ivariable<T> {
-	protected:
-		ivariable<T>* var_;
-
-		virtual ievoker<T>* clone_impl (std::string name) {
-			return new var_buffer(var_);
-		}
-
-		// do nothing
-		virtual void make_gradient (ivariable<T>*& safety_ref) {}
-		virtual void set_gradient (ivariable<T>* g) {}
-
-	public:
-		var_buffer (ivariable<T>*& in) : var_(in) {}
-
-        var_buffer<T>* clone (std::string name = "") {
-			return static_cast<var_buffer<T>*>(clone_impl(name));
-		}
-
-		virtual const tensor<T>& get_eval (void) {
-			return var_->get_eval();
-		}
-
-		virtual ivariable<T>* get_gradient (void) { return nullptr; }
-};
 
 // VARIABLE INTERFACE
 
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable : public ievoker<T>, public ccoms::subject {
+class ivariable : public ccoms::subject {
 	private:
 		std::string name_;
 		
 	protected:
-	    // ZEROS, ONES, TODO remove once get_eval returns pointer
-        tensor<T> zeros;
-        tensor<T> ones;
-
-		// GRADIENT INFO
-		bool short_circuit_ = true;
-		
 		// WRAPPER CONTENT
-		tensor<T>  out_;
+		std::unique_ptr<tensor<T> > out_ = nullptr;
+
+		// GRADIENT STATE
+		// TODO: somehow differentiate gradient order (0 = non-gradient node, 1st order, etc.)
 
 		// backward chaining for AD
 		void copy (const ivariable<T>& other, std::string name = "");
 
-		virtual ievoker<T>* clone_impl (std::string name) = 0;
+		virtual ivariable<T>* clone_impl (std::string name) = 0;
+
+		ivariable (const ivariable<T>& other, std::string name) {
+			copy(other, name);
+		}
 
 		// protected members need to be accessed by other operations
 		friend class update<T>;
 		friend class ioptimizer<T>;
 
 	public:
-		ivariable (const tensor_shape& shape, std::string name) : out_(shape), name_(name), zeros(0), ones(1) {
-            session& sess = session::get_instance();
-            sess.register_obj(*this);
+		ivariable (const tensorshape& shape, std::string name) : name_(name) {
+			if (shape.is_fully_defined()) {
+				out_ = std::make_unique<tensor<T> >(shape);
+			}
+			session& sess = session::get_instance();
+			sess.register_obj(*this);
 		}
 		virtual ~ivariable (void);
 		
@@ -154,14 +128,11 @@ class ivariable : public ievoker<T>, public ccoms::subject {
 		// TODO Implement
 
 		std::string get_name (void) const { return name_; }
-		virtual tensor_shape get_shape (void) const { return this->out_.get_shape(); }
+		virtual tensorshape get_shape (void) const { return this->out_->get_shape(); }
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual const tensor<T>& get_eval (void) const {
-			if (short_circuit_) {
-				return this->out_;
-			}
-			return zeros;
+		virtual tensor<T>* get_eval (void) {
+			return this->out_.get();
 		}
 
 		virtual ivariable<T>* get_gradient (void) = 0;

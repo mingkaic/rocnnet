@@ -14,16 +14,16 @@ namespace nnet {
 
 template <typename T>
 void const_init<T>::operator () (tensor<T>& in) {
-	this->delegate_task(in, [this](T* raw_data, size_t size) {
-		std::fill(raw_data, raw_data+size, value_);
+	this->delegate_task(in, [this](T* raw, size_t len) {
+		std::fill(raw, raw+len, value_);
 	});
 }
 
 template <typename T>
 void random_uniform<T>::operator () (tensor<T>& in) {
-	this->delegate_task(in, [this](T* raw_data, size_t size) {
-		for (size_t i = 0; i < size; i++) {
-			raw_data[i] =  distribution_(session::get_generator());
+	this->delegate_task(in, [this](T* raw, size_t len) {
+		for (size_t i = 0; i < len; i++) {
+			raw[i] =  distribution_(session::get_generator());
 		}
 	});
 }
@@ -31,21 +31,19 @@ void random_uniform<T>::operator () (tensor<T>& in) {
 // VARIABLE INTERFACE
 
 template <typename T>
-void ivariable<T>::copy (ivariable<T> const & other, std::string name) {
-	short_circuit_ = other.short_circuit_;
-	
-	out_ = other.out_;
+ivariable<T>::~ivariable (void){
+	session& sess = session::get_instance();
+	sess.unregister_obj(*this);
+}
+
+template <typename T>
+void ivariable<T>::copy (const ivariable<T>& other, std::string name) {
+	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
 	if (0 == name.size()) {
 		name_ = other.name_+"_cpy";
 	} else {
 		name_ = name;
 	}
-}
-
-template <typename T>
-ivariable<T>::~ivariable (void){
-	session& sess = session::get_instance();
-	sess.unregister_obj(*this);
 }
 
 template <typename T>
