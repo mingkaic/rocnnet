@@ -8,6 +8,8 @@
 
 #ifdef tensor_jacobi_hpp
 
+#include "graph/operation/special/matmul.hpp"
+
 namespace nnet
 {
 
@@ -57,11 +59,13 @@ template <typename T>
 tensor_jacobi<T>::~tensor_jacobi (void) { clear_ownership(); }
 
 // COPY
+template <typename T>
 tensor_jacobi<T>* tensor_jacobi<T>::clone (void)
 {
     return static_cast<tensor_jacobi<T>*>(clone_impl());
 }
 
+template <typename T>
 tensor_jacobi<T>& tensor_jacobi<T>::operator = (const tensor_jacobi<T>& other)
 {
     if (this != &other)
@@ -74,6 +78,7 @@ tensor_jacobi<T>& tensor_jacobi<T>::operator = (const tensor_jacobi<T>& other)
 template <typename T>
 void tensor_jacobi<T>::set_root (ivariable<T>* root) { k_ = root; }
 
+template <typename T>
 const tensor_jacobi<T>& tensor_jacobi<T>::operator () (
     ivariable<T>* arga, 
     ivariable<T>* argb)

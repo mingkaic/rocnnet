@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/ivariable.hpp"
+
 #pragma once
 #ifndef ileaf_hpp
 #define ileaf_hpp
-
-#include "graph/ivariable.hpp"
 
 namespace nnet
 {

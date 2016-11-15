@@ -1,7 +1,0 @@
-#include "memory/iallocator.hpp"
-#include "../memory/session.hpp"
-#include "tensor/tensor.hpp"
-#include "tensor/tensorshape.hpp"
-#include "../optimization/optimizer.hpp"
-#include "graph/bridge/assign.hpp"
-#include "graph.hpp"

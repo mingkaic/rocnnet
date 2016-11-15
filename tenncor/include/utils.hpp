@@ -6,15 +6,15 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#pragma once
-#ifndef utils_hpp
-#define utils_hpp
-
 #include <string>
 #include <sstream>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+
+#pragma once
+#ifndef utils_hpp
+#define utils_hpp
 
 namespace nnutils
 {

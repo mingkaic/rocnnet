@@ -6,14 +6,14 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#pragma once
-#ifndef ivariable_hpp
-#define ivariable_hpp
-
 #include "../memory/session.hpp"
 #include "initializer.hpp"
 #include "tensor/tensor_op.hpp"
 #include "graph/ccoms/subject.hpp"
+
+#pragma once
+#ifndef ivariable_hpp
+#define ivariable_hpp
 
 namespace nnet
 {
@@ -70,6 +70,7 @@ class ivariable : public ccoms::subject
 		virtual ivariable<T>* get_gradient (void) = 0;
 };
 
+template <typename T>
 std::vector<T> expose (ivariable<T>* var)
 {
 	tensor<T>* ten = var->get_eval();

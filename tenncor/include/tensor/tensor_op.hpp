@@ -6,12 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <functional>
+#include "tensor.hpp"
+
 #pragma once
 #ifndef tensor_op_hpp
 #define tensor_op_hpp
-
-#include <functional>
-#include "tensor.hpp"
 
 namespace nnet
 {

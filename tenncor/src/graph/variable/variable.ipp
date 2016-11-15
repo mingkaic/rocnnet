@@ -41,7 +41,7 @@ variable<T>::variable (const tensorshape& shape, initializer<T>& init, std::stri
 	ileaf<T>(shape, init.clone(), name) {}
 
 template <typename T>
-variable<T>* variable<T>::clone (std::string name = "")
+variable<T>* variable<T>::clone (std::string name)
 {
 	return static_cast<variable<T>*>(clone_impl(name));
 }

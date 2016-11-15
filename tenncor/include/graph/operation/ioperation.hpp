@@ -13,14 +13,14 @@
 #include <limits>
 #include <memory>
 
-#pragma once
-#ifndef operation_hpp
-#define operation_hpp
-
 #include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
 #include "tensor/tensor_jacobi.hpp"
-#include "graph/bridge/varptr.hpp"
+#include "graph/executor/varptr.hpp"
+
+#pragma once
+#ifndef operation_hpp
+#define operation_hpp
 
 namespace nnet
 {

@@ -71,7 +71,7 @@ void assign<T>::freeze (void)
 }
 
 template <typename T>
-void assign<T>::execute (std::function<bool(void)> cb)
+void assign<T>::execute (void)
 {
 	assert(false == local_cpy_.empty());
 	tensor<T>* out = dest_->get_eval();
@@ -82,7 +82,6 @@ void assign<T>::execute (std::function<bool(void)> cb)
 		transfer_(old_data[i], local_cpy_[i]);
 	}
 	dest_->notify();
-	cb();
 }
 
 // assign sub

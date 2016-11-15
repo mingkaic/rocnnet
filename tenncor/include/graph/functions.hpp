@@ -7,13 +7,12 @@
 //
 
 #include <queue>
+#include "graph/operation/general/elementary.hpp"
+#include "graph/executor/varptr.hpp"
 
 #pragma once
 #ifndef functions_ops
 #define functions_ops
-
-#include "graph/operation/general/elementary.hpp"
-#include "graph/bridge/varptr.hpp"
 
 namespace nnet {
 

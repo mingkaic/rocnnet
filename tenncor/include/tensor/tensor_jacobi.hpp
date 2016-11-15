@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "tensor.hpp"
+
 #pragma once
 #ifndef tensor_jacobi_hpp
 #define tensor_jacobi_hpp
-
-#include "tensor.hpp"
 
 namespace nnet
 {
@@ -36,8 +36,7 @@ class tensor_jacobi : public tensor<T>
 		virtual T* get_raw (void);
 
 	public:
-		tensor_jacobi (bool transposeA, bool transposeB) :
-			transposeA_(transposeA), transposeB_(transposeB);
+		tensor_jacobi (bool transposeA, bool transposeB);
 		virtual ~tensor_jacobi (void);
 
 		// COPY

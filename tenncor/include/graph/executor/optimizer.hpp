@@ -8,22 +8,21 @@
 
 #include <vector>
 #include <map>
+#include "graph/executor/assign.hpp"
+#include "graph/variable/variable.hpp"
+#include "graph/executor/group.hpp"
+#include "graph/operation/general/elementary.hpp"
+#include "graph/executor/gradient.hpp"
 
 #pragma once
 #ifndef optimizer_hpp
 #define optimizer_hpp
 
-#include "graph/bridge/assign.hpp"
-#include "graph/variable/variable.hpp"
-#include "graph/bridge/group.hpp"
-#include "graph/operation/general/elementary.hpp"
-#include "graph/bridge/gradient.hpp"
-
 namespace nnet
 {
 
 template <typename T>
-using GRAD_MAP = std::map<ivariable<T>*, tensor<T>*>;
+using MANIPULATE_LEAF = std::function<bool(ivariable<T>*,ivariable<T>*)>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -34,40 +33,31 @@ using GRAD_MAP = std::map<ivariable<T>*, tensor<T>*>;
 // gradient calculation and update
 
 template <typename T>
-class ioptimizer : public iexecutor<T>
+class ioptimizer : public gradient<T>
 {
-	private:
-		gradient<T> grader_;
-		
 	protected:
 		std::unordered_set<ccoms::subject*> ignore_set_; // does not own ownership
-
-		// actual update step
-		virtual group<T>* apply_grad (GRAD_MAP<T>& gradients) = 0;
+		GRAD_MAP<T> grad_top_;
 
 	public:
-		ioptimizer (void)
-		ioptimizer (ivariable<T>* fanout) : grader_(fanout) {}
-		
+		ioptimizer (ivariable<T>* fanout) :
+			grad_top_(leaf_map_) {}
+
+		// occurs at run time
+		// execute remains abstract
+
+		// non inherited
 		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
-
-		virtual void freeze (void)
+		void unignore (ivariable<T>* ig_var) { ignore_set_.erase(ig_var); }
+		// calls freeze
+		void set_manipulate (MANIPULATE_LEAF<T> manipulate)
 		{
-			grader_.freeze();
-		}
-
-		// two step process in one
-		virtual void execute (std::function<bool(GRAD_MAP)> manipulate)
-		{
-			GRAD_MAP<T> buffer;
-			// calculate the gradient
-			grader_.execute([&buffer](ivariable<T>* key, tensor<T>* value)
+			this->freeze();
+			grad_top_ = leaf_map_;
+			for (auto leaf_pair : grad_top_)
 			{
-				buffer[key] = value;
-				return true;
-			})
-			manipulate(buffer);
-			apply_grad(buffer);
+				manipulate(leaf_pair.first, leaf_pair.second);
+			}
 		}
 };
 
@@ -89,7 +79,7 @@ class gd_optimizer : public ioptimizer<double>
 		gd_optimizer (double learning_rate);
 
 		// inherits compute_grad from ioptimizer
-		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual void execute (void);
 };
 
 // MOMENTUM BASED OPTIMIZATION
@@ -125,7 +115,7 @@ class ada_delta_optimizer : public gd_optimizer
 
 		// inherits compute_grad from ioptimizer
 
-		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual void execute (void);
 };
 
 class ada_grad_optimizer : public gd_optimizer
@@ -139,7 +129,7 @@ class ada_grad_optimizer : public gd_optimizer
 
 		// inherits compute_grad from ioptimizer
 
-		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual void execute (void);
 };
 
 // Root Mean Square Propagation Algorithm
@@ -163,7 +153,7 @@ class rms_prop_optimizer : public gd_optimizer
 			double momentum = 0.0, double epsilon = std::numeric_limits<double>::epsilon());
 
 		// inherits compute_grad from ioptimizer
-		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
+		virtual void execute (void);
 };
 
 }

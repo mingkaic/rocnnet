@@ -6,10 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/operation/ioperation.hpp"
+#include "graph/variable/constant.hpp"
+
+#pragma once
 #ifndef elementary_hpp
 #define elementary_hpp
-
-#include "graph/operation/ioperation.hpp"
 
 namespace nnet
 {

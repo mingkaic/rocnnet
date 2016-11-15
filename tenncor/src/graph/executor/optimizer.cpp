@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "optimization/optimizer.hpp"
+#include "graph/executor/optimizer.hpp"
 
 #ifdef optimizer_hpp
 
@@ -16,7 +16,7 @@ gd_optimizer::gd_optimizer (double learning_rate) :
 	learning_rate_(learning_rate) {}
 
 // updates position on error manifold
-group<double>* gd_optimizer::apply_grad (GRAD_MAP<double>& gradients)
+void gd_optimizer::execute (void)
 {
 	GRAD_MAP<double> local_grad;
 	group<double>* g_ptr = new group<double>();
@@ -37,13 +37,13 @@ group<double>* gd_optimizer::apply_grad (GRAD_MAP<double>& gradients)
 // MOMENTUM BASED OPTIMIZATION
 // updates velocity of positional update on error manifold
 
-group<double>* ada_delta_optimizer::apply_grad (GRAD_MAP<double>& gradients)
+void ada_delta_optimizer::execute (void)
 {
 	
 	return nullptr;
 }
 
-group<double>* ada_grad_optimizer::apply_grad (GRAD_MAP<double>& gradients)
+void ada_grad_optimizer::execute (void)
 {
 	
 	return nullptr;
@@ -58,7 +58,7 @@ rms_prop_optimizer::rms_prop_optimizer (
 	momentum_(momentum),
 	epsilon_(epsilon) {}
 
-group<double>* rms_prop_optimizer::apply_grad (GRAD_MAP<double>& gradients)
+void rms_prop_optimizer::execute (void)
 {
 	// declare order update here
 	// TODO: rms prop WIP

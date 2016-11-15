@@ -6,52 +6,58 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "iexecutor.hpp"
+#include "graph/variable/constant.hpp"
+
 #pragma once
 #ifndef gradient_hpp
 #define gradient_hpp
-
-#include "iexecutor.hpp"
-#include "graph/variable/constant.hpp"
 
 namespace nnet
 {
 	
 template <typename T>
-using GRAD_GATHER = std::function<void(ivariable<T>*,tensor<T>*)>;
+using GRAD_GATHER = std::function<bool(ivariable<T>*,placeholder<T>*)>;
+template <typename T>
+using GRAD_MAP = std::unordered_map<ivariable<T>*, placeholder<T>*>;
 
 template <typename T>
 class gradient : public iexecutor<T>
 {
 	private:
-		// gradient owns nothing
+		// gradient owns values in leaf_map_
 		ivariable<T>* g_root_;
 		std::vector<ccoms::subject*> potential_srcs_;
-		std::unordered_map<ivariable<T>*, tensor<T>*> leaf_map_;
 		const constant<T> one_;
 
 	protected:
+		GRAD_MAP<T> leaf_map_;
+
+		void clear_map (void);
+
 		void copy (const gradient<T>& other);
 		gradient (const gradient<T>& other);
 		virtual iexecutor<T>* clone_impl (void);
 
 	public:
 		gradient (ivariable<T>* root, ivariable<T>* leaf = nullptr);
+		virtual ~gradient (void);
 
 		// COPY
 		gradient<T>* clone (void);
 		gradient<T>& operator = (const gradient<T>& other);
 
 		// MOVE
-		
-		// override inherited from iexecutor
-		virtual void add (ivariable<T>* node);
+
 		// inherited from iexecutor
 		virtual void freeze (void);
-		virtual void execute (std::function<bool(ivariable<T>*,tensor<T>*)> cb);
+		virtual void execute (void);
+
+		void collect_grad (GRAD_GATHER<T> collector);
 };
 
 }
 
-#include "../../../src/graph/bridge/gradient.ipp"
+#include "../../../src/graph/executor/gradient.ipp"
 
 #endif /* gradient_hpp */

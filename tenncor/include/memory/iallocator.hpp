@@ -6,12 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <algorithm>
+#include <complex>
+
 #pragma once
 #ifndef allocator_hpp
 #define allocator_hpp
-
-#include <algorithm>
-#include <complex>
 
 namespace nnet
 {
@@ -48,6 +48,8 @@ class iallocator
 
 	public:
 		static constexpr size_t alloc_alignment = 32;
+
+		virtual ~iallocator (void) {}
 
 		iallocator* clone (void);
 

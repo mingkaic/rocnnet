@@ -30,12 +30,12 @@ std::default_random_engine& session::get_generator (void)
 	return inst.get_rand_generator();
 }
 
-void seed_rand_eng (size_t seed)
+void session::seed_rand_eng (size_t seed)
 {
 	generator_.seed(seed);
 }
 
-std::default_random_engine& get_rand_generator (void)
+std::default_random_engine& session::get_rand_generator (void)
 {
 	return generator_;
 }

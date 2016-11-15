@@ -11,6 +11,7 @@
 namespace nnet
 {
 
+template <typename T>
 class jacobian<T>::hidden_jacobi : public ioperation<T>
 {
 	protected:
@@ -24,7 +25,7 @@ class jacobian<T>::hidden_jacobi : public ioperation<T>
 		}
 
 		hidden_jacobi (const hidden_jacobi& other, std::string name) :
-				ioperation<T>(other, name) {}
+			ioperation<T>(other, name) {}
 
 	public:
 		hidden_jacobi (jacobian<T>* outer, bool transposeA, bool transposeB) :
@@ -39,7 +40,7 @@ class jacobian<T>::hidden_jacobi : public ioperation<T>
 			return static_cast<hidden_jacobi*>(clone_impl(name));
 		}
 
-        hidden_jacobi& operator = (const hidden_jacobi<T>& other)
+        hidden_jacobi& operator = (const hidden_jacobi& other)
         {		
         	if (this != &other)
         	{

@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "tensor/tensor.hpp"
+
 #pragma once
 #ifndef initializer_hpp
 #define initializer_hpp
-
-#include "tensor/tensor.hpp"
 
 namespace nnet
 {

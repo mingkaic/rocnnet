@@ -11,12 +11,11 @@
 #include <random>
 #include <new>
 #include <memory>
+#include "ileaf.hpp"
 
 #pragma once
 #ifndef placeholder_hpp
 #define placeholder_hpp
-
-#include "ileaf.hpp"
 
 namespace nnet
 {

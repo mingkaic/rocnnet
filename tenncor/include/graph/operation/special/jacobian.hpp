@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/operation/ioperation.hpp"
+
 #pragma once
 #ifndef jacobian_hpp
 #define jacobian_hpp
-
-#include "graph/operation/ioperation.hpp"
 
 namespace nnet
 {

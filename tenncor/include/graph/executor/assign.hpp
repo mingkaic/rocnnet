@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "iexecutor.hpp"
+
 #pragma once
 #ifndef assign_hpp
 #define assign_hpp
-
-#include "iexecutor.hpp"
 
 namespace nnet
 {
@@ -54,7 +54,7 @@ class assign : public iexecutor<T>
 
 		// inherited from iexecutor
 		virtual void freeze (void);
-		virtual void execute (std::function<bool(void)> cb);
+		virtual void execute (void);
 };
 
 template <typename T>
@@ -75,6 +75,6 @@ class assign_sub : public assign<T>
 
 }
 
-#include "../../../src/graph/bridge/assign.ipp"
+#include "../../../src/graph/executor/assign.ipp"
 
 #endif /* assign_hpp */

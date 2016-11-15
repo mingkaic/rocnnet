@@ -57,9 +57,9 @@ void random_uniform<T>::operator () (tensor<T>& in)
 }
 
 template <typename T>
-initializer<T>* clone (void)
+initializer<T>* random_uniform<T>::clone (void)
 {
-	return new random_uniform( distribution_.min(),  distribution_.max());
+	return new random_uniform<T>(distribution_.min(), distribution_.max());
 }
 
 }

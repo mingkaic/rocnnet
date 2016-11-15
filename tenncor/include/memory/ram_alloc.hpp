@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "iallocator.hpp"
+
 #pragma once
 #ifndef ram_alloc_hpp
 #define ram_alloc_hpp
-
-#include "iallocator.hpp"
 
 namespace nnet
 {

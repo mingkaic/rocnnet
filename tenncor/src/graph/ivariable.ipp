@@ -53,7 +53,7 @@ ivariable<T>::~ivariable (void)
 }
 
 template <typename T>
-ivariable<T>* clone (std::string name)
+ivariable<T>* ivariable<T>::clone (std::string name)
 {
 	return clone_impl(name);
 }

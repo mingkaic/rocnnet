@@ -6,18 +6,15 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <stack>
+#include "graph/operation/ioperation.hpp"
+
 #pragma once
 #ifndef executor_hpp
 #define executor_hpp
 
-#include <stack>
-#include "graph/operation/ioperation.hpp"
-
 namespace nnet
 {
-
-template <typename A...>
-bool donothing (A...) { return true; }
 
 // inheriting from iobserver for the sole purpose of deletion once sources (dependencies) are deleted
 // could be dangerous if iexecutor is not meant to be destroyed... consider revise later.
@@ -28,6 +25,8 @@ class iexecutor : public ccoms::iobserver // we really don't need to inherit fro
 		virtual iexecutor<T>* clone_impl (void) = 0;
 
 	public:
+		virtual ~iexecutor (void) {}
+
 		// COPY
 		iexecutor<T>* clone (void);
 		
@@ -37,8 +36,7 @@ class iexecutor : public ccoms::iobserver // we really don't need to inherit fro
 		
 		virtual void update (ccoms::subject* sub) {}
 		// stage 2: perform primary objective
-		template <typename A...>
-		virtual void execute (std::function<bool(A...)> cb = donothing) = 0;
+		virtual void execute (void) = 0;
 		
 		// take a snap shot of data before executing (useful for bulk assignment)
 		// equivalent to the operation of update (stage 1: perform preliminary actions)
@@ -47,6 +45,6 @@ class iexecutor : public ccoms::iobserver // we really don't need to inherit fro
 
 }
 
-#include "../../../src/graph/bridge/iexecutor.ipp"
+#include "../../../src/graph/executor/iexecutor.ipp"
 
 #endif /* executor_hpp */

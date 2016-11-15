@@ -22,4 +22,6 @@ void* iallocator::get_raw (size_t alignment, size_t num_bytes)
 	return get_raw(alignment, num_bytes, alloc_attrib());
 }
 
+}
+
 #endif

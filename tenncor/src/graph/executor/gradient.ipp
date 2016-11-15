@@ -10,7 +10,17 @@
 
 namespace nnet
 {
-	
+
+template <typename T>
+void gradient<T>::clear_map (void)
+{
+	for (auto leaf_pair : leaf_map_)
+	{
+		delete leaf_pair.second; // we own the placeholders
+	}
+	leaf_map_.clear();
+}
+
 template <typename T>
 void gradient<T>::copy (const gradient<T>& other)
 {
@@ -76,6 +86,12 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 }
 
 template <typename T>
+gradient<T>::~gradient (void)
+{
+	clear_map();
+}
+
+template <typename T>
 gradient<T>* gradient<T>::clone (void)
 {
 	return static_cast<gradient<T> >(clone_impl());
@@ -88,50 +104,55 @@ gradient<T>& gradient<T>::operator = (const gradient<T>& other)
 }
 
 template <typename T>
-void gradient<T>::add (ivariable<T>* node)
-{
-	iexecutor<T>::add(node);
-}
-
-template <typename T>
 void freeze (void)
 {
-	// evaluate leaf set
+	// populate leaf_map_
 	std::vector<ccoms::subject*> leaves = this->dependencies_;
 	if (this->dependencies_.empty())
 	{
 		leaves = potential_srcs_;
 	}
+	for (ccoms::subject* leaf : leaves)
+	{
+		if (ivariable<T>* var =
+			dynamic_cast<ivariable<T>*>(leaf))
+		{
+			// expect gradients to be the same shape as leaves
+			leaf_map_[var] = new placeholder<T>(var->get_shape());
+		}
+	}
+}
+
+template <typename T>
+void gradient<T>::execute (void)
+{
 	// notify leaves and extract gradient to leaf_map
 	auto it = leaves.begin();
 	for (ccoms::subject* leaf : leaves)
 	{
 		leaf->notify(*it); // special notify to nullify all leaf nodes except *it
 	}
-	// TODO make a deep copy (because tensor value will change once other leaves are notified)
 	// preferably to some variable node
-	leaf_map_[*it] = g_root_->get_eval();
+	*(leaf_map_[*it]) = *(op->get_eval());
 	// now that every leaf except *it is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current
 	ccoms::subject* previous = *it;
-	ccoms::subject* current;
 	for (it++; leaves.end() != it; it++)
 	{
-		current = *it;
-		previous->notify(current);
-		current->notify(current);
-		leaf_map_[current] = op->get_eval();
-		previous = current;
+		previous->notify(*it);
+		current->notify(*it);
+		*(leaf_map_[*it]) = *(op->get_eval());
+		previous = *it;
 	}
 }
 
 template <typename T>
-void gradient<T>::execute (std::function<bool(ivariable<T>*,tensor<T>*)> cb)
+void collect_grad (GRAD_GATHER<T> collector)
 {
 	for (auto leaf_pair : leaf_map_)
 	{
-		cb(leaf_pair.first, leaf_pair.second);
+		collector(leaf_pair.first, leaf_pair.second);
 	}
 }
 

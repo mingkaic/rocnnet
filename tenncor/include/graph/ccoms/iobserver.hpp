@@ -6,12 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <vector>
+#include "subject.hpp"
+
 #pragma once
 #ifndef observer_hpp
 #define observer_hpp
-
-#include <vector>
-#include "subject.hpp"
 
 namespace ccoms
 {

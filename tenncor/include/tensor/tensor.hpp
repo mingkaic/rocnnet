@@ -6,17 +6,16 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#pragma once
-#ifndef tensor_hpp
-#define tensor_hpp
-
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 #include "tensorshape.hpp"
 #include "memory/iallocator.hpp"
 #include "memory/ram_alloc.hpp"
+
+#pragma once
+#ifndef tensor_hpp
+#define tensor_hpp
 
 namespace nnet
 {
@@ -24,8 +23,13 @@ namespace nnet
 template <typename T>
 class assign;
 template <typename T>
+class gradient;
+template <typename T>
 class initializer;
+template <typename T>
+class ivariable;
 
+template <typename T>
 std::vector<T> expose (ivariable<T>* var);
 
 static alloc_attrib default_attr; // TODO consider removing to make thread safe
@@ -50,8 +54,9 @@ class tensor
 		// protected accessor... this isn't overengineering! I swear.
 		virtual T* get_raw (void) { return raw_data_; }
 
-		friend class initializer<T>;
 		friend class assign<T>;
+		friend class gradient<T>;
+		friend class initializer<T>;
 		friend std::vector<T> expose (ivariable<T>* var);
 
 	public:

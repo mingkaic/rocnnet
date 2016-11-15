@@ -6,12 +6,12 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/operation/ioperation.hpp"
+#include "jacobian.hpp"
+
 #pragma once
 #ifndef matop_hpp
 #define matop_hpp
-
-#include "graph/operation/ioperation.hpp"
-#include "jacobian.hpp"
 
 namespace nnet
 {

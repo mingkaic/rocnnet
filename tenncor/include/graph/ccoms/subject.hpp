@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <unordered_set>
+
 #pragma once
 #ifndef subject_hpp
 #define subject_hpp
-
-#include <unordered_set>
 
 namespace ccoms
 {

@@ -6,11 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "iexecutor.hpp"
+
 #pragma once
 #ifndef group_hpp
 #define group_hpp
-
-#include "iexecutor.hpp"
 
 namespace nnet
 {
@@ -40,6 +40,6 @@ class group {
 
 }
 
-#include "../../../src/graph/bridge/group.ipp"
+#include "../../../src/graph/executor/group.ipp"
 
 #endif /* group_hpp */

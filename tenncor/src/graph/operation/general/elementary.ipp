@@ -203,7 +203,7 @@ varptr<T> sin (const ivariable<T>* a)
 		{
 			// sin'(f(x)) = f'(x)*cos(f(x))
 			ivariable<T>* a = args.front();
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * cos(a);
 		}, 
 	"sin(" + a->get_name() + ")");
@@ -223,7 +223,7 @@ varptr<T> cos (const ivariable<T>* a)
 		{
 			// cos'(f(x)) = -f'(x)*sin(f(x))
 			ivariable<T>* a = args.front();
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad * sin(a);
 		}, 
 	"cos(" + a->get_name() + ")");
@@ -245,7 +245,7 @@ varptr<T> tan (const ivariable<T>* a)
 			// better with = f'(x)/cos^2(f(x))
 			ivariable<T>* a = args.front();
 			ivariable<T>* denom = cos(a);
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return grad / (denom * denom);
 	 	},
  	"tan(" + a->get_name() + ")");
@@ -266,7 +266,7 @@ varptr<T> csc (const ivariable<T>* a)
 			// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 			// better with -f'(x)/(sin(f(x)*tan(f(x))))
 			ivariable<T>* a = args.front();
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad / (sin(a) * tan(a));
 		}, 
 	"csc(" + a->get_name() + ")");
@@ -287,7 +287,7 @@ varptr<T> sec (const ivariable<T>* a)
 			// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 			// better with f'(x)*tan(f(x))/cos(f(x))
 			ivariable<T>* a = args.front();
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * tan(a) / cos(a);
 		}, 
 	"sec(" + a->get_name() + ")");
@@ -308,7 +308,7 @@ varptr<T> cot (const ivariable<T>* a)
 			// cot'(f(x)) = -f'(x)*csc^2(f(x))
 			ivariable<T>* a = args.front();
 			ivariable<T>* b = csc(a);
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad * b * b;
 		}, 
 	"cot(" + a->get_name() + ")");
@@ -328,7 +328,7 @@ varptr<T> exp (const ivariable<T>* a)
 		{
 			// exp'(f(x)) = f'(x)*exp(f(x))
 			ivariable<T>* a = args.front();
-			varptr<T> grad = a.front()->get_gradient(); // wrap
+			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * exp(a);
 		}, 
 	"exp(" + a->get_name() + ")");
@@ -349,7 +349,7 @@ varptr<T> clip_val (const ivariable<T>* a, T min, T max)
 		[min, max](std::vector<ivariable<T>*> args)
 		{
 			ivariable<T>* a = args.front();
-			return clip_val(a.front()->get_gradient(), min, max);
+			return clip_val(a->get_gradient(), min, max);
 		}, 
 	"clip_val(" + a->get_name() + ")");
 	return op;
@@ -384,7 +384,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 			auto it = args.begin();
 			varptr<T> res = (*it)->get_gradient();
 			for (it++; args.end() != it; it++) {
-				varptr<T> grad (*it)->get_gradient();
+				varptr<T> grad = (*it)->get_gradient();
 				res = res + grad;
 			}
 			return res;

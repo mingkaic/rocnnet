@@ -6,10 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/operation/ioperation.hpp"
+
+#pragma once
 #ifndef transform_hpp
 #define transform_hpp
-
-#include "graph/operation/ioperation.hpp"
 
 namespace nnet
 {
@@ -45,9 +46,9 @@ class transform : public ioperation<T>
 
 	public:
 		transform (ivariable<T>* arg,
-					std::function<void(T*&,const T*,tensorshape)> op,
-					std::function<tensorshape(tensorshape)> trans,
-					BUILD_DERIVE<T> der, std::string name = "");
+			std::function<void(T*&,const T*,tensorshape)> op,
+			std::function<tensorshape(tensorshape)> trans,
+			BUILD_DERIVE<T> der, std::string name = "");
 
 		// COPY
 		transform<T>* clone (std::string name = "");
