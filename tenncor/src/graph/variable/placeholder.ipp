@@ -8,13 +8,20 @@
 
 #ifdef placeholder_hpp
 
-namespace nnet {
+namespace nnet
+{
 
 // PLACEHOLDER IMPLEMENTATION
 
 template <typename T>
 placeholder<T>::placeholder (const placeholder<T>& other, std::string name) :
-		ileaf<T>(other, name) {}
+	ileaf<T>(other, name) {}
+
+template <typename T>
+ivariable<T>* placeholder<T>::clone_impl (std::string name)
+{
+	return new placeholder(*this, name);
+}
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
@@ -22,7 +29,8 @@ placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, initializer<T>& init, std::string name) :
-		ileaf<T>(shape, init.clone(), name) {
+	ileaf<T>(shape, init.clone(), name)
+{
 	this->out_->allocate(new ram_alloc());
 	// initialize right away
 	(*this->init_)(*(this->out_));
@@ -33,22 +41,25 @@ placeholder<T>::placeholder (const tensorshape& shape, initializer<T>& init, std
 }
 
 template <typename T>
-ivariable<T>* placeholder<T>::clone_impl (std::string name) {
-	return new placeholder(*this, name);
+placeholder<T>* placeholder<T>::clone (std::string name)
+{
+	return static_cast<placeholder<T>*>(clone_impl(name));
 }
 
 // maintains shape
 template <typename T>
-placeholder<T>& placeholder<T>::operator = (std::vector<T> data) {
+placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
+{
 	// note: if this is allocated,
 	// compatibility is compared to allocated shape instead of allowed
 	assert(this->out_->is_compatible_with(data));
 
-	if (false == this->out_->is_alloc()) {
+	if (false == this->out_->is_alloc())
+	{
 		this->out_->allocate(new ram_alloc(), this->out_->guess_shape(data));
 	}
 	typename ileaf<T>::dyn_init* assigner =
-			dynamic_cast<typename ileaf<T>::dyn_init*>(this->init_);
+		dynamic_cast<typename ileaf<T>::dyn_init*>(this->init_);
 	*assigner = data;
 
 	this->is_init_ = true;
@@ -58,11 +69,10 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data) {
 
 // changes shape
 template <typename T>
-placeholder<T>& placeholder<T>::operator = (const tensor<T>& data) {
+placeholder<T>& placeholder<T>::operator = (const tensor<T>& data)
+{
 	assert(this->out_->is_compatible_with(data));
-
 	*(this->out_) = data;
-	
 	this->is_init_ = true;
 	this->notify();
 	return *this;

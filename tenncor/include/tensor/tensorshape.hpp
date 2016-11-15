@@ -15,21 +15,26 @@
 #ifndef tensorshape_hpp
 #define tensorshape_hpp
 
-namespace nnet {
+namespace nnet
+{
 
 // zero dimension denotes unknown
-struct dimension {
+struct dimension
+{
 	size_t value_;
 
 	dimension (size_t value) : value_(value) {}
-	explicit operator size_t (void) const { return value_; }
+	explicit operator size_t (void) const {
+		return value_;
+	}
 
 	dimension merge_with (const dimension& other) const;
 	bool is_compatible_with (const dimension& other) const;
 	void assert_is_compatible_with (const dimension& other) const;
 };
 
-class tensorshape {
+class tensorshape
+{
 	private:
 		std::vector<dimension>  dimensions_;
 
@@ -37,7 +42,6 @@ class tensorshape {
 		tensorshape (void) {}
 		tensorshape (const std::vector<size_t>& dims);
 		tensorshape (const std::vector<dimension>& dims);
-		~tensorshape (void) {}
 		tensorshape& operator = (const std::vector<size_t>& dims);
 
 		tensorshape merge_with (const tensorshape& other);
@@ -67,7 +71,7 @@ class tensorshape {
 		// assertions
 		void assert_has_rank (size_t rank) const;
 		void assert_same_rank (const tensorshape& other) const;
-		void assert_is_fully_defined (void) const { assert(is_fully_defined()); }
+		void assert_is_fully_defined (void) const;
 };
 
 }

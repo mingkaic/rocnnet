@@ -12,10 +12,12 @@
 
 #include "tensor.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 template <typename T>
-class tensor_jacobi : public tensor<T> {
+class tensor_jacobi : public tensor<T>
+{
 	private:
 		bool transposeA_;
 		bool transposeB_;
@@ -23,65 +25,36 @@ class tensor_jacobi : public tensor<T> {
 		std::vector<std::shared_ptr<ivariable<T> > > owner_;
 		ivariable<T>* root_ = nullptr; // deleted when clear
 
-		tensor_jacobi (const tensor_jacobi<T>& other) {
-			this->copy(other);
-		}
-
-		void clear_ownership (void) {
-			owner_.clear();
-			root_ = nullptr;
-		}
+		void clear_ownership (void);
 
 	protected:
-		void copy (const tensor_jacobi<T>& other) {
-			transposeA_ = other.transposeA_;
-			transposeB_ = other.transposeB_;
-			k_ = other.k_;
-			owner_ = other.owner_;
-			root_ = other.root_;
-			tensor<T>::copy(other);
-		}
+		void copy (const tensor_jacobi<T>& other);
+		tensor_jacobi (const tensor_jacobi<T>& other);
+		virtual tensor<T>* clone_impl (void);
 
-		virtual tensor<T>* clone_impl (void) { return new tensor_jacobi<T>(*this); }
-
-		virtual T* get_raw (void) {
-			tensor<T>* src = root_->get_eval();
-			this->copy(*src);
-			return tensor<T>::get_raw();
-		}
+		// inherited and override to copy root tensor before releasing raw data
+		virtual T* get_raw (void);
 
 	public:
 		tensor_jacobi (bool transposeA, bool transposeB) :
-			transposeA_(transposeA), transposeB_(transposeB) {}
-		virtual ~tensor_jacobi (void) { clear_ownership(); }
+			transposeA_(transposeA), transposeB_(transposeB);
+		virtual ~tensor_jacobi (void);
 
-		tensor_jacobi<T>* clone (void) { return static_cast<tensor_jacobi<T>*>(clone_impl()); }
+		// COPY
+		tensor_jacobi<T>* clone (void);
+		tensor_jacobi<T>& operator = (const tensor_jacobi<T>& other);
 
-		void set_root (ivariable<T>* root) { k_ = root; }
+		// non inherited
+		void set_root (ivariable<T>* root);
 
-		virtual const tensor_jacobi<T>& operator () (ivariable<T>* arga, ivariable<T>* argb) {
-			// J(a, b) = d(a) * matmul(k, b^T) + d(b) * matmul(a^T, k)
-			clear_ownership();
-			// we're at evaluation time, so we can assess which derivative to take
-			const tensor<T>* ag = arga->get_gradient()->get_eval();
-			const tensor<T>* bg = argb->get_gradient()->get_eval();
-			ivariable<T>* a = nullptr;
-			if (ag) {
-				a = new matmul<T>(k_, argb, transposeA_, !transposeB_);
-				owner_.push_back(std::shared_ptr<ivariable<T> >(a));
-				a = a * arga->get_gradient();
-			}
-			ivariable<T>* b = nullptr;
-			if (bg) {
-				b = new matmul<T>(arga, k_, !transposeA_, transposeB_);
-				owner_.push_back(std::shared_ptr<ivariable<T> >(b));
-				b = b * argb->get_gradient();
-			}
-			root_ = a + b;
-			return *this;
-		}
+		// construct root via input arguments. should be executed at evaluation time
+		virtual const tensor_jacobi<T>& operator () (
+			ivariable<T>* arga, 
+			ivariable<T>* argb);
 };
 
 }
+
+#include "../../src/tensor/tensor_jacobi.ipp"
 
 #endif /* tensor_jacobi_hpp */

@@ -51,11 +51,11 @@ static void flatten (const std::vector<VECS>& samples,
 
 TEST(PERCEPTRON, layer_multiple_in) {
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::placeholder<double>* in1 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin1");
-	nnet::placeholder<double>* in2 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin2");
+	nnet::placeptr<double> in1 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin1");
+	nnet::placeptr<double> in2 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin2");
 	nnet::layer_perceptron layer = nnet::layer_perceptron(5, 5);
-	nnet::ivariable<double>* res1 = layer(in1);
-	nnet::ivariable<double>* res2 = layer(in2);
+	nnet::varptr<double> res1 = layer(in1);
+	nnet::varptr<double> res2 = layer(in2);
 	*in1 = std::vector<double>{1, 4, 8, 16, 32};
 	*in2 = std::vector<double>{5, 4, 3, 2, 1};
 	nnet::expose<double>* e1 = new nnet::expose<double>(res1);
@@ -75,8 +75,8 @@ TEST(PERCEPTRON, layer_action) {
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	std::vector<double> exout = {1, 2, 3};
 	nnet::layer_perceptron layer(vin.size(), exout.size());
-	nnet::placeholder<double>* var = new nnet::placeholder<double>(std::vector<size_t>{5}, "layerin");
-	nnet::ivariable<double>* res = layer(var);
+	nnet::placeptr<double> var = new nnet::placeholder<double>(std::vector<size_t>{5}, "layerin");
+	nnet::varptr<double> res = layer(var);
 	nnet::expose<double>* ex = new nnet::expose<double>(res);
 	// initialize variables
 	sess.initialize_all<double>();
@@ -88,8 +88,8 @@ TEST(PERCEPTRON, layer_action) {
 
 TEST(PERCEPTRON, mlp_multiple_in) {
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::placeholder<double>* in1 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin1");
-	nnet::placeholder<double>* in2 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin2");
+	nnet::placeptr<double> in1 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin1");
+	nnet::placeptr<double> in2 = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin2");
 	std::vector<IN_PAIR> hiddens = {
 			// use same sigmoid in static memory once deep copy is established
 			IN_PAIR(5, nnet::sigmoid<double>),
@@ -97,8 +97,8 @@ TEST(PERCEPTRON, mlp_multiple_in) {
 			IN_PAIR(5, nnet::sigmoid<double>),
 	};
 	nnet::ml_perceptron mlp = nnet::ml_perceptron(5, hiddens);
-	nnet::ivariable<double>* res1 = mlp(in1);
-	nnet::ivariable<double>* res2 = mlp(in2);
+	nnet::varptr<double> res1 = mlp(in1);
+	nnet::varptr<double> res2 = mlp(in2);
 	*in1 = std::vector<double>{1, 4, 8, 16, 32};
 	*in2 = std::vector<double>{5, 4, 3, 2, 1};
 	nnet::expose<double>* e1 = new nnet::expose<double>(res1);
@@ -128,8 +128,8 @@ TEST(PERCEPTRON, mlp_action) {
 	// mlp has ownership of activations
 	nnet::ml_perceptron mlp = nnet::ml_perceptron(vin.size(), hiddens);
 
-	nnet::placeholder<double>* var = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin");
-	nnet::ivariable<double>* res = mlp(var);
+	nnet::placeptr<double> var = new nnet::placeholder<double>((std::vector<size_t>{5}), "layerin");
+	nnet::varptr<double> res = mlp(var);
 	nnet::expose<double>* ex = new nnet::expose<double>(res);
 	sess.initialize_all<double>();
 	*var = vin;
@@ -160,10 +160,10 @@ TEST(PERCEPTRON, layer_optimizer) {
 	};
 
 	nnet::ml_perceptron mlp = nnet::ml_perceptron(n_in, hiddens);
-	nnet::placeholder<double>* var = new nnet::placeholder<double>((std::vector<size_t>{10}), "layerin");
-	nnet::ivariable<double>* res = mlp(var);
-	nnet::placeholder<double>* out = new nnet::placeholder<double>((std::vector<size_t>{5}), "expectout");
-	nnet::ivariable<double>* diff = res - std::static_pointer_cast<nnet::ivariable<double> >(out);
+	nnet::placeptr<double> var = new nnet::placeholder<double>((std::vector<size_t>{10}), "layerin");
+	nnet::varptr<double> res = mlp(var);
+	nnet::placeptr<double> out = new nnet::placeholder<double>((std::vector<size_t>{5}), "expectout");
+	nnet::varptr<double> diff = res - std::static_pointer_cast<nnet::ivariable<double> >(out);
 
 	*var = std::vector<double>{1, 1, 1, 1, 1, 1, 1, 1, 1, 1,};
 	*out = std::vector<double>{1, 1, 1, 1, 1,};
@@ -173,8 +173,8 @@ TEST(PERCEPTRON, layer_optimizer) {
 	sess.initialize_all<double>();
 
 	for (auto gpair : grads) {
-		nnet::ivariable<double>* leaf = gpair.first;
-		nnet::ivariable<double>* grad_wrt_leaf = gpair.second;
+		nnet::varptr<double> leaf = gpair.first;
+		nnet::varptr<double> grad_wrt_leaf = gpair.second;
 		nnet::expose<double>* ex_grad = new nnet::expose<double>(grad_wrt_leaf);
 		std::vector<double> out = ex_grad->get_raw();
 		for (double gres : out) {
@@ -202,8 +202,8 @@ TEST(PERCEPTRON, gd_train) {
 //	size_t train_size = 10000;
 //	nnet::gd_net net(n_in, hiddens);
 //	net.set_the_record_str8(true);
-//	nnet::placeholder<double>* fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in, batch_size}), "fanin");
-//	nnet::ivariable<double>* fanout = net(fanin);
+//	nnet::placeptr<double> fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in, batch_size}), "fanin");
+//	nnet::varptr<double> fanout = net(fanin);
 //	nnet::expose<double>* exposeout = new nnet::expose<double>(fanout);
 //	sess.initialize_all<double>();
 //
@@ -259,8 +259,8 @@ TEST(PERCEPTRON, gd_optimizer_train) {
 
 	nnet::OPTIMIZER<double> optimizer = std::make_shared<nnet::gd_optimizer>(0.001);
 	nnet::gd_net net(n_in, hiddens, optimizer);
-	nnet::placeholder<double>* fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in, batch_size}), "fanin");
-	nnet::ivariable<double>* fanout = net(fanin);
+	nnet::placeptr<double> fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in, batch_size}), "fanin");
+	nnet::varptr<double> fanout = net(fanin);
 	nnet::expose<double>* exposeout = new nnet::expose<double>(fanout);
 	sess.initialize_all<double>();
 	net.set_the_record_str8(true);
@@ -315,8 +315,8 @@ TEST(PERCEPTRON, bgd_train) {
 	size_t test_size = 100;
 	size_t train_size = 5000;
 	nnet::gd_net net(n_in, hiddens);
-	nnet::placeholder<double>* fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in}), "fanin");
-	nnet::ivariable<double>* fanout = net(fanin);
+	nnet::placeptr<double> fanin = new nnet::placeholder<double>((std::vector<size_t>{n_in}), "fanin");
+	nnet::varptr<double> fanout = net(fanin);
 	nnet::expose<double>* exposeout = new nnet::expose<double>(fanout);
 	sess.initialize_all<double>();
 

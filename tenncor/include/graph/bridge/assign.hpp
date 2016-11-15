@@ -12,7 +12,11 @@
 
 #include "iexecutor.hpp"
 
-namespace nnet {
+namespace nnet
+{
+
+template <typename T>
+using ASSIGN_OP = std::function<void(T&,T)>;
 
 template <typename T>
 void direct (T& dest, T src) { dest = src; }
@@ -20,46 +24,53 @@ void direct (T& dest, T src) { dest = src; }
 // NON-REACTIVE OPERATION
 
 template <typename T>
-class assign : public iexecutor<T> {
+class assign : public iexecutor<T>
+{
 	private:
 		// determines how element-wise assignment works, defaults to direct assignment
-		std::function<void(T&,T)> transfer_;
+		ASSIGN_OP<T> transfer_;
 		// target (weak pointer, no ownership)
 		variable<T>* dest_ = nullptr;
+		std::vector<T> local_cpy_;
+		// listen state
+		bool listening_ = true;
 
 	protected:
-		assign (const assign<T>& other) {
-			this->copy(other);
-		}
-
-		void copy (const assign<T>& other) {
-			dest_ = other.dest_;
-			transfer_ = other.transfer_;
-			iexecutor<T>::copy(other);
-		}
-
-		virtual iexecutor<T>* clone_impl (void) { return new assign<T>(*this); }
+		// used by copy constructor and copy assignment
+		void copy (const assign<T>& other);
+		assign (const assign<T>& other);
+		virtual iexecutor<T>* clone_impl (void);
 
 	public:
-		assign (variable<T>* dest, ivariable<T>* src, std::function<void(T&,T)> trans = direct);
-		assign<T>* clone (void) { return static_cast<assign<T>*>(clone_impl()); }
+		assign (variable<T>* dest, 
+			ivariable<T>* src, 
+			ASSIGN_OP<T> trans = direct);
+		
+		// COPY
+		assign<T>* clone (void);
+		assign<T>& operator = (const assign<T>& other);
+		
+		// MOVE
 
-		virtual void execute (void);
+		// inherited from iexecutor
+		virtual void freeze (void);
+		virtual void execute (std::function<bool(void)> cb);
 };
 
 template <typename T>
-class assign_sub : public assign<T> {
+class assign_sub : public assign<T>
+{
 	protected:
-		virtual assign<T>* clone_impl (void) {
-			return new assign_sub<T>(*this);
-		}
-
-		assign_sub (const assign_sub<T>& other) : assign<T>(other) {}
+		assign_sub (const assign_sub<T>& other);
+		virtual assign<T>* clone_impl (void);
 
 	public:
 		assign_sub (variable<T>* dest, ivariable<T>* src);
 
-		assign_sub<T>* clone (void) { return static_cast<assign_sub<T>*>(clone_impl()); }
+		// COPY
+		assign_sub<T>* clone (void);
+		
+		// MOVE
 };
 
 }

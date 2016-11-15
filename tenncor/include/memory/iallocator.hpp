@@ -13,33 +13,34 @@
 #include <algorithm>
 #include <complex>
 
-namespace nnet {
+namespace nnet
+{
 
-struct alloc_attrib {
+struct alloc_attrib
+{
 
 };
 
-class iallocator {
+class iallocator
+{
 	private:
 		// allow floats and doubles: is_trivial
 		// allow complex
 		// add other allowed types here
 		template <typename T>
-		struct is_allowed {
+		struct is_allowed
+		{
 			static constexpr bool value =
 				std::is_trivial<T>::value ||
 				std::is_same<T, std::complex<size_t> >::value ||
 				std::is_same<T, std::complex<double> >::value;
 		};
 
-		virtual void* get_raw (
-			size_t alignment,
-			size_t num_bytes);
+		virtual void* get_raw (size_t alignment, size_t num_bytes);
 
 	protected:
 		virtual void* get_raw (size_t alignment,
-			size_t num_bytes,
-			const alloc_attrib& attrib) = 0;
+			size_t num_bytes, const alloc_attrib& attrib) = 0;
 
 		virtual void del_raw (void* ptr) = 0;
 
@@ -48,38 +49,38 @@ class iallocator {
 	public:
 		static constexpr size_t alloc_alignment = 32;
 
-		virtual ~iallocator (void) {}
-
-		iallocator* clone (void) {
-			return clone_impl();
-		}
+		iallocator* clone (void);
 
 		virtual size_t id (void) = 0;
 
 		template <typename T>
-		T* allocate (size_t num_elements) {
+		T* allocate (size_t num_elements)
+		{
 			alloc_attrib attr;
 			return allocate<T>(num_elements, attr);
 		}
 
 		template <typename T>
-		T* allocate (size_t num_elements, const alloc_attrib& attrib) {
+		T* allocate (size_t num_elements, const alloc_attrib& attrib)
+		{
 			static_assert(is_allowed<T>::value, "T is not an allowed type.");
 
-			if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T))) {
+			if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T)))
+			{
 				return nullptr;
 			}
 
 			void* p = get_raw(alloc_alignment,
-				sizeof(T) * num_elements,
-				attrib);
+				sizeof(T) * num_elements, attrib);
 			T* typedptr = reinterpret_cast<T*>(p);
 			return typedptr;
 		}
 
 		template <typename T>
-		void dealloc(T* ptr, size_t num_elements) {
-			if (nullptr != ptr) {
+		void dealloc(T* ptr, size_t num_elements)
+		{
+			if (nullptr != ptr)
+			{
 				del_raw(ptr);
 			}
 		}
@@ -89,7 +90,11 @@ class iallocator {
 		// requires empty tensors to allocate
 		virtual bool alloc_empty (void) { return false; }
 		// gets allocated size if tracking enabled
-		virtual size_t requested_size (void* ptr);
+		virtual size_t requested_size (void* ptr)
+		{
+			throw std::bad_function_call();
+			return 0;
+		}
 		// alloc id if tracking enabled
 		// 0 otherwise
 		virtual size_t alloc_id (void* ptr) { return 0; }

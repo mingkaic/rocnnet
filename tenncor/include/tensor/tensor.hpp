@@ -18,21 +18,21 @@
 #include "memory/iallocator.hpp"
 #include "memory/ram_alloc.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
-template <typename T>
-class expose;
 template <typename T>
 class assign;
 template <typename T>
 class initializer;
-template <typename T>
-class ivariable;
+
+std::vector<T> expose (ivariable<T>* var);
 
 static alloc_attrib default_attr; // TODO consider removing to make thread safe
 
 template <typename T>
-class tensor {
+class tensor
+{
 	private:
 		// meta data (not as template)
 		tensorshape allowed_shape_;
@@ -47,11 +47,12 @@ class tensor {
 
 		virtual tensor<T>* clone_impl (void) { return new tensor<T>(*this); }
 
+		// protected accessor... this isn't overengineering! I swear.
 		virtual T* get_raw (void) { return raw_data_; }
 
 		friend class initializer<T>;
 		friend class assign<T>;
-		friend class expose<T>;
+		friend std::vector<T> expose (ivariable<T>* var);
 
 	public:
 		// creates a rank 0 tensor
@@ -112,6 +113,7 @@ class tensor {
 		// slice along the first dimension
 		tensor<T> slice (size_t dim_start, size_t limit);
 
+		// TODO: read protocol buffers
 		// bool shares_buffer_with (const tensor& other) const;
 		// size_t buffer_hash (void) const;
 		// bool from_proto (const tensorproto& other);

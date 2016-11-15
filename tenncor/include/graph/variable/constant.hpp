@@ -18,14 +18,15 @@
 
 #include "ileaf.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 // Never notifies... should consider inheriting from different parent
 template <typename T>
-class constant : public ileaf<T> {
+class constant : public ileaf<T>
+{
 	protected:
 		constant (const constant<T>& other, std::string name);
-
 		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
@@ -33,18 +34,11 @@ class constant : public ileaf<T> {
 		constant (std::vector<T> raw, tensorshape shape);
 
 		// COPY
-		constant<T>* clone (std::string name = "") {
-			return static_cast<constant<T>*>(clone_impl(name));
-		}
+		constant<T>* clone (std::string name = "");
 
 		// CONSTANT IS NOT A FIRST WORLD CITIZEN :(
-		virtual void detach (ccoms::iobserver* viewer) {
-			ccoms::subject::detach(viewer);
-			if (this->no_audience()) {
-				// no audience, no point to live x_x
-				delete this;
-			}
-		}
+		// override subject's detach method to suicide when lacking dependents
+		virtual void detach (ccoms::iobserver* viewer);
 };
 
 }

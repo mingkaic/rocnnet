@@ -11,12 +11,15 @@
 
 #include "graph/operation/ioperation.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 template <typename T>
-T mean (const std::vector<T>& data) {
+T mean (const std::vector<T>& data)
+{
 	T ans = 0;
-	for (T raw : data) {
+	for (T raw : data)
+	{
 		ans += raw;
 	}
 	ans /= data.size();
@@ -26,7 +29,8 @@ T mean (const std::vector<T>& data) {
 // special tensor transform
 
 template <typename T>
-class transform : public ioperation<T> {
+class transform : public ioperation<T>
+{
 	private:
 		std::function<void(T*&,const T*,tensorshape)> collect_;
 		std::function<tensorshape(tensorshape)> shape_;
@@ -37,11 +41,7 @@ class transform : public ioperation<T> {
 		virtual ivariable<T>* clone_impl (std::string name);
 		virtual tensorshape shape_eval (void);
 
-		transform (const transform<T>& other, std::string name) :
-			ioperation<T>(other, name),
-			collect_(other.collect_),
-			shape_(other.shape_),
-			der_(other.der_) {}
+		transform (const transform<T>& other, std::string name);
 
 	public:
 		transform (ivariable<T>* arg,
@@ -50,9 +50,8 @@ class transform : public ioperation<T> {
 					BUILD_DERIVE<T> der, std::string name = "");
 
 		// COPY
-		transform<T>* clone (std::string name = "") {
-			return static_cast<transform<T>*>(clone_impl(name));
-		}
+		transform<T>* clone (std::string name = "");
+		virtual transform<T>& operator = (const transform<T>& other);
 
 		// MOVES
 		// TODO: implement
@@ -61,20 +60,20 @@ class transform : public ioperation<T> {
 };
 
 template <typename T>
-ivariable<T>* clip_norm (const ivariable<T>* a, T cap);
+varptr<T> clip_norm (const ivariable<T>* a, T cap);
 
 template <typename T>
-ivariable<T>* transpose (const ivariable<T>* a);
+varptr<T> transpose (const ivariable<T>* a);
 
 // fit to watch
 template <typename T>
-ivariable<T>* fit (const ivariable<T>* a, const ivariable<T>* watch);
+varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch);
 
 template <typename T>
-ivariable<T>* extend (const ivariable<T>* a, size_t index, size_t multiplier);
+varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier);
 
 template <typename T>
-ivariable<T>* compress (const ivariable<T>* a, size_t index,
+varptr<T> compress (const ivariable<T>* a, size_t index,
 	std::function<T(const std::vector<T>&)> collector = mean<T>);
 
 }

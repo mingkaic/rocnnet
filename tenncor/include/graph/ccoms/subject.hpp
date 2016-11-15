@@ -12,12 +12,15 @@
 
 #include <unordered_set>
 
-namespace ccoms {
+namespace ccoms
+{
 
 class iobserver;
 class subject;
 
-class ileaf_handler {
+// pure abstract / interface for communication nodes that records leaves
+class ileaf_handler
+{
 	protected:
 		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) = 0;
 };
@@ -26,33 +29,23 @@ class ileaf_handler {
 // subject retains control over all its observers,
 // once destroyed, all observers are destroyed
 
-class subject : public ileaf_handler {
+class subject : public ileaf_handler
+{
 	private:
 		std::unordered_set<iobserver*> audience_;
 		
 	protected:
-		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
-			src.emplace(this);
-		}
-
-		virtual bool no_audience (void) {
-			return audience_.empty();
-		}
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src);
+		bool no_audience (void);
 
 		friend class iobserver;
 		
 	public:
 		virtual ~subject (void);
 	
-		void attach (iobserver* viewer) {
-			audience_.emplace(viewer);
-		}
-		
-		virtual void detach (iobserver* viewer) {
-			audience_.erase(viewer);
-		}
-
-		virtual void notify (subject* caller = nullptr);
+		void attach (iobserver* viewer);
+		virtual void detach (iobserver* viewer);
+		void notify (subject* caller = nullptr);
 };
 
 }

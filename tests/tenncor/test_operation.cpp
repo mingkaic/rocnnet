@@ -9,14 +9,14 @@
 #include "../shared/utils.hpp"
 
 void unaryElemTest (
-	std::function<nnet::ivariable<double>*(nnet::ivariable<double>*)> func,
+	std::function<nnet::varptr<double>(nnet::varptr<double>)> func,
 	std::function<double(double)> op) {
 	const size_t limit = 523;
 	const size_t edge = 10;
 	const size_t supersize = edge * edge * edge;
-	nnet::placeholder<double>* p = new nnet::placeholder<double>(std::vector<size_t>{edge, edge, edge}, "unar_in");
+	nnet::placeptr<double> p = new nnet::placeholder<double>(std::vector<size_t>{edge, edge, edge}, "unar_in");
 
-	nnet::ivariable<double>* res = func(p);
+	nnet::varptr<double> res = func(p);
 
 	// didn't initialize
 	EXPECT_DEATH({ res->eval(); }, ".*");
@@ -44,9 +44,9 @@ void unaryElemTest (
 }
 
 void binaryElemTest (
-	std::function<nnet::ivariable<double>*(nnet::ivariable<double>*, nnet::ivariable<double>*)> func,
-	std::function<nnet::ivariable<double>*(nnet::ivariable<double>*, double)> func1,
-	std::function<nnet::ivariable<double>*(double, nnet::ivariable<double>*)> func2,
+	std::function<nnet::varptr<double>(nnet::varptr<double>, nnet::varptr<double>)> func,
+	std::function<nnet::varptr<double>(nnet::varptr<double>, double)> func1,
+	std::function<nnet::varptr<double>(double, nnet::varptr<double>)> func2,
 	std::function<double(double, double)> op) {
 	nnet::session& sess = nnet::session::get_instance();
 	sess.enable_shape_eval();
@@ -55,16 +55,16 @@ void binaryElemTest (
 	const size_t badsize = edge * edge;
 	const size_t supersize = edge * edge * edge;
 	nnet::tensorshape goodshape = std::vector<size_t>{edge, edge, edge};
-	nnet::placeholder<double>* p1 = new nnet::placeholder<double>(goodshape, "bin_in1");
-	nnet::placeholder<double>* p2 = new nnet::placeholder<double>(goodshape, "bin_in2");
-	nnet::placeholder<double>* bad = new nnet::placeholder<double>((std::vector<size_t>{edge, edge}), "bad");
+	nnet::placeptr<double> p1 = new nnet::placeholder<double>(goodshape, "bin_in1");
+	nnet::placeptr<double> p2 = new nnet::placeholder<double>(goodshape, "bin_in2");
+	nnet::placeptr<double> bad = new nnet::placeholder<double>((std::vector<size_t>{edge, edge}), "bad");
 
-	EXPECT_DEATH({ nnet::ivariable<double>* trouble1 = func(p1, bad); }, ".*"); // evaluates shapes at construction
-	EXPECT_DEATH({ nnet::ivariable<double>* trouble2 = func(bad, p1); }, ".*");
+	EXPECT_DEATH({ nnet::varptr<double> trouble1 = func(p1, bad); }, ".*"); // evaluates shapes at construction
+	EXPECT_DEATH({ nnet::varptr<double> trouble2 = func(bad, p1); }, ".*");
 
-	nnet::ivariable<double>* res = func(p1, p2);
-	nnet::ivariable<double>* res1 = func1(p1, 2);
-	nnet::ivariable<double>* _1res = func2(2, p1);
+	nnet::varptr<double> res = func(p1, p2);
+	nnet::varptr<double> res1 = func1(p1, 2);
+	nnet::varptr<double> _1res = func2(2, p1);
 
 	// didn't initialize
 	EXPECT_DEATH({ res->eval(); }, ".*");
@@ -115,92 +115,92 @@ void binaryElemTest (
 
 
 TEST(OPERATION, abs) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return +in; },
+	unaryElemTest([](nnet::varptr<double> in) { return +in; },
 	[](double var) { return +var; });
 }
 
 
 TEST(OPERATION, neg) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return -in; },
+	unaryElemTest([](nnet::varptr<double> in) { return -in; },
 	[](double var) { return -var; });
 }
 
 
 TEST(OPERATION, sin) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::sin(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::sin(in); },
 	[](double var) { return sin(var); });
 }
 
 
 TEST(OPERATION, cos) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::cos(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::cos(in); },
 	[](double var) { return cos(var); });
 
 }
 
 
 TEST(OPERATION, tan) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::tan(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::tan(in); },
 	[](double var) { return tan(var); });
 }
 
 
 TEST(OPERATION, csc) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::csc(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::csc(in); },
 	[](double var) { return 1/sin(var); });
 }
 
 
 TEST(OPERATION, sec) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::sec(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::sec(in); },
 	[](double var) { return 1/cos(var); });
 }
 
 
 TEST(OPERATION, cot) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::cot(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::cot(in); },
 	[](double var) { return cos(var)/sin(var); });
 }
 
 
 TEST(OPERATION, exp) {
-	unaryElemTest([](nnet::ivariable<double>* in) { return nnet::exp(in); },
+	unaryElemTest([](nnet::varptr<double> in) { return nnet::exp(in); },
 	[](double var) { return exp(var); });
 }
 
 
 TEST(OPERATION, add) {
 	binaryElemTest(
-	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a+b; },
-	[](nnet::ivariable<double>* a, double b) { return a+b; },
-	[](double a, nnet::ivariable<double>* b) { return a+b; },
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a+b; },
+	[](nnet::varptr<double> a, double b) { return a+b; },
+	[](double a, nnet::varptr<double> b) { return a+b; },
 	[](double a, double b) { return a+b; });
 }
 
 
 TEST(OPERATION, sub) {
 	binaryElemTest(
-	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a-b; },
-	[](nnet::ivariable<double>* a, double b) { return a-b; },
-	[](double a, nnet::ivariable<double>* b) { return a-b; },
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a-b; },
+	[](nnet::varptr<double> a, double b) { return a-b; },
+	[](double a, nnet::varptr<double> b) { return a-b; },
 	[](double a, double b) { return a-b; });
 }
 
 
 TEST(OPERATION, mul) {
 	binaryElemTest(
-	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a * b; },
-	[](nnet::ivariable<double>* a, double b) { return a * b; },
-	[](double a, nnet::ivariable<double>* b) { return a * b; },
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a * b; },
+	[](nnet::varptr<double> a, double b) { return a * b; },
+	[](double a, nnet::varptr<double> b) { return a * b; },
 	[](double a, double b) { return a * b; });
 }
 
 
 TEST(OPERATION, div) {
 	binaryElemTest(
-	[](nnet::ivariable<double>* a, nnet::ivariable<double>* b) { return a/b; },
-	[](nnet::ivariable<double>* a, double b) { return a/b; },
-	[](double a, nnet::ivariable<double>* b) { return a/b; },
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a/b; },
+	[](nnet::varptr<double> a, double b) { return a/b; },
+	[](double a, nnet::varptr<double> b) { return a/b; },
 	[](double a, double b) { return a/b; });
 }
 
@@ -243,12 +243,12 @@ TEST(OPERATION, matmul) {
 		{219, 51, 78}
 	};
 	const size_t supersize = ncol * nrow;
-	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "a");
-	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "b");
-	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{nrow, ncol}), "c");
-	nnet::ivariable<double>* ans1 = new nnet::matmul<double>(A, B, false, true); // output is 4x4
-	nnet::ivariable<double>* ans2 = new nnet::matmul<double>(A, B, true); // output is 3x3
-	nnet::ivariable<double>* ans3 = new nnet::matmul<double>(C, A); // output is 3x3
+	nnet::placeptr<double> A = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "a");
+	nnet::placeptr<double> B = new nnet::placeholder<double>((std::vector<size_t>{ncol, nrow}), "b");
+	nnet::placeptr<double> C = new nnet::placeholder<double>((std::vector<size_t>{nrow, ncol}), "c");
+	nnet::varptr<double> ans1 = new nnet::matmul<double>(A, B, false, true); // output is 4x4
+	nnet::varptr<double> ans2 = new nnet::matmul<double>(A, B, true); // output is 3x3
+	nnet::varptr<double> ans3 = new nnet::matmul<double>(C, A); // output is 3x3
 
 	// didn't initialize
 	EXPECT_DEATH({ ans1->eval(); }, ".*");
@@ -334,12 +334,12 @@ TEST(OPERATION, matmul2) {
 		{1198, 194},
 		{116, 16}
 	};
-	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{2, 4}), "a");
-	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{3, 4}), "b");
-	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{4, 5}), "c");
-	nnet::ivariable<double>* ans1 = new nnet::matmul<double>(A, B, true); // output is 2x3 (row by col)
-	nnet::ivariable<double>* ans2 = new nnet::matmul<double>(B, C, true, true); // output is 3x5
-	nnet::ivariable<double>* ans3 = new nnet::matmul<double>(C, A); // output is 5x2
+	nnet::placeptr<double> A = new nnet::placeholder<double>((std::vector<size_t>{2, 4}), "a");
+	nnet::placeptr<double> B = new nnet::placeholder<double>((std::vector<size_t>{3, 4}), "b");
+	nnet::placeptr<double> C = new nnet::placeholder<double>((std::vector<size_t>{4, 5}), "c");
+	nnet::varptr<double> ans1 = new nnet::matmul<double>(A, B, true); // output is 2x3 (row by col)
+	nnet::varptr<double> ans2 = new nnet::matmul<double>(B, C, true, true); // output is 3x5
+	nnet::varptr<double> ans3 = new nnet::matmul<double>(C, A); // output is 5x2
 
 	// didn't initialize
 	EXPECT_DEATH({ ans1->eval(); }, ".*");
@@ -427,12 +427,12 @@ TEST(OPERATION, transpose) {
 		{32, 45, 3, 22, 2},
 		{9, 3.2, 3, 32, 1}
 	};
-	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{2, 4}), "a");
-	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{3, 4}), "b");
-	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{4, 5}), "c");
-	nnet::ivariable<double>* resa = new nnet::transpose<double>(A);
-	nnet::ivariable<double>* resb = new nnet::transpose<double>(B);
-	nnet::ivariable<double>* resc = new nnet::transpose<double>(C);
+	nnet::placeptr<double> A = new nnet::placeholder<double>((std::vector<size_t>{2, 4}), "a");
+	nnet::placeptr<double> B = new nnet::placeholder<double>((std::vector<size_t>{3, 4}), "b");
+	nnet::placeptr<double> C = new nnet::placeholder<double>((std::vector<size_t>{4, 5}), "c");
+	nnet::varptr<double> resa = new nnet::transpose<double>(A);
+	nnet::varptr<double> resb = new nnet::transpose<double>(B);
+	nnet::varptr<double> resc = new nnet::transpose<double>(C);
 	*A = av;
 	*B = bv;
 	*C = cv;
@@ -473,9 +473,9 @@ TEST(OPERATION, transpose) {
 
 
 TEST(OPERATION, extend) {
-	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{2, 1, 2}), "a");
-	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{2, 2, 1}), "b");
-	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{2, 2, 2}), "c");
+	nnet::placeptr<double> A = new nnet::placeholder<double>((std::vector<size_t>{2, 1, 2}), "a");
+	nnet::placeptr<double> B = new nnet::placeholder<double>((std::vector<size_t>{2, 2, 1}), "b");
+	nnet::placeptr<double> C = new nnet::placeholder<double>((std::vector<size_t>{2, 2, 2}), "c");
 
 	std::vector<double> t1 = {
 		0.4, 0.9,
@@ -533,10 +533,10 @@ TEST(OPERATION, extend) {
 	*B = t1;
 	*C = t2;
 
-	nnet::ivariable<double>* e1 = new nnet::extend<double>(C, 0, 2);
-	nnet::ivariable<double>* e2 = new nnet::extend<double>(A, 1, 2);
-	nnet::ivariable<double>* e3 = new nnet::extend<double>(B, 2, 2);
-	nnet::ivariable<double>* e4 = new nnet::extend<double>(C, 3, 2);
+	nnet::varptr<double> e1 = new nnet::extend<double>(C, 0, 2);
+	nnet::varptr<double> e2 = new nnet::extend<double>(A, 1, 2);
+	nnet::varptr<double> e3 = new nnet::extend<double>(B, 2, 2);
+	nnet::varptr<double> e4 = new nnet::extend<double>(C, 3, 2);
 
 	nnet::expose<double>* expose1 = new nnet::expose<double>(e1);
 	const nnet::tensor<double>& res1 = expose1->eval();
@@ -595,9 +595,9 @@ TEST(OPERATION, extend) {
 
 
 TEST(OPERATION, compress) {
-	nnet::placeholder<double>* A = new nnet::placeholder<double>((std::vector<size_t>{5, 2}), "a");
-	nnet::placeholder<double>* B = new nnet::placeholder<double>((std::vector<size_t>{2, 5}), "b");
-	nnet::placeholder<double>* C = new nnet::placeholder<double>((std::vector<size_t>{2, 5, 2}), "c");
+	nnet::placeptr<double> A = new nnet::placeholder<double>((std::vector<size_t>{5, 2}), "a");
+	nnet::placeptr<double> B = new nnet::placeholder<double>((std::vector<size_t>{2, 5}), "b");
+	nnet::placeptr<double> C = new nnet::placeholder<double>((std::vector<size_t>{2, 5, 2}), "c");
 
 	std::vector<double> in1 = {
 		1, 2, 3, 4, 5,
@@ -642,9 +642,9 @@ TEST(OPERATION, compress) {
 	*B = in2;
 	*C = in3;
 
-	nnet::ivariable<double>* c1 = new nnet::compress<double>(A, 0); // expect vector of 2
-	nnet::ivariable<double>* c2 = new nnet::compress<double>(B, 1); // expect vector of 2
-	nnet::ivariable<double>* c3 = new nnet::compress<double>(C, 1); // expect shape of 2, 1, 2
+	nnet::varptr<double> c1 = new nnet::compress<double>(A, 0); // expect vector of 2
+	nnet::varptr<double> c2 = new nnet::compress<double>(B, 1); // expect vector of 2
+	nnet::varptr<double> c3 = new nnet::compress<double>(C, 1); // expect shape of 2, 1, 2
 
 	nnet::expose<double>* e1 = new nnet::expose<double>(c1);
 	std::vector<size_t> v1 = e1->eval().get_shape().as_list();
@@ -696,10 +696,10 @@ TEST(DERIV, unary) {
 	const size_t supersize = edge * edge * edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
-	nnet::ivariable<double>* in = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "in");
-	//nnet::ivariable<double>* bad = MAKE_VARIABLE((std::vector<size_t>{edge, edge, edge}), "bad");
+	nnet::varptr<double> in = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "in");
+	//nnet::varptr<double> bad = MAKE_VARIABLE((std::vector<size_t>{edge, edge, edge}), "bad");
 
-	std::vector<nnet::ivariable<double>* > univars = {
+	std::vector<nnet::varptr<double> > univars = {
 		+in,
 		-in,
 		nnet::sin(in),
@@ -746,11 +746,11 @@ TEST(DERIV, binary) {
 	const size_t supersize = edge*edge*edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
-	nnet::ivariable<double>* a = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "a");
-	nnet::ivariable<double>* b = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "b");
-	nnet::ivariable<double>* bad = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "bad");
+	nnet::varptr<double> a = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "a");
+	nnet::varptr<double> b = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "b");
+	nnet::varptr<double> bad = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "bad");
 
-	std::vector<nnet::ivariable<double>* > univars = {
+	std::vector<nnet::varptr<double> > univars = {
 		a+b, a-b, a*b, a/b,
 	};
 
@@ -806,18 +806,18 @@ TEST(DERIV, complex) {
 	const size_t supersize = edge*edge*edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
-	nnet::ivariable<double>* p1 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
-	nnet::ivariable<double>* p2 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p2");
+	nnet::varptr<double> p1 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
+	nnet::varptr<double> p2 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p2");
 
 	sess.initialize_all<double>();
-	nnet::ivariable<double>* o = nnet::sin(p1) + p1 * p2;
+	nnet::varptr<double> o = nnet::sin(p1) + p1 * p2;
 	nnet::expose<double>* res = new nnet::expose<double>(o);
 
 	std::vector<double> r1 = new nnet::expose<double>(p1)->get_raw();
 	std::vector<double> r2 = new nnet::expose<double>(p2)->get_raw();
 
-	nnet::ivariable<double>* grad1 = new nnet::gradient<double>(res, p1);
-	nnet::ivariable<double>* grad2 = new nnet::gradient<double>(res, p2);
+	nnet::varptr<double> grad1 = new nnet::gradient<double>(res, p1);
+	nnet::varptr<double> grad2 = new nnet::gradient<double>(res, p2);
 
 	// res = f(a,b) = sin(a)+a*b
 	// df(a,b)/da = cos(a)+b
@@ -844,10 +844,10 @@ TEST(DERIV, sigmoid_complex) {
 	const size_t supersize = edge*edge*edge;
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
-	nnet::ivariable<double>* x = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
+	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
 
 	sess.initialize_all<double>();
-	nnet::ivariable<double>* o = nnet::sigmoid(x);
+	nnet::varptr<double> o = nnet::sigmoid(x);
 	nnet::expose<double>* res = new nnet::expose<double>(o);
 
 	std::vector<double> xin = new nnet::expose<double>(x)->get_raw();
@@ -860,7 +860,7 @@ TEST(DERIV, sigmoid_complex) {
 		return s * (1 - s);
 	};
 	
-	nnet::ivariable<double>* grad = new nnet::ivariable<double>(res, x);
+	nnet::varptr<double> grad = new nnet::ivariable<double>(res, x);
 	std::vector<double> raw = res->get_raw();
 	std::vector<double> der = new nnet::expose<double>(grad)->get_raw();;
 
@@ -882,13 +882,13 @@ TEST(DERIV, operation_derive) {
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> rinit(0, 523);
 
-	nnet::ivariable<double>* x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
-	nnet::placeholder<double>* place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
-	nnet::ivariable<double>* mul = new nnet::matmul<double>(x, place); // <X, IN>
+	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
+	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
+	nnet::varptr<double> mul = new nnet::matmul<double>(x, place); // <X, IN>
 
-	nnet::ivariable<double>* o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
-	nnet::ivariable<double>* better_grad = o*(1.0-o); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
-	nnet::ivariable<double>* grad = new nnet::derive<double>(o, mul); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
+	nnet::varptr<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
+	nnet::varptr<double> better_grad = o*(1.0-o); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
+	nnet::varptr<double> grad = new nnet::derive<double>(o, mul); // d(1/(1+e^(-<X, IN>))) / d(<X, IN>)
 	nnet::expose<double>* oex = new nnet::expose<double>(o);
 	nnet::expose<double>* ex = new nnet::expose<double>(grad);
 	nnet::expose<double>* better_ex = new nnet::expose<double>(better_grad);
@@ -927,8 +927,8 @@ TEST(DERIV, operation_derive) {
 
 
 TEST(OPERATION, univar_func) {
-	nnet::placeholder<double>* fanin = new nnet::placeholder<double>((std::vector<size_t>{1}), "in");
-	nnet::ivariable<double>* res = nnet::sigmoid<double>(fanin);
+	nnet::placeptr<double> fanin = new nnet::placeholder<double>((std::vector<size_t>{1}), "in");
+	nnet::varptr<double> res = nnet::sigmoid<double>(fanin);
 	nnet::expose<double>* out = new nnet::expose<double>(res);
 
 	*fanin = std::vector<double>{0};

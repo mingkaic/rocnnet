@@ -7,30 +7,35 @@
 //
 
 #include <unordered_set>
-#include "layer.hpp"
+#include "mlp.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
 #define gd_net_hpp
 
-namespace nnet {
+namespace nnet
+{
+
+#define PLACE_PTR = std::unique_ptr<placeholder<double> >;
 
 // wrapper for
 // gradient descent
 // look for good optimization algorithms that auto determine good learning rates
 // and other parameters to minimize training issues
-class gd_net : public ml_perceptron {
+class gd_net : public ml_perceptron
+{
 	private:
 		size_t n_input;
 		double learning_rate = 0.5; // implement setter
 		bool record_training = false;
-		// input
-		placeholder<double>* train_in_ = nullptr;
-		placeholder<double>* expected_out = nullptr;
-		placeholder<double>* batch_size = nullptr;
-		// output
+		// training input
+		PLACE_PTR train_in_ = nullptr;
+		PLACE_PTR expected_out = nullptr;
+		PLACE_PTR batch_size = nullptr;
+		// training executors
 		group<double>* updates;
 		expose<double>* record = nullptr;
+		// owns optimizer
 		OPTIMIZER<double> optimizer_ = nullptr;
 
 		void train_set_up (void);

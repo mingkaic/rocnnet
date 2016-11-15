@@ -13,7 +13,8 @@
 #include "graph/operation/ioperation.hpp"
 #include "jacobian.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 // MATRIX MULTIPLICATION
 
@@ -21,7 +22,8 @@ namespace nnet {
 // dimension 1 denote number of columns,
 // dimension 2 denote number of rows
 template <typename T>
-class matmul : public ioperation<T> {
+class matmul : public ioperation<T>
+{
 	private:
 		bool transposeA_;
 		bool transposeB_;
@@ -32,17 +34,16 @@ class matmul : public ioperation<T> {
 		// backward chaining for AD
 		virtual void setup_gradient (void);
 		virtual tensorshape shape_eval (void);
+		
+		matmul (const matmul<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 
-		matmul (const matmul<T>& other, std::string name);
-
 	public:
-		matmul (ivariable<T>* a, ivariable<T>* b, bool transposeA = false, bool transposeB = false);
+		matmul (ivariable<T>* a, ivariable<T>* b, 
+			bool transposeA = false, bool transposeB = false);
 
 		// COPY
-		matmul<T>* clone (std::string name = "") {
-			return static_cast<matmul<T>*>(clone_impl(name));
-		}
+		matmul<T>* clone (std::string name = "");
 		virtual matmul<T>& operator = (const ivariable<T>& other);
 		
 		// MOVES

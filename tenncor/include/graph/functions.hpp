@@ -13,25 +13,29 @@
 #define functions_ops
 
 #include "graph/operation/general/elementary.hpp"
+#include "graph/bridge/varptr.hpp"
 
 namespace nnet {
 
 template <typename T>
-using VAR_FUNC = std::function<ivariable<T>*(ivariable<T>*)>;
+using VAR_FUNC = std::function<varptr<T>(ivariable<T>*)>;
 
 template <typename T>
-ivariable<T>* sigmoid (ivariable<T>* x) {
+varptr<T> sigmoid (ivariable<T>* x)
+{
 	// f(x) = 1/(1+e^-x)
 	return 1.0 / (1.0 + nnet::exp(-x));
 }
 
 template <typename T>
-ivariable<T>* tanh (ivariable<T>* x) {
+varptr<T> tanh (ivariable<T>* x)
+{
 	// f(x) = (e^(2*x)+1)/(e^(2*x)-1)
-	ivariable<T>* etx = nnet::exp(2.0 * x);
+	varptr<T> etx = nnet::exp(2.0 * x);
 	return (etx + 1.0) / (etx - 1.0);
 }
 
+// TODO: fix graph clone
 //template <typename T>
 // clones every node from root to anything in leaf_set_src
 //ivariable<T>* clone (ivariable<T>* src_root,

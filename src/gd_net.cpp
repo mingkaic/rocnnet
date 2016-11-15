@@ -10,21 +10,23 @@
 
 #ifdef gd_net_hpp
 
-namespace nnet {
+namespace nnet
+{
 
 group<double>* ad_hoc_gd_setup (double learning_rate,
-		varptr<double> train_in,
+		ivariable<double>* train_in,
 		varptr<double> diff_func,
 		varptr<double> batch_size,
 		std::vector<HID_PAIR>& layers,
-		std::queue<ivariable<double>* >& layer_out,
-		std::stack<ivariable<double>* >& prime_out) {
+		std::queue<varptr<double> >& layer_out,
+		std::stack<varptr<double> >& prime_out)
+{
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
 	varptr<double> err = diff_func * prime_out.top();
 	prime_out.pop();
-	std::stack<ivariable<double>* > errs;
+	std::stack<varptr<double> > errs;
 	errs.push(err);
 
 	auto term = --layers.rend();
@@ -32,7 +34,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		 term != rit; rit++) {
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
-		varptr<double> weight_i = hp.first->get_variables().first;
+		ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
 		varptr<double> mres = new matmul<double>(err, weight_i, false ,true);
 		err = mres * prime_out.top();
@@ -42,7 +44,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 
 	varptr<double> learn_batch = learning_rate / batch_size;
 	group<double>* updates = new group<double>();
-	varptr<double> output = train_in;
+	ivariable<double>* output = train_in;
 	for (HID_PAIR hp : layers) {
 		err = errs.top();
 		errs.pop();
@@ -53,7 +55,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		varptr<double> dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
-		varptr<double> compressed_err = new compress<double>`(err, 1);
+		varptr<double> compressed_err = new compress<double>(err, 1);
 		varptr<double> dbias = compressed_err * learn_batch;
 
 		// update weights and bias
@@ -74,8 +76,8 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 
 void gd_net::train_set_up (void) {
 	// follow () operator for ml_perceptron except store hypothesis
-	std::queue<ivariable<double>* > layer_out;
-	std::stack<ivariable<double>* > prime_out;
+	std::queue<varptr<double> > layer_out;
+	std::stack<varptr<double> > prime_out;
 
 	// not so generic setup
 	varptr<double> output = train_in_;

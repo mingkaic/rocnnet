@@ -13,77 +13,41 @@
 #include "iexecutor.hpp"
 #include "graph/variable/constant.hpp"
 
-namespace nnet {
+namespace nnet
+{
+	
+template <typename T>
+using GRAD_GATHER = std::function<void(ivariable<T>*,tensor<T>*)>;
 
 template <typename T>
-class gradient : public iexecutor<T> {
+class gradient : public iexecutor<T>
+{
 	private:
-		ivariable<T>* root_;
-		std::unordered_map<ivariable<T>*, ivariable<T>*> leaf_map;
-		constant<T> one;
-
-		gradient (const gradient<T>& other) : one(1) {}
+		// gradient owns nothing
+		ivariable<T>* g_root_;
+		std::vector<ccoms::subject*> potential_srcs_;
+		std::unordered_map<ivariable<T>*, tensor<T>*> leaf_map_;
+		const constant<T> one_;
 
 	protected:
-		virtual iexecutor<T>* clone_impl (void) {
-			return new gradient(*this);
-		}
+		void copy (const gradient<T>& other);
+		gradient (const gradient<T>& other);
+		virtual iexecutor<T>* clone_impl (void);
 
 	public:
-		gradient (ivariable<T>* root, ivariable<T>* leaf = nullptr) : root_(root), one(1) {
-			if (leaf) {
-				this->add(leaf);
-			}
-		}
+		gradient (ivariable<T>* root, ivariable<T>* leaf = nullptr);
 
-		gradient<T>* clone (void) { return static_cast<gradient<T> >(clone_impl()); }
+		// COPY
+		gradient<T>* clone (void);
+		gradient<T>& operator = (const gradient<T>& other);
 
-		virtual void execute (void) {
-			std::vector<ivariable<T>*> leaves = this->srcs_;
-			if (ioperation<T>* op_ = dynamic_cast<ioperation<T>*>(root_)) {
-				if (leaves.empty()) {
-					// grab leaves from root if no leaves were specified
-					op_->leaves_collect([&leaves](ccoms::subject* leaf) {
-						if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(leaf)) {
-							leaves.push_back(var);
-						}
-					});
-				}
-				for (ivariable<T>* leaf : leaves) {
-					// notify parents that leaf is notifying (since parents can observe multiple subjects)
-					leaf->notify(leaf);
-					std::stack<ivariable<T>*> jacobs;
-					op_->channel(jacobs);
-					ivariable<T>* top = op_;
-					while (false == jacobs.empty()) {
-						ivariable<T>* jac = jacobs.top();
-						jacobs.pop();
-
-						if (tensor_jacobi<T>* ten_jac =
-							dynamic_cast<tensor_jacobi<T>*>(jac->get_eval())) {
-							ten_jac->set_root(top);
-							top = jac;
-						}
-					}
-					leaf_map[leaf] = top;
-				}
-			} else {
-				// root is a non-operation
-				if (leaves.empty()) {
-					leaf_map[root_] = &one;
-				} else {
-					for (ivariable<T>* leaf : leaves) {
-						leaf_map[leaf] = leaf == root_ ? &one : nullptr;
-					}
-				}
-			}
-		}
-
-		void extract (std::function<void(ivariable<T>*,ivariable<T>*)> collector) {
-			for (auto leef : leaf_map) {
-				collector(leef.first, leef.second);
-			}
-		}
+		// MOVE
+		
+		// override inherited from iexecutor
+		virtual void add (ivariable<T>* node);
+		// inherited from iexecutor
+		virtual void freeze (void);
+		virtual void execute (std::function<bool(ivariable<T>*,tensor<T>*)> cb);
 };
 
 }

@@ -13,25 +13,36 @@
 #include <stack>
 #include "graph/operation/ioperation.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
-// dangerous, sources might be deleted, and this wouldn't be notified (wise to make observer at some point...)
-// not observer yet because observer REQUIRES subject at construction
-// alternatively, check session registry before doing anything with srcs_
+template <typename A...>
+bool donothing (A...) { return true; }
+
+// inheriting from iobserver for the sole purpose of deletion once sources (dependencies) are deleted
+// could be dangerous if iexecutor is not meant to be destroyed... consider revise later.
 template <typename T>
-class iexecutor {
+class iexecutor : public ccoms::iobserver // we really don't need to inherit from iobserver at all...
+{
 	protected:
-		std::vector<ivariable<T>*> srcs_;
-
-		void copy (const iexecutor<T>& other) { srcs_ = other.srcs_; }
 		virtual iexecutor<T>* clone_impl (void) = 0;
 
 	public:
-		iexecutor<T>* clone (void) { return clone_impl(); }
-
-		void add (ivariable<T>* node) { srcs_.push_back(node); }
-
-		virtual void execute (void) = 0;
+		// COPY
+		iexecutor<T>* clone (void);
+		
+		// MOVE
+		
+		virtual void add (ivariable<T>* node);
+		
+		virtual void update (ccoms::subject* sub) {}
+		// stage 2: perform primary objective
+		template <typename A...>
+		virtual void execute (std::function<bool(A...)> cb = donothing) = 0;
+		
+		// take a snap shot of data before executing (useful for bulk assignment)
+		// equivalent to the operation of update (stage 1: perform preliminary actions)
+		virtual void freeze (void) = 0;
 };
 
 }

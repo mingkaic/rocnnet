@@ -19,10 +19,11 @@
 #include "graph/operation/general/elementary.hpp"
 #include "graph/bridge/gradient.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 template <typename T>
-using GRAD_MAP = std::map<ivariable<T>*, ivariable<T>*>;
+using GRAD_MAP = std::map<ivariable<T>*, tensor<T>*>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -33,38 +34,42 @@ using GRAD_MAP = std::map<ivariable<T>*, ivariable<T>*>;
 // gradient calculation and update
 
 template <typename T>
-class ioptimizer {
+class ioptimizer : public iexecutor<T>
+{
+	private:
+		gradient<T> grader_;
+		
 	protected:
 		std::unordered_set<ccoms::subject*> ignore_set_; // does not own ownership
 
+		// actual update step
+		virtual group<T>* apply_grad (GRAD_MAP<T>& gradients) = 0;
+
 	public:
+		ioptimizer (void)
+		ioptimizer (ivariable<T>* fanout) : grader_(fanout) {}
+		
 		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
 
+		virtual void freeze (void)
+		{
+			grader_.freeze();
+		}
+
 		// two step process in one
-		group<T>* minimize (ivariable<T>* fanout) {
-			GRAD_MAP<T> buffer = this->compute_grad(fanout);
-			return apply_grad(buffer);
+		virtual void execute (std::function<bool(GRAD_MAP)> manipulate)
+		{
+			GRAD_MAP<T> buffer;
+			// calculate the gradient
+			grader_.execute([&buffer](ivariable<T>* key, tensor<T>* value)
+			{
+				buffer[key] = value;
+				return true;
+			})
+			manipulate(buffer);
+			apply_grad(buffer);
 		}
-
-		// separate minimize into 2 steps:
-		// calculate the gradient
-		virtual GRAD_MAP<T> compute_grad (ivariable<T>* fanout) {
-			gradient<T>* grad = new gradient<T>(fanout);
-			grad->execute();
-			GRAD_MAP<T> res;
-
-			grad->extract([&res](ivariable<T>* key,ivariable<T>* value) {
-				res[key] = value;
-			});
-
-			return res;
-		}
-		// actual update step
-		virtual group<double>* apply_grad (GRAD_MAP<T>& gradients) = 0;
 };
-
-template <typename T>
-using OPTIMIZER = std::shared_ptr<ioptimizer<T> >;
 
 // Gradient Descent Update Algorithm
 
@@ -75,15 +80,15 @@ using OPTIMIZER = std::shared_ptr<ioptimizer<T> >;
 // var_t = var_(t-1) - delta(var)
 // where delta(var) = learning * J'[var_(t-1)]
 
-class gd_optimizer : public ioptimizer<double> {
+class gd_optimizer : public ioptimizer<double>
+{
 	private:
 		double learning_rate_;
 
 	public:
-		gd_optimizer (double learning_rate) : learning_rate_(learning_rate) {}
+		gd_optimizer (double learning_rate);
 
 		// inherits compute_grad from ioptimizer
-
 		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
@@ -107,15 +112,15 @@ class gd_optimizer : public ioptimizer<double> {
 // then local_gain[v] += 0.05
 // else local_gain[v] *= 0.95
 
-class ada_delta_optimizer : public gd_optimizer {
+class ada_delta_optimizer : public gd_optimizer
+{
 	private:
 		double rho_;
 		double epsilon_;
 
 	public:
-		ada_delta_optimizer (double learning_rate,
-							double rho = 0.95,
-							double epsilon = std::numeric_limits<double>::epsilon()) :
+		ada_delta_optimizer (double learning_rate, double rho = 0.95,
+			double epsilon = std::numeric_limits<double>::epsilon()) :
 			gd_optimizer(learning_rate), rho_(rho), epsilon_(epsilon) {}
 
 		// inherits compute_grad from ioptimizer
@@ -123,13 +128,13 @@ class ada_delta_optimizer : public gd_optimizer {
 		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 
-class ada_grad_optimizer : public gd_optimizer {
+class ada_grad_optimizer : public gd_optimizer
+{
 	private:
 		double init_accum_;
 
 	public:
-		ada_grad_optimizer (double learning_rate,
-							double init_accum = 0.1) :
+		ada_grad_optimizer (double learning_rate, double init_accum = 0.1) :
 			gd_optimizer(learning_rate), init_accum_(init_accum) {}
 
 		// inherits compute_grad from ioptimizer
@@ -145,7 +150,8 @@ class ada_grad_optimizer : public gd_optimizer {
 // there maybe momentum implementation to...
 // change to rms_delta
 
-class rms_prop_optimizer : public gd_optimizer {
+class rms_prop_optimizer : public gd_optimizer
+{
 	private:
 		// input variables
 		double discount_factor_;
@@ -153,17 +159,10 @@ class rms_prop_optimizer : public gd_optimizer {
 		double epsilon_; // for adaptive learning rates
 
 	public:
-		rms_prop_optimizer (double learning_rate,
-							double discount_factor = 0.9,
-							double momentum = 0.0,
-							double epsilon = std::numeric_limits<double>::epsilon()) :
-			gd_optimizer(learning_rate),
-			discount_factor_(discount_factor),
-			momentum_(momentum),
-			epsilon_(epsilon) {}
+		rms_prop_optimizer (double learning_rate, double discount_factor = 0.9,
+			double momentum = 0.0, double epsilon = std::numeric_limits<double>::epsilon());
 
 		// inherits compute_grad from ioptimizer
-
 		virtual group<double>* apply_grad (GRAD_MAP<double>& gradients);
 };
 

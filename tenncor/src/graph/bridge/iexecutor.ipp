@@ -8,7 +8,20 @@
 
 #ifdef executor_hpp
 
-namespace nnet {
+namespace nnet
+{
+
+template <typename T>
+iexecutor<T>* iexecutor<T>::clone (void)
+{
+    return clone_impl();
+}
+
+template <typename T>
+void iexecutor<T>::add (ivariable<T>* node)
+{
+    add_dependency(node);
+}
 
 }
 

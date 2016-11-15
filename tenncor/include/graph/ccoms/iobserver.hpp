@@ -1,5 +1,5 @@
 //
-//  ccoms.hpp
+//  iobserver.hpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-11-08
@@ -13,47 +13,35 @@
 #include <vector>
 #include "subject.hpp"
 
-namespace ccoms {
+namespace ccoms
+{
 
 // AKA root / intermediate node
 
-class iobserver : public ileaf_handler {
+class iobserver : public ileaf_handler
+{
 	private:
 		// remember that once leaf subjects are destroyed, 
-		// then everyone in this graph including this is destroyed
+		// everyone in this graph including this is destroyed
 		// so we don't need to bother with cleaning leaves_
 		std::unordered_set<subject*> leaves_;
 
 	protected:
+		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
-		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) {
-			src.insert(this->leaves_.begin(), this->leaves_.end());
-		}
+		void add_dependency (ccoms::subject* dep);
+		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src);
+		
+		// inherited classes may desire empty dependencies 
+		// with the option of adding dependencies later
+		iobserver (void) {}
 
 	public:
-		iobserver (std::vector<ccoms::subject*> dependencies) :
-			dependencies_(dependencies) {
-			for (ccoms::subject* dep : dependencies) {
-				dep->attach(this);
-			}
-			for (ccoms::subject* dep : dependencies) {
-				dep->merge_leaves(leaves_);
-			}
-		}
+		iobserver (std::vector<ccoms::subject*> dependencies);
+		virtual ~iobserver (void);
 		
-		virtual ~iobserver (void) {
-			for (ccoms::subject* dep : dependencies_) {
-				dep->detach(this);
-			}
-		}
-		
-		void leaves_collect (std::function<void(subject*)> collector) {
-			for (ccoms::subject* leaf : leaves_) {
-				collector(leaf);
-			}
-		}
-		
+		void leaves_collect (std::function<void(subject*)> collector);
 		virtual void update (ccoms::subject* caller) = 0;
 };
 

@@ -1,5 +1,5 @@
 //
-//  varptr.cpp
+//  varptr.hpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-11-13.
@@ -12,12 +12,14 @@
 
 #include "graph/variable/placeholder.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 // tensor variable pointer wrapper
 
 template <typename T>
-class varptr {
+class varptr
+{
 	private:
 		ivariable<T>* ptr_;
 
@@ -29,21 +31,29 @@ class varptr {
 		explicit operator ivariable<T>* (void) const { return ptr_; }
 		ivariable<T>& operator * (void) { return *ptr_; }
 		ivariable<T>* operator -> (void) { return ptr_; }
+		
+		ivariable<T>* get (void) const { return ptr_; }
 };
 
 template <typename T>
-class placeptr {
+class placeptr
+{
 	private:
 		placeholder<T>* ptr_;
 
 	public:
 		placeptr (placeholder<T>* ptr) : ptr_(ptr) {}
+		placeptr<T>& operator = (placeholder<T>* other) { ptr_ = other; }
+		placeptr<T>& operator = (const placeptr<T>& other) { ptr_ = other.ptr_; }
+		
 		placeholder<T>& operator = (std::vector<T> vec) { *ptr_ = vec; }
 		placeholder<T>& operator = (const tensor<T>& ten) { *ptr_ = ten; }
 
-		explicit operator ivariable<T>* (void) const { return ptr_; }
-		ivariable<T>& operator * (void) { return *ptr_; }
-		ivariable<T>* operator -> (void) { return ptr_; }
+		explicit operator placeholder<T>* (void) const { return ptr_; }
+		placeholder<T>& operator * (void) { return *ptr_; }
+		placeholder<T>* operator -> (void) { return ptr_; }
+		
+		placeholder<T>* get (void) const { return ptr_; }
 };
 
 template <typename T>
@@ -53,25 +63,33 @@ template <typename T>
 varptr<T> make_const (T scalar) { return new constant<T>(scalar); }
 
 template <typename T>
-varptr<T> make_var (const tensorshape& shape, std::string name = "") {
+varptr<T> make_var (const tensorshape& shape, std::string name = "")
+{
 	return new variable<T>(shape, name);
 }
 
 template <typename T>
-placeptr<T> make_place (const tensorshape& shape, std::string name = "") {
+placeptr<T> make_place (const tensorshape& shape, std::string name = "")
+{
 	return new placeholder<T>(shape, name);
 }
 
 template <typename T>
-varptr<T> make_var (const tensorshape& shape, initializer<T>& init, std::string name = "") {
+varptr<T> make_var (const tensorshape& shape, 
+	initializer<T>& init, std::string name = "")
+{
 	return new variable<T>(shape, init, name);
 }
 
 template <typename T>
-placeptr<T> make_place (const tensorshape& shape, initializer<T>& init, std::string name = "") {
+placeptr<T> make_place (const tensorshape& shape, 
+	initializer<T>& init, std::string name = "")
+{
 	return new placeholder<T>(shape, init, name);
 }
 
 }
+
+#include "../../../src/graph/bridge/varptr.ipp"
 
 #endif /* varptr_hpp */

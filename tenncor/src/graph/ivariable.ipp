@@ -8,47 +8,61 @@
 
 #ifdef ivariable_hpp
 
-namespace nnet {
-
-// INITIALIZERS
-
-template <typename T>
-void const_init<T>::operator () (tensor<T>& in) {
-	this->delegate_task(in, [this](T* raw, size_t len) {
-		std::fill(raw, raw+len, value_);
-	});
-}
-
-template <typename T>
-void random_uniform<T>::operator () (tensor<T>& in) {
-	this->delegate_task(in, [this](T* raw, size_t len) {
-		for (size_t i = 0; i < len; i++) {
-			raw[i] =  distribution_(session::get_generator());
-		}
-	});
-}
+namespace nnet
+{
 
 // VARIABLE INTERFACE
 
 template <typename T>
-ivariable<T>::~ivariable (void){
-	session& sess = session::get_instance();
-	sess.unregister_obj(*this);
-}
-
-template <typename T>
-void ivariable<T>::copy (const ivariable<T>& other, std::string name) {
+void ivariable<T>::copy (const ivariable<T>& other, std::string name)
+{
 	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
-	if (0 == name.size()) {
+	if (0 == name.size())
+	{
 		name_ = other.name_+"_cpy";
-	} else {
+	}
+	else
+	{
 		name_ = name;
 	}
 }
 
 template <typename T>
-ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other) {
-	if (this != &other) {
+ivariable<T>::ivariable (const ivariable<T>& other, std::string name)
+{
+	copy(other, name);
+}
+
+template <typename T>
+ivariable<T>::ivariable (const tensorshape& shape, std::string name) : 
+	name_(name)
+{
+	if (shape.is_fully_defined())
+	{
+		out_ = std::make_unique<tensor<T> >(shape);
+	}
+	session& sess = session::get_instance();
+	sess.register_obj(*this);
+}
+
+template <typename T>
+ivariable<T>::~ivariable (void)
+{
+	session& sess = session::get_instance();
+	sess.unregister_obj(*this);
+}
+
+template <typename T>
+ivariable<T>* clone (std::string name)
+{
+	return clone_impl(name);
+}
+
+template <typename T>
+ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other)
+{
+	if (this != &other)
+	{
 		copy(other);
 	}
 	return *this;

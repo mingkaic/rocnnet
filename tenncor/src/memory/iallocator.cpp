@@ -10,18 +10,16 @@
 
 #ifdef allocator_hpp
 
-namespace nnet {
+namespace nnet
+{
+	
+iallocator* iallocator::clone (void) {
+	return clone_impl();
+}
 
-void* iallocator::get_raw (size_t alignment,
-	size_t num_bytes) {
+void* iallocator::get_raw (size_t alignment, size_t num_bytes)
+{
 	return get_raw(alignment, num_bytes, alloc_attrib());
-}
-
-size_t iallocator::requested_size (void* ptr) {
-	throw std::bad_function_call();
-	return 0;
-}
-
 }
 
 #endif

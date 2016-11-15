@@ -16,16 +16,19 @@
 #include <unordered_map>
 #include <memory>
 
-namespace nnutils {
+namespace nnutils
+{
 
-class formatter {
+class formatter
+{
 	private:
 		std::stringstream stream_;
 
 		formatter(const formatter&);
 		formatter& operator = (formatter&);
 	public:
-		enum convert_to_string {
+		enum convert_to_string
+		{
 			to_str
 		};
 
@@ -33,20 +36,24 @@ class formatter {
 		~formatter() {}
 
 		template <typename T>
-		formatter& operator << (const T& value) {
+		formatter& operator << (const T& value)
+		{
 			stream_ << value;
 			return *this;
 		}
 
-		std::string str() const {
+		std::string str() const
+		{
 			return stream_.str();
 		}
 
-		operator std::string () const {
+		operator std::string () const
+		{
 			return stream_.str();
 		}
 
-		std::string operator >> (convert_to_string) {
+		std::string operator >> (convert_to_string)
+		{
 			return stream_.str();
 		}
 };

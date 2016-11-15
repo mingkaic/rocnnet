@@ -18,10 +18,12 @@
 
 #include "ileaf.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 template <typename T>
-class placeholder : public ileaf<T> {
+class placeholder : public ileaf<T>
+{
 	protected:
 		virtual ivariable<T>* clone_impl (std::string name);
 
@@ -32,9 +34,7 @@ class placeholder : public ileaf<T> {
 		placeholder (const tensorshape& shape, initializer<T>& init, std::string name = "");
 			
 		// COPY
-		placeholder<T>* clone (std::string name = "") {
-			return static_cast<placeholder<T>*>(clone_impl(name));
-		}
+		placeholder<T>* clone (std::string name = "");
 
 		// DATA ASSIGNMENT
 		// assign raw data according to 1 dimension representation of inner tensor

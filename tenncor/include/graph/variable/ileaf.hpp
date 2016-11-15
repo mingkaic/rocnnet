@@ -12,63 +12,44 @@
 
 #include "graph/ivariable.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 // INITIALIZER MANAGING INTERFACE
 // Leaf Nodes
 
 template <typename T>
-class ileaf : public ivariable<T> {
+class ileaf : public ivariable<T>
+{
 	protected:
+		// used by assignment operators to dynamically initialize tensors
+		struct dyn_init;
+		
+		// we own our initializer
 		initializer<T>* init_ = nullptr;
 		bool is_init_ = false;
 
-		void copy (const ileaf<T>& other, std::string name = "") {
-			if (nullptr != init_) {
-				delete init_;
-			}
-			init_ = other.init_->clone();
-			is_init_ = other.is_init_;
-			ivariable<T>::copy(other, name);
-		}
-
-		ileaf (const ileaf<T>& other, std::string name) :
-			ivariable<T>(other, name),
-			init_(other.init_->clone()),
-			is_init_(other.is_init_) {}
-
+		void copy (const ileaf<T>& other, std::string name = "");
+		ileaf (const ileaf<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
-		// used by assignment operators to dynamically initialize tensors
-		struct dyn_init;
-
 	public:
-		ileaf (const tensorshape& shape, initializer<T>* init, std::string name) :
-			ivariable<T>(shape, name), init_(init) {}
-
-		virtual ~ileaf (void) {
-			if (nullptr != init_) {
-				delete init_;
-			}
-		}
+		ileaf (const tensorshape& shape, initializer<T>* init, std::string name);
+		virtual ~ileaf (void);
 		
 		// COPY
 		// call abstract cloner
-		ileaf<T>* clone (std::string name = "") {
-			return static_cast<ileaf<T>*>(clone_impl(name));
-		}
+		ileaf<T>* clone (std::string name = "");
 		virtual ileaf<T>& operator = (const ileaf<T>& other);
 
 		// MOVES
 		// todo: implement move clone
 
 		// GET INFO
-		bool can_init (void) const { return init_ != nullptr; }
+		bool can_init (void) const;
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual ivariable<T>* get_gradient (void) {
-			return this;
-		}
+		virtual ivariable<T>* get_gradient (void);
 };
 
 }

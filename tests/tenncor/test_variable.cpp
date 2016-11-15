@@ -84,7 +84,7 @@ TEST(VARIABLE, const_init) {
 	const double constant = (double) rand();
 	nnet::const_init<double> init(constant);
 
-	nnet::ivariable<double>* cvar = new nnet::variable<double>(std::vector<size_t>{3, 3}, init, "constant_arr");
+	nnet::varptr<double> cvar = new nnet::variable<double>(std::vector<size_t>{3, 3}, init, "constant_arr");
 
 	sess.initialize_all<double>();
 	expose<double>* ex = new nnet::expose<double>(cvar);
@@ -106,7 +106,7 @@ TEST(VARIABLE, get_index) {
 	size_t ncols = 4;
 	size_t ndeps = 5; // depth
 
-	nnet::ivariable<double>* cvar =
+	nnet::varptr<double> cvar =
 		new nnet::variable<double>(std::vector<size_t>{nrows, ncols, ndeps}, init, "constant_arr");
 
 	sess.initialize_all<double>();
@@ -129,7 +129,7 @@ TEST(VARIABLE, random_init) {
 	nnet::session& sess = nnet::session::get_instance();
 	nnet::random_uniform<double> init(0.0, 1.0);
 
-	nnet::ivariable<double>* rvar = new nnet::variable<double>(std::vector<size_t>{5, 5}, init, "random_arr");
+	nnet::varptr<double> rvar = new nnet::variable<double>(std::vector<size_t>{5, 5}, init, "random_arr");
 
 	sess.initialize_all<double>();
 	nnet::expose<double>* ex = new nnet::expose<double>(rvar);
@@ -149,7 +149,7 @@ TEST(VARIABLE, random_init) {
 
 TEST(VARIABLE, placeholder) {
 	const size_t insize = 20;
-	nnet::placeholder<double>* invar = new nnet::placeholder<double>((std::vector<size_t>{1, insize}), "in");
+	nnet::placeptr<double> invar = new nnet::placeholder<double>((std::vector<size_t>{1, insize}), "in");
 	std::vector<double> sample;
 	for (size_t i = 0; i < insize; i++) {
 		sample.push_back(rand());

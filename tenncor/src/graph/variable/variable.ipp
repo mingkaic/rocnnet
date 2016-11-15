@@ -8,7 +8,8 @@
 
 #ifdef variable_hpp
 
-namespace nnet {
+namespace nnet
+{
 
 // VARIABLE IMPLEMENTATION
 
@@ -17,15 +18,17 @@ variable<T>::variable (const variable<T>& other, std::string name) :
 	ileaf<T>(other, name) {}
 
 template <typename T>
-ivariable<T>* variable<T>::clone_impl (std::string name) {
+ivariable<T>* variable<T>::clone_impl (std::string name)
+{
 	return new variable(*this, name);
 }
 
 template <typename T>
 variable<T>::variable (T scalar) :
-		ileaf<T>(std::vector<size_t>{1},
-		new const_init<T>(scalar), 
-		nnutils::formatter() << scalar) {
+	ileaf<T>(std::vector<size_t>{1},
+	new const_init<T>(scalar), 
+	nnutils::formatter() << scalar)
+{
 	initialize();
 }
 
@@ -38,9 +41,17 @@ variable<T>::variable (const tensorshape& shape, initializer<T>& init, std::stri
 	ileaf<T>(shape, init.clone(), name) {}
 
 template <typename T>
-tensor<T>& variable<T>::initialize (void) {
+variable<T>* variable<T>::clone (std::string name = "")
+{
+	return static_cast<variable<T>*>(clone_impl(name));
+}
+
+template <typename T>
+tensor<T>& variable<T>::initialize (void)
+{
 	assert(this->init_ != nullptr);
-	if (false == this->out_->is_alloc()) { // if not alloc, allocate
+	if (false == this->out_->is_alloc())
+	{ // if not alloc, allocate
 		this->out_->allocate(new ram_alloc());
 	}
 	(*this->init_)(*(this->out_));
@@ -49,9 +60,11 @@ tensor<T>& variable<T>::initialize (void) {
 }
 
 template <typename T>
-tensor<T>& variable<T>::initialize (tensorshape alloc_shape) {
+tensor<T>& variable<T>::initialize (tensorshape alloc_shape)
+{
 	assert(this->init_ != nullptr);
-	if (false == this->out_->is_alloc()) { // if not alloc, allocate
+	if (false == this->out_->is_alloc())
+	{ // if not alloc, allocate
 		this->out_->allocate(new ram_alloc(), alloc_shape);
 	}
 	(*this->init_)(*(this->out_));

@@ -12,20 +12,19 @@
 
 #include "iexecutor.hpp"
 
-namespace nnet {
+namespace nnet
+{
 
 // asynchronously evaluate stored evokers
 template <typename T>
-class async_group {
+class async_group
+{
 	private:
 		std::unordered_set<iexecutor<T>*> acts_;
 
 	public:
-		void add (iexecutor<T>* exe) {
-			acts_.emplace(exe);
-		}
-
-		virtual void execute (void) {} // not implemented
+		void add (iexecutor<T>* exe);
+		virtual void execute (void); // not yet implemented
 };
 
 // sequentially evaluates stored evokers
@@ -35,15 +34,8 @@ class group {
 		std::vector<iexecutor<T>*> acts_;
 
 	public:
-		void add (iexecutor<T>* exe) {
-			acts_.push_back(exe);
-		}
-
-		virtual void execute (void) {
-			for (iexecutor<T>* exe : acts_) {
-				exe->execute();
-			}
-		}
+		void add (iexecutor<T>* exe);
+		virtual void execute (void);
 };
 
 }
