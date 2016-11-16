@@ -16,34 +16,33 @@ gd_optimizer::gd_optimizer (double learning_rate) :
 	learning_rate_(learning_rate) {}
 
 // updates position on error manifold
-void gd_optimizer::execute (void)
+group<T>* gd_optimizer::apply_grad (void) const
 {
-	GRAD_MAP<double> local_grad;
 	group<double>* g_ptr = new group<double>();
 
-	for (auto& g : gradients)
+	for (auto& top_pair : grad_top_)
 	{
 		if (variable<double>* old_var = 
-			dynamic_cast<variable<double>*>(g.first))
+			dynamic_cast<variable<double>*>(top_pair.first))
 		{
 			ivariable<double> *delta = g.second;
-			g_ptr->add(new assign_sub<double>(old_var, delta));
+			// pass assign_sub ownership to g_ptr group
+			g_ptr->add(new assign_sub<double>(old_var, delta), true);
 		}
 	}
-
 	return g_ptr;
 }
 
 // MOMENTUM BASED OPTIMIZATION
 // updates velocity of positional update on error manifold
 
-void ada_delta_optimizer::execute (void)
+group<T>* ada_delta_optimizer::apply_grad (void) const
 {
 	
 	return nullptr;
 }
 
-void ada_grad_optimizer::execute (void)
+group<T>* ada_grad_optimizer::apply_grad (void) const
 {
 	
 	return nullptr;
@@ -58,29 +57,26 @@ rms_prop_optimizer::rms_prop_optimizer (
 	momentum_(momentum),
 	epsilon_(epsilon) {}
 
-void rms_prop_optimizer::execute (void)
+group<T>* rms_prop_optimizer::apply_grad (void) const
 {
 	// declare order update here
 	// TODO: rms prop WIP
-	GRAD_MAP<double> intermediates;
+	// GRAD_MAP<double> intermediates;
 
-	for (auto it = gradients.begin(); gradients.end() != it; it++)
-	{
-		nnet::varptr<double> old_var = (*it).first;
-		nnet::varptr<double> rms_delta = (*it).second;
+	// for (auto it = gradients.begin(); gradients.end() != it; it++)
+	// {
+	// 	nnet::varptr<double> old_var = (*it).first;
+	// 	nnet::varptr<double> rms_delta = (*it).second;
 
-		// do something to rms_delta... before plugging into intermedates/assignment
+	// 	// do something to rms_delta... before plugging into intermedates/assignment
 
-		intermediates[old_var] = rms_delta;
+	// 	intermediates[old_var] = rms_delta;
 
-		// add additional buffering...
-	}
+	// 	// add additional buffering...
+	// }
 
-	group<double>* wb_update = gd_optimizer::apply_grad(intermediates);
-
-	// wrap evok then wb_update
-
-	return nullptr;
+	// group<double>* wb_update = gd_optimizer::apply_grad(intermediates);
+	// return nullptr;
 }
 
 }

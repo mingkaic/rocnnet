@@ -16,7 +16,6 @@
 #include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
 #include "tensor/tensor_jacobi.hpp"
-#include "graph/executor/varptr.hpp"
 
 #pragma once
 #ifndef operation_hpp
@@ -33,7 +32,7 @@ class gradient;
 
 // INTERFACE OPERATION
 
-// inheritance join at ileaf_handler
+// inheritance join at reactive_node
 template <typename T>
 class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver
 {

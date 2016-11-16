@@ -25,6 +25,10 @@ template <typename T>
 class constant : public ileaf<T>
 {
 	protected:
+		// overriding subject: marks for self_destruction 
+		// once subject detaches last observer
+		virtual bool suicidal (void) { return true; }
+		
 		constant (const constant<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 
@@ -34,10 +38,6 @@ class constant : public ileaf<T>
 
 		// COPY
 		constant<T>* clone (std::string name = "");
-
-		// CONSTANT IS NOT A FIRST WORLD CITIZEN :(
-		// override subject's detach method to suicide when lacking dependents
-		virtual void detach (ccoms::iobserver* viewer);
 };
 
 }

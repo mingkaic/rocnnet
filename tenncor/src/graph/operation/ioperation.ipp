@@ -19,7 +19,7 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 	// if grad is not being observed, then and only then delete
 	if (nullptr != grad_ && grad_->no_audience())
 	{
-		delete grad_;
+		grad_->safe_destroy();
 	}
 	// shallow copy
 	grad_ = other.grad_;

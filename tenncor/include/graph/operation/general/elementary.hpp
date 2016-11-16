@@ -31,11 +31,20 @@ class elementary : public ioperation<T> {
 		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
+		// expose elementary to op_factory only. TODO: move to protected once factory works
 		elementary (std::vector<ivariable<T>*> args,
 			std::function<void(T&, T)> op,
 			BUILD_DERIVE<T> der,
 			std::string name = "");
-
+			
+		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+			std::function<void(T&, T)> op,
+			BUILD_DERIVE<T> der,
+			std::string name = "")
+		{
+			return new elementary(args, op, der, name);
+		}
+	
 		// COPY
 		elementary<T>* clone (std::string name = "");
 		virtual elementary<T>& operator = (const elementary<T>& other);

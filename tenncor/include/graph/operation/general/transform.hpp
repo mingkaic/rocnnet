@@ -43,7 +43,7 @@ class transform : public ioperation<T>
 		virtual tensorshape shape_eval (void);
 
 		transform (const transform<T>& other, std::string name);
-
+		
 	public:
 		transform (ivariable<T>* arg,
 			std::function<void(T*&,const T*,tensorshape)> op,

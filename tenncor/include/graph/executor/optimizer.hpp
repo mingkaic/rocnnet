@@ -22,7 +22,7 @@ namespace nnet
 {
 
 template <typename T>
-using MANIPULATE_LEAF = std::function<bool(ivariable<T>*,ivariable<T>*)>;
+using MANIPULATE_LEAF = std::function<bool(ivariable<T>*,ivariable<T>*&)>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -32,33 +32,102 @@ using MANIPULATE_LEAF = std::function<bool(ivariable<T>*,ivariable<T>*)>;
 // often, mini-batch normalization occurs between 
 // gradient calculation and update
 
+// typical ioptimizer use-case is: 
+//		- set_manipulate at build-time
+//		- execute at evaluation time
+
+// alternatively, the user can manually:
+//		- set_root, freeze without manipulating at build-time
+//		- execute at evaluation
+
 template <typename T>
-class ioptimizer : public gradient<T>
+class ioptimizer : public iexecutor<T>
 {
-	protected:
+	private:
+		group<T>* updater_ = nullptr;
+		gradient<T>* grader_ = nullptr;
 		std::unordered_set<ccoms::subject*> ignore_set_; // does not own ownership
-		GRAD_MAP<T> grad_top_;
+	
+	protected:
+		std::unordered_map<ivariable<T>*, ivariable<T>*> grad_top_;
+		
+		// build updater_ from on grad_top_ map
+		virtual group<T>* apply_grad (void) const = 0;
 
 	public:
-		ioptimizer (ivariable<T>* fanout) :
-			grad_top_(leaf_map_) {}
-
-		// occurs at run time
-		// execute remains abstract
-
-		// non inherited
-		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
-		void unignore (ivariable<T>* ig_var) { ignore_set_.erase(ig_var); }
-		// calls freeze
-		void set_manipulate (MANIPULATE_LEAF<T> manipulate)
+		ioptimizer (void) {}
+		ioptimizer (ivariable<T>* fanout)
 		{
-			this->freeze();
-			grad_top_ = leaf_map_;
-			for (auto leaf_pair : grad_top_)
+			grader_ = new gradient<T>(fanout);
+		}
+		virtual ~ioptimizer (void)
+		{
+			if (grader_)
 			{
-				manipulate(leaf_pair.first, leaf_pair.second);
+				delete grader;
 			}
 		}
+
+		// build time setup-methods
+		bool set_root (ivariable<T>* root)
+		{
+			if (root)
+			{
+				if (grader_) delete grader_; // delete existing gradient
+				grader_ = new gradient<T>(root);
+				return true;
+			}
+			return false;
+		}
+
+		virtual void freeze (void)
+		{
+			if (nullptr != grader_)
+			{
+				grader_->freeze();
+			}
+		}
+		
+		// preferred setup method.
+		// calls set_up and freeze
+		void set_manipulate (ivariable<T>* root, MANIPULATE_LEAF<T> manipulate)
+		{
+			if (set_root (root))
+			{
+				this->freeze();
+				ivariable<T>* top_value;
+				for (auto leaf_pair : leaf_map_)
+				{
+					if (ignore_set_.end() == ignore_set_.find(key))
+					{ // key not in ignore set
+						top_value = leaf_pair.second;
+						// top_value is passed as a reference
+						// it can change when manipulating
+						manipulate(leaf_pair.first, top_value);
+						// only record the final value
+						grad_top_[leaf_pair.first] = top_value;
+					}
+				}
+				if (updater_) delete updater_;
+				updater_ = apply_grad();
+			}
+		}
+
+		// occurs at run time
+		virtual void execute (void)
+		{
+			if (nullptr != grader_)
+			{
+				// update the placeholder fron grader
+				grader_->execute();
+				// manipulate the grad_top_
+				updater->execute();
+			}
+		}
+
+		// ignore/unignore which leaves to use
+		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
+		void unignore (ivariable<T>* ig_var) { ignore_set_.erase(ig_var); }
 };
 
 // Gradient Descent Update Algorithm
@@ -75,11 +144,11 @@ class gd_optimizer : public ioptimizer<double>
 	private:
 		double learning_rate_;
 
+	protected:
+		virtual group<T>* apply_grad (void) const;
+		
 	public:
 		gd_optimizer (double learning_rate);
-
-		// inherits compute_grad from ioptimizer
-		virtual void execute (void);
 };
 
 // MOMENTUM BASED OPTIMIZATION
@@ -107,29 +176,27 @@ class ada_delta_optimizer : public gd_optimizer
 	private:
 		double rho_;
 		double epsilon_;
+	
+	protected:
+		virtual group<T>* apply_grad (void) const;
 
 	public:
 		ada_delta_optimizer (double learning_rate, double rho = 0.95,
 			double epsilon = std::numeric_limits<double>::epsilon()) :
 			gd_optimizer(learning_rate), rho_(rho), epsilon_(epsilon) {}
-
-		// inherits compute_grad from ioptimizer
-
-		virtual void execute (void);
 };
 
 class ada_grad_optimizer : public gd_optimizer
 {
 	private:
 		double init_accum_;
+	
+	protected:
+		virtual group<T>* apply_grad (void) const;
 
 	public:
 		ada_grad_optimizer (double learning_rate, double init_accum = 0.1) :
 			gd_optimizer(learning_rate), init_accum_(init_accum) {}
-
-		// inherits compute_grad from ioptimizer
-
-		virtual void execute (void);
 };
 
 // Root Mean Square Propagation Algorithm
@@ -147,13 +214,13 @@ class rms_prop_optimizer : public gd_optimizer
 		double discount_factor_;
 		double momentum_;
 		double epsilon_; // for adaptive learning rates
+	
+	protected:
+		virtual group<T>* apply_grad (void) const;
 
 	public:
 		rms_prop_optimizer (double learning_rate, double discount_factor = 0.9,
 			double momentum = 0.0, double epsilon = std::numeric_limits<double>::epsilon());
-
-		// inherits compute_grad from ioptimizer
-		virtual void execute (void);
 };
 
 }

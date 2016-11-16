@@ -31,10 +31,14 @@ class async_group
 template <typename T>
 class group {
 	private:
-		std::vector<iexecutor<T>*> acts_;
+		std::vector<std::pair<iexecutor<T>*,bool> > acts_;
 
 	public:
-		void add (iexecutor<T>* exe);
+		virtual ~group (void);
+	
+		// owns determines whether ownership of exe is passed into group
+		// having ownership means group is allowed to destroy exe on destruction
+		void add (iexecutor<T>* exe, bool owns = false);
 		virtual void execute (void);
 };
 

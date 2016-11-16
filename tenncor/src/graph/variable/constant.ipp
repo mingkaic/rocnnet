@@ -51,15 +51,6 @@ constant<T>* constant<T>::clone (std::string name)
 	return static_cast<constant<T>*>(clone_impl(name));
 }
 
-template <typename T>
-void constant<T>::detach (ccoms::iobserver* viewer) {
-	ccoms::subject::detach(viewer);
-	if (this->no_audience()) {
-		// no audience, no point to live x_x
-		delete this;
-	}
-}
-
 }
 
 #endif

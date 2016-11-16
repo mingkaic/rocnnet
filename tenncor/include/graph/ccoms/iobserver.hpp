@@ -18,7 +18,7 @@ namespace ccoms
 
 // AKA root / intermediate node
 
-class iobserver : public ileaf_handler
+class iobserver : public reactive_node
 {
 	private:
 		// remember that once leaf subjects are destroyed, 
@@ -36,6 +36,8 @@ class iobserver : public ileaf_handler
 		// inherited classes may desire empty dependencies 
 		// with the option of adding dependencies later
 		iobserver (void) {}
+		
+		virtual bool suicidal (void) { return true; }
 
 	public:
 		iobserver (std::vector<ccoms::subject*> dependencies);

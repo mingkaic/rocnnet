@@ -163,21 +163,23 @@ template <typename T>
 varptr<T> operator + (varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
-		[](T& collector, T other) { collector = +other; },
+	return elementary<T>::build(std::vector<ivariable<T>*>{a},
+		[](T& collector, T other) 
+		{
+		    collector = +other;
+	    },
 		[](std::vector<ivariable<T>*> args) {
 			varptr<T> grad = args.front()->get_gradient(); // wrap
 			return +grad;
 		},
 	"abs(" + a->get_name() + ")");
-	return op;
 }
 
 template <typename T>
 varptr<T> operator - (varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	return elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other) 
 		{
 			collector = -other;
@@ -188,7 +190,6 @@ varptr<T> operator - (varptr<T> a)
 			return -grad;
 		},
 	"neg(" + a->get_name() + ")");
-	return op;
 }
 
 template <typename T>

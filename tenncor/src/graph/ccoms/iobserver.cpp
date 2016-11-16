@@ -40,6 +40,12 @@ iobserver::~iobserver (void)
 		dep->detach(this);
 	}
 }
+
+bool iobserver::safe_destroy (void) 
+{
+	// deletion logic...
+	return true;
+}
 		
 void iobserver::leaves_collect (std::function<void(subject*)> collector)
 {

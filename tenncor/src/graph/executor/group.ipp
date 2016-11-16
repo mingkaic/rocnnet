@@ -21,9 +21,21 @@ template <typename T>
 void async_group<T>::execute (void) {} // not implemented
 
 template <typename T>
-void group<T>::add (iexecutor<T>* exe)
+group<T>::~group (void)
 {
-	acts_.push_back(exe);
+	for (auto exe_pair : acts_)
+	{
+		if (exe_pair.second)
+		{
+			delete exe_pair.first();
+		}
+	}
+}
+
+template <typename T>
+void group<T>::add (iexecutor<T>* exe, bool owns)
+{
+	acts_.push_back(std::pair<iexecutor<T>*,bool>(exe, owns));
 }
 
 template <typename T>

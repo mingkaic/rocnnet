@@ -17,7 +17,7 @@ namespace nnet
 {
 	
 template <typename T>
-using GRAD_GATHER = std::function<bool(ivariable<T>*,placeholder<T>*)>;
+using GRAD_GATHER = std::function<void(ivariable<T>*,placeholder<T>*)>;
 template <typename T>
 using GRAD_MAP = std::unordered_map<ivariable<T>*, placeholder<T>*>;
 

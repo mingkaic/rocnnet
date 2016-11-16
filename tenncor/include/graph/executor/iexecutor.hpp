@@ -19,7 +19,7 @@ namespace nnet
 // inheriting from iobserver for the sole purpose of deletion once sources (dependencies) are deleted
 // could be dangerous if iexecutor is not meant to be destroyed... consider revise later.
 template <typename T>
-class iexecutor : public ccoms::iobserver // we really don't need to inherit from iobserver at all...
+class iexecutor : public ccoms::iobserver // TODO: we really don't need to inherit from iobserver at all...
 {
 	protected:
 		virtual iexecutor<T>* clone_impl (void) = 0;
