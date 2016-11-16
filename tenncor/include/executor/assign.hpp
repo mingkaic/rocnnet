@@ -75,6 +75,6 @@ class assign_sub : public assign<T>
 
 }
 
-#include "../../../src/graph/executor/assign.ipp"
+#include "../../src/executor/assign.ipp"
 
 #endif /* assign_hpp */

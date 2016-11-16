@@ -44,6 +44,6 @@ class group {
 
 }
 
-#include "../../../src/graph/executor/group.ipp"
+#include "../../src/executor/group.ipp"
 
 #endif /* group_hpp */

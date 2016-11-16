@@ -76,7 +76,7 @@ void assign<T>::execute (void)
 	assert(false == local_cpy_.empty());
 	tensor<T>* out = dest_->get_eval();
 	T* old_data = out->get_raw();
-	size_t total = local_cpy_;
+	size_t total = local_cpy_.size();
 	for (size_t i = 0; i < total; i++)
 	{
 		transfer_(old_data[i], local_cpy_[i]);

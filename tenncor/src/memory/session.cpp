@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../../include/memory/session.hpp"
+#include "memory/session.hpp"
 
 #ifdef session_hpp
 

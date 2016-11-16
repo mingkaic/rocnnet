@@ -17,7 +17,7 @@
 #include <list>
 #include <stack>
 
-#include "graph/executor/varptr.hpp"
+#include "executor/varptr.hpp"
 #include "graph/variable/variable.hpp"
 #include "graph/operation/special/matmul.hpp"
 #include "graph/operation/general/elementary.hpp"

@@ -30,8 +30,7 @@ void gradient<T>::copy (const gradient<T>& other)
 }
 
 template <typename T>
-gradient<T>::gradient (const gradient<T>& other) :
-	one_(1)
+gradient<T>::gradient (const gradient<T>& other)
 {
 	copy(other);
 }
@@ -44,13 +43,13 @@ iexecutor<T>* gradient<T>::clone_impl (void)
 
 template <typename T>
 gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
-	g_root_(root->get_gradient()), one_(1)
+	g_root_(root->get_gradient())
 {
 	// set up gradient tree from root's lowest leaf
 	if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(root))
 	{
 		// collect potential sources
-		op->leaves_collect([&potential_srcs_](ccoms::subject* src)
+		op->leaves_collect([this](ccoms::subject* src)
 		{
 			potential_srcs_.push_back(src);
 		});
@@ -66,7 +65,7 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 			jacobs.pop();
 			// grab tensor_jacobi
 			tensor_jacobi<T>* ten_jac = 
-				static_cast<tensor_jacobi<T>*>(jac->get_eval()));
+				static_cast<tensor_jacobi<T>*>(jac->get_eval());
 			// connect lowest jacobians to higher jacobians
 			ten_jac->set_root(top);
 			top = jac;
@@ -104,7 +103,7 @@ gradient<T>& gradient<T>::operator = (const gradient<T>& other)
 }
 
 template <typename T>
-void freeze (void)
+void gradient<T>::freeze (void)
 {
 	// populate leaf_map_
 	std::vector<ccoms::subject*> leaves = this->dependencies_;
@@ -127,28 +126,31 @@ template <typename T>
 void gradient<T>::execute (void)
 {
 	// notify leaves and extract gradient to leaf_map
-	auto it = leaves.begin();
-	for (ccoms::subject* leaf : leaves)
+	auto it = leaf_map_.begin();
+	ivariable<T>* it_grad = it->first->get_gradient();
+	for (auto leaf_pair : leaf_map_)
 	{
-		leaf->notify(*it); // special notify to nullify all leaf nodes except *it
+		ivariable<T>* leaf_grad = leaf_pair.first->get_gradient();
+		leaf_grad->notify(it_grad); // special notify to nullify all leaf nodes except *it
 	}
-	// preferably to some variable node
-	*(leaf_map_[*it]) = *(op->get_eval());
+	// assign g_root's tensor to leaf_map's placeholder
+	*(leaf_map_[it_grad]) = *(g_root_->get_eval());
 	// now that every leaf except *it is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current
-	ccoms::subject* previous = *it;
-	for (it++; leaves.end() != it; it++)
+	ivariable<T>* previous = it_grad;
+	for (it++; leaf_map_.end() != it; it++)
 	{
-		previous->notify(*it);
-		current->notify(*it);
-		*(leaf_map_[*it]) = *(op->get_eval());
-		previous = *it;
+		it_grad = it->first->get_gradient();
+		previous->notify(it_grad);
+		it_grad->notify(it_grad);
+		*(leaf_map_[it_grad]) = *(g_root_->get_eval());
+		previous = it_grad;
 	}
 }
 
 template <typename T>
-void collect_grad (GRAD_GATHER<T> collector)
+void gradient<T>::collect_grad (GRAD_GATHER<T> collector)
 {
 	for (auto leaf_pair : leaf_map_)
 	{

@@ -91,14 +91,14 @@ const tensor_jacobi<T>& tensor_jacobi<T>::operator () (
 	ivariable<T>* a = nullptr;
 	if (ag)
 	{
-		a = new matmul<T>(k_, argb, transposeA_, !transposeB_);
+		a = matmul<T>::build(k_, argb, transposeA_, !transposeB_);
 		owner_.push_back(std::shared_ptr<ivariable<T> >(a));
 		a = a * arga->get_gradient();
 	}
 	ivariable<T>* b = nullptr;
 	if (bg)
 	{
-		b = new matmul<T>(arga, k_, !transposeA_, transposeB_);
+		b = matmul<T>::build(arga, k_, !transposeA_, transposeB_);
 		owner_.push_back(std::shared_ptr<ivariable<T> >(b));
 		b = b * argb->get_gradient();
 	}

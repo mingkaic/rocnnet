@@ -6,7 +6,6 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/ccoms/subject.hpp"
 #include "graph/ccoms/iobserver.hpp"
 
 #ifdef subject_hpp
@@ -16,16 +15,16 @@ namespace ccoms
 
 bool reactive_node::safe_destroy (void)
 {
-	if (suicidal)
+	if (suicidal())
 	{
-		// deletion logic
-		delete this; // TODO: implement factory to ensure this is always on heap
+		// deletion logic, change here if we allow stack allocation in the future
+		delete this;
 		return true;
 	}
 	return false;
 }
 	
-void subject::merge_leaves (std::unordered_set<ccoms::subject*>& src)
+void subject::merge_leaves (std::unordered_set<subject*>& src)
 {
 	src.emplace(this);
 }

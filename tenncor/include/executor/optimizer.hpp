@@ -8,11 +8,11 @@
 
 #include <vector>
 #include <map>
-#include "graph/executor/assign.hpp"
+#include "assign.hpp"
 #include "graph/variable/variable.hpp"
-#include "graph/executor/group.hpp"
+#include "group.hpp"
 #include "graph/operation/general/elementary.hpp"
-#include "graph/executor/gradient.hpp"
+#include "gradient.hpp"
 
 #pragma once
 #ifndef optimizer_hpp
@@ -64,7 +64,7 @@ class ioptimizer : public iexecutor<T>
 		{
 			if (grader_)
 			{
-				delete grader;
+				delete grader_;
 			}
 		}
 
@@ -95,21 +95,20 @@ class ioptimizer : public iexecutor<T>
 			if (set_root (root))
 			{
 				this->freeze();
-				ivariable<T>* top_value;
-				for (auto leaf_pair : leaf_map_)
+				grader_->collect_grad([this, &manipulate](ivariable<T>* key, placeholder<T>* value)
 				{
 					if (ignore_set_.end() == ignore_set_.find(key))
 					{ // key not in ignore set
-						top_value = leaf_pair.second;
+						ivariable<T>* top_value = value;
 						// top_value is passed as a reference
 						// it can change when manipulating
-						manipulate(leaf_pair.first, top_value);
+						manipulate(key, top_value);
 						// only record the final value
-						grad_top_[leaf_pair.first] = top_value;
+						grad_top_[key] = top_value;
 					}
-				}
+				});
 				if (updater_) delete updater_;
-				updater_ = apply_grad();
+				updater_ = apply_grad(); // generate and buffer updater
 			}
 		}
 
@@ -118,10 +117,10 @@ class ioptimizer : public iexecutor<T>
 		{
 			if (nullptr != grader_)
 			{
-				// update the placeholder fron grader
+				// update the gradient values from grader
 				grader_->execute();
-				// manipulate the grad_top_
-				updater->execute();
+				// perform actual assignment from gradient
+				updater_->execute();
 			}
 		}
 
@@ -145,7 +144,7 @@ class gd_optimizer : public ioptimizer<double>
 		double learning_rate_;
 
 	protected:
-		virtual group<T>* apply_grad (void) const;
+		virtual group<double>* apply_grad (void) const;
 		
 	public:
 		gd_optimizer (double learning_rate);
@@ -178,7 +177,7 @@ class ada_delta_optimizer : public gd_optimizer
 		double epsilon_;
 	
 	protected:
-		virtual group<T>* apply_grad (void) const;
+		virtual group<double>* apply_grad (void) const;
 
 	public:
 		ada_delta_optimizer (double learning_rate, double rho = 0.95,
@@ -192,7 +191,7 @@ class ada_grad_optimizer : public gd_optimizer
 		double init_accum_;
 	
 	protected:
-		virtual group<T>* apply_grad (void) const;
+		virtual group<double>* apply_grad (void) const;
 
 	public:
 		ada_grad_optimizer (double learning_rate, double init_accum = 0.1) :
@@ -216,7 +215,7 @@ class rms_prop_optimizer : public gd_optimizer
 		double epsilon_; // for adaptive learning rates
 	
 	protected:
-		virtual group<T>* apply_grad (void) const;
+		virtual group<double>* apply_grad (void) const;
 
 	public:
 		rms_prop_optimizer (double learning_rate, double discount_factor = 0.9,

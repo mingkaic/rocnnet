@@ -8,6 +8,7 @@
 
 #include "graph/operation/ioperation.hpp"
 #include "graph/variable/constant.hpp"
+#include "executor/varptr.hpp"
 
 #pragma once
 #ifndef elementary_hpp
@@ -30,19 +31,19 @@ class elementary : public ioperation<T> {
 			
 		virtual ivariable<T>* clone_impl (std::string name);
 
-	public:
-		// expose elementary to op_factory only. TODO: move to protected once factory works
+		// protect elementary constructor to ensure heap allocation
 		elementary (std::vector<ivariable<T>*> args,
 			std::function<void(T&, T)> op,
 			BUILD_DERIVE<T> der,
-			std::string name = "");
-			
+			std::string name);
+
+	public:
 		static ivariable<T>* build (std::vector<ivariable<T>*> args,
 			std::function<void(T&, T)> op,
 			BUILD_DERIVE<T> der,
 			std::string name = "")
 		{
-			return new elementary(args, op, der, name);
+			return new elementary<T>(args, op, der, name);
 		}
 	
 		// COPY

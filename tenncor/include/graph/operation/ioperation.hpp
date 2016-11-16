@@ -12,6 +12,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <stack>
 
 #include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
@@ -55,10 +56,11 @@ class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver
 		// combine with generalized notify/update
 		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
 
+		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
+
 		friend class gradient<T>;
 
 	public:
-		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
 		virtual ~ioperation (void);
 
 		// COPY

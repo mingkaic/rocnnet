@@ -1,12 +1,8 @@
 //
-//  test_dimension.cpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-08-29.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
+// Created by Mingkai Chen on 2016-08-29.
 //
 
-#include "tenncor/tenncor.hpp"
+#include "tensor/tensorshape.hpp"
 #include "gtest/gtest.h"
 
 static bool tensorshape_equal (

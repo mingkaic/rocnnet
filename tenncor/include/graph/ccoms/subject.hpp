@@ -7,7 +7,6 @@
 //
 
 #include <unordered_set>
-#include <memory>
 
 #pragma once
 #ifndef subject_hpp
@@ -25,11 +24,12 @@ class reactive_node
 	protected:
 		// returns true if suicide on safe_destroy
 		virtual bool suicidal (void) = 0;
-		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src) = 0;
+		virtual void merge_leaves (std::unordered_set<subject*>& src) = 0;
 	
 	public:
+		virtual ~reactive_node (void) {}
 		// return true if this is successfully flagged for deletion
-		bool safe_destroy (void);
+		bool safe_destroy (void); // non-virtual to ensure safe virtual inheritance
 };
 
 // AKA leaf
@@ -42,7 +42,7 @@ class subject : public reactive_node
 		std::unordered_set<iobserver*> audience_;
 
 	protected:
-		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src);
+		virtual void merge_leaves (std::unordered_set<subject*>& src);
 		bool no_audience (void);
 		
 		// must explicitly destroy using delete

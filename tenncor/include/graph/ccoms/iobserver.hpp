@@ -30,21 +30,21 @@ class iobserver : public reactive_node
 		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
-		void add_dependency (ccoms::subject* dep);
-		virtual void merge_leaves (std::unordered_set<ccoms::subject*>& src);
+		void add_dependency (subject* dep);
+		virtual void merge_leaves (std::unordered_set<subject*>& src);
 		
 		// inherited classes may desire empty dependencies 
 		// with the option of adding dependencies later
 		iobserver (void) {}
+		iobserver (std::vector<subject*> dependencies);
 		
 		virtual bool suicidal (void) { return true; }
 
 	public:
-		iobserver (std::vector<ccoms::subject*> dependencies);
 		virtual ~iobserver (void);
 		
 		void leaves_collect (std::function<void(subject*)> collector);
-		virtual void update (ccoms::subject* caller) = 0;
+		virtual void update (subject* caller) = 0;
 };
 
 }

@@ -66,7 +66,7 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other)
 varptr<double> layer_perceptron::operator () (ivariable<double>* input)
 {
 	// weights are n_output column by n_input rows
-	varptr<double> weighed = new matmul<double>(input, weights_));
+	varptr<double> weighed = matmul<double>::build(input, weights_));
 	varptr<double> bias = fit(bias_, mres); // adjust shape based on mres shape
 	return weighed + bias;
 }

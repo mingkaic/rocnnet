@@ -60,7 +60,7 @@ elementary<T>::elementary (const elementary<T>& other, std::string name) :
 template <typename T>
 ivariable<T>* elementary<T>::clone_impl (std::string name)
 {
-	return new elementary(*this, name);
+	return new elementary<T>(*this, name);
 }
 
 template <typename T>
@@ -196,7 +196,7 @@ template <typename T>
 varptr<T> sin (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other) {
 			collector = std::sin(other);
 		},
@@ -215,7 +215,7 @@ template <typename T>
 varptr<T> cos (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
 			collector = std::cos(other);
@@ -235,7 +235,7 @@ template <typename T>
 varptr<T> tan (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
 			collector = std::tan(other);
@@ -257,7 +257,7 @@ template <typename T>
 varptr<T> csc (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other) 
 		{
 			collector = 1/std::sin(other);
@@ -278,7 +278,7 @@ template <typename T>
 varptr<T> sec (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
 			collector = 1/std::cos(other);
@@ -299,7 +299,7 @@ template <typename T>
 varptr<T> cot (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
 			collector = 1/std::tan(other);
@@ -320,7 +320,7 @@ template <typename T>
 varptr<T> exp (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
 			collector = std::exp(other);
@@ -340,7 +340,7 @@ template <typename T>
 varptr<T> clip_val (const ivariable<T>* a, T min, T max)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[min, max](T& collector, T other)
 		{
 			if (min > other) other = min;
@@ -359,13 +359,13 @@ varptr<T> clip_val (const ivariable<T>* a, T min, T max)
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {
-	return new constant<T>(a) + b;
+	return constant<T>::build(a) + b;
 }
 
 template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
-	return a + new constant<T>(b);
+	return a + constant<T>::build(b);
 }
 
 template <typename T>
@@ -374,7 +374,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (ivariable<T>*)a) return b;
 	else if (nullptr == (ivariable<T>*)b) return a;
 
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a, b},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
 		[](T& collector, T other)
 		{
 			collector += other;
@@ -397,13 +397,13 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b)
 {
-	return new constant<T>(a) - b;
+	return constant<T>::build(a) - b;
 }
 
 template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
-	return a - new constant<T>(b);
+	return a - constant<T>::build(b);
 }
 
 template <typename T>
@@ -412,7 +412,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (ivariable<T>*)a) return b;
 	else if (nullptr == (ivariable<T>*)b) return a;
 
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a, b},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
 		[](T& collector, T other)
 		{
 			collector -= other;
@@ -435,20 +435,20 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator * (T a, const varptr<T> b)
 {
-	return new constant<T>(a) * b;
+	return constant<T>::build(a) * b;
 }
 
 template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
-	return a * new constant<T>(b);
+	return a * constant<T>::build(b);
 }
 
 template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (ivariable<T>*)a || nullptr == (ivariable<T>*)b) return nullptr;
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a, b},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
 		[](T& collector, T other)
 		{
 			collector *= other;
@@ -469,13 +469,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator / (T a, const varptr<T> b)
 {
-	return new constant<T>(a) / b;
+	return constant<T>::build(a) / b;
 }
 
 template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
-	return a / new constant<T>(b);
+	return a / constant<T>::build(b);
 }
 
 template <typename T>
@@ -484,7 +484,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	assert (nullptr != (ivariable<T>*)b); // don't allow infinity
 
-	ivariable<T>* op = new elementary<T>(std::vector<ivariable<T>*>{a, b},
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
 		[](T& collector, T other)
 		{
 			collector /= other;

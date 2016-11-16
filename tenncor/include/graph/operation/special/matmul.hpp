@@ -38,9 +38,16 @@ class matmul : public ioperation<T>
 		matmul (const matmul<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 
-	public:
-		matmul (ivariable<T>* a, ivariable<T>* b, 
+		// protect matrix constructor to ensure heap allocation
+		matmul (ivariable<T>* a, ivariable<T>* b,
 			bool transposeA = false, bool transposeB = false);
+
+	public:
+		static ivariable<T>* build (ivariable<T>* a, ivariable<T>* b,
+			bool transposeA = false, bool transposeB = false)
+		{
+			return new matmul<T>(a, b, transposeA, transposeB);
+		}
 
 		// COPY
 		matmul<T>* clone (std::string name = "");

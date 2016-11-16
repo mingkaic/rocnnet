@@ -58,6 +58,6 @@ class placeptr
 
 }
 
-#include "../../../src/graph/executor/varptr.ipp"
+#include "../../src/executor/varptr.ipp"
 
 #endif /* varptr_hpp */

@@ -36,7 +36,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
 		ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
-		varptr<double> mres = new matmul<double>(err, weight_i, false ,true);
+		varptr<double> mres = matmul<double>::build(err, weight_i, false ,true);
 		err = mres * prime_out.top();
 		prime_out.pop();
 		errs.push(err);
@@ -51,7 +51,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 
 		// dweights = learning*matmul(transpose(layer_in), err)
 		// dbias = learning*err
-		varptr<double> cost = new matmul<double>(output, err, true);
+		varptr<double> cost = matmul<double>::build(output, err, true);
 		varptr<double> dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize

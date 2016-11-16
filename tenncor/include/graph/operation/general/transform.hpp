@@ -43,12 +43,21 @@ class transform : public ioperation<T>
 		virtual tensorshape shape_eval (void);
 
 		transform (const transform<T>& other, std::string name);
-		
-	public:
+
+		// protect transform constructor to ensure heap allocation
 		transform (ivariable<T>* arg,
 			std::function<void(T*&,const T*,tensorshape)> op,
 			std::function<tensorshape(tensorshape)> trans,
-			BUILD_DERIVE<T> der, std::string name = "");
+			BUILD_DERIVE<T> der, std::string name);
+		
+	public:
+		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+			std::function<void(T*&,const T*,tensorshape)> op,
+			std::function<tensorshape(tensorshape)> trans,
+			BUILD_DERIVE<T> der,std::string name = "")
+		{
+			return new transform<T>(args, op, trans, der, name);
+		}
 
 		// COPY
 		transform<T>* clone (std::string name = "");

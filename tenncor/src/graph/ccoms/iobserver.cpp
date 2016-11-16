@@ -6,28 +6,28 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef observer_hpp
-
 #include "graph/ccoms/iobserver.hpp"
+
+#ifdef observer_hpp
 
 namespace ccoms
 {
 		
-void iobserver::add_dependency (ccoms::subject* dep)
+void iobserver::add_dependency (subject* dep)
 {
 	dependencies_.push_back(dep);
 	dep->attach(this);
 	dep->merge_leaves(leaves_);
 }
 
-void iobserver::merge_leaves (std::unordered_set<ccoms::subject*>& src)
+void iobserver::merge_leaves (std::unordered_set<subject*>& src)
 {
 	src.insert(this->leaves_.begin(), this->leaves_.end());
 }
 
-iobserver::iobserver (std::vector<ccoms::subject*> dependencies)
+iobserver::iobserver (std::vector<subject*> dependencies)
 {
-	for (ccoms::subject* dep : dependencies)
+	for (subject* dep : dependencies)
 	{
 		add_dependency(dep);
 	}
@@ -35,21 +35,15 @@ iobserver::iobserver (std::vector<ccoms::subject*> dependencies)
 		
 iobserver::~iobserver (void)
 {
-	for (ccoms::subject* dep : dependencies_)
+	for (subject* dep : dependencies_)
 	{
 		dep->detach(this);
 	}
 }
-
-bool iobserver::safe_destroy (void) 
-{
-	// deletion logic...
-	return true;
-}
 		
 void iobserver::leaves_collect (std::function<void(subject*)> collector)
 {
-	for (ccoms::subject* leaf : leaves_)
+	for (subject* leaf : leaves_)
 	{
 		collector(leaf);
 	}

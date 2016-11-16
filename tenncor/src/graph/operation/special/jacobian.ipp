@@ -68,7 +68,7 @@ jacobian<T>::jacobian (const jacobian<T>& other, std::string name) :
 template <typename T>
 ivariable<T>* jacobian<T>::clone_impl (std::string name)
 {
-	return new jacobian(*this, name);
+	return new jacobian<T>(*this, name);
 }
 
 template <typename T>

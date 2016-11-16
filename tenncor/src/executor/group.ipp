@@ -27,7 +27,7 @@ group<T>::~group (void)
 	{
 		if (exe_pair.second)
 		{
-			delete exe_pair.first();
+			delete exe_pair.first;
 		}
 	}
 }
@@ -42,14 +42,14 @@ template <typename T>
 void group<T>::execute (void)
 {
 	// stage
-	for (iexecutor<T>* exe : acts_)
+	for (auto exe_pair : acts_)
 	{
-		exe->freeze();
+		exe_pair.first->freeze();
 	}
 	// execute
-	for (iexecutor<T>* exe : acts_)
+	for (auto exe_pair : acts_)
 	{
-		exe->execute();
+		exe_pair.first->execute();
 	}
 }
 

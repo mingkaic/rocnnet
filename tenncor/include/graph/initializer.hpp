@@ -25,6 +25,7 @@ class initializer
 		void delegate_task (tensor<T>& ten, std::function<void(T*, size_t)> op);
 
 	public:
+		virtual ~initializer (void) {}
 		virtual void operator () (tensor<T>& in) = 0;
 		// initializers are far too simple to justify using clone_impl pattern
 		// although smart pointers of initializers could be possible in the future

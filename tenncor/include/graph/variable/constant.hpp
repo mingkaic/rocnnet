@@ -32,9 +32,20 @@ class constant : public ileaf<T>
 		constant (const constant<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 
-	public:
 		constant (T scalar);
 		constant (std::vector<T> raw, tensorshape shape);
+
+	public:
+		// build are necessary for suicidal leaves
+		static ivariable<T>* build (T scalar)
+		{
+			return new constant<T>(scalar);
+		}
+
+		static ivariable<T>* build (std::vector<T> raw, tensorshape shape)
+		{
+			return new constant<T>(raw, shape);
+		}
 
 		// COPY
 		constant<T>* clone (std::string name = "");

@@ -46,9 +46,16 @@ class jacobian : public ioperation<T>
 
 		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
 
-	public:
+		// protect jacobian constructor to ensure heap allocation
 		jacobian (ivariable<T>* arga, ivariable<T>* argb,
-			bool transposeA, bool transposeB, std::string name = "");
+			bool transposeA, bool transposeB, std::string name);
+
+	public:
+		static ivariable<T>* build (ivariable<T>* a, ivariable<T>* b,
+			bool transposeA, bool transposeB, std::string name = "")
+		{
+			return new jacobian<T>(a, b, transposeA, transposeB, name);
+		}
 
 		// COPY
 		jacobian<T>* clone (std::string name = "");

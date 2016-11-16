@@ -45,6 +45,6 @@ class iexecutor : public ccoms::iobserver // TODO: we really don't need to inher
 
 }
 
-#include "../../../src/graph/executor/iexecutor.ipp"
+#include "../../src/executor/iexecutor.ipp"
 
 #endif /* executor_hpp */

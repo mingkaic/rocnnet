@@ -28,11 +28,9 @@ class gradient : public iexecutor<T>
 		// gradient owns values in leaf_map_
 		ivariable<T>* g_root_;
 		std::vector<ccoms::subject*> potential_srcs_;
-		const constant<T> one_;
-
-	protected:
 		GRAD_MAP<T> leaf_map_;
 
+	protected:
 		void clear_map (void);
 
 		void copy (const gradient<T>& other);
@@ -58,6 +56,6 @@ class gradient : public iexecutor<T>
 
 }
 
-#include "../../../src/graph/executor/gradient.ipp"
+#include "../../src/executor/gradient.ipp"
 
 #endif /* gradient_hpp */

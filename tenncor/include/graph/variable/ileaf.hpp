@@ -33,8 +33,9 @@ class ileaf : public ivariable<T>
 		ileaf (const ileaf<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
-	public:
 		ileaf (const tensorshape& shape, initializer<T>* init, std::string name);
+
+	public:
 		virtual ~ileaf (void);
 		
 		// COPY

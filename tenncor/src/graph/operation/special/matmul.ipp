@@ -32,7 +32,7 @@ void matmul<T>::setup_gradient (void)
 	ivariable<T>* arga = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	ivariable<T>* argb = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
 	assert(arga && argb);
-	this->grad_ = new jacobian<T>(arga, argb, transposeA_, transposeB_, "J(" + this->get_name() + ")");
+	this->grad_ = jacobian<T>::build(arga, argb, transposeA_, transposeB_, "J(" + this->get_name() + ")");
 }
 
 template <typename T>
@@ -79,7 +79,7 @@ matmul<T>::matmul (const matmul<T>& other, std::string name) :
 
 template <typename T>
 ivariable<T>* matmul<T>::clone_impl (std::string name) {
-	return new matmul(*this, name);
+	return new matmul<T>(*this, name);
 }
 
 template <typename T>

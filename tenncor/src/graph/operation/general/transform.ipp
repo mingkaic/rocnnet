@@ -30,7 +30,7 @@ void transform<T>::setup_gradient (void)
 template <typename T>
 ivariable<T>* transform<T>::clone_impl (std::string name)
 {
-	return new transform(*this, name);
+	return new transform<T>(*this, name);
 }
 
 template <typename T>
@@ -120,7 +120,7 @@ template <typename T>
 varptr<T> clip_norm (const ivariable<T>* a, T cap)
 {
 	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = new transform<T>(a,
+ 	ivariable<T>* op = transform<T>::build(a,
  		[cap](T*& dest, const T* src, tensorshape ts)
  		{
  			T l2norm = 0;
@@ -153,7 +153,7 @@ template <typename T>
 varptr<T> transpose (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = new transform<T>(a,
+ 	ivariable<T>* op = transform<T>::build(a,
  		[](T*& dest, const T* src, tensorshape ts)
  		{
 			// we have the new shape
@@ -200,7 +200,7 @@ varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch)
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
- 	ivariable<T>* op = new transform<T>(a,
+ 	ivariable<T>* op = transform<T>::build(a,
  		[watch, a](T*& dest, const T* src, tensorshape ts)
  		{
 			std::vector<size_t> orig = a->get_eval()->get_shape().as_list();
@@ -283,7 +283,7 @@ template <typename T>
 varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
- 	ivariable<T>* op = new transform<T>(a,
+ 	ivariable<T>* op = transform<T>::build(a,
  		[index, multiplier](T*& dest, const T* src, tensorshape ts)
  		{
 			std::vector<size_t> tv = ts.as_list();
@@ -346,7 +346,7 @@ varptr<T> compress (const ivariable<T>* a, size_t index,
 	std::function<T(const std::vector<T>&)> collector)
 	{
 	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = new transform<T>(a,
+ 	ivariable<T>* op = transform<T>::build(a,
  		[index, collector, a](const T*& dest, T* src, tensorshape ts)
  		{
 			assert(index < ts.n_dims());

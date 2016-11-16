@@ -45,12 +45,13 @@ class ivariable : public ccoms::subject
 
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
+		ivariable (const tensorshape& shape, std::string name);
+
 		// protected members need to be accessed by other operations
 		friend class assign<T>;
 		friend class ioptimizer<T>;
 
 	public:
-		ivariable (const tensorshape& shape, std::string name);
 		virtual ~ivariable (void);
 		
 		// COPY
