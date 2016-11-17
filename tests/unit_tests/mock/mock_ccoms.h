@@ -2,8 +2,8 @@
 // Created by Mingkai Chen on 2016-11-15.
 //
 
-#ifndef ROCNNET_MOCK_SUBJECT_H
-#define ROCNNET_MOCK_SUBJECT_H
+#ifndef ROCNNET_MOCK_CCOMS_H
+#define ROCNNET_MOCK_CCOMS_H
 
 #include "gmock/gmock.h"
 #include "graph/ccoms/iobserver.hpp"
@@ -15,8 +15,6 @@ class mock_subject : public ccoms::subject
 		~mock_subject (void) {}
 
 		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
-		MOCK_METHOD0(no_audience, bool());
-		MOCK_METHOD0(suicidal, bool());
 		MOCK_METHOD1(attach, void(ccoms::iobserver*));
 		MOCK_METHOD1(detach, void(ccoms::iobserver*));
 		MOCK_METHOD1(notify, void(ccoms::subject*));
@@ -26,9 +24,14 @@ class mock_subject : public ccoms::subject
 class mock_observer : public ccoms::iobserver
 {
 	public:
-		MOCK_METHOD1(add_dependency, void(ccoms::subject*));
+		mock_observer (ccoms::subject* sub) : 
+			(std::vector<ccoms::subject*>{sub}) {}
+		mock_observer (ccoms::subject* sub1,
+						ccoms::subject* sub2) : 
+			(std::vector<ccoms::subject*>{sub, sub2}) {}
+		~mock_observer (void) {}
+
 		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
-		MOCK_METHOD0(suicidal, bool(void));
 		MOCK_METHOD1(leaves_collect, void(std::function<void(ccoms::subject*)>));
 		MOCK_METHOD1(update, void(ccoms::subject*));
 };
@@ -88,4 +91,4 @@ public:
 	}
 };
 
-#endif //ROCNNET_MOCK_SUBJECT_H
+#endif //ROCNNET_MOCK_CCOMS_H

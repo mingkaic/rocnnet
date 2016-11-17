@@ -34,20 +34,6 @@ bool subject::no_audience (void)
 	return audience_.empty();
 }
 
-subject::~subject (void)
-{
-	auto it = audience_.begin();
-	while (audience_.end() != it)
-	{
-		// when an observer is destroyed, 
-		// the observer attempts to detach itself from its subjects
-		// that's why we increment iterator before we delete
-		iobserver* captive = *it;
-		it++;
-		captive->safe_destroy(); // flag captive for destruction
-	}
-}
-
 void subject::attach (iobserver* viewer)
 {
 	audience_.emplace(viewer);
@@ -59,6 +45,20 @@ void subject::detach (iobserver* viewer)
 	if (suicidal() && audience_.empty())
 	{
 		safe_destroy();
+	}
+}
+
+subject::~subject (void)
+{
+	auto it = audience_.begin();
+	while (audience_.end() != it)
+	{
+		// when an observer is destroyed, 
+		// the observer attempts to detach itself from its subjects
+		// that's why we increment iterator before we delete
+		iobserver* captive = *it;
+		it++;
+		captive->safe_destroy(); // flag captive for destruction
 	}
 }
 

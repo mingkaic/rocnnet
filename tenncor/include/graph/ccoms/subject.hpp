@@ -23,8 +23,20 @@ class reactive_node
 {
 	protected:
 		// returns true if suicide on safe_destroy
+		// we should always have protected constructors with a static builder
+		// if suicidal is true, since suicide never accounts for stack allocation
 		virtual bool suicidal (void) = 0;
 		virtual void merge_leaves (std::unordered_set<subject*>& src) = 0;
+		template <typename E, typename ...A>
+		
+		// allocation is moved here because I want safe destroy and node_allocation 
+		// to eventually form a separate abstract factory object
+		static E* node_allocate (A... args)
+		{
+			// memory management for nodes
+			// default new on heap for now, could be machine dependent later
+			return new E(args...);
+		}
 	
 	public:
 		virtual ~reactive_node (void) {}
@@ -47,15 +59,15 @@ class subject : public reactive_node
 		
 		// must explicitly destroy using delete
 		virtual bool suicidal (void) { return false; }
+		void attach (iobserver* viewer);
+		// if suicidal, safe_destroy when detaching last audience
+		void detach (iobserver* viewer);
 
 		friend class iobserver;
 		
 	public:
 		virtual ~subject (void);
 	
-		void attach (iobserver* viewer);
-		// if suicidal, safe_destroy when detaching last audience
-		void detach (iobserver* viewer);
 		void notify (subject* caller = nullptr);
 };
 

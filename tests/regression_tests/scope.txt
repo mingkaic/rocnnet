@@ -1,0 +1,73 @@
+What is it?
+Rocnnet is an Automated Differentation Library supporting Matrix Operations
+
+Layers:
+- Graph:
+    Purpose:
+    Create a layer of abstraction to manage the distribution of data.
+    In general, data is transfered between graph nodes from source 
+    (or sources) to sinks.
+
+- Tensor
+    Purpose:
+    Performs operations and stores shapes (dimensionality) information.
+
+- Memory management
+    Purpose:
+    Manages the allocation, deallocation, and serialization of raw data
+    based on supporting architecture (none yet)
+
+Design Pattern:
+Graph uses composite pattern between ivariable and ioperation nodes.
+Nodes are made reactive using observer pattern.
+Memory management serves as the factory to tensors' raw data.
+A singleton session is used to manage global options such as shape evaluation when constructing
+and initialize all variables.
+
+Key players:
+- iobserver and subject
+- ivariable and ileaf
+- ioperation
+- iexecutor
+- tensor
+- iallocator
+- initializer
+- session
+- tensorshape
+
+Expected Behavior
+- iobserver should detach (unsubscribe) from subject on destruction
+- iobserver should provide information regarding about its leaf subjects (purely independent nodes)
+
+- subject should detach and mark all observers for destruction on destruction
+- subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
+- observers can publically attach and detach (subscribe and unsubscribe) to subjects
+
+- ivariable should expose getters for name, shape, and tensor
+- ileaf inheriteds should auto notify when initialized or reinitialized
+- variables auto initialize scalar on construction
+- assigning raw data or tensors to placeholders will initialize it
+- placeholders can be initialized at construction, 
+this initializer will be promptedly destroyed
+
+- ioperation should
+
+- iexecutor should
+
+- tensors should allocate raw data on construction 
+when an allocator is provided and tensorshape is fully defined
+- tensor allocation requires a fully defined tensorshape either provided in construction
+or provided in allocation call
+- tensorshape provided in allocation call must be compatible with the tensorshape provided
+in construction
+
+- iallocator should
+- allocation of partially defined tensors will fail
+
+- initializer should
+- initialization of unallocated tensors will fail
+- initialization of partially defined tensors will fail
+
+- session
+
+- tensorshape 

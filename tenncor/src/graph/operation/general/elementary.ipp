@@ -72,10 +72,12 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	for_each_(op),
 	der_(der)
 {
+	// TODO: simplify operation arguments
+	// TODO: no need to call shape_eval twice
 	this->out_ = std::make_unique<tensor_op<T> >(
 	[this](T*& dest, std::vector<const T*> srcs)
 	{
-		tensorshape ts = shape_eval();
+		tensorshape ts = shape_eval(); // call 1
 
 		for (size_t i = 0; i < ts.n_elems(); i++)
 		{
@@ -149,7 +151,7 @@ void elementary<T>::update (ccoms::subject* caller)
 
 	if (this->valid_tensor)
 	{
-		this->out_->set_shape(shape_eval());
+		this->out_->set_shape(shape_eval()); // call 2
 		*(this->out_)(tens);
 	}
 
