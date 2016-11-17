@@ -67,7 +67,7 @@ transform<T>::transform (ivariable<T>* arg,
 	{
 		tensorshape ts = shape_eval();
 		collect_(dest, srcs[0], ts);
-	}, new ram_alloc());
+	});
 }
 
 template <typename T>

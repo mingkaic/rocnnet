@@ -29,7 +29,7 @@ constant<T>::constant (T scalar) :
 	new const_init<T>(scalar), 
 	nnutils::formatter() << scalar)
 {
-	this->out_->allocate(new ram_alloc());
+	this->out_->allocate();
 	(*this->init_)(*(this->out_));
 	this->is_init_ = true;
 }
@@ -40,7 +40,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 	new typename ileaf<T>::dyn_init(*(this->out_)),
 	nnutils::formatter() << raw.front() << ".." << raw.back() << raw.end())
 {
-	this->out_->allocate(new ram_alloc());
+	this->out_->allocate();
 	(*this->init_) = raw;
 	this->is_init_ = true;
 }

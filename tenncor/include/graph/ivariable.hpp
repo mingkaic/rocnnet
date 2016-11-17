@@ -9,6 +9,7 @@
 #include "../memory/session.hpp"
 #include "initializer.hpp"
 #include "tensor/tensor_op.hpp"
+#include "tensor/tensor.hpp"
 #include "graph/ccoms/subject.hpp"
 
 #pragma once

@@ -25,16 +25,30 @@ class mock_observer : public ccoms::iobserver
 {
 	public:
 		mock_observer (ccoms::subject* sub) : 
-			(std::vector<ccoms::subject*>{sub}) {}
-		mock_observer (ccoms::subject* sub1,
-						ccoms::subject* sub2) : 
-			(std::vector<ccoms::subject*>{sub, sub2}) {}
+			ccoms::iobserver(std::vector<ccoms::subject*>{sub}) {}
+		mock_observer (ccoms::subject* sub1, ccoms::subject* sub2) :
+ 			ccoms::iobserver(std::vector<ccoms::subject*>{sub1, sub2}) {}
 		~mock_observer (void) {}
 
+		MOCK_METHOD0(safe_destroy, bool(void));
 		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
 		MOCK_METHOD1(leaves_collect, void(std::function<void(ccoms::subject*)>));
 		MOCK_METHOD1(update, void(ccoms::subject*));
 };
+
+//class mock_intern : virtual public ccoms::iobserver, virtual public ccoms::subject
+//{
+//	public:
+//		mock_intern (ccoms::subject* sub) :
+//				ccoms::iobserver(std::vector<ccoms::subject*>{sub}) {}
+//		mock_intern (ccoms::subject* sub1, ccoms::subject* sub2) :
+//			ccoms::iobserver(std::vector<ccoms::subject*>{sub1, sub2}) {}
+//		~mock_intern (void) {}
+//
+//		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
+//		MOCK_METHOD1(leaves_collect, void(std::function<void(ccoms::subject*)>));
+//		MOCK_METHOD1(update, void(ccoms::subject*));
+//};
 
 class div_subject : public ccoms::subject {
 private:

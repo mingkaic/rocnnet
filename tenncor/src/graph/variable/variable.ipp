@@ -52,7 +52,7 @@ tensor<T>& variable<T>::initialize (void)
 	assert(this->init_ != nullptr);
 	if (false == this->out_->is_alloc())
 	{ // if not alloc, allocate
-		this->out_->allocate(new ram_alloc());
+		this->out_->allocate();
 	}
 	(*this->init_)(*(this->out_));
 	this->is_init_ = true;
@@ -65,7 +65,7 @@ tensor<T>& variable<T>::initialize (tensorshape alloc_shape)
 	assert(this->init_ != nullptr);
 	if (false == this->out_->is_alloc())
 	{ // if not alloc, allocate
-		this->out_->allocate(new ram_alloc(), alloc_shape);
+		this->out_->allocate(alloc_shape);
 	}
 	(*this->init_)(*(this->out_));
 	this->is_init_ = true;

@@ -21,14 +21,14 @@ namespace nnet
 void* ram_alloc::get_raw (
 	size_t alignment,
 	size_t num_bytes,
-	const alloc_attrib& attrib)
+	const alloc_attrib& attrib) const
 {
 	// str8 2 memory, ignore attributes
 	void* ptr = malloc(num_bytes);
 	return ptr;
 }
 
-void ram_alloc::del_raw (void* ptr)
+void ram_alloc::del_raw (void* ptr) const
 {
 	// str8 from memory
 	free (ptr);

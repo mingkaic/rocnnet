@@ -18,9 +18,9 @@ namespace nnet
 class ram_alloc : public iallocator
 {
 	protected:
-		virtual void* get_raw (size_t alignment, size_t num_bytes,
-			const alloc_attrib& attrib);
-		virtual void del_raw (void* ptr);
+		virtual void* get_raw (size_t alignment,
+			size_t num_bytes, const alloc_attrib& attrib) const;
+		virtual void del_raw (void* ptr) const;
 
 		virtual iallocator* clone_impl (void);
 

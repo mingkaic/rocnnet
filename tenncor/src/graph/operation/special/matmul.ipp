@@ -113,7 +113,7 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 				}
 			}
 		}
-	}, new ram_alloc());
+	});
 }
 
 template <typename T>

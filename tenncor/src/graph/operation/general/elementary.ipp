@@ -98,7 +98,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 				it++;
 			}
 		}
-	}, new ram_alloc());
+	});
 }
 
 template <typename T>

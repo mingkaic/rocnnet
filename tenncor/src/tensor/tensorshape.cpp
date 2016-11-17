@@ -40,27 +40,27 @@ tensorshape::tensorshape (const std::vector<size_t>& dims)
 {
 	for (size_t d : dims)
 	{
-		 dimensions_.push_back(dimension(d));
+		dimensions_.push_back(dimension(d));
 	}
 }
 
 tensorshape::tensorshape (const std::vector<dimension>& dims)
 {
-	 dimensions_.assign(dims.begin(), dims.end());
+	dimensions_.assign(dims.begin(), dims.end());
 }
 
 tensorshape& tensorshape::operator = (const std::vector<size_t>& dims)
 {
 	for (size_t d : dims)
 	{
-		 dimensions_.push_back(d);
+		dimensions_.push_back(d);
 	}
 	return *this;
 }
 
 tensorshape tensorshape::merge_with (const tensorshape& other)
 {
-	if ( dimensions_.empty())
+	if (dimensions_.empty())
 	{
 		return other;
 	}
@@ -68,18 +68,18 @@ tensorshape tensorshape::merge_with (const tensorshape& other)
 	{
 		return *this;
 	}
-	if ( dimensions_.size() != other.dimensions_.size())
+	if (dimensions_.size() != other.dimensions_.size())
 	{
 		throw std::logic_error(nnutils::formatter() << "shape of rank"
-			<<  dimensions_.size() << " is not compatible with shape of rank "
+			<< dimensions_.size() << " is not compatible with shape of rank "
 			<< other.dimensions_.size());
 	}
 	std::vector<dimension> ds;
-	for (size_t i = 0; i <  dimensions_.size(); i++)
+	for (size_t i = 0; i < dimensions_.size(); i++)
 	{
 		try
 		{
-			ds.push_back( dimensions_[i].merge_with(other.dimensions_[i]));
+			ds.push_back(dimensions_[i].merge_with(other.dimensions_[i]));
 		}
 		catch (const std::logic_error& le)
 		{
@@ -91,24 +91,24 @@ tensorshape tensorshape::merge_with (const tensorshape& other)
 
 tensorshape tensorshape::concatenate (const tensorshape& other)
 {
-	if ( dimensions_.empty() || other.dimensions_.empty())
+	if (dimensions_.empty() || other.dimensions_.empty())
 	{
 		return tensorshape();
 	}
-	std::vector<dimension> ds =  dimensions_;
+	std::vector<dimension> ds = dimensions_;
 	ds.insert(ds.end(), other.dimensions_.begin(), other.dimensions_.end());
 	return tensorshape(ds);
 }
 
 tensorshape tensorshape::with_rank (size_t rank)
 {
-	if ( dimensions_.empty())
+	if (dimensions_.empty())
 	{
 		std::vector<dimension> ds;
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensorshape(ds);
 	}
-	if (rank !=  dimensions_.size())
+	if (rank != dimensions_.size())
 	{
 		throw std::logic_error(nnutils::formatter() 
 			<< "shape does not have rank " << rank);
@@ -124,7 +124,7 @@ tensorshape tensorshape::with_rank_at_least (size_t rank)
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensorshape(ds);
 	}
-	if (rank >  dimensions_.size())
+	if (rank > dimensions_.size())
 	{
 		throw std::logic_error(nnutils::formatter() 
 			<< "shape does not have rank at least " << rank);
@@ -134,13 +134,13 @@ tensorshape tensorshape::with_rank_at_least (size_t rank)
 
 tensorshape tensorshape::with_rank_at_most (size_t rank)
 {
-	if ( dimensions_.empty())
+	if (dimensions_.empty())
 	{
 		std::vector<dimension> ds;
 		ds.insert(ds.end(), rank, dimension(0));
 		return tensorshape(ds);
 	}
-	if (rank < dimensions_.size())
+	if (rank <dimensions_.size())
 	{
 		throw std::logic_error(nnutils::formatter() 
 			<< "shape does not have rank at most " << rank);
@@ -151,7 +151,7 @@ tensorshape tensorshape::with_rank_at_most (size_t rank)
 size_t tensorshape::n_elems (void) const
 {
 	size_t nelem = 1;
-	for (dimension d :  dimensions_)
+	for (dimension d : dimensions_)
 	{
 		nelem *= d.value_;
 	}
@@ -160,18 +160,18 @@ size_t tensorshape::n_elems (void) const
 
 size_t tensorshape::n_dims (void) const
 {
-	return dimensions_.size();
+	returndimensions_.size();
 }
 
 std::vector<dimension> tensorshape::dims (void) const
 {
-	return dimensions_;
+	returndimensions_;
 }
 
 std::vector<size_t> tensorshape::as_list (void) const
 {
 	std::vector<size_t> v;
-	for (dimension d :  dimensions_)
+	for (dimension d : dimensions_)
 	{
 		v.push_back(d.value_);
 	}
@@ -180,7 +180,7 @@ std::vector<size_t> tensorshape::as_list (void) const
 
 tensorshape tensorshape::trim (void) const
 {
-	std::vector<dimension>::const_iterator start = dimensions_.begin();
+	std::vector<dimension>::const_iterator start =dimensions_.begin();
 	std::vector<dimension>::const_iterator end = --dimensions_.end();
 	while (1 == size_t(*start)) { start++; }
 	while (1 == size_t(*end)) { end--; }
@@ -192,11 +192,11 @@ tensorshape tensorshape::trim (void) const
 bool tensorshape::is_compatible_with (const tensorshape& other) const
 {
 	bool incap = true;
-	if (! dimensions_.empty() && !other.dimensions_.empty())
+	if (!dimensions_.empty() && !other.dimensions_.empty())
 	{
-		if (other.dimensions_.size() ==  dimensions_.size())
+		if (other.dimensions_.size() == dimensions_.size())
 		{
-			for (size_t i = 0; i <  dimensions_.size(); i++)
+			for (size_t i = 0; i < dimensions_.size(); i++)
 			{
 				incap = incap && other.dimensions_[i].is_compatible_with(dimensions_[i]);
 			}
@@ -211,17 +211,17 @@ bool tensorshape::is_compatible_with (const tensorshape& other) const
 
 bool tensorshape::is_part_defined (void) const
 {
-	return ! dimensions_.empty();
+	return !dimensions_.empty();
 }
 
 bool tensorshape::is_fully_defined (void) const
 {
-	if ( dimensions_.empty())
+	if (dimensions_.empty())
 	{
 		return false;
 	}
 	bool known = true;
-	for (dimension d :  dimensions_)
+	for (dimension d : dimensions_)
 	{
 		known = known && 0 < size_t(d);
 	}
@@ -230,12 +230,12 @@ bool tensorshape::is_fully_defined (void) const
 
 void tensorshape::assert_has_rank (size_t rank) const
 {
-	assert( dimensions_.empty() || rank ==  dimensions_.size());
+	assert(dimensions_.empty() || rank == dimensions_.size());
 }
 
 void tensorshape::assert_same_rank (const tensorshape& other) const
 {
-	assert( dimensions_.empty() || other.dimensions_.empty() || other.dimensions_.size() ==  dimensions_.size());
+	assert(dimensions_.empty() || other.dimensions_.empty() || other.dimensions_.size() == dimensions_.size());
 }
 
 void tensorshape::assert_is_fully_defined (void) const { assert(is_fully_defined()); }

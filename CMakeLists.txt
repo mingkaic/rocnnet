@@ -87,12 +87,12 @@ include_directories(${GTEST_INCLUDE_DIRS} ${TENNCOR_INCLUDE} ${MOCK_INCLUDE})
 file(GLOB_RECURSE UNIT_TEST_SRC
     ${UNIT_TEST_PATH}/*.cpp)
 
-add_executable(unit_test ${UNIT_TEST_SRC})
+add_executable(${UNIT_TEST_NAME} ${UNIT_TEST_SRC})
 
 #-------------------
 # Test dependencies
 #-------------------
-add_dependencies(unit_test
+add_dependencies(${UNIT_TEST_NAME}
     googletest
     tenncor)
 
@@ -100,22 +100,22 @@ add_dependencies(unit_test
 # link googletest depending on  available libraries
 #-------------------
 if(NOT WIN32 OR MINGW)
-	target_link_libraries(unit_test
+	target_link_libraries(${UNIT_TEST_NAME}
 			${GTEST_LIBS_DIR}/libgtest.a
 			${GTEST_LIBS_DIR}/libgtest_main.a
 			)
 else()
-	target_link_libraries(unit_test
+	target_link_libraries(${UNIT_TEST_NAME}
 			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
 			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
 			)
-	target_link_libraries(unit_test
+	target_link_libraries(${UNIT_TEST_NAME}
 			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
 			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
 			)
 endif()
 
 # Link
-target_link_libraries(unit_test ${CMAKE_THREAD_LIBS_INIT} ${TENNCOR_LIB})
-add_test(test unit_test)
+target_link_libraries(${UNIT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${TENNCOR_LIB})
+add_test(test ${UNIT_TEST_NAME})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

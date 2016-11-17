@@ -2,6 +2,7 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
+#include "gtest/gtest.h"
 #include "tensor/tensor.hpp"
 
 TEST(TENSOR, tensor_construct) {
@@ -43,11 +44,7 @@ TEST(TENSOR, tensor_allocate) {
 	// 3 by 3 matrix
 	nnet::tensor<double> exact((std::vector<size_t>){3, 3});
 
-	nnet::iallocator locker = new nnet::ram_alloc();
-	// allocate from allowed shape
-	EXPECT_DEATH({ liberal.allocate(locker); }, ".*");
-	EXPECT_DEATH({ partial.allocate(locker); }, ".*");
-	/* EXPECT_LIFE */ exact.allocate(locker);
+	exact.allocate();
 
 	// allocate shape
 	std::vector<nnet::tensorshape> shapes = {
@@ -60,16 +57,16 @@ TEST(TENSOR, tensor_allocate) {
 	};
 
 	for (nnet::tensorshape s : shapes) {
-		liberal.allocate(locker, s);
+		liberal.allocate(s);
 	}
 
-	EXPECT_DEATH({ partial.allocate(locker, shapes[0]); }, ".*");
+	EXPECT_DEATH({ partial.allocate(shapes[0]); }, ".*");
 	for (size_t i = 1; i < shapes.size(); i++) {
-		partial.allocate(locker, shapes[i]);
+		partial.allocate(shapes[i]);
 	}
 
 	for (size_t i = 0; i < shapes.size()-1; i++) {
-		EXPECT_DEATH({ exact.allocate(locker, shapes[i]); }, ".*");
+		EXPECT_DEATH({ exact.allocate(shapes[i]); }, ".*");
 	}
-	exact.allocate(locker, shapes[shapes.size()-1]);
+	exact.allocate(shapes[shapes.size()-1]);
 }

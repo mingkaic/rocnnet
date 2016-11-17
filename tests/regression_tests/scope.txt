@@ -55,7 +55,7 @@ this initializer will be promptedly destroyed
 - iexecutor should
 
 - tensors should allocate raw data on construction 
-when an allocator is provided and tensorshape is fully defined
+when tensorshape is fully defined
 - tensor allocation requires a fully defined tensorshape either provided in construction
 or provided in allocation call
 - tensorshape provided in allocation call must be compatible with the tensorshape provided
@@ -64,10 +64,22 @@ in construction
 - iallocator should
 - allocation of partially defined tensors will fail
 
-- initializer should
 - initialization of unallocated tensors will fail
 - initialization of partially defined tensors will fail
 
-- session
+- session should register all variable nodes on node construction
+- session should unregister all destroyed variable nodes
+- session should be singleton per thread
+- session should be able to initialize all initialisable values
+- session should be able to toggle between shape evaluation on
+  variable node construction
 
-- tensorshape 
+- tensorshape is compatible if one of the shapes are undefined, or
+  the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
+- tensorshape merge should return the most defined most defined shape
+  that is dimensions > 0 should be preferred over dimension == 0
+  tensorshapes that are incompatible will result in a logic error
+- two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation
+- a tensor is partially defined if it has a rank but is not fully defined
+- a tensor is fully defined if it is at least partially defined
+  but all its dimensional values are defined (> 0)

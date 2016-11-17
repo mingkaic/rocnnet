@@ -36,13 +36,13 @@ class iallocator
 				std::is_same<T, std::complex<double> >::value;
 		};
 
-		virtual void* get_raw (size_t alignment, size_t num_bytes);
+		virtual void* get_raw (size_t alignment, size_t num_bytes) const;
 
 	protected:
 		virtual void* get_raw (size_t alignment,
-			size_t num_bytes, const alloc_attrib& attrib) = 0;
+			size_t num_bytes, const alloc_attrib& attrib) const = 0;
 
-		virtual void del_raw (void* ptr) = 0;
+		virtual void del_raw (void* ptr) const = 0;
 
 		virtual iallocator* clone_impl (void) = 0;
 
@@ -56,14 +56,14 @@ class iallocator
 		virtual size_t id (void) = 0;
 
 		template <typename T>
-		T* allocate (size_t num_elements)
+		T* allocate (size_t num_elements) const
 		{
 			alloc_attrib attr;
 			return allocate<T>(num_elements, attr);
 		}
 
 		template <typename T>
-		T* allocate (size_t num_elements, const alloc_attrib& attrib)
+		T* allocate (size_t num_elements, const alloc_attrib& attrib) const
 		{
 			static_assert(is_allowed<T>::value, "T is not an allowed type.");
 
@@ -79,7 +79,7 @@ class iallocator
 		}
 
 		template <typename T>
-		void dealloc(T* ptr, size_t num_elements)
+		void dealloc(T* ptr, size_t num_elements) const
 		{
 			if (nullptr != ptr)
 			{

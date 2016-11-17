@@ -11,53 +11,53 @@
 namespace nnet
 {
 
-template <typename T>
-void tensor_op<T>::copy (const tensor_op<T>& other)
+template <typename T, typename A>
+void tensor_op<T,A>::copy (const tensor_op<T,A>& other)
 {
 	op_ = other.op_;
 	raws_ = other.raws_;
 	tensor<T>::copy(other);
 }
 
-template <typename T>
-tensor_op<T>::tensor_op (const tensor_op<T>& other)
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (const tensor_op<T,A>& other)
 {
 	this->copy(other);
 }
 
-template <typename T>
-tensor<T>* tensor_op<T>::clone_impl (void) { return new tensor_op<T>(*this); }
+template <typename T, typename A>
+tensor<T>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this); }
 
-template <typename T>
-T* tensor_op<T>::get_raw (void) {
+template <typename T, typename A>
+T* tensor_op<T,A>::get_raw (void) {
 	op_(this->get_raw(), raws_);
 	return tensor<T>::get_raw();
 }
 
-template <typename T>
-tensor_op<T>::tensor_op (TEN_OP<T> op) : op_(op) {}
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (TEN_OP<T> op) : op_(op) {}
 
-template <typename T>
-tensor_op<T>::tensor_op (TEN_OP<T> op, iallocator& alloc) :
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator& alloc) :
 	tensor<T>(std::vector<size_t>{}, alloc), op_(op) {}
 
-template <typename T>
-tensor_op<T>::tensor_op (TEN_OP<T> op, iallocator* alloc) :
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator* alloc) :
 	tensor<T>(std::vector<size_t>{}, alloc), op_(op) {}
 
-template <typename T>
-tensor_op<T>::tensor_op (TEN_OP<T> op, iallocator& alloc, const alloc_attrib& attrib) :
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator& alloc, const alloc_attrib& attrib) :
 	tensor<T>(std::vector<size_t>{}, alloc, attrib), op_(op) {}
 
-template <typename T>
-tensor_op<T>::tensor_op (TEN_OP<T> op, iallocator* alloc, const alloc_attrib& attrib) :
+template <typename T, typename A>
+tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator* alloc, const alloc_attrib& attrib) :
 	tensor<T>(std::vector<size_t>{}, alloc, attrib), op_(op) {}
 
-template <typename T>
-tensor_op<T>* tensor_op<T>::clone (void) { return static_cast<tensor_op<T>*>(clone_impl()); }
+template <typename T, typename A>
+tensor_op<T,A>* tensor_op<T,A>::clone (void) { return static_cast<tensor_op<T,A>*>(clone_impl()); }
 
-template <typename T>
-tensor_op<T>& tensor_op<T>::operator = (const tensor_op<T>& other)
+template <typename T, typename A>
+tensor_op<T,A>& tensor_op<T,A>::operator = (const tensor_op<T,A>& other)
 {
 	if (this != &other)
 	{
@@ -66,8 +66,8 @@ tensor_op<T>& tensor_op<T>::operator = (const tensor_op<T>& other)
 	return *this;
 }
 
-template <typename T>
-const tensor_op<T>& tensor_op<T>::operator () (std::vector<tensor<T> const*> args)
+template <typename T, typename A>
+const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T> const*> args)
 {
 	raws_.clear();
 	for (tensor<T> const* t : args)

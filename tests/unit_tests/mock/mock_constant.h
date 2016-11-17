@@ -6,7 +6,7 @@
 #define ROCNNET_MOCK_CONSTANT_H
 
 #include "gmock/gmock.h"
-#include "graph/variable/constants.hpp"
+#include "graph/variable/constant.hpp"
 
 class mock_constant : public nnet::constant<double>
 {

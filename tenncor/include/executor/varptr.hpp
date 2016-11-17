@@ -28,7 +28,7 @@ class varptr
 		varptr<T>& operator = (ivariable<T>* other);
 		varptr<T>& operator = (const varptr<T>& other);
 
-		explicit operator ivariable<T>* (void) const;
+		operator ivariable<T>* () const;
 		ivariable<T>& operator * (void);
 		ivariable<T>* operator -> (void);
 		
@@ -49,7 +49,7 @@ class placeptr
 		placeptr<T>& operator = (std::vector<T> vec);
 		placeptr<T>& operator = (const tensor<T>& ten);
 
-		explicit operator placeholder<T>* (void) const;
+		operator placeholder<T>* () const;
 		placeholder<T>& operator * (void);
 		placeholder<T>* operator -> (void);
 		

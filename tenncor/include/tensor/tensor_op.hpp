@@ -20,16 +20,16 @@ template <typename T>
 using TEN_OP = std::function<void(T*&,std::vector<const T*>)>;
 
 // operates by pull protocol (non-reactive)
-template <typename T>
-class tensor_op : public tensor<T>
+template <typename T, typename A=ram_alloc>
+class tensor_op : public tensor<T,A>
 {
 	private:
 		TEN_OP<T> op_;
 		std::vector<const T*> raws_;
 
 	protected:
-		void copy (const tensor_op<T>& other);
-		tensor_op (const tensor_op<T>& other);
+		void copy (const tensor_op<T,A>& other);
+		tensor_op (const tensor_op<T,A>& other);
 		virtual tensor<T>* clone_impl (void);
 
 		// inherited and override. evaluates before returning raw. 
@@ -44,12 +44,12 @@ class tensor_op : public tensor<T>
 		tensor_op (TEN_OP<T> op, iallocator* alloc, const alloc_attrib& attrib);
 		// we don't own any of the raws so we don't need destructor
 
-		tensor_op<T>* clone (void);
-		tensor_op<T>& operator = (const tensor_op<T>& other);
+		tensor_op<T,A>* clone (void);
+		tensor_op<T,A>& operator = (const tensor_op<T,A>& other);
 
 		// buffer arguments
 		// null tensors's raw are recorded as null as well
-		virtual const tensor_op<T>& operator () (std::vector<tensor<T> const*> args);
+		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T> const*> args);
 };
 
 }

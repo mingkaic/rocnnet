@@ -36,7 +36,7 @@ struct dimension
 class tensorshape
 {
 	private:
-		std::vector<dimension>  dimensions_;
+		std::vector<dimension> dimensions_;
 
 	public:
 		tensorshape (void) {}
@@ -44,11 +44,16 @@ class tensorshape
 		tensorshape (const std::vector<dimension>& dims);
 		tensorshape& operator = (const std::vector<size_t>& dims);
 
-		tensorshape merge_with (const tensorshape& other);
-		tensorshape concatenate (const tensorshape& other);
-		tensorshape with_rank (size_t rank);
-		tensorshape with_rank_at_least (size_t rank);
-		tensorshape with_rank_at_most (size_t rank);
+		// create the most defined tensor
+		tensorshape merge_with (const tensorshape& other) const;
+		// create a new tensor that is the concatenation of
+		// other to this tensor
+		tensorshape concatenate (const tensorshape& other) const;
+		// create new tensors with the same dimensional value but
+		// corresponds to the desired rank
+		tensorshape with_rank (size_t rank) const;
+		tensorshape with_rank_at_least (size_t rank) const;
+		tensorshape with_rank_at_most (size_t rank) const;
 
 		// get the number of elems that can fit into tensorshape, 0 denotes unknown
 		size_t n_elems (void) const;
