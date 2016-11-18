@@ -29,6 +29,10 @@ class ml_perceptron
 		
 		void copy (const ml_perceptron& other, std::string scope);
 		ml_perceptron (const ml_perceptron& other, std::string scope);
+		virtual ml_perceptron* clone_impl (std::string scope)
+		{
+			return new ml_perceptron (*this, scope);
+		}
 
 	public:
 		// trust that passed in operations are unconnected

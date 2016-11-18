@@ -31,7 +31,8 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 
 	auto term = --layers.rend();
 	for (auto rit = layers.rbegin();
-		 term != rit; rit++) {
+		 term != rit; rit++)
+	{
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
 		ivariable<double>* weight_i = hp.first->get_variables().first;
@@ -45,7 +46,8 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 	varptr<double> learn_batch = learning_rate / batch_size;
 	group<double>* updates = new group<double>();
 	ivariable<double>* output = train_in;
-	for (HID_PAIR hp : layers) {
+	for (HID_PAIR hp : layers)
+	{
 		err = errs.top();
 		errs.pop();
 
@@ -74,14 +76,16 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 	return updates;
 }
 
-void gd_net::train_set_up (void) {
+void gd_net::train_set_up (void)
+{
 	// follow () operator for ml_perceptron except store hypothesis
 	std::queue<varptr<double> > layer_out;
 	std::stack<varptr<double> > prime_out;
 
 	// not so generic setup
 	varptr<double> output = train_in_;
-	for (HID_PAIR hp : layers) {
+	for (HID_PAIR hp : layers)
+	{
 		varptr<double> hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
@@ -91,21 +95,28 @@ void gd_net::train_set_up (void) {
 	}
 
 	// preliminary setup for any update algorithm
-	varptr<double> diff = output - expected_out;
-	record = new expose<double>(diff);
+	diff_ = output - expected_out;
 
-	if (nullptr == optimizer_) {
+	// optimizer_ and updates are two separate executors (updates technically NOT an executor)
+	// TODO: get rid of updates at some point (once optimizer proves to work)
+	if (nullptr == optimizer_)
+	{
 		updates = ad_hoc_gd_setup(
 			learning_rate,
 			train_in_, diff,
 			batch_size, this->layers,
 			layer_out, prime_out);
-	} else {
-		updates = optimizer_->minimize(diff * diff);
+	}
+	else
+	{
+		optimizer_->set_root(diff * diff);
+		optimizer_->freeze();
 	}
 }
 
-gd_net::gd_net (const gd_net& net, std::string scope) : ml_perceptron(net, scope) {
+gd_net::gd_net (const gd_net& net, std::string scope) : 
+	ml_perceptron(net, scope)
+{
 	n_input = net.n_input;
 	learning_rate = net.learning_rate;
 	batch_size = net.batch_size->clone();
@@ -117,8 +128,9 @@ gd_net::gd_net (const gd_net& net, std::string scope) : ml_perceptron(net, scope
 gd_net::gd_net (size_t n_input,
 	std::vector<IN_PAIR> hiddens,
 	OPTIMIZER<double> optimizer,
-	std::string scope)
-	: ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) {
+	std::string scope) : 
+	ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) 
+{
 	size_t n_out = hiddens.back().first;
 	batch_size = new placeholder<double>(std::vector<size_t>{0}, "batch_size");
 	train_in_ = new placeholder<double>(std::vector<size_t>{n_input, 0}, "train_in");
@@ -131,15 +143,23 @@ gd_net::gd_net (size_t n_input,
 // then apply cost funct to grad desc alg:
 // new weight = old weight - learning_rate * cost func gradient over old weight
 // same thing with bias (should experience no rocnnet decrease due to short circuiting)
-void gd_net::train (std::vector<double> train_in,
-					std::vector<double> expected_out) {
+void gd_net::train (std::vector<double> train_in, std::vector<double> expected_out) 
+{
 	(*this->batch_size) = std::vector<double>{(double) train_in.size() / n_input};
 	(*train_in_) = train_in;
 	(*this->expected_out) = expected_out;
 	// trigger update
-	updates->execute();
-	if (record_training) {
-		std::vector<double> errs = record->get_raw();
+	if (optimizer_)
+	{
+		optimizer_->execute();
+	}
+	else
+	{
+		updates->execute();
+	}
+	if (record_training)
+	{
+		std::vector<double> errs = nnet::expose<double>(diff_);
 		double avg_err = 0;
 		for (double e : errs) {
 			avg_err += std::abs(e);

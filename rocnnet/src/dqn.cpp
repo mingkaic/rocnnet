@@ -12,11 +12,10 @@
 
 namespace nnet {
 
-void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
-	// ===============================
-	// ACTION AND TRAINING VARIABLES!
-	// ===============================
-
+// ===============================
+// ACTION AND TRAINING VARIABLES!
+// ===============================
+void dq_net::variable_setup (void) {
 	// ACTION SCORE COMPUTATION
 	// ===============================
 	nnet::varptr<double> action_scores = (*target_net)(observation);
@@ -31,11 +30,10 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 			}
 			return big_idx;
 		});
-	action_expose = new expose<double>(predicted_actions);
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	nnet::varptr<double> next_action_scores = (*target_net)(next_observation);
+	nnet::ivariable<double>* next_action_scores = (*target_net)(next_observation);
 	// reduce max
 	nnet::varptr<double> target_values = compress<double>(next_action_scores, 1,
 		[](const std::vector<double>& v) {
@@ -48,12 +46,12 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 			return big;
 		});
 	// future rewards = rewards + discount * target action
-	nnet::varptr<double> future_rewards = rewards + (discount_rate * target_values);
+	nnet::varptr<double> future_rewards = nnet::var_ptr<double>(rewards) + (discount_rate * target_values);
 
 	// PREDICT ERROR
 	// ===============================
 	nnet::varptr<double> masked_action_score = // reduce sum
-			new compress<double>(action_scores * action_mask, 1,
+			compress<double>(action_scores * action_mask, 1,
 												[](const std::vector<double>& v) {
 													double accum;
 													for (double d : v) {
@@ -62,21 +60,22 @@ void dq_net::variable_setup (nnet::OPTIMIZER<double> optimizer) {
 													return accum;
 												});
 	nnet::varptr<double> diff = masked_action_score - future_rewards;
-	prediction_error = new compress<double>(diff * diff); // reduce mean
-	// minimize error
-	optimizer->ignore(next_action_scores);
-	GRAD_MAP<double> gradients = optimizer->compute_grad(prediction_error);
-
-	// clip the gradients to reduce outliers
-	for (auto it = gradients.begin(); gradients.end() != it; it++) {
-		nnet::varptr<double> var = (*it).first;
-		nnet::varptr<double> grad = (*it).second;
-		if (nullptr != grad) {
-			(*it).second = new clip_norm<double>(grad, 5);
+	prediction_error = compress<double>(diff * diff); // reduce mean
+	// action score is used for prediction error, no need to update twice, 
+	// especially if we're asynchronously updating (extra conflicts)
+	train_op_->ignore(next_action_scores);
+	// approach minima in error manifold 
+	// sets root, freeze, then manipulate.
+	// evaluate gradient of prediction_error (minimize it)
+	train_op_->set_manipulate(prediction_error,
+	[](ivariable<T>* key,ivariable<T>*& value)
+	{
+		// manipulate gradient by clipping to reduce outliers
+		if (nullptr != value) {
+			value = new clip_norm<double>(value, 5);
 		}
-	}
-
-	train_op = optimizer->apply_grad(gradients);
+		return true;
+	});
 
 	// UPDATE TARGET NETWORK
 	// ===============================
@@ -135,20 +134,21 @@ dq_net::dq_net (
 	size_t store_interval,
 	size_t mini_batch_size,
 	size_t max_exp) :
-		// state parameters
-		n_observations(n_input),
-		rand_action_prob(rand_action_prob),
-		store_interval(store_interval),
-		train_interval(train_interval),
-		mini_batch_size(mini_batch_size),
-		discount_rate(discount_rate),
-		max_exp(max_exp),
-		update_rate(update_rate),
-		// internal states
-		actions_executed(0),
-		iteration(0),
-		n_store_called(0),
-		n_train_called(0) {
+	// state parameters
+	n_observations(n_input),
+	rand_action_prob(rand_action_prob),
+	store_interval(store_interval),
+	train_interval(train_interval),
+	mini_batch_size(mini_batch_size),
+	discount_rate(discount_rate),
+	max_exp(max_exp),
+	update_rate(update_rate),
+	// internal states
+	actions_executed(0),
+	iteration(0),
+	n_store_called(0),
+	n_train_called(0)
+{
 
 	session& sess = session::get_instance();
 
@@ -160,14 +160,15 @@ dq_net::dq_net (
 	// fanin setup
 	target_net = q_net->clone("target_network");
 	tensorshape in_shape = std::vector<size_t>{n_input};
-	observation = make_place<double>(in_shape, "observation");
-	next_observation = make_place<double>(in_shape, "next_observation");
+	observation = new placeholder<double>(in_shape, "observation");
+	next_observation = new placeholder<double>(in_shape, "next_observation");
 	// mask and reward shape depends on batch size
-	next_observation_mask = make_place<double>(std::vector<size_t>{n_observations, 0}, "new_observation_mask");
-	rewards = make_place<double>(std::vector<size_t>{0}, "rewards");
-	action_mask = make_place<double>(std::vector<size_t>{n_actions, 0}, "action_mask");
+	next_observation_mask = new placeholder<double>(std::vector<size_t>{n_observations, 0}, "new_observation_mask");
+	rewards = new placeholder<double>(std::vector<size_t>{0}, "rewards");
+	action_mask = new placeholder<double>(std::vector<size_t>{n_actions, 0}, "action_mask");
 
-	variable_setup(optimizer);
+	train_op_ = optimizer_; // clone?
+	variable_setup();
 
 	sess.initialize_all<double>();
 
@@ -176,18 +177,17 @@ dq_net::dq_net (
 
 std::vector<double> dq_net::operator () (std::vector<double>& observations) {
 	// action is based on 1 set of observations
-	actions_executed++;
+	actions_executed++; // book keep
 	double exploration = linear_annealing(1.0);
-
+	// perform random exploration action
 	if (get_random() < exploration) {
 		std::vector<double> act_score(n_actions);
 		std::generate(act_score.begin(), act_score.end(), [this](){ return get_random(); });
-
 		return act_score;
 	}
-
+	// plug in data
 	*observation = observations;
-	return action_expose->get_raw();
+	return nnet::expose<double>(predicted_actions);
 }
 
 void dq_net::store (std::vector<double> observation,
@@ -252,7 +252,7 @@ void dq_net::train (std::vector<std::vector<double> > train_batch) {
 //		prediction_error->eval(); // cost
 
 		// weight training
-		train_op->eval();
+		train_op_->eval();
 
 		// update q nets
 		net_train.eval();

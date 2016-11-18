@@ -16,7 +16,7 @@ void tensor_op<T,A>::copy (const tensor_op<T,A>& other)
 {
 	op_ = other.op_;
 	raws_ = other.raws_;
-	tensor<T>::copy(other);
+	tensor<T,A>::copy(other);
 }
 
 template <typename T, typename A>
@@ -26,32 +26,20 @@ tensor_op<T,A>::tensor_op (const tensor_op<T,A>& other)
 }
 
 template <typename T, typename A>
-tensor<T>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this); }
+tensor<T,A>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this); }
 
 template <typename T, typename A>
 T* tensor_op<T,A>::get_raw (void) {
 	op_(this->get_raw(), raws_);
-	return tensor<T>::get_raw();
+	return tensor<T,A>::get_raw();
 }
 
 template <typename T, typename A>
 tensor_op<T,A>::tensor_op (TEN_OP<T> op) : op_(op) {}
 
 template <typename T, typename A>
-tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator& alloc) :
-	tensor<T>(std::vector<size_t>{}, alloc), op_(op) {}
-
-template <typename T, typename A>
-tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator* alloc) :
-	tensor<T>(std::vector<size_t>{}, alloc), op_(op) {}
-
-template <typename T, typename A>
-tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator& alloc, const alloc_attrib& attrib) :
-	tensor<T>(std::vector<size_t>{}, alloc, attrib), op_(op) {}
-
-template <typename T, typename A>
-tensor_op<T,A>::tensor_op (TEN_OP<T> op, iallocator* alloc, const alloc_attrib& attrib) :
-	tensor<T>(std::vector<size_t>{}, alloc, attrib), op_(op) {}
+tensor_op<T,A>::tensor_op (TEN_OP<T> op, const alloc_attrib& attrib) :
+	tensor<T,A>(std::vector<size_t>{}, attrib), op_(op) {}
 
 template <typename T, typename A>
 tensor_op<T,A>* tensor_op<T,A>::clone (void) { return static_cast<tensor_op<T,A>*>(clone_impl()); }
@@ -67,10 +55,10 @@ tensor_op<T,A>& tensor_op<T,A>::operator = (const tensor_op<T,A>& other)
 }
 
 template <typename T, typename A>
-const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T> const*> args)
+const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A> const*> args)
 {
 	raws_.clear();
-	for (tensor<T> const* t : args)
+	for (tensor<T,A> const* t : args)
 	{
 		if (nullptr == t)
 		{

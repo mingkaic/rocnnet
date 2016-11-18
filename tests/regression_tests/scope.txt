@@ -38,21 +38,33 @@ Key players:
 Expected Behavior
 - iobserver should detach (unsubscribe) from subject on destruction
 - iobserver should provide information regarding about its leaf subjects (purely independent nodes)
+- copying observers will copy over its dependencies (subjects)
 
 - subject should detach and mark all observers for destruction on destruction
 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
 - observers can publically attach and detach (subscribe and unsubscribe) to subjects
+- copying subjects will not copy over the observers
 
-- ivariable should expose getters for name, shape, and tensor
 - ileaf inheriteds should auto notify when initialized or reinitialized
 - variables auto initialize scalar on construction
 - assigning raw data or tensors to placeholders will initialize it
 - placeholders can be initialized at construction, 
-this initializer will be promptedly destroyed
+  this initializer will be promptedly destroyed
+- constants must self destruct when its subject loses all its subscribers
+- constants are always initialized
+- constants can't be allocated on the stack
+- variable's gradient is itself
+- constant's gradient is a zero constant
+- placeholder's gradient is a zero constant
 
-- ioperation should
+- ioperation must not be allocated on the stack
+- ioperation holding poorly defined tensors (null inputs) return null on evaluation
+- ioperation must reuse its gradient object
 
-- iexecutor should
+- iexecutor should prevent its destination from being updated when its source nodes notify
+- iexecutor should remove its source nodes when they are destroyed
+- iexecutor should remove its destination nodes when they are destroyed
+- group should execute its executors in order of when they are added
 
 - tensors should allocate raw data on construction 
 when tensorshape is fully defined
@@ -60,8 +72,9 @@ when tensorshape is fully defined
 or provided in allocation call
 - tensorshape provided in allocation call must be compatible with the tensorshape provided
 in construction
+- tensor_op must update its raw values before updating
 
-- iallocator should
+- iallocator should have the option of tracking allocated size
 - allocation of partially defined tensors will fail
 
 - initialization of unallocated tensors will fail
@@ -80,6 +93,6 @@ in construction
   that is dimensions > 0 should be preferred over dimension == 0
   tensorshapes that are incompatible will result in a logic error
 - two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation
-- a tensor is partially defined if it has a rank but is not fully defined
-- a tensor is fully defined if it is at least partially defined
-  but all its dimensional values are defined (> 0)
+- a tensor is partially defined if it has a rank
+- a tensor is fully defined if it is at least partially defined 
+  and all its dimensional values are defined (> 0)

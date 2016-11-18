@@ -80,6 +80,7 @@ class ioptimizer : public iexecutor<T>
 			return false;
 		}
 
+		// freezes the leaves (can't add or ignore leaves)
 		virtual void freeze (void)
 		{
 			if (nullptr != grader_)

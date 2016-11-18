@@ -62,13 +62,14 @@ ml_perceptron::~ml_perceptron (void)
 {
 	for (HID_PAIR hp : layers)
 	{
+		// delete perceptrons to kill the graph
 		delete hp.first;
 	}
 }
 
 ml_perceptron* ml_perceptron::clone (std::string scope)
 {
-    return new ml_perceptron(*this, scope);
+    return clone_impl(scope);
 }
 
 ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other)

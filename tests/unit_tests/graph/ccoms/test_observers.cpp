@@ -17,25 +17,27 @@ TEST(CCOMS, observer)
 	ASSERT_EQ(14%3, mod_obs3.get_out());
 }
 
-// expected behavior: 
-// observer constructed on subject will call subject attach
-// destroying observer will call subject detach
-//TEST(CCOMS, AttachAndDetach)
-//{
-//	mock_subject* subject = new mock_subject();
-//	EXPECT_CALL(*subject, attach(_)).Times(3);
-//
-//	// dynamically allocate to detect leak when subject dies
-//	mock_observer* o1 = new mock_observer(subject);
-//	mock_observer* o2 = new mock_observer(subject);
-//	mock_observer* o3 = new mock_observer(subject);
-//	// all observers are expected to suicide when subject dies
-//	EXPECT_CALL(*o1, safe_destroy()).Times(1);
-//	EXPECT_CALL(*o2, safe_destroy()).Times(1);
-//	EXPECT_CALL(*o3, safe_destroy()).Times(1);
-//
-//	delete subject;
-//}
+// expected behavior 1.
+TEST(CCOMS, AttachAndDetach)
+{
+	mock_subject* subject = new mock_subject();
+	EXPECT_CALL(*subject, attach(_)).Times(3);
+	EXPECT_CALL(*subject, detach(_)).Times(3);
+
+	// dynamically allocate to detect leak when subject dies
+	mock_observer* o1 = new mock_observer(subject);
+	mock_observer* o2 = new mock_observer(subject);
+	mock_observer* o3 = new mock_observer(subject);
+	// all observers are expected to suicide when subject dies
+	EXPECT_CALL(*o1, safe_destroy()).Times(1);
+	EXPECT_CALL(*o2, safe_destroy()).Times(1);
+	EXPECT_CALL(*o3, safe_destroy()).Times(1);
+
+	delete mock_observer; // test detach
+	delete subject;
+}
+
+// 
 //
 //// expected behavior:
 //// for all attached observers,

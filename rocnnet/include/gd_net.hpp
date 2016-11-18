@@ -30,24 +30,56 @@ class gd_net : public ml_perceptron
 		placeholder<double>* train_in_ = nullptr;
 		placeholder<double>* expected_out = nullptr;
 		placeholder<double>* batch_size = nullptr;
+		// training output
+		variable<double>* diff_;
 		// training executors
 		group<double>* updates;
-		expose<double>* record = nullptr;
 		// owns optimizer
-		OPTIMIZER<double> optimizer_ = nullptr;
-
+		ioptimizer<double>* optimizer_ = nullptr;
+	
+	protected:
 		void train_set_up (void);
+		
+		void copy (const gd_net& other, std::string scope)
+		{
+			n_input = net.n_input;
+			learning_rate = net.learning_rate;
+			batch_size = net.batch_size->clone();
+			train_in_ = net.train_in_->clone();
+			expected_out = net.expected_out->clone();
+			train_set_up();
+			ml_perceptron<T>::copy(other, scope);
+		}
 		gd_net (const gd_net& net, std::string scope);
+
+		virtual ml_perceptron* clone_impl (std::string scope)
+		{
+			return new gd_net(*this, scope);
+		}
 
 	public:
 		gd_net (size_t n_input,
 			std::vector<IN_PAIR> hiddens,
-			OPTIMIZER<double> optimizer = nullptr,
+			ioptimizer<double>* optimizer = nullptr,
 			std::string scope = "MLP");
 		virtual ~gd_net (void) {}
-		virtual gd_net* clone (std::string scope = "MLP_COPY") { return new gd_net(*this, scope); }
+		
+		// COPY
+		gd_net* clone (std::string scope = "GD_COPY") { return static_cast<gd_net*>(clone_impl(scope)); }
+		gd_net& operator = (const gd_net& other)
+		{
+			if (&other != this)
+			{
+				copy(other);
+			}
+			return *this;
+		}
+		
+		// MOVE
 
-		void set_the_record_str8 (bool record_training) {
+		// RECORD TRAINING?
+		void set_the_record_str8 (bool record_training)
+		{
 			this->record_training = record_training;
 		}
 

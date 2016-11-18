@@ -30,7 +30,7 @@ class tensor_op : public tensor<T,A>
 	protected:
 		void copy (const tensor_op<T,A>& other);
 		tensor_op (const tensor_op<T,A>& other);
-		virtual tensor<T>* clone_impl (void);
+		virtual tensor<T,A>* clone_impl (void);
 
 		// inherited and override. evaluates before returning raw. 
 		// told you it's not overengineered
@@ -38,10 +38,7 @@ class tensor_op : public tensor<T,A>
 
 	public:
 		tensor_op (TEN_OP<T> op);
-		tensor_op (TEN_OP<T> op, iallocator& alloc);
-		tensor_op (TEN_OP<T> op, iallocator* alloc);
-		tensor_op (TEN_OP<T> op, iallocator& alloc, const alloc_attrib& attrib);
-		tensor_op (TEN_OP<T> op, iallocator* alloc, const alloc_attrib& attrib);
+		tensor_op (TEN_OP<T> op, const alloc_attrib& attrib);
 		// we don't own any of the raws so we don't need destructor
 
 		tensor_op<T,A>* clone (void);
@@ -49,7 +46,7 @@ class tensor_op : public tensor<T,A>
 
 		// buffer arguments
 		// null tensors's raw are recorded as null as well
-		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T> const*> args);
+		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T,A> const*> args);
 };
 
 }

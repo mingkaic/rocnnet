@@ -28,7 +28,8 @@ void ivariable<T>::copy (const ivariable<T>& other, std::string name)
 }
 
 template <typename T>
-ivariable<T>::ivariable (const ivariable<T>& other, std::string name)
+ivariable<T>::ivariable (const ivariable<T>& other, std::string name) :
+	ccoms::subject(other)
 {
 	copy(other, name);
 }

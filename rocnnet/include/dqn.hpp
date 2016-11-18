@@ -62,21 +62,20 @@ class dq_net {
 		size_t n_train_called;
 
 		// fanins
-		nnet::placeptr<double> observation;
-		nnet::placeptr<double> next_observation;
-		nnet::placeptr<double> next_observation_mask;
-		nnet::placeptr<double> rewards;
-		nnet::placeptr<double> action_mask;
+		nnet::placeholder<double>* observation;
+		nnet::placeholder<double>* next_observation;
+		nnet::placeholder<double>* next_observation_mask;
+		nnet::placeholder<double>* rewards;
+		nnet::placeholder<double>* action_mask;
 
-		nnet::expose<double>* action_expose;
 		// fanouts
-		nnet::varptr<double> predicted_actions;
-		nnet::varptr<double> prediction_error;
+		nnet::variable<double>* predicted_actions;
+		nnet::variable<double>* prediction_error;
 		// update
-		iexecutor<double>* train_op;
+		optimizer<double>* train_op_;
 		group<double> net_train;
 
-		void variable_setup (nnet::OPTIMIZER<double> optimizer);
+		void variable_setup (void);
 		double get_random (void);
 		std::vector<exp_batch> get_sample (void);
 

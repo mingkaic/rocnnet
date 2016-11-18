@@ -13,60 +13,61 @@
 namespace nnet
 {
 
-template <typename T>
-void tensor_jacobi<T>::clear_ownership (void)
+template <typename T, typename A>
+void tensor_jacobi<T,A>::clear_ownership (void)
 {
 	owner_.clear();
 	root_ = nullptr;
 }
 
-template <typename T>
-void tensor_jacobi<T>::copy (const tensor_jacobi<T>& other)
+template <typename T, typename A>
+void tensor_jacobi<T,A>::copy (const tensor_jacobi<T,A>& other)
 {
 	transposeA_ = other.transposeA_;
 	transposeB_ = other.transposeB_;
 	k_ = other.k_;
 	owner_ = other.owner_;
 	root_ = other.root_;
-	tensor<T>::copy(other);
+	tensor<T,A>::copy(other);
 }
 
-template <typename T>
-tensor_jacobi<T>::tensor_jacobi (const tensor_jacobi<T>& other)
+template <typename T, typename A>
+tensor_jacobi<T,A>::tensor_jacobi (const tensor_jacobi<T,A>& other)
 {
 	copy(other);
 }
 
-template <typename T>
-tensor<T>* tensor_jacobi<T>::clone_impl (void)
+template <typename T, typename A>
+tensor<T,A>* tensor_jacobi<T,A>::clone_impl (void)
 {
-    return new tensor_jacobi<T>(*this);
+    return new tensor_jacobi<T,A>(*this);
 }
 
-template <typename T>
-T* tensor_jacobi<T>::get_raw (void)
+template <typename T, typename A>
+T* tensor_jacobi<T,A>::get_raw (void)
 {
-	tensor<T>* src = root_->get_eval();
+	tensor<T,A>* src = root_->get_eval();
 	copy(*src);
-	return tensor<T>::get_raw();
+	return tensor<T,A>::get_raw();
 }
 
-template <typename T>
-tensor_jacobi<T>::tensor_jacobi (bool transposeA, bool transposeB) :
+template <typename T, typename A>
+tensor_jacobi<T,A>::tensor_jacobi (bool transposeA, bool transposeB) :
 	transposeA_(transposeA), transposeB_(transposeB) {}
 
-template <typename T>
-tensor_jacobi<T>::~tensor_jacobi (void) { clear_ownership(); }
+template <typename T, typename A>
+tensor_jacobi<T,A>::~tensor_jacobi (void) { clear_ownership(); }
 
 // COPY
-template <typename T>
-tensor_jacobi<T>* tensor_jacobi<T>::clone (void)
+
+template <typename T, typename A>
+tensor_jacobi<T,A>* tensor_jacobi<T,A>::clone (void)
 {
-    return static_cast<tensor_jacobi<T>*>(clone_impl());
+    return static_cast<tensor_jacobi<T,A>*>(clone_impl());
 }
 
-template <typename T>
-tensor_jacobi<T>& tensor_jacobi<T>::operator = (const tensor_jacobi<T>& other)
+template <typename T, typename A>
+tensor_jacobi<T,A>& tensor_jacobi<T,A>::operator = (const tensor_jacobi<T,A>& other)
 {
     if (this != &other)
     {
@@ -75,19 +76,19 @@ tensor_jacobi<T>& tensor_jacobi<T>::operator = (const tensor_jacobi<T>& other)
     return *this;
 }
 
-template <typename T>
-void tensor_jacobi<T>::set_root (ivariable<T>* root) { k_ = root; }
+template <typename T, typename A>
+void tensor_jacobi<T,A>::set_root (ivariable<T>* root) { k_ = root; }
 
-template <typename T>
-const tensor_jacobi<T>& tensor_jacobi<T>::operator () (
+template <typename T, typename A>
+const tensor_jacobi<T,A>& tensor_jacobi<T,A>::operator () (
     ivariable<T>* arga, 
     ivariable<T>* argb)
 {
 	// J(a, b) = d(a) * matmul(k, b^T) + d(b) * matmul(a^T, k)
 	clear_ownership();
 	// we're at evaluation time, so we can assess which derivative to take
-	const tensor<T>* ag = arga->get_gradient()->get_eval();
-	const tensor<T>* bg = argb->get_gradient()->get_eval();
+	const tensor<T,A>* ag = arga->get_gradient()->get_eval();
+	const tensor<T,A>* bg = argb->get_gradient()->get_eval();
 	ivariable<T>* a = nullptr;
 	if (ag)
 	{
