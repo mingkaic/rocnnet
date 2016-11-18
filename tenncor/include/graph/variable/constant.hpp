@@ -37,12 +37,12 @@ class constant : public ileaf<T>
 
 	public:
 		// build are necessary for suicidal leaves
-		static ivariable<T>* build (T scalar)
+		static constant<T>* build (T scalar)
 		{
 			return new constant<T>(scalar);
 		}
 
-		static ivariable<T>* build (std::vector<T> raw, tensorshape shape)
+		static constant<T>* build (std::vector<T> raw, tensorshape shape)
 		{
 			return new constant<T>(raw, shape);
 		}

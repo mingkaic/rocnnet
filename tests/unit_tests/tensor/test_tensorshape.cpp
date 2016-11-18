@@ -2,8 +2,9 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#include "tensor/tensorshape.hpp"
 #include "gtest/gtest.h"
+#include "tensor/tensorshape.hpp"
+
 
 static bool tensorshape_equal (
 	const nnet::tensorshape& ts1,
@@ -18,81 +19,18 @@ static bool tensorshape_equal (
 	return false;
 }
 
-TEST(DIMENSION, assert_is_compatible_with) {
-	nnet::dimension d0(0); // unknown
-	nnet::dimension d1(1);
-	nnet::dimension d2(2);
 
-	d0.assert_is_compatible_with(d0);
-	d0.assert_is_compatible_with(d1);
-	d0.assert_is_compatible_with(d2);
-
-	d1.assert_is_compatible_with(d0);
-	d1.assert_is_compatible_with(d1);
-	EXPECT_DEATH({ d1.assert_is_compatible_with(d2); }, ".*");
-
-	d2.assert_is_compatible_with(d0);
-	d2.assert_is_compatible_with(d2);
-	ASSERT_DEATH({ d2.assert_is_compatible_with(d1); }, ".*");
-}
-
-
-TEST(DIMENSION, is_compatible_with) {
-	nnet::dimension d0(0); // unknown
-	nnet::dimension d1(1);
-	nnet::dimension d2(2);
-
-	EXPECT_TRUE(d0.is_compatible_with(d0));
-	EXPECT_TRUE(d0.is_compatible_with(d1));
-	EXPECT_TRUE(d0.is_compatible_with(d2));
-
-	EXPECT_TRUE(d1.is_compatible_with(d0));
-	EXPECT_TRUE(d1.is_compatible_with(d1));
-	EXPECT_FALSE(d1.is_compatible_with(d2));
-
-	EXPECT_TRUE(d2.is_compatible_with(d0));
-	EXPECT_FALSE(d2.is_compatible_with(d1));
-	ASSERT_TRUE(d2.is_compatible_with(d2));
-}
-
-
-TEST(DIMENSION, merge_with) {
-	nnet::dimension d0(0); // unknown
-	nnet::dimension d1(1);
-	nnet::dimension d2(2);
-
-	nnet::dimension d00 = d0.merge_with(d0);
-	nnet::dimension d01 = d0.merge_with(d1);
-	nnet::dimension d02 = d0.merge_with(d2);
-	EXPECT_EQ(d00.value_, d0.value_);
-	EXPECT_EQ(d01.value_, d1.value_);
-	EXPECT_EQ(d02.value_, d2.value_);
-
-	nnet::dimension d10 = d1.merge_with(d0);
-	nnet::dimension d11 = d1.merge_with(d1);
-	EXPECT_EQ(d10.value_, d1.value_);
-	EXPECT_EQ(d11.value_, d1.value_);
-	EXPECT_THROW({ d1.merge_with(d2); }, std::logic_error);
-
-	nnet::dimension d20 = d2.merge_with(d0);
-	nnet::dimension d22 = d2.merge_with(d2);
-	EXPECT_EQ(d20.value_, d2.value_);
-	EXPECT_EQ(d22.value_, d2.value_);
-	ASSERT_THROW({ d2.merge_with(d1); }, std::logic_error);
-}
-
-
-TEST(TENSORSHAPE, is_compatible_with) {
-	std::vector<size_t> part1 = {0, 1, 2};
+// Behavior A000
+TEST(TENSORSHAPE, Compatible_A000) {
 	std::vector<size_t> part2 = {3, 1, 0};
 	std::vector<size_t> part3 = {3, 0, 0};
 	std::vector<size_t> bad = {2, 0, 0};
 	std::vector<size_t> com = {3, 1, 2};
-	nnet::tensorshape incom_ts;
+	nnet::tensorshape incom_ts; // undefined
 	nnet::tensorshape com_ts1(com);
 	nnet::tensorshape com_ts2(com);
-	nnet::tensorshape p_ts1(part1);
-	nnet::tensorshape p_ts2(part2);
+	nnet::tensorshape p_ts1(std::vector<size_t>{0, 1, 2});
+	nnet::tensorshape p_ts2(std::vector<size_t>{3, 1, 0});
 	nnet::tensorshape p_ts3(part3);
 	nnet::tensorshape bad_ts(bad);
 	EXPECT_TRUE(incom_ts.is_compatible_with(com_ts1));
@@ -110,24 +48,25 @@ TEST(TENSORSHAPE, is_compatible_with) {
 }
 
 
-TEST(TENSORSHAPE, is_part_defined) {
-	std::vector<size_t> v = {0, 1, 2};
+// Behavior A003
+TEST(TENSORSHAPE, PartiallyDefined_A003) {
 	nnet::tensorshape incom_ts;
-	nnet::tensorshape com_ts(v);
+	nnet::tensorshape pcom_ts(std::vector<size_t>{0, 1, 2});
+	nnet::tensorshape com_ts(std::vector<size_t>{1, 2, 3});
 	EXPECT_FALSE(incom_ts.is_part_defined());
-	ASSERT_TRUE(com_ts.is_part_defined());
+	EXPECT_TRUE(pcom_ts.is_part_defined());
+	EXPECT_TRUE(com_ts.is_part_defined());
 }
 
 
-TEST(TENSORSHAPE, is_fully_defined) {
-	std::vector<size_t> v = {0, 1, 2};
-	std::vector<size_t> fv = {3, 1, 2};
+// Behavior A004
+TEST(TENSORSHAPE, FullyDefine_A004) {
 	nnet::tensorshape incom_ts;
-	nnet::tensorshape pcom_ts(v);
-	nnet::tensorshape fcom_ts(fv);
+	nnet::tensorshape pcom_ts(std::vector<size_t>{0, 1, 2});
+	nnet::tensorshape com_ts(std::vector<size_t>{3, 1, 2});
 	EXPECT_FALSE(incom_ts.is_fully_defined());
 	EXPECT_FALSE(pcom_ts.is_fully_defined());
-	EXPECT_TRUE(fcom_ts.is_fully_defined());
+	EXPECT_TRUE(com_ts.is_fully_defined());
 }
 
 

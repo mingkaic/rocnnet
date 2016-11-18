@@ -35,64 +35,61 @@ Key players:
 - session
 - tensorshape
 
-Expected Behavior
-- iobserver should detach (unsubscribe) from subject on destruction
-- iobserver should provide information regarding about its leaf subjects (purely independent nodes)
-- copying observers will copy over its dependencies (subjects)
+Expected Behaviors:
 
-- subject should detach and mark all observers for destruction on destruction
-- subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
-- observers can publically attach and detach (subscribe and unsubscribe) to subjects
-- copying subjects will not copy over the observers
+// TENSOR DATA MANAGERS
+A000 - tensorshape is compatible if one of the shapes are undefined, or the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
+A001 - tensorshape merge should return the most defined most defined shape (that is dimensions > 0 should be preferred over dimension == 0 tensorshapes that are incompatible will result in a logic error)
+A002 - two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation
+A003 - a tensorshapes is partially defined if it has a rank
+A004 - a tensorshapes is fully defined if it is at least partially defined and all its dimensional values are defined (> 0)
 
-- ileaf inheriteds should auto notify when initialized or reinitialized
-- variables auto initialize scalar on construction
-- assigning raw data or tensors to placeholders will initialize it
-- placeholders can be initialized at construction, 
-  this initializer will be promptedly destroyed
-- constants must self destruct when its subject loses all its subscribers
-- constants are always initialized
-- constants can't be allocated on the stack
-- variable's gradient is itself
-- constant's gradient is a zero constant
-- placeholder's gradient is a zero constant
+B000 - allocation of partially defined tensors will fail
 
-- ioperation must not be allocated on the stack
-- ioperation holding poorly defined tensors (null inputs) return null on evaluation
-- ioperation must reuse its gradient object
+B100 - tensors should allocate raw data on construction when tensorshape is fully defined
+B101 - tensor allocation requires a fully defined tensorshape either provided in construction or provided in allocation call
+B102 - tensorshape provided in allocation call must be compatible with the tensorshape provided in construction
+B103 - tensor_op must update its raw values before updating
 
-- iexecutor should prevent its destination from being updated when its source nodes notify
-- iexecutor should remove its source nodes when they are destroyed
-- iexecutor should remove its destination nodes when they are destroyed
-- group should execute its executors in order of when they are added
+// VARIABLE DEPENDENT OBJECTS
+C000 - session should register all variable nodes on node construction
+C001 - session should unregister all destroyed variable nodes
+C002 - session should be singleton per thread
+C003 - session should be able to initialize all initialisable values
+C004 - session should be able to toggle between shape evaluation on variable node construction
 
-- tensors should allocate raw data on construction 
-when tensorshape is fully defined
-- tensor allocation requires a fully defined tensorshape either provided in construction
-or provided in allocation call
-- tensorshape provided in allocation call must be compatible with the tensorshape provided
-in construction
-- tensor_op must update its raw values before updating
+D000 - initialization of unallocated tensors will fail
+D001 - initialization of partially defined tensors will fail
 
-- iallocator should have the option of tracking allocated size
-- allocation of partially defined tensors will fail
+// VARIABLE LEAF NODES
+D100 - ileaf inheriteds should auto notify when initialized or reinitialized
+D101 - variables auto initialize scalar on construction
+D102 - assigning raw data or tensors to placeholders will initialize it
+D103 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
+D104 - constants must self destruct when its subject loses all its subscribers
+D105 - constants are always initialized
+D106 - constants can't be allocated on the stack
+D107 - variable's gradient is itself
+D108 - constant's gradient is a zero constant
+D109 - placeholder's gradient is a zero constant
 
-- initialization of unallocated tensors will fail
-- initialization of partially defined tensors will fail
+// REACTIVE BEHAVIOR
+E000 - iobserver should detach (unsubscribe) from subject on destruction
+E001 - iobserver should provide information regarding about its leaf subjects (purely independent nodes)
+E002 - copying observers will copy over its dependencies (subjects)
 
-- session should register all variable nodes on node construction
-- session should unregister all destroyed variable nodes
-- session should be singleton per thread
-- session should be able to initialize all initialisable values
-- session should be able to toggle between shape evaluation on
-  variable node construction
+E500 - subject should detach and mark all observers for destruction on destruction
+E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
+E502 - observers can publically attach and detach (subscribe and unsubscribe) to subjects
+E503 - copying subjects will not copy over the observers
 
-- tensorshape is compatible if one of the shapes are undefined, or
-  the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
-- tensorshape merge should return the most defined most defined shape
-  that is dimensions > 0 should be preferred over dimension == 0
-  tensorshapes that are incompatible will result in a logic error
-- two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation
-- a tensor is partially defined if it has a rank
-- a tensor is fully defined if it is at least partially defined 
-  and all its dimensional values are defined (> 0)
+// BASE OPERATION NODE
+F000 - ioperation must not be allocated on the stack
+F001 - ioperation holding poorly defined tensors (null inputs) return null on evaluation
+F002 - ioperation must reuse its gradient object
+
+// VARIABLE NODE EXECUTORS
+G000 - iexecutor should prevent its destination from being updated when its source nodes notify
+G001 - iexecutor should remove its source nodes when they are destroyed
+G002 - iexecutor should remove its destination nodes when they are destroyed
+G003 - group should execute its executors in order of when they are added

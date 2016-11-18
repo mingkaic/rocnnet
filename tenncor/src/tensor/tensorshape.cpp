@@ -58,7 +58,7 @@ tensorshape& tensorshape::operator = (const std::vector<size_t>& dims)
 	return *this;
 }
 
-tensorshape tensorshape::merge_with (const tensorshape& other)
+tensorshape tensorshape::merge_with (const tensorshape& other) const
 {
 	if (dimensions_.empty())
 	{
@@ -89,7 +89,7 @@ tensorshape tensorshape::merge_with (const tensorshape& other)
 	return tensorshape(ds);
 }
 
-tensorshape tensorshape::concatenate (const tensorshape& other)
+tensorshape tensorshape::concatenate (const tensorshape& other) const
 {
 	if (dimensions_.empty() || other.dimensions_.empty())
 	{
@@ -100,7 +100,7 @@ tensorshape tensorshape::concatenate (const tensorshape& other)
 	return tensorshape(ds);
 }
 
-tensorshape tensorshape::with_rank (size_t rank)
+tensorshape tensorshape::with_rank (size_t rank) const
 {
 	if (dimensions_.empty())
 	{
@@ -116,7 +116,7 @@ tensorshape tensorshape::with_rank (size_t rank)
 	return *this;
 }
 
-tensorshape tensorshape::with_rank_at_least (size_t rank)
+tensorshape tensorshape::with_rank_at_least (size_t rank) const
 {
 	if (dimensions_.empty())
 	{
@@ -132,7 +132,7 @@ tensorshape tensorshape::with_rank_at_least (size_t rank)
 	return *this;
 }
 
-tensorshape tensorshape::with_rank_at_most (size_t rank)
+tensorshape tensorshape::with_rank_at_most (size_t rank) const
 {
 	if (dimensions_.empty())
 	{
@@ -160,12 +160,12 @@ size_t tensorshape::n_elems (void) const
 
 size_t tensorshape::n_dims (void) const
 {
-	returndimensions_.size();
+	return dimensions_.size();
 }
 
 std::vector<dimension> tensorshape::dims (void) const
 {
-	returndimensions_;
+	return dimensions_;
 }
 
 std::vector<size_t> tensorshape::as_list (void) const
@@ -180,7 +180,7 @@ std::vector<size_t> tensorshape::as_list (void) const
 
 tensorshape tensorshape::trim (void) const
 {
-	std::vector<dimension>::const_iterator start =dimensions_.begin();
+	std::vector<dimension>::const_iterator start = dimensions_.begin();
 	std::vector<dimension>::const_iterator end = --dimensions_.end();
 	while (1 == size_t(*start)) { start++; }
 	while (1 == size_t(*end)) { end--; }

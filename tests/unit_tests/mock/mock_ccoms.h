@@ -8,33 +8,33 @@
 #include "gmock/gmock.h"
 #include "graph/ccoms/iobserver.hpp"
 
-class mock_subject : public ccoms::subject
-{
-	public:
-		mock_subject (void) {}
-		~mock_subject (void) {}
-
-		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
-		MOCK_METHOD1(attach, void(ccoms::iobserver*));
-		MOCK_METHOD1(detach, void(ccoms::iobserver*));
-		MOCK_METHOD1(notify, void(ccoms::subject*));
-		MOCK_METHOD0(notify, void());
-};
-
-class mock_observer : public ccoms::iobserver
-{
-	public:
-		mock_observer (ccoms::subject* sub) : 
-			ccoms::iobserver(std::vector<ccoms::subject*>{sub}) {}
-		mock_observer (ccoms::subject* sub1, ccoms::subject* sub2) :
- 			ccoms::iobserver(std::vector<ccoms::subject*>{sub1, sub2}) {}
-		~mock_observer (void) {}
-
-		MOCK_METHOD0(safe_destroy, bool(void));
-		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
-		MOCK_METHOD1(leaves_collect, void(std::function<void(ccoms::subject*)>));
-		MOCK_METHOD1(update, void(ccoms::subject*));
-};
+//class mock_subject : public ccoms::subject
+//{
+//	public:
+//		mock_subject (void) {}
+//		~mock_subject (void) {}
+//
+//		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
+//		MOCK_METHOD1(attach, void(ccoms::iobserver*));
+//		MOCK_METHOD1(detach, void(ccoms::iobserver*));
+//		MOCK_METHOD1(notify, void(ccoms::subject*));
+//		MOCK_METHOD0(notify, void());
+//};
+//
+//class mock_observer : public ccoms::iobserver
+//{
+//	public:
+//		mock_observer (ccoms::subject* sub) :
+//			ccoms::iobserver(std::vector<ccoms::subject*>{sub}) {}
+//		mock_observer (ccoms::subject* sub1, ccoms::subject* sub2) :
+// 			ccoms::iobserver(std::vector<ccoms::subject*>{sub1, sub2}) {}
+//		~mock_observer (void) {}
+//
+//		MOCK_METHOD0(safe_destroy, bool(void));
+//		MOCK_METHOD1(merge_leaves, void(std::unordered_set<ccoms::subject*>&));
+//		MOCK_METHOD1(leaves_collect, void(std::function<void(ccoms::subject*)>));
+//		MOCK_METHOD1(update, void(ccoms::subject*));
+//};
 
 //class mock_intern : virtual public ccoms::iobserver, virtual public ccoms::subject
 //{
