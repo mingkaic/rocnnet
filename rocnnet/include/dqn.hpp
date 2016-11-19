@@ -84,7 +84,7 @@ class dq_net {
 	public:
 		dq_net (size_t n_input,
 				std::vector<IN_PAIR> hiddens,
-				nnet::OPTIMIZER<double> optimizer,
+				nnet::ioptimizer<double>* optimizer = nullptr,
 				size_t train_interval = 5,
 				double rand_action_prob = 0.05,
 				double discount_rate = 0.95,

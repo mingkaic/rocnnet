@@ -51,7 +51,7 @@ set(TENNCOR_LIB tenncor)
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 #>>>>>>>>>>>>>>>>>>>>>>>> DONE BUILDING TENNCOR <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET DLL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 #-------------------
 # set rocnnet paths
 #-------------------
@@ -61,10 +61,24 @@ FILE(GLOB_RECURSE ROCNNET_SRC
     ${ROCNNET_DIR}/src/*.cpp)
 
 #-------------------
-# build
+# set tenncor include path
 #-------------------
-# not yet...
+include_directories(${ROCNNET_INCLUDE})
+
+set(ROCNNET_DLL rocnnet)
+add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC})
+target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB}
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+set(DEMO_DIR ${PROJECT_SOURCE_DIR}/demo1)
+
+include_directories(${TENNCOR_INCLUDE})
+include_directories(${ROCNNET_INCLUDE})
+
+add_executable (Demo ${DEMO_DIR}/agent.cpp)
+target_link_libraries (Demo ${TENNCOR_LIB} ${ROCNNET_DLL})
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>> UNIT TESTING USING GOOGLETEST <<<<<<<<<<<<<<<<<<<<<<<<<
 set(UNIT_TEST_NAME unit_test)

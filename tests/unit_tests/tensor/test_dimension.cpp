@@ -6,11 +6,12 @@
 #include "tensor/tensorshape.hpp"
 
 
-TEST(DIMENSION, Compatible) {
-	nnet::dimension d0(0); // unknown
-	nnet::dimension d1(1);
-	nnet::dimension d2(2);
+static const nnet::dimension d0(0); // unknown
+static const nnet::dimension d1(1);
+static const nnet::dimension d2(2);
 
+
+TEST(DIMENSION, Compatible) {
 	// assertion
 	d0.assert_is_compatible_with(d0);
 	d0.assert_is_compatible_with(d1);
@@ -36,10 +37,6 @@ TEST(DIMENSION, Compatible) {
 
 
 TEST(DIMENSION, Merge) {
-	nnet::dimension d0(0); // unknown
-	nnet::dimension d1(1);
-	nnet::dimension d2(2);
-
 	nnet::dimension d00 = d0.merge_with(d0);
 	nnet::dimension d01 = d0.merge_with(d1);
 	nnet::dimension d02 = d0.merge_with(d2);

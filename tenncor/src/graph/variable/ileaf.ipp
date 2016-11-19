@@ -84,6 +84,7 @@ ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other)
 	if (this != &other)
 	{
 		this->copy(other);
+		this->notify();
 	}
 	return *this;
 }

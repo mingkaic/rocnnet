@@ -48,6 +48,7 @@ class ileaf : public ivariable<T>
 
 		// GET INFO
 		bool can_init (void) const;
+		bool is_init (void) const { return is_init_; }
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
 		virtual ivariable<T>* get_gradient (void);

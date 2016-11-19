@@ -56,6 +56,7 @@ tensor<T>& variable<T>::initialize (void)
 	}
 	(*this->init_)(*(this->out_));
 	this->is_init_ = true;
+	this->notify();
 	return *(this->out_);
 }
 
@@ -69,6 +70,7 @@ tensor<T>& variable<T>::initialize (tensorshape alloc_shape)
 	}
 	(*this->init_)(*(this->out_));
 	this->is_init_ = true;
+	this->notify();
 	return *(this->out_);
 }
 

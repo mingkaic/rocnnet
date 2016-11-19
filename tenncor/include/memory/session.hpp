@@ -61,6 +61,11 @@ class session
 
 		template <typename T>
 		void unregister_obj (ivariable<T>& obj) { registry.erase(&obj); }
+		
+		bool ptr_registered (void* ptr)
+		{ 
+			return registry.end() == registry.find(ptr);
+		}
 
 		template <typename T>
 		void initialize_all (void)

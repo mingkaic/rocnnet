@@ -58,6 +58,9 @@ class tensor
 
 		template <typename U>
 		friend std::vector<U> expose (ivariable<U>* var);
+		
+		template <typename U>
+		friend std::vector<U> expose (tensor<U>* ten);
 
 	public:
 		// creates a rank 0 tensor
@@ -121,6 +124,21 @@ class tensor
 		// bool from_proto (const tensorproto& other);
 		// bool from_proto (iallocator* a, const tensorproto& other);
 };
+
+template <typename T>
+std::vector<T> expose (tensor<T>* ten)
+{
+	assert(ten->is_alloc());
+	T* raw = ten->get_raw();
+	return std::vector<T>(raw, raw + ten->n_elems());
+}
+
+template <typename T>
+std::vector<T> expose (ivariable<T>* var)
+{
+	tensor<T>* ten = var->get_eval();
+	return expose(ten);
+}
 
 }
 

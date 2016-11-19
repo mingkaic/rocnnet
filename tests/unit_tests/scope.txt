@@ -37,16 +37,23 @@ Key players:
 
 Expected Behaviors:
 
+// Definition
+- tensorshapes are equivalent if:
+    - their defined state are equal
+    - they are compatible
+
 // TENSOR DATA MANAGERS
 A000 - tensorshape is compatible if one of the shapes are undefined, or the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
-A001 - tensorshape merge should return the most defined most defined shape (that is dimensions > 0 should be preferred over dimension == 0 tensorshapes that are incompatible will result in a logic error)
-A002 - two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation
-A003 - a tensorshapes is partially defined if it has a rank
-A004 - a tensorshapes is fully defined if it is at least partially defined and all its dimensional values are defined (> 0)
+A001 - tensorshape merge should return the most defined most defined shape (that is dimension values > 0 are preferred)
+A002 - merging incompatible tensorshapes should result in a logic error
+A003 - two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation assuming both tensors are at least partially defined
+A004 - a tensorshapes is partially defined if it has a rank
+A005 - a tensorshapes is fully defined if it is at least partially defined and all its dimensional values are defined (> 0)
 
-B000 - allocation of partially defined tensors will fail
+B000 - allocation of undefined or partially defined tensors will fail
+B001 - reallocation of tensors will succeed (and clear already allocated raw data)
 
-B100 - tensors should allocate raw data on construction when tensorshape is fully defined
+B100 - tensors should allocate raw data on construction if tensorshape is fully defined
 B101 - tensor allocation requires a fully defined tensorshape either provided in construction or provided in allocation call
 B102 - tensorshape provided in allocation call must be compatible with the tensorshape provided in construction
 B103 - tensor_op must update its raw values before updating
@@ -55,21 +62,19 @@ B103 - tensor_op must update its raw values before updating
 C000 - session should register all variable nodes on node construction
 C001 - session should unregister all destroyed variable nodes
 C002 - session should be singleton per thread
-C003 - session should be able to initialize all initialisable values
-C004 - session should be able to toggle between shape evaluation on variable node construction
+C003 - session should be able to initialize all initialisable variables of a specific type
 
 D000 - initialization of unallocated tensors will fail
-D001 - initialization of partially defined tensors will fail
 
 // VARIABLE LEAF NODES
 D100 - ileaf inheriteds should auto notify when initialized or reinitialized
 D101 - variables auto initialize scalar on construction
+D107 - variable's gradient is itself
 D102 - assigning raw data or tensors to placeholders will initialize it
 D103 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
 D104 - constants must self destruct when its subject loses all its subscribers
 D105 - constants are always initialized
 D106 - constants can't be allocated on the stack
-D107 - variable's gradient is itself
 D108 - constant's gradient is a zero constant
 D109 - placeholder's gradient is a zero constant
 

@@ -125,7 +125,7 @@ double dq_net::linear_annealing (double initial_prob) const {
 dq_net::dq_net (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
-	nnet::OPTIMIZER<double> optimizer,
+	nnet::ioptimizer<double>* optimizer,
 	size_t train_interval,
 	double rand_action_prob,
 	double discount_rate,
