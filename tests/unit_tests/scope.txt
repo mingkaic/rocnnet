@@ -65,6 +65,7 @@ C002 - session should be singleton per thread
 C003 - session should be able to initialize all initialisable variables of a specific type
 
 D000 - initialization of unallocated tensors will fail
+D001 - random initializers must share a distribution engine
 
 // VARIABLE LEAF NODES
 D100 - ileaf inheriteds should auto notify when initialized or reinitialized

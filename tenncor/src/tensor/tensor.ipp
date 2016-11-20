@@ -41,8 +41,8 @@ tensor<T,A>::tensor (tensorshape shape) :
 {
 	if (allowed_shape_.is_fully_defined())
 	{
-		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), default_attr);
 		alloc_shape_ = shape;
+		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), default_attr);
 	}
 }
 
@@ -52,13 +52,14 @@ tensor<T,A>::tensor (tensorshape shape, const alloc_attrib& attrib) :
 {
 	if (allowed_shape_.is_fully_defined())
 	{
-		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), attrib);
 		alloc_shape_ = shape;
+		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), attrib);
 	}
 }
 
 template <typename T, typename A>
-tensor<T,A>::tensor (T scalar) : tensor<T,A>(std::vector<size_t>{1}), alloc_()
+tensor<T,A>::tensor (T scalar) :
+	tensor<T,A>(std::vector<size_t>{1})
 {
 	this->raw_data_[0] = scalar;
 }

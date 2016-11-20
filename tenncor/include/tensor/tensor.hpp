@@ -29,6 +29,8 @@ template <typename T>
 class initializer;
 template <typename T>
 class ivariable;
+template <typename T, typename A>
+class tensor_op;
 
 static alloc_attrib default_attr; // TODO consider removing to make thread safe
 
@@ -55,6 +57,7 @@ class tensor
 		friend class assign<T>;
 		friend class gradient<T>;
 		friend class initializer<T>;
+		friend class tensor_op<T,A>;
 
 		template <typename U>
 		friend std::vector<U> expose (ivariable<U>* var);

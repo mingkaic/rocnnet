@@ -54,7 +54,7 @@ tensor<T>& variable<T>::initialize (void)
 	{ // if not alloc, allocate
 		this->out_->allocate();
 	}
-	(*this->init_)(*(this->out_));
+	(*(this->init_))(*(this->out_));
 	this->is_init_ = true;
 	this->notify();
 	return *(this->out_);

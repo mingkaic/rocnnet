@@ -16,6 +16,7 @@ namespace nnet
 template <typename T>
 void initializer<T>::delegate_task (tensor<T>& ten, std::function<void(T*, size_t)> op)
 {
+	assert(ten.is_alloc());
 	op(ten.get_raw(), ten.n_elems());
 }
 
@@ -51,7 +52,7 @@ void random_uniform<T>::operator () (tensor<T>& in)
 	{
 		for (size_t i = 0; i < len; i++)
 		{
-			raw[i] =  distribution_(session::get_generator());
+			raw[i] = distribution_(session::get_generator());
 		}
 	});
 }

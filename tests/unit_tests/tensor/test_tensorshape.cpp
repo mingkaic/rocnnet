@@ -44,9 +44,9 @@ TEST(TENSORSHAPE, Copy)
 TEST(TENSORSHAPE, Compatible_A000)
 {
 	// undefined are compatible with everything
-	std::vector<nnet::tensorshape*> def_shapes = 
+	std::vector<const nnet::tensorshape*> def_shapes =
 		{&pcom_ts, &com_ts, &pcom1, &pcom2, &incom_ts, &bad_by_value, &bad_by_rank};
-	for (nnet::tensorshape* shape : def_shapes)
+	for (const nnet::tensorshape* shape : def_shapes)
 	{
 		EXPECT_TRUE(incom_ts.is_compatible_with(*shape));
 	}
@@ -56,10 +56,10 @@ TEST(TENSORSHAPE, Compatible_A000)
 	EXPECT_TRUE(pcom2.is_compatible_with(com_ts));
 	EXPECT_FALSE(pcom_ts.is_compatible_with(com_ts));
 
-	std::vector<nnet::tensorshape*> def_shapes2 = 
-		{&pcom_ts, &com_ts, &pcom1, &pcom2}
+	std::vector<const nnet::tensorshape*> def_shapes2 =
+		{&pcom_ts, &com_ts, &pcom1, &pcom2};
 	// bads are expected to be incompatible with full and partials
-	for (nnet::tensorshape* shape : def_shapes2)
+	for (const nnet::tensorshape* shape : def_shapes2)
 	{
 		EXPECT_FALSE(bad_by_value.is_compatible_with(*shape));
 		EXPECT_FALSE(bad_by_rank.is_compatible_with(*shape));
@@ -70,10 +70,10 @@ TEST(TENSORSHAPE, Compatible_A000)
 // Behavior A001
 TEST(TENSORSHAPE, MergeComp_A001)
 {
-	std::vector<nnet::tensorshape*> def_shapes = 
+	std::vector<const nnet::tensorshape*> def_shapes =
 		{&pcom_ts, &com_ts, &pcom1, &pcom2, &incom_ts, &bad_by_value, &bad_by_rank};
 	// incomplete shape can merge with anything
-	for (nnet::tensorshape* shape : def_shapes)
+	for (const nnet::tensorshape* shape : def_shapes)
 	{
 		nnet::tensorshape merged = incom_ts.merge_with(*shape);
 		// we're expecting merged shape to be the same as input shape
@@ -81,10 +81,10 @@ TEST(TENSORSHAPE, MergeComp_A001)
 	}
 
 	// merge fully known shapes
-	std::vector<nnet::tensorshape*> def_shapes2 =
+	std::vector<const nnet::tensorshape*> def_shapes2 =
 		{&pcom1, &pcom2};
 
-	for (nnet::tensorshape* shape : def_shapes2)
+	for (const nnet::tensorshape* shape : def_shapes2)
 	{
 		nnet::tensorshape full_merge = com_ts.merge_with(*shape);
 		// we're expecting merged shape to be the same as fully defined shape
@@ -96,10 +96,10 @@ TEST(TENSORSHAPE, MergeComp_A001)
 // Behavior A002
 TEST(TENSORSHAPE, MergeIncomp_A001)
 {
-	std::vector<nnet::tensorshape*> good_shapes = 
+	std::vector<const nnet::tensorshape*> good_shapes =
 		{&pcom_ts, &com_ts, &pcom1, &pcom2};
 	
-	for (nnet::tensorshape* shape : good_shapes)
+	for (const nnet::tensorshape* shape : good_shapes)
 	{
 		EXPECT_THROW({ bad_by_value.merge_with(*shape); }, 
 			std::logic_error);
@@ -198,16 +198,16 @@ TEST(TENSORSHAPE, RankCreation)
 	EXPECT_TRUE(tensorshape_equal(com_ts, ts1_cpy));
 	EXPECT_TRUE(tensorshape_equal(com2, ts2_cpy));
 	
-	nnet::tensorshape ts1_cpy = com_ts.with_rank_at_least(3);
+	ts1_cpy = com_ts.with_rank_at_least(3);
+	ts2_cpy = com2.with_rank_at_least(2);
 	nnet::tensorshape ts1_cpy2 = com_ts.with_rank_at_least(2);
-	nnet::tensorshape ts2_cpy = com2.with_rank_at_least(2);
 	EXPECT_TRUE(tensorshape_equal(com_ts, ts1_cpy));
 	EXPECT_TRUE(tensorshape_equal(com_ts, ts1_cpy2));
 	EXPECT_TRUE(tensorshape_equal(com2, ts2_cpy));
 	
-	nnet::tensorshape ts1_cpy = com_ts.with_rank_at_most(3);
-	nnet::tensorshape ts1_cpy2 = com_ts.with_rank_at_most(4);
-	nnet::tensorshape ts2_cpy = com2.with_rank_at_most(2);
+	ts1_cpy = com_ts.with_rank_at_most(3);
+	ts2_cpy = com2.with_rank_at_most(2);
+	ts1_cpy2 = com_ts.with_rank_at_most(4);
 	EXPECT_TRUE(tensorshape_equal(com_ts, ts1_cpy));
 	EXPECT_TRUE(tensorshape_equal(com_ts, ts1_cpy2));
 	EXPECT_TRUE(tensorshape_equal(com2, ts2_cpy));

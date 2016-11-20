@@ -46,7 +46,7 @@ class tensor_op : public tensor<T,A>
 
 		// buffer arguments
 		// null tensors's raw are recorded as null as well
-		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T,A> const*> args);
+		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T,A>*> args);
 };
 
 }

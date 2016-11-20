@@ -6,7 +6,9 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <random>
 #include "tensor/tensor.hpp"
+#include "memory/session.hpp"
 
 #pragma once
 #ifndef initializer_hpp

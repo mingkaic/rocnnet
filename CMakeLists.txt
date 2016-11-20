@@ -67,7 +67,7 @@ include_directories(${ROCNNET_INCLUDE})
 
 set(ROCNNET_DLL rocnnet)
 add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC})
-target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB}
+target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

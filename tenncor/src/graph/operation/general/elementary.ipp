@@ -152,7 +152,7 @@ void elementary<T>::update (ccoms::subject* caller)
 	if (this->valid_tensor)
 	{
 		this->out_->set_shape(shape_eval()); // call 2
-		*(this->out_)(tens);
+		(*std::static_pointer_cast<tensor_op<T> >(this->out_))(tens);
 	}
 
 	this->notify();

@@ -50,6 +50,7 @@ TEST(SESSION, Unregistration_C001)
 	EXPECT_FALSE(sess.ptr_registered(var3));
 }
 
+
 // Behavior C002
 TEST(SESSION, Singleton_C002)
 {
@@ -60,20 +61,22 @@ TEST(SESSION, Singleton_C002)
 	// spawn a thread and test addresses there... TODO
 }
 
+
 // Behavior C003
 TEST(SESSION, Initialize_C003)
 {
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::random_uniform<double> rinit(-1, 3.2);
-	nnet::random_uniform<float> finit(-1, 3.2);
+	nnet::const_init<double> dinit(-3.2);
+	nnet::const_init<float> finit(3.2);
 	nnet::const_init<size_t> cinit(3);
-	nnet::variable<double> dvar(std::vector<size_t>{2, 3}, rinit);
+	nnet::variable<double> dvar(std::vector<size_t>{2, 3}, dinit);
 	nnet::variable<float> fvar(std::vector<size_t>{2, 3}, finit);
 	nnet::variable<size_t> cvar(std::vector<size_t>{2, 3}, cinit);
+
 	EXPECT_FALSE(dvar.is_init());
 	EXPECT_FALSE(fvar.is_init());
 	EXPECT_FALSE(cvar.is_init());
-	sess.initialize_all<double>();
+ 	sess.initialize_all<double>();
 	EXPECT_TRUE(dvar.is_init());
 	EXPECT_FALSE(fvar.is_init());
 	EXPECT_FALSE(cvar.is_init());

@@ -30,7 +30,8 @@ tensor<T,A>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this
 
 template <typename T, typename A>
 T* tensor_op<T,A>::get_raw (void) {
-	op_(this->get_raw(), raws_);
+	T* dest = this->get_raw();
+	op_(dest, raws_);
 	return tensor<T,A>::get_raw();
 }
 
@@ -55,10 +56,10 @@ tensor_op<T,A>& tensor_op<T,A>::operator = (const tensor_op<T,A>& other)
 }
 
 template <typename T, typename A>
-const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A> const*> args)
+const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> args)
 {
 	raws_.clear();
-	for (tensor<T,A> const* t : args)
+	for (tensor<T,A>* t : args)
 	{
 		if (nullptr == t)
 		{

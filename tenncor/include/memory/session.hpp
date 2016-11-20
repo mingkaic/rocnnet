@@ -64,7 +64,7 @@ class session
 		
 		bool ptr_registered (void* ptr)
 		{ 
-			return registry.end() == registry.find(ptr);
+			return registry.end() != registry.find(ptr);
 		}
 
 		template <typename T>
