@@ -27,10 +27,10 @@ class reactive_node
 		// if suicidal is true, since suicide never accounts for stack allocation
 		virtual bool suicidal (void) = 0;
 		virtual void merge_leaves (std::unordered_set<subject*>& src) = 0;
-		template <typename E, typename ...A>
-		
+
 		// allocation is moved here because I want safe destroy and node_allocation 
 		// to eventually form a separate abstract factory object
+		template <typename E, typename ...A>
 		static E* node_allocate (A... args)
 		{
 			// memory management for nodes
@@ -55,13 +55,12 @@ class subject : public reactive_node
 
 	protected:
 		virtual void merge_leaves (std::unordered_set<subject*>& src);
-		bool no_audience (void);
 		
 		// must explicitly destroy using delete
 		virtual bool suicidal (void) { return false; }
 		void attach (iobserver* viewer);
 		// if suicidal, safe_destroy when detaching last audience
-		void detach (iobserver* viewer);
+		virtual void detach (iobserver* viewer);
 		
 		subject (void) {}
 		subject (const subject& other) {} // prevent audience from being copied over
@@ -72,6 +71,7 @@ class subject : public reactive_node
 		virtual ~subject (void);
 	
 		void notify (subject* caller = nullptr);
+		bool no_audience (void);
 };
 
 }

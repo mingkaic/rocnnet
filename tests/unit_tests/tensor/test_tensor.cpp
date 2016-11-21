@@ -9,7 +9,7 @@
 #include "graph/initializer.hpp"
 
 static nnet::random_uniform<double> rinit(-3.4, 3.14);
-    
+
 // Behavior B100
 TEST(TENSOR, AllocateOnConstruct_B100)
 {
@@ -44,22 +44,20 @@ TEST(TENSOR, Copy)
 	nnet::tensor<double> incom;
 	nnet::tensor<double> pcom(std::vector<size_t>{3, 0});
     nnet::tensor<double> com(std::vector<size_t>{1, 2, 3});
-    
-    rinit(incom);
-    rinit(pcom);
+
     rinit(com);
-    
+
     nnet::tensor<double>* fresh_incom = incom.clone();
     nnet::tensor<double>* fresh_pcom = pcom.clone();
     nnet::tensor<double>* fresh_com = com.clone();
-    
+
 	nnet::tensor<double> a;
 	nnet::tensor<double> b;
 	nnet::tensor<double> c;
 	a = incom;
 	b = pcom;
 	c = com;
-	
+
 	// equate a, b, c, and fresh tensors
 	// shape equate
 	nnet::tensorshape fresh_ints = fresh_incom->get_shape();
@@ -68,25 +66,25 @@ TEST(TENSOR, Copy)
 	nnet::tensorshape ats = a.get_shape();
 	nnet::tensorshape bts = b.get_shape();
 	nnet::tensorshape cts = c.get_shape();
-	
+
 	ASSERT_TRUE(tensorshape_equal(fresh_ints, incom.get_shape()));
 	ASSERT_TRUE(tensorshape_equal(fresh_pts, pcom.get_shape()));
 	ASSERT_TRUE(tensorshape_equal(fresh_ts, com.get_shape()));
 	ASSERT_TRUE(tensorshape_equal(ats, a.get_shape()));
 	ASSERT_TRUE(tensorshape_equal(bts, b.get_shape()));
 	ASSERT_TRUE(tensorshape_equal(cts, c.get_shape()));
-	
+
 	ASSERT_DEATH(nnet::expose<double>(&incom), ".*");
 	ASSERT_DEATH(nnet::expose<double>(fresh_incom), ".*");
 	ASSERT_DEATH(nnet::expose<double>(&a), ".*");
 	ASSERT_DEATH(nnet::expose<double>(&pcom), ".*");
 	ASSERT_DEATH(nnet::expose<double>(fresh_pcom), ".*");
 	ASSERT_DEATH(nnet::expose<double>(&b), ".*");
-	
+
 	std::vector<double> expect = nnet::expose<double>(&com);
 	std::vector<double> raw1 = nnet::expose<double>(fresh_com);
 	std::vector<double> raw2 = nnet::expose<double>(&c);
-	
+
 	std::equal(expect.begin(), expect.end(), raw1.begin());
 	std::equal(expect.begin(), expect.end(), raw2.begin());
 
@@ -129,7 +127,7 @@ TEST(TENSOR, Operation_B103)
 	const nnet::tensorshape unified = std::vector<size_t>{2, 3};
 	nnet::tensor<double> A(unified);
 	nnet::tensor<double> B(unified);
-	nnet::tensor_op<double> op([&elems](double*& dest,std::vector<const double*> srcs)
+	nnet::tensor_op<double> op([&elems](double* dest,std::vector<const double*> srcs)
 	{
 		std::memset(dest, 0, elems * sizeof(double));
 		for (const double* src: srcs)
@@ -144,11 +142,11 @@ TEST(TENSOR, Operation_B103)
 	op(std::vector<nnet::tensor<double>*>{&A, &B});
 	rinit(A);
 	rinit(B);
-	// expose shape and equivalent to 
+	// expose shape and equivalent to
 	std::vector<double> Ares = nnet::expose<double>(&A);
 	std::vector<double> Bres = nnet::expose<double>(&B);
 	std::vector<double> expectOut;
-	
+
 	for (size_t i = 0; i < Ares.size(); i++)
 	{
 		expectOut.push_back(Ares[i] + Bres[i]);
@@ -161,7 +159,7 @@ TEST(TENSOR, Operation_B103)
 // ACCESSORS
 TEST(TENSOR, GetIndex) {
 	size_t x = 2, y = 3, z = 4;
-	
+
 	const double constant = (double) rand();
 	nnet::const_init<double> init(constant);
 	nnet::tensor<double> ten(std::vector<size_t>{x, y, z});

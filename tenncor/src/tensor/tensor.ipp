@@ -83,14 +83,20 @@ tensor<T,A>& tensor<T,A>::operator = (const tensor<T,A>& other)
 template <typename T, typename A>
 void tensor<T,A>::allocate (void)
 {
-	alloc_shape_.assert_is_fully_defined();
-	allocate(alloc_shape_, default_attr);
+	// alloc_shape_ can be undefined
+	if (false == alloc_shape_.is_fully_defined())
+	{
+		allocate(allowed_shape_, default_attr);
+	}
+	else
+	{
+		allocate(alloc_shape_, default_attr);
+	}
 }
 
 template <typename T, typename A>
 void tensor<T,A>::allocate (const alloc_attrib& attrib)
 {
-	allowed_shape_.assert_is_fully_defined();
 	allocate(allowed_shape_, attrib);
 }
 

@@ -38,10 +38,7 @@ class variable : public ileaf<T>
 		variable<T>* clone (std::string name = "");
 
 		// INITIALIZE VALUE
-		void set_initializer (initializer<T>& init)
-		{
-			this->init_ = init.clone();
-		}
+		void set_initializer (initializer<T>& init);
 		
 		// initializer can be call multiple times to reset values
 		// TODO: allow session to flag variables as init once only to ensure safety

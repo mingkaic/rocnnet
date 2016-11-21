@@ -94,7 +94,7 @@ TEST(TENSORSHAPE, MergeComp_A001)
 
 
 // Behavior A002
-TEST(TENSORSHAPE, MergeIncomp_A001)
+TEST(TENSORSHAPE, MergeIncomp_A002)
 {
 	std::vector<const nnet::tensorshape*> good_shapes =
 		{&pcom_ts, &com_ts, &pcom1, &pcom2};
@@ -236,4 +236,4 @@ TEST(TENSORSHAPE, RankCreation)
 
 
 // TENSORSHAPE TO PROTOCOL BUFFER
-TEST(TENSORSHAPE, as_proto) {}
+TEST(TENSORSHAPE, Proto) {}

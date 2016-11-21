@@ -56,18 +56,22 @@ transform<T>::transform (const transform<T>& other, std::string name) :
 
 template <typename T>
 transform<T>::transform (ivariable<T>* arg,
-	std::function<void(T*&,const T*,tensorshape)> op,
+	std::function<void(T*,const T*,tensorshape)> op,
 	std::function<tensorshape(tensorshape)> trans,
 	BUILD_DERIVE<T> der, std::string name) :
 	ioperation<T>(std::vector<ivariable<T>*>{arg}, name),
 	collect_(op), shape_(trans), der_(der)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](T*& dest, std::vector<const T*> srcs)
+	[this](T* dest, std::vector<const T*> srcs)
 	{
 		tensorshape ts = shape_eval();
 		collect_(dest, srcs[0], ts);
 	});
+	if (session::pre_shape_eval())
+	{
+		shape_eval();
+	}
 }
 
 template <typename T>
@@ -121,7 +125,7 @@ varptr<T> clip_norm (const ivariable<T>* a, T cap)
 {
 	if (nullptr == a) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
- 		[cap](T*& dest, const T* src, tensorshape ts)
+ 		[cap](T* dest, const T* src, tensorshape ts)
  		{
  			T l2norm = 0;
  			size_t n = ts.n_elems();
@@ -154,7 +158,7 @@ varptr<T> transpose (const ivariable<T>* a)
 {
 	if (nullptr == a) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
- 		[](T*& dest, const T* src, tensorshape ts)
+ 		[](T* dest, const T* src, tensorshape ts)
  		{
 			// we have the new shape
 			std::vector<size_t> inl = ts.as_list();
@@ -201,7 +205,7 @@ varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch)
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
  	ivariable<T>* op = transform<T>::build(a,
- 		[watch, a](T*& dest, const T* src, tensorshape ts)
+ 		[watch, a](T* dest, const T* src, tensorshape ts)
  		{
 			std::vector<size_t> orig = a->get_eval()->get_shape().as_list();
 			std::vector<size_t> tv = ts.as_list();
@@ -284,7 +288,7 @@ varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
- 		[index, multiplier](T*& dest, const T* src, tensorshape ts)
+ 		[index, multiplier](T* dest, const T* src, tensorshape ts)
  		{
 			std::vector<size_t> tv = ts.as_list();
  			size_t below = 1;

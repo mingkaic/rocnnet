@@ -130,6 +130,11 @@ else()
 endif()
 
 # Link
-target_link_libraries(${UNIT_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${TENNCOR_LIB})
+target_link_libraries(${UNIT_TEST_NAME}
+	pthread
+	gmock
+	gtest
+	${CMAKE_THREAD_LIBS_INIT}
+	${TENNCOR_LIB})
 add_test(test ${UNIT_TEST_NAME})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

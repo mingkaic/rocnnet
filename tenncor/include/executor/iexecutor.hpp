@@ -24,6 +24,9 @@ class iexecutor : public ccoms::iobserver // TODO: we really don't need to inher
 	protected:
 		virtual iexecutor<T>* clone_impl (void) = 0;
 
+		iexecutor (void) :
+			ccoms::iobserver(std::vector<ccoms::subject*>{}) {}
+
 	public:
 		virtual ~iexecutor (void) {}
 

@@ -17,7 +17,7 @@ namespace nnet
 {
 
 template <typename T>
-using TEN_OP = std::function<void(T*&,std::vector<const T*>)>;
+using TEN_OP = std::function<void(T*,std::vector<const T*>)>;
 
 // operates by pull protocol (non-reactive)
 template <typename T, typename A=ram_alloc>

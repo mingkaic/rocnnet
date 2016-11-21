@@ -3,39 +3,78 @@
 //
 
 #include "mock_ccoms.h"
-//using ::testing::_;
+using ::testing::_;
 
-TEST(CCOMS, observer)
+
+// Behavior E000
+TEST(CCOMS, DetachFromSubjectOnDeath_E000)
 {
-	div_subject subj;
-	div_observer div_obs1(&subj, 4);
-	div_observer div_obs2(&subj, 3);
-	mod_observer mod_obs3(&subj, 3);
-	subj.set_val(14);
-	ASSERT_EQ(14/4, div_obs1.get_out());
-	ASSERT_EQ(14/3, div_obs2.get_out());
-	ASSERT_EQ(14%3, mod_obs3.get_out());
+	MockSubject subject;
+
+	MockObserver* o1 = MockObserver::build(&subject);
+	MockObserver* o2 = MockObserver::build(&subject);
+	MockObserver* o3 = MockObserver::build(&subject);
+
+	EXPECT_CALL(subject, detach(o1));
+	EXPECT_CALL(subject, detach(o2));
+	EXPECT_CALL(subject, detach(o3));
+
+	// these should detach observers from subject
+	delete o1;
+	delete o2;
+	delete o3;
+	// real detach
+	subject.mock_detach(o1);
+	subject.mock_detach(o2);
+	subject.mock_detach(o3);
 }
 
-// expected behavior 1.
-//TEST(CCOMS, AttachAndDetach)
-//{
-//	mock_subject* subject = new mock_subject();
-//	EXPECT_CALL(*subject, attach(_)).Times(3);
-//	EXPECT_CALL(*subject, detach(_)).Times(3);
-//
-//	// dynamically allocate to detect leak when subject dies
-//	mock_observer* o1 = new mock_observer(subject);
-//	mock_observer* o2 = new mock_observer(subject);
-//	mock_observer* o3 = new mock_observer(subject);
-//	// all observers are expected to suicide when subject dies
-//	EXPECT_CALL(*o1, safe_destroy()).Times(1);
-//	EXPECT_CALL(*o2, safe_destroy()).Times(1);
-//	EXPECT_CALL(*o3, safe_destroy()).Times(1);
-//
-//	delete o3; // test detach
-//	delete subject;
-//}
+
+// Behavior E001
+TEST(CCOMS, ObserverLeaf_E001)
+{
+	MockSubject solo;
+	MockSubject leaf1;
+	MockSubject leaf2;
+
+	MockObserver* branch1 = MockObserver::build(&solo);
+	MockObserver* branch2 = MockObserver::build(&leaf1, &leaf2);
+
+	EXPECT_CALL(solo, detach(branch1));
+	EXPECT_CALL(leaf1, detach(branch2));
+	EXPECT_CALL(leaf2, detach(branch2));
+
+	size_t count = 0;
+	branch1->leaves_collect(
+	[&count, &solo](ccoms::subject* subject)
+	{
+		EXPECT_TRUE(subject == &solo);
+		count++;
+	});
+	EXPECT_EQ(1, count);
+	count = 0;
+	branch2->leaves_collect(
+	[&count, &leaf1, &leaf2](ccoms::subject* subject)
+	{
+		EXPECT_TRUE(subject == &leaf1 ||
+					subject == &leaf2);
+		count++;
+	});
+	EXPECT_EQ(2, count);
+	delete branch1;
+	delete branch2;
+	// real detach
+	solo.mock_detach(branch1);
+	leaf1.mock_detach(branch2);
+	leaf2.mock_detach(branch2);
+}
+
+
+// Behavior E002
+TEST(CCOMS, CopyDep_E002)
+{
+
+}
 
 // 
 //

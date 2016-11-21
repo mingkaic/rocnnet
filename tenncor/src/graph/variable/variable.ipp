@@ -27,14 +27,14 @@ template <typename T>
 variable<T>::variable (T scalar) :
 	ileaf<T>(std::vector<size_t>{1},
 	new const_init<T>(scalar), 
-	nnutils::formatter() << scalar)
+	nnutils::formatter() << "scalar")
 {
 	initialize();
 }
 
 template <typename T>
 variable<T>::variable (const tensorshape& shape, std::string name) :
-	variable(shape, nullptr, name) {}
+	ileaf<T>(shape, nullptr, name) {}
 
 template <typename T>
 variable<T>::variable (const tensorshape& shape, initializer<T>& init, std::string name) :
@@ -44,6 +44,12 @@ template <typename T>
 variable<T>* variable<T>::clone (std::string name)
 {
 	return static_cast<variable<T>*>(clone_impl(name));
+}
+
+template <typename T>
+void variable<T>::set_initializer (initializer<T>& init)
+{
+	this->init_ = init.clone();
 }
 
 template <typename T>
@@ -64,6 +70,10 @@ template <typename T>
 tensor<T>& variable<T>::initialize (tensorshape alloc_shape)
 {
 	assert(this->init_ != nullptr);
+	if (nullptr == this->out_)
+	{
+		this->out_ = std::make_unique<tensor<T> >(alloc_shape);
+	}
 	if (false == this->out_->is_alloc())
 	{ // if not alloc, allocate
 		this->out_->allocate(alloc_shape);

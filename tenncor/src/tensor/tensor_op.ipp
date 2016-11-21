@@ -30,9 +30,13 @@ tensor<T,A>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this
 
 template <typename T, typename A>
 T* tensor_op<T,A>::get_raw (void) {
-	T* dest = this->get_raw();
+	if (false == this->is_alloc())
+	{
+		this->allocate();
+	}
+	T* dest = tensor<T,A>::get_raw();
 	op_(dest, raws_);
-	return tensor<T,A>::get_raw();
+	return dest;
 }
 
 template <typename T, typename A>

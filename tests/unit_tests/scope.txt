@@ -69,15 +69,14 @@ D001 - random initializers must share a distribution engine
 
 // VARIABLE LEAF NODES
 D100 - ileaf inheriteds should auto notify when initialized or reinitialized
-D101 - variables auto initialize scalar on construction
-D107 - variable's gradient is itself
-D102 - assigning raw data or tensors to placeholders will initialize it
-D103 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
-D104 - constants must self destruct when its subject loses all its subscribers
-D105 - constants are always initialized
-D106 - constants can't be allocated on the stack
-D108 - constant's gradient is a zero constant
-D109 - placeholder's gradient is a zero constant
+D200 - variables auto initialize scalar on construction
+D201 - variable's gradient is itself
+D300 - assigning raw data or tensors to placeholders will initialize it
+D301 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
+D302 - placeholder's gradient is a zero constant
+D400 - constants must self destruct when its subject loses all its subscribers
+D401 - constants are always initialized
+D402 - constant's gradient is a zero constant
 
 // REACTIVE BEHAVIOR
 E000 - iobserver should detach (unsubscribe) from subject on destruction
@@ -86,13 +85,11 @@ E002 - copying observers will copy over its dependencies (subjects)
 
 E500 - subject should detach and mark all observers for destruction on destruction
 E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
-E502 - observers can publically attach and detach (subscribe and unsubscribe) to subjects
 E503 - copying subjects will not copy over the observers
 
 // BASE OPERATION NODE
-F000 - ioperation must not be allocated on the stack
-F001 - ioperation holding poorly defined tensors (null inputs) return null on evaluation
-F002 - ioperation must reuse its gradient object
+F000 - ioperation holding poorly defined tensors (null inputs) return null on evaluation
+F001 - ioperation must reuse its gradient object
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

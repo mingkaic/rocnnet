@@ -90,7 +90,7 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](T*& dest, std::vector<const T*> srcs)
+	[this](T* dest, std::vector<const T*> srcs)
 	{
 		tensorshape ts = shape_eval();
 		ts.assert_is_fully_defined();
@@ -114,6 +114,10 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 			}
 		}
 	});
+	if (session::pre_shape_eval())
+	{
+		shape_eval();
+	}
 }
 
 template <typename T>

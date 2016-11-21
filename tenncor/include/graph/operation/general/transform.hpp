@@ -33,7 +33,7 @@ template <typename T>
 class transform : public ioperation<T>
 {
 	private:
-		std::function<void(T*&,const T*,tensorshape)> collect_;
+		std::function<void(T*,const T*,tensorshape)> collect_;
 		std::function<tensorshape(tensorshape)> shape_;
 		BUILD_DERIVE<T> der_;
 
@@ -46,13 +46,13 @@ class transform : public ioperation<T>
 
 		// protect transform constructor to ensure heap allocation
 		transform (ivariable<T>* arg,
-			std::function<void(T*&,const T*,tensorshape)> op,
+			std::function<void(T*,const T*,tensorshape)> op,
 			std::function<tensorshape(tensorshape)> trans,
 			BUILD_DERIVE<T> der, std::string name);
 		
 	public:
 		static ivariable<T>* build (std::vector<ivariable<T>*> args,
-			std::function<void(T*&,const T*,tensorshape)> op,
+			std::function<void(T*,const T*,tensorshape)> op,
 			std::function<tensorshape(tensorshape)> trans,
 			BUILD_DERIVE<T> der,std::string name = "")
 		{

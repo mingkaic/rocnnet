@@ -29,11 +29,6 @@ void subject::merge_leaves (std::unordered_set<subject*>& src)
 	src.emplace(this);
 }
 
-bool subject::no_audience (void)
-{
-	return audience_.empty();
-}
-
 void subject::attach (iobserver* viewer)
 {
 	audience_.emplace(viewer);
@@ -68,6 +63,11 @@ void subject::notify (subject* caller)
 	{
 		viewer->update(caller);
 	}
+}
+
+bool subject::no_audience (void)
+{
+	return audience_.empty();
 }
 
 }

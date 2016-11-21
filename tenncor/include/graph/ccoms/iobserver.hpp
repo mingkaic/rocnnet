@@ -32,10 +32,7 @@ class iobserver : public reactive_node
 		
 		void add_dependency (subject* dep);
 		virtual void merge_leaves (std::unordered_set<subject*>& src);
-		
-		// inherited classes may desire empty dependencies 
-		// with the option of adding dependencies later
-		iobserver (void) {}
+
 		iobserver (std::vector<subject*> dependencies);
 		
 		virtual bool suicidal (void) { return true; }

@@ -131,8 +131,8 @@ class tensor
 template <typename T>
 std::vector<T> expose (tensor<T>* ten)
 {
-	assert(ten->is_alloc());
 	T* raw = ten->get_raw();
+	assert(ten->is_alloc()); // assert after get_raw to allow tensor a chance
 	return std::vector<T>(raw, raw + ten->n_elems());
 }
 

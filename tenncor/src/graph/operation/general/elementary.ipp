@@ -75,7 +75,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	// TODO: simplify operation arguments
 	// TODO: no need to call shape_eval twice
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](T*& dest, std::vector<const T*> srcs)
+	[this](T* dest, std::vector<const T*> srcs)
 	{
 		tensorshape ts = shape_eval(); // call 1
 
@@ -99,6 +99,10 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 			}
 		}
 	});
+	if (session::pre_shape_eval())
+	{
+		shape_eval();
+	}
 }
 
 template <typename T>

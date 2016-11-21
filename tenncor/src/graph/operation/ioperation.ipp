@@ -59,18 +59,7 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
 	ivariable<T>(std::vector<size_t>{}, name),
-	iobserver(std::vector<ccoms::subject*>(dependencies_.begin(), dependencies_.end()))
-{
-	if (session::pre_shape_eval())
-	{
-		std::vector<tensorshape> s;
-		for (ivariable<T>* a : dependencies)
-		{
-			s.push_back(a->get_shape());
-		}
-		shape_eval(s);
-	}
-}
+	iobserver(std::vector<ccoms::subject*>(dependencies.begin(), dependencies.end())) {}
 
 template <typename T>
 ioperation<T>::~ioperation (void)
