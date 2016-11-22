@@ -62,8 +62,8 @@ class subject : public reactive_node
 		// if suicidal, safe_destroy when detaching last audience
 		virtual void detach (iobserver* viewer);
 		
-		subject (void) {}
 		subject (const subject& other) {} // prevent audience from being copied over
+		subject (void) {}
 
 		friend class iobserver;
 		

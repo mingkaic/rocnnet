@@ -29,6 +29,7 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 template <typename T>
 ioperation<T>::ioperation (const ioperation<T>& other, std::string name) :
 	ivariable<T>(other, name),
+	ccoms::iobserver(other),
 	valid_tensor_(other.valid_tensor_),
 	grad_(other.grad_) {}
 	

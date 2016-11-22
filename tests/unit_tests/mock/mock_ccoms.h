@@ -12,6 +12,7 @@ class MockSubject : public ccoms::subject
 {
 	public:
 		MockSubject (void) {}
+		MockSubject(const MockSubject& other) : ccoms::subject(other) {}
 		~MockSubject (void) {}
 
 		void mock_detach(ccoms::iobserver* obs)
@@ -36,20 +37,13 @@ class MockObserver : public ccoms::iobserver
 		{
 			return new MockObserver(std::vector<ccoms::subject*>{a, b});
 		}
+		MockObserver(const MockObserver& other) : ccoms::iobserver(other) {}
 		~MockObserver (void) {}
-
-		MOCK_METHOD1(update, void(ccoms::subject*));
-};
-
-class mock_intern : virtual public ccoms::iobserver, virtual public ccoms::subject
-{
-	public:
-		mock_intern (ccoms::subject* sub) :
-				ccoms::iobserver(std::vector<ccoms::subject*>{sub}) {}
-		mock_intern (ccoms::subject* sub1, ccoms::subject* sub2) :
-			ccoms::iobserver(std::vector<ccoms::subject*>{sub1, sub2}) {}
-		~mock_intern (void) {}
-
+		
+		std::vector<ccoms::subject*> expose_dependencies (void)
+		{
+			return this->dependencies_;
+		}
 		MOCK_METHOD1(update, void(ccoms::subject*));
 };
 

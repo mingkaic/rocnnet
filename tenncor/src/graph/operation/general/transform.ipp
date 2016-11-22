@@ -131,8 +131,9 @@ varptr<T> clip_norm (const ivariable<T>* a, T cap)
  			size_t n = ts.n_elems();
  			for (size_t i = 0; i < n; i++)
  			{
- 				l2norm += sqrt(src[i]);
+ 				l2norm += src[i]*src[i];
  			}
+			l2norm = std::sqrt(l2norm);
 
  			for (size_t i = 0; i < n; i++)
  			{

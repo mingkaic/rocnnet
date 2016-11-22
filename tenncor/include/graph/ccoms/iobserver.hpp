@@ -32,7 +32,9 @@ class iobserver : public reactive_node
 		
 		void add_dependency (subject* dep);
 		virtual void merge_leaves (std::unordered_set<subject*>& src);
-
+		
+		// attach dependencies
+		iobserver (const iobserver& other); // copy over dependencies and leaves
 		iobserver (std::vector<subject*> dependencies);
 		
 		virtual bool suicidal (void) { return true; }
