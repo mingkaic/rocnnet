@@ -29,8 +29,8 @@ class varptr
 		varptr<T>& operator = (const varptr<T>& other);
 
 		operator ivariable<T>* () const;
-		ivariable<T>& operator * (void);
-		ivariable<T>* operator -> (void);
+		ivariable<T>& operator * (void) const;
+		ivariable<T>* operator -> (void) const;
 		
 		ivariable<T>* get (void) const;
 };

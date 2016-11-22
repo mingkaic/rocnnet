@@ -49,10 +49,10 @@ TEST(CCOMS, NoCopy_E502)
 
 	MockObserver* branch1 = MockObserver::build(&solo);
 	MockObserver* branch2 = MockObserver::build(&leaf1, &leaf2);
-	
-	MockObserver* solocpy = new MockSubject(solo);
-	MockObserver* leaf1cpy = new MockSubject(leaf1);
-	MockObserver* leaf2cpy = new MockSubject(leaf2);
+
+	MockSubject* solocpy = new MockSubject(solo);
+	MockSubject* leaf1cpy = new MockSubject(leaf1);
+	MockSubject* leaf2cpy = new MockSubject(leaf2);
 	
 	// subject copies never copy over audiences
 	EXPECT_TRUE(solocpy->no_audience());

@@ -27,7 +27,7 @@ void iobserver::merge_leaves (std::unordered_set<subject*>& src)
 
 iobserver::iobserver (const iobserver& other)
 {
-	for (subject* dep : other.dependencies)
+	for (subject* dep : other.dependencies_)
 	{
 		add_dependency(dep);
 	}

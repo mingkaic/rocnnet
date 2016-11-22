@@ -85,6 +85,9 @@ ivariable<T>* matmul<T>::clone_impl (std::string name) {
 template <typename T>
 matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	bool transposeA, bool transposeB) :
+	ccoms::iobserver(std::vector<ccoms::subject*>{a, b}),
+	ivariable<T>(std::vector<size_t>{},
+	"(" + a->get_name() + "•" + b->get_name() + ")"),
 	ioperation<T>((std::vector<ivariable<T>*>{a, b}),
 	"(" + a->get_name() + "•" + b->get_name() + ")"),
 	transposeA_(transposeA), transposeB_(transposeB)

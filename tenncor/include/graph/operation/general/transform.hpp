@@ -70,20 +70,20 @@ class transform : public ioperation<T>
 };
 
 template <typename T>
-varptr<T> clip_norm (const ivariable<T>* a, T cap);
+varptr<T> clip_norm (const varptr<T> a, T cap);
 
 template <typename T>
-varptr<T> transpose (const ivariable<T>* a);
+varptr<T> transpose (const varptr<T> a);
 
 // fit to watch
 template <typename T>
-varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch);
+varptr<T> fit (const varptr<T> a, const varptr<T> watch);
 
 template <typename T>
-varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier);
+varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 
 template <typename T>
-varptr<T> compress (const ivariable<T>* a, size_t index,
+varptr<T> compress (const varptr<T> a, size_t index,
 	std::function<T(const std::vector<T>&)> collector = mean<T>);
 
 }

@@ -17,16 +17,16 @@ template <typename T>
 varptr<T>& varptr<T>::operator = (ivariable<T>* other) { ptr_ = other; }
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (const varptr<T>& other) { ptr_ = other.ptr_; }
+varptr<T>& varptr<T>::operator = (const varptr<T>& other) { ptr_ = other.ptr_; return *this; }
 
 template <typename T>
 varptr<T>::operator ivariable<T>* (void) const { return ptr_; }
 
 template <typename T>
-ivariable<T>& varptr<T>::operator * (void) { return *ptr_; }
+ivariable<T>& varptr<T>::operator * (void) const { return *ptr_; }
 
 template <typename T>
-ivariable<T>* varptr<T>::operator -> (void) { return ptr_; }
+ivariable<T>* varptr<T>::operator -> (void) const { return ptr_; }
 
 template <typename T>
 ivariable<T>* varptr<T>::get (void) const { return ptr_; }

@@ -28,8 +28,8 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 
 template <typename T>
 ioperation<T>::ioperation (const ioperation<T>& other, std::string name) :
-	ivariable<T>(other, name),
 	ccoms::iobserver(other),
+	ivariable<T>(other, name),
 	valid_tensor_(other.valid_tensor_),
 	grad_(other.grad_) {}
 	
@@ -59,8 +59,8 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-	ivariable<T>(std::vector<size_t>{}, name),
-	iobserver(std::vector<ccoms::subject*>(dependencies.begin(), dependencies.end())) {}
+	ccoms::iobserver(std::vector<ccoms::subject*>(dependencies.begin(), dependencies.end())),
+	ivariable<T>(std::vector<size_t>{}, name) {}
 
 template <typename T>
 ioperation<T>::~ioperation (void)

@@ -53,6 +53,8 @@ tensorshape elementary<T>::shape_eval (void)
 
 template <typename T>
 elementary<T>::elementary (const elementary<T>& other, std::string name) :
+	ccoms::iobserver(other),
+	ivariable<T>(other, name),
 	ioperation<T>(other, name),
 	for_each_(other.for_each_),
 	der_(other.der_) {}
@@ -65,9 +67,10 @@ ivariable<T>* elementary<T>::clone_impl (std::string name)
 
 template <typename T>
 elementary<T>::elementary (std::vector<ivariable<T>*> args, 
-	std::function<void(T&, T)> op, 
-	BUILD_DERIVE<T> der,
+	std::function<void(T&, T)> op, BUILD_DERIVE<T> der,
 	std::string name) :
+	ccoms::iobserver(std::vector<ccoms::subject*>(args.begin(), args.end())),
+	ivariable<T>(std::vector<size_t>{}, name),
 	ioperation<T>(args, name),
 	for_each_(op),
 	der_(der)
@@ -128,7 +131,7 @@ void elementary<T>::update (ccoms::subject* caller)
 {
 	tensor<T> one(1);
 	std::vector<tensor<T>*> tens;
-	this->valid_tensor = true;
+	this->valid_tensor_ = true;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
 		if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(sub))
@@ -139,7 +142,7 @@ void elementary<T>::update (ccoms::subject* caller)
 				a = var->get_eval();
 				if (nullptr == a)
 				{
-					this->valid_tensor = false;
+					this->valid_tensor_ = false;
 					break;
 				}
 			}
@@ -153,10 +156,10 @@ void elementary<T>::update (ccoms::subject* caller)
 		}
 	}
 
-	if (this->valid_tensor)
+	if (this->valid_tensor_)
 	{
 		this->out_->set_shape(shape_eval()); // call 2
-		(*std::static_pointer_cast<tensor_op<T> >(this->out_))(tens);
+		(*this->out_)(tens);
 	}
 
 	this->notify();
@@ -166,7 +169,7 @@ void elementary<T>::update (ccoms::subject* caller)
 
 // nulls are treated as 0
 template <typename T>
-varptr<T> operator + (varptr<T> a)
+varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	return elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -182,7 +185,7 @@ varptr<T> operator + (varptr<T> a)
 }
 
 template <typename T>
-varptr<T> operator - (varptr<T> a)
+varptr<T> operator - (const varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	return elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -199,7 +202,7 @@ varptr<T> operator - (varptr<T> a)
 }
 
 template <typename T>
-varptr<T> sin (const ivariable<T>* a)
+varptr<T> sin (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -209,7 +212,7 @@ varptr<T> sin (const ivariable<T>* a)
 		[](std::vector<ivariable<T>*> args)
 		{
 			// sin'(f(x)) = f'(x)*cos(f(x))
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * cos(a);
 		}, 
@@ -218,7 +221,7 @@ varptr<T> sin (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> cos (const ivariable<T>* a)
+varptr<T> cos (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -229,7 +232,7 @@ varptr<T> cos (const ivariable<T>* a)
 		[](std::vector<ivariable<T>*> args)
 		{
 			// cos'(f(x)) = -f'(x)*sin(f(x))
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad * sin(a);
 		}, 
@@ -238,7 +241,7 @@ varptr<T> cos (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> tan (const ivariable<T>* a)
+varptr<T> tan (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -250,8 +253,8 @@ varptr<T> tan (const ivariable<T>* a)
 		{
 			// sec'(f(x)) = f'(x)*sec^2(f(x))
 			// better with = f'(x)/cos^2(f(x))
-			ivariable<T>* a = args.front();
-			ivariable<T>* denom = cos(a);
+			varptr<T> a = args.front();
+			varptr<T> denom = cos(a);
 			varptr<T> grad = a->get_gradient(); // wrap
 			return grad / (denom * denom);
 	 	},
@@ -260,7 +263,7 @@ varptr<T> tan (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> csc (const ivariable<T>* a)
+varptr<T> csc (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -272,7 +275,7 @@ varptr<T> csc (const ivariable<T>* a)
 		{
 			// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 			// better with -f'(x)/(sin(f(x)*tan(f(x))))
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad / (sin(a) * tan(a));
 		}, 
@@ -281,7 +284,7 @@ varptr<T> csc (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> sec (const ivariable<T>* a)
+varptr<T> sec (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -293,7 +296,7 @@ varptr<T> sec (const ivariable<T>* a)
 		{
 			// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 			// better with f'(x)*tan(f(x))/cos(f(x))
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * tan(a) / cos(a);
 		}, 
@@ -302,7 +305,7 @@ varptr<T> sec (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> cot (const ivariable<T>* a)
+varptr<T> cot (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -313,8 +316,8 @@ varptr<T> cot (const ivariable<T>* a)
 		[](std::vector<ivariable<T>*> args)
 		{
 			// cot'(f(x)) = -f'(x)*csc^2(f(x))
-			ivariable<T>* a = args.front();
-			ivariable<T>* b = csc(a);
+			varptr<T> a = args.front();
+			varptr<T> b = csc(a);
 			varptr<T> grad = a->get_gradient(); // wrap
 			return -grad * b * b;
 		}, 
@@ -323,7 +326,7 @@ varptr<T> cot (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> exp (const ivariable<T>* a)
+varptr<T> exp (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -334,7 +337,7 @@ varptr<T> exp (const ivariable<T>* a)
 		[](std::vector<ivariable<T>*> args)
 		{
 			// exp'(f(x)) = f'(x)*exp(f(x))
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			varptr<T> grad = a->get_gradient(); // wrap
 			return grad * exp(a);
 		}, 
@@ -343,7 +346,7 @@ varptr<T> exp (const ivariable<T>* a)
 }
 
 template <typename T>
-varptr<T> clip_val (const ivariable<T>* a, T min, T max)
+varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
@@ -355,7 +358,7 @@ varptr<T> clip_val (const ivariable<T>* a, T min, T max)
 		},
 		[min, max](std::vector<ivariable<T>*> args)
 		{
-			ivariable<T>* a = args.front();
+			varptr<T> a = args.front();
 			return clip_val(a->get_gradient(), min, max);
 		}, 
 	"clip_val(" + a->get_name() + ")");
@@ -365,13 +368,13 @@ varptr<T> clip_val (const ivariable<T>* a, T min, T max)
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {
-	return constant<T>::build(a) + b;
+	return varptr<T>(constant<T>::build(a)) + b;
 }
 
 template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
-	return a + constant<T>::build(b);
+	return a + varptr<T>(constant<T>::build(b));
 }
 
 template <typename T>
@@ -403,13 +406,13 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b)
 {
-	return constant<T>::build(a) - b;
+	return varptr<T>(constant<T>::build(a)) - b;
 }
 
 template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
-	return a - constant<T>::build(b);
+	return a - varptr<T>(constant<T>::build(b));
 }
 
 template <typename T>
@@ -441,13 +444,13 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator * (T a, const varptr<T> b)
 {
-	return constant<T>::build(a) * b;
+	return varptr<T>(constant<T>::build(a)) * b;
 }
 
 template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
-	return a * constant<T>::build(b);
+	return a * varptr<T>(constant<T>::build(b));
 }
 
 template <typename T>
@@ -475,13 +478,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator / (T a, const varptr<T> b)
 {
-	return constant<T>::build(a) / b;
+	return varptr<T>(constant<T>::build(a)) / b;
 }
 
 template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
-	return a / constant<T>::build(b);
+	return a / varptr<T>(constant<T>::build(b));
 }
 
 template <typename T>

@@ -59,6 +59,8 @@ transform<T>::transform (ivariable<T>* arg,
 	std::function<void(T*,const T*,tensorshape)> op,
 	std::function<tensorshape(tensorshape)> trans,
 	BUILD_DERIVE<T> der, std::string name) :
+	ccoms::iobserver(std::vector<ccoms::subject*>{arg}),
+	ivariable<T>(std::vector<size_t>{}, name),
 	ioperation<T>(std::vector<ivariable<T>*>{arg}, name),
 	collect_(op), shape_(trans), der_(der)
 {
@@ -121,7 +123,7 @@ void transform<T>::update (ccoms::subject* caller)
 }
 
 template <typename T>
-varptr<T> clip_norm (const ivariable<T>* a, T cap)
+varptr<T> clip_norm (const varptr<T> a, T cap)
 {
 	if (nullptr == a) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
@@ -155,7 +157,7 @@ varptr<T> clip_norm (const ivariable<T>* a, T cap)
 }
 
 template <typename T>
-varptr<T> transpose (const ivariable<T>* a)
+varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
@@ -200,7 +202,7 @@ varptr<T> transpose (const ivariable<T>* a)
 
 // fit to watch
 template <typename T>
-varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch)
+varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
@@ -285,7 +287,7 @@ varptr<T> fit (const ivariable<T>* a, const ivariable<T>* watch)
 }
 
 template <typename T>
-varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier)
+varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
  	ivariable<T>* op = transform<T>::build(a,
@@ -347,7 +349,7 @@ varptr<T> extend (const ivariable<T>* a, size_t index, size_t multiplier)
 }
 
 template <typename T>
-varptr<T> compress (const ivariable<T>* a, size_t index,
+varptr<T> compress (const varptr<T> a, size_t index,
 	std::function<T(const std::vector<T>&)> collector)
 	{
 	if (nullptr == a) return nullptr;

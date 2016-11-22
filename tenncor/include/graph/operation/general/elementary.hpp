@@ -8,7 +8,6 @@
 
 #include "graph/operation/ioperation.hpp"
 #include "graph/variable/constant.hpp"
-#include "executor/varptr.hpp"
 
 #pragma once
 #ifndef elementary_hpp
@@ -58,76 +57,76 @@ class elementary : public ioperation<T> {
 
 // operators that will replace elementary operation objects
 template<typename T>
-varptr<T> operator + (varptr<T> a);
+varptr<T> operator + (const varptr<T> a);
 
 template<typename T>
-varptr<T> operator - (varptr<T> a);
+varptr<T> operator - (const varptr<T> a);
 
 template<typename T>
-varptr<T> sin (const ivariable<T>* a);
+varptr<T> sin (const varptr<T> a);
 
 template<typename T>
-varptr<T> cos (const ivariable<T>* a);
+varptr<T> cos (const varptr<T> a);
 
 template<typename T>
-varptr<T> tan (const ivariable<T>* a);
+varptr<T> tan (const varptr<T> a);
 
 template<typename T>
-varptr<T> csc (const ivariable<T>* a);
+varptr<T> csc (const varptr<T> a);
 
 template<typename T>
-varptr<T> sec (const ivariable<T>* a);
+varptr<T> sec (const varptr<T> a);
 
 template<typename T>
-varptr<T> cot (const ivariable<T>* a);
+varptr<T> cot (const varptr<T> a);
 
 template<typename T>
-varptr<T> exp (const ivariable<T>* a);
+varptr<T> exp (const varptr<T> a);
 
 template <typename T>
-varptr<T> root (const ivariable<T>* a); // TODO implement
+varptr<T> root (const varptr<T> a); // TODO implement
 
 template <typename T>
-varptr<T> pow (const ivariable<T>* a, T scalar); // TODO implement
+varptr<T> pow (const varptr<T> a, T scalar); // TODO implement
 
 template<typename T>
-varptr<T> clip_val (const ivariable<T>* a, T min, T max);
+varptr<T> clip_val (const varptr<T> a, T min, T max);
 
 template<typename T>
-varptr<T> operator + (T a, varptr<T> b);
+varptr<T> operator + (T a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator + (varptr<T> a, T b);
+varptr<T> operator + (const varptr<T> a, T b);
 
 template<typename T>
-varptr<T> operator + (varptr<T> a, varptr<T> b);
+varptr<T> operator + (const varptr<T> a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator - (T a, varptr<T> b);
+varptr<T> operator - (T a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator - (varptr<T> a, T b);
+varptr<T> operator - (const varptr<T> a, T b);
 
 template<typename T>
-varptr<T> operator - (varptr<T> a, varptr<T> b);
+varptr<T> operator - (const varptr<T> a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator * (T a, varptr<T> b);
+varptr<T> operator * (T a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator * (varptr<T> a, T b);
+varptr<T> operator * (const varptr<T> a, T b);
 
 template<typename T>
-varptr<T> operator * (varptr<T> a, varptr<T> b);
+varptr<T> operator * (const varptr<T> a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator / (T a, varptr<T> b);
+varptr<T> operator / (T a, const varptr<T> b);
 
 template<typename T>
-varptr<T> operator / (varptr<T> a, T b);
+varptr<T> operator / (const varptr<T> a, T b);
 
 template<typename T>
-varptr<T> operator / (varptr<T> a, varptr<T> b);
+varptr<T> operator / (const varptr<T> a, const varptr<T> b);
 
 }
 

@@ -20,17 +20,17 @@ template <typename T>
 using VAR_FUNC = std::function<varptr<T>(ivariable<T>*)>;
 
 template <typename T>
-varptr<T> sigmoid (ivariable<T>* x)
+varptr<T> sigmoid (varptr<T> x)
 {
 	// f(x) = 1/(1+e^-x)
-	return 1.0 / (1.0 + nnet::exp(-x));
+	return 1.0 / (1.0 + exp(-x));
 }
 
 template <typename T>
-varptr<T> tanh (ivariable<T>* x)
+varptr<T> tanh (varptr<T> x)
 {
 	// f(x) = (e^(2*x)+1)/(e^(2*x)-1)
-	varptr<T> etx = nnet::exp(2.0 * x);
+	varptr<T> etx = exp(2.0 * x);
 	return (etx + 1.0) / (etx - 1.0);
 }
 

@@ -103,6 +103,8 @@ bool jacobian<T>::channel (std::stack<ivariable<T>*>& jacobi)
 template <typename T>
 jacobian<T>::jacobian (ivariable<T>* arga, ivariable<T>* argb,
 	bool transposeA, bool transposeB, std::string name) :
+	ccoms::iobserver(std::vector<ccoms::subject*>{arga, argb}),
+	ivariable<T>(std::vector<size_t>{}, name),
 	ioperation<T>(std::vector<ivariable<T>*>{arga, argb}, name),
 	hidden_(transposeA, transposeB) 
 {
