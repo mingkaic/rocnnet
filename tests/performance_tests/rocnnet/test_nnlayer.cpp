@@ -7,8 +7,7 @@
 //
 
 #include <cmath>
-#include "rocnnet/nnet.hpp"
-#include "../shared/utils.hpp"
+#include "gd_net.hpp"
 
 #define VECS std::pair<std::vector<double>, std::vector<double> >
 

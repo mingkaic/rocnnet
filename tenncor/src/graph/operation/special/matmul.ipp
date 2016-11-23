@@ -117,6 +117,8 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 			}
 		}
 	});
+	// try to update
+	update(nullptr);
 	if (session::pre_shape_eval())
 	{
 		shape_eval();
@@ -154,9 +156,12 @@ void matmul<T>::update (ccoms::subject* caller)
 	tensor<T>* bt = b->get_eval();
 
 	this->valid_tensor_ = at && bt;
-	if (this->valid_tensor_)
+	if (!this->out_->is_alloc())
 	{
 		this->out_->set_shape(shape_eval());
+	}
+	if (this->valid_tensor_)
+	{
 		*(this->out_)(std::vector<tensor<T>*>{at, bt});
 	}
 

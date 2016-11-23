@@ -109,6 +109,7 @@ jacobian<T>::jacobian (ivariable<T>* arga, ivariable<T>* argb,
 	hidden_(transposeA, transposeB) 
 {
     this->out_ = std::make_unique<tensor<T> >(1);
+    this->valid_tensor_ = true; // jacobian is always valid
 }
 
 template <typename T>

@@ -31,6 +31,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 # set common include folder for module
 #-------------------
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
+
+#-------------------
+# setup googletest in external directory
+#-------------------
+add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
 #>>>>>>>>>>>>>>>>>>>>>>>> GENERAL SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -86,11 +91,6 @@ set(UNIT_TEST_PATH ${PROJECT_SOURCE_DIR}/tests/unit_tests)
 set(MOCK_INCLUDE ${UNIT_TEST_PATH}/mock)
 
 #-------------------
-# setup googletest in external directory
-#-------------------
-add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
-
-#-------------------
 # finalize googletest setup
 #-------------------
 add_definitions(${MSVC_COMPILER_DEFS})
@@ -136,5 +136,56 @@ target_link_libraries(${UNIT_TEST_NAME}
 	gtest
 	${CMAKE_THREAD_LIBS_INIT}
 	${TENNCOR_LIB})
-add_test(test ${UNIT_TEST_NAME})
+add_test(unit ${UNIT_TEST_NAME})
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>> PERFORMANCE TESTING USING GOOGLETEST <<<<<<<<<<<<<<<<<<<<<<<<<
+set(PERFORM_TEST_NAME performance_test)
+set(PERFORM_TEST_PATH ${PROJECT_SOURCE_DIR}/tests/performance_tests)
+
+#-------------------
+# finalize googletest setup
+#-------------------
+add_definitions(${MSVC_COMPILER_DEFS})
+enable_testing()
+
+include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE})
+
+file(GLOB_RECURSE PERFORM_TEST_SRC
+		${PERFORM_TEST_PATH}/*.cpp)
+
+add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC})
+
+#-------------------
+# Test dependencies
+#-------------------
+add_dependencies(${PERFORMANCE_TEST_NAME}
+		googletest
+		tenncor
+		rocnnet)
+
+#-------------------
+# link googletest depending on  available libraries
+#-------------------
+if(NOT WIN32 OR MINGW)
+	target_link_libraries(${UNIT_TEST_NAME}
+			${GTEST_LIBS_DIR}/libgtest.a
+			${GTEST_LIBS_DIR}/libgtest_main.a
+			)
+else()
+	target_link_libraries(${UNIT_TEST_NAME}
+			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+			)
+	target_link_libraries(${UNIT_TEST_NAME}
+			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+			)
+endif()
+
+# Link
+target_link_libraries(${PERFORMANCE_TEST_NAME}
+		${CMAKE_THREAD_LIBS_INIT}
+        ${ROCNNET_DLL})
+add_test(perform ${PERFORM_TEST_NAME})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

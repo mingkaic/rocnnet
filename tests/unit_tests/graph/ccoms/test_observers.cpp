@@ -79,6 +79,10 @@ TEST(CCOMS, CopyDep_E002)
 
 	MockObserver* branch1 = MockObserver::build(&solo);
 	MockObserver* branch2 = MockObserver::build(&leaf1, &leaf2);
+
+	EXPECT_CALL(solo, detach(_)).Times(2);
+	EXPECT_CALL(leaf1, detach(_)).Times(2);
+	EXPECT_CALL(leaf2, detach(_)).Times(2);
 	
 	MockObserver* branch1cpy = new MockObserver(*branch1);
 	MockObserver* branch2cpy = new MockObserver(*branch2);

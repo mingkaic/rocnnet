@@ -16,8 +16,10 @@ TEST(CCOMS, DetachObserverOnDeath_E500)
 	MockObserver* o2 = MockObserver::build(subject);
 	MockObserver* o3 = MockObserver::build(subject);
 
-	// subject auto detach on destruction
-	EXPECT_CALL(*subject, detach(_)).Times(3);
+	// can't expect subject detach, since inherited MockSubject dies
+	// before base subject class detach is called
+	// if o1, o2, and o3 memory leaks then error
+
 	// death
 	delete subject;
 }
@@ -49,6 +51,10 @@ TEST(CCOMS, NoCopy_E502)
 
 	MockObserver* branch1 = MockObserver::build(&solo);
 	MockObserver* branch2 = MockObserver::build(&leaf1, &leaf2);
+
+	EXPECT_CALL(solo, detach(_)).Times(1);
+	EXPECT_CALL(leaf1, detach(_)).Times(1);
+	EXPECT_CALL(leaf2, detach(_)).Times(1);
 
 	MockSubject* solocpy = new MockSubject(solo);
 	MockSubject* leaf1cpy = new MockSubject(leaf1);

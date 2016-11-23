@@ -102,6 +102,8 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 			}
 		}
 	});
+	// try to update
+	update(nullptr);
 	if (session::pre_shape_eval())
 	{
 		shape_eval();
@@ -156,9 +158,13 @@ void elementary<T>::update (ccoms::subject* caller)
 		}
 	}
 
-	if (this->valid_tensor_)
+	if (!this->out_->is_alloc())
 	{
 		this->out_->set_shape(shape_eval()); // call 2
+	}
+	// tensor update
+	if (this->valid_tensor_)
+	{
 		(*this->out_)(tens);
 	}
 

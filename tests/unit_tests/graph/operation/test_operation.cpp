@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 #include "mock_operation.h"
 #include "graph/functions.hpp"
+#include <iostream>
 
 
 TEST(OPERATION, dot)
@@ -26,10 +27,10 @@ TEST(OPERATION, univar_func)
 
 	fanin = std::vector<double>{0};
 	double sigres = nnet::expose<double>(res)[0];
-	ASSERT_EQ(sigres, 0.5);
+	EXPECT_EQ(sigres, 0.5);
 
 	fanin = std::vector<double>{1};
 	sigres = nnet::expose<double>(res)[0];
 	double err = 0.73105857863 - sigres;
-	ASSERT_LT(err, 0.0001);
+	EXPECT_LT(err, 0.0001);
 }

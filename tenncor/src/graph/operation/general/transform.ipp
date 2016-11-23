@@ -70,6 +70,8 @@ transform<T>::transform (ivariable<T>* arg,
 		tensorshape ts = shape_eval();
 		collect_(dest, srcs[0], ts);
 	});
+	// try to update
+	update(nullptr);
 	if (session::pre_shape_eval())
 	{
 		shape_eval();
@@ -113,9 +115,12 @@ void transform<T>::update (ccoms::subject* caller)
 	// t is var's eval if caller is nullptr, otherwise
 	// t is one if var is the caller, nullptr otherwise
 	this->valid_tensor = nullptr != t;
-	if (this->valid_tensor)
+	if (!this->out_->is_alloc())
 	{
 		this->out_->set_shape(shape_eval());
+	}
+	if (this->valid_tensor)
+	{
 		*(this->out_)(std::vector<tensor<T>*>{t});
 	}
 
