@@ -93,7 +93,7 @@ gradient<T>::~gradient (void)
 template <typename T>
 gradient<T>* gradient<T>::clone (void)
 {
-	return static_cast<gradient<T> >(clone_impl());
+	return static_cast<gradient<T>*>(clone_impl());
 }
 
 template <typename T>

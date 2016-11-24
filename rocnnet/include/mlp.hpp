@@ -16,8 +16,8 @@
 namespace nnet
 {
 
-#define IN_PAIR std::pair<size_t, VAR_FUNC<double> >
-#define HID_PAIR std::pair<layer_perceptron*, VAR_FUNC<double> >
+#define IN_PAIR std::pair<size_t, nnet::VAR_FUNC<double> >
+#define HID_PAIR std::pair<layer_perceptron*, nnet::VAR_FUNC<double> >
 
 class ml_perceptron
 {
@@ -49,7 +49,7 @@ class ml_perceptron
         // PLACEHOLDER CONNECTION
 		// input are expected to have shape n_input by batch_size
 		// outputs are expected to have shape output by batch_size
-		nnet::varptr<double> operator () (placeptr<double> input);
+		nnet::varptr<double> operator () (placeholder<double>* input);
 		std::vector<WB_PAIR> get_variables (void);
 };
 

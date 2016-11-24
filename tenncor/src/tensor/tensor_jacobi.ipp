@@ -47,7 +47,7 @@ template <typename T, typename A>
 T* tensor_jacobi<T,A>::get_raw (void)
 {
 	tensor<T,A>* src = root_->get_eval();
-	copy(*src);
+	tensor<T,A>::copy(*src);
 	return tensor<T,A>::get_raw();
 }
 
@@ -89,19 +89,19 @@ const tensor_jacobi<T,A>& tensor_jacobi<T,A>::operator () (
 	// we're at evaluation time, so we can assess which derivative to take
 	const tensor<T,A>* ag = arga->get_gradient()->get_eval();
 	const tensor<T,A>* bg = argb->get_gradient()->get_eval();
-	ivariable<T>* a = nullptr;
+	varptr<T> a;
 	if (ag)
 	{
 		a = matmul<T>::build(k_, argb, transposeA_, !transposeB_);
-		owner_.push_back(std::shared_ptr<ivariable<T> >(a));
-		a = a * arga->get_gradient();
+		owner_.push_back(std::shared_ptr<ivariable<T> >(a.get()));
+		a = a * varptr<double>(arga->get_gradient());
 	}
-	ivariable<T>* b = nullptr;
+	varptr<T> b;
 	if (bg)
 	{
 		b = matmul<T>::build(arga, k_, !transposeA_, transposeB_);
-		owner_.push_back(std::shared_ptr<ivariable<T> >(b));
-		b = b * argb->get_gradient();
+		owner_.push_back(std::shared_ptr<ivariable<T> >(b.get()));
+		b = b * varptr<double>(argb->get_gradient());
 	}
 	root_ = a + b;
 	return *this;

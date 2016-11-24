@@ -51,10 +51,10 @@ class transform : public ioperation<T>
 			BUILD_DERIVE<T> der, std::string name);
 		
 	public:
-		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+		static ivariable<T>* build (ivariable<T>* args,
 			std::function<void(T*,const T*,tensorshape)> op,
 			std::function<tensorshape(tensorshape)> trans,
-			BUILD_DERIVE<T> der,std::string name = "")
+			BUILD_DERIVE<T> der, std::string name = "")
 		{
 			return new transform<T>(args, op, trans, der, name);
 		}
@@ -82,8 +82,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch);
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 
+// compression of index -1 compresses all elements in a (result is a scalar)
 template <typename T>
-varptr<T> compress (const varptr<T> a, size_t index,
+varptr<T> compress (const varptr<T> a, int index = -1,
 	std::function<T(const std::vector<T>&)> collector = mean<T>);
 
 }

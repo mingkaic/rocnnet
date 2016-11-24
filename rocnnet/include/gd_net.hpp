@@ -6,9 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <iostream> // for recording
 #include <unordered_set>
 #include "mlp.hpp"
 #include "executor/group.hpp"
+#include "executor/optimizer.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
@@ -29,10 +31,10 @@ class gd_net : public ml_perceptron
 		bool record_training = false;
 		// training input
 		placeholder<double>* train_in_ = nullptr;
-		placeholder<double>* expected_out = nullptr;
+		placeholder<double>* expected_out_ = nullptr;
 		placeholder<double>* batch_size = nullptr;
 		// training output
-		variable<double>* diff_;
+		varptr<double> diff_;
 		// training executors
 		group<double>* updates;
 		// owns optimizer
@@ -41,15 +43,15 @@ class gd_net : public ml_perceptron
 	protected:
 		void train_set_up (void);
 		
-		void copy (const gd_net& other, std::string scope)
+		void copy (const gd_net& other, std::string scope = "")
 		{
-			n_input = net.n_input;
-			learning_rate = net.learning_rate;
-			batch_size = net.batch_size->clone();
-			train_in_ = net.train_in_->clone();
-			expected_out = net.expected_out->clone();
+			n_input = other.n_input;
+			learning_rate = other.learning_rate;
+			batch_size = other.batch_size->clone();
+			train_in_ = other.train_in_->clone();
+			expected_out_ = other.expected_out_->clone();
 			train_set_up();
-			ml_perceptron<T>::copy(other, scope);
+			ml_perceptron::copy(other, scope);
 		}
 		gd_net (const gd_net& net, std::string scope);
 

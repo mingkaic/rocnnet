@@ -51,6 +51,7 @@ class gradient : public iexecutor<T>
 		virtual void freeze (void);
 		virtual void execute (void);
 
+		varptr<T> get_root (void) { return g_root_; }
 		void collect_grad (GRAD_GATHER<T> collector);
 };
 

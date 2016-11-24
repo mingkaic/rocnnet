@@ -27,7 +27,7 @@ template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
 	ileaf<T>(shape, nullptr, name)
 {
-	this->init_ = new typename ileaf<T>::dyn_init(*(this->out_));
+	this->init_ = new typename ileaf<T>::dyn_init(*this->out_);
 }
 
 template <typename T>
@@ -36,10 +36,10 @@ placeholder<T>::placeholder (const tensorshape& shape, initializer<T>& init, std
 {
 	this->out_->allocate();
 	// initialize right away
-	(*this->init_)(*(this->out_));
+	(*this->init_)(*this->out_);
 	// change initializer to dynamic
 	delete this->init_;
-	this->init_ = new typename ileaf<T>::dyn_init(*(this->out_));
+	this->init_ = new typename ileaf<T>::dyn_init(*this->out_);
 	this->is_init_ = true;
 }
 
@@ -75,7 +75,7 @@ template <typename T>
 placeholder<T>& placeholder<T>::operator = (const tensor<T>& data)
 {
 	assert(this->out_->is_compatible_with(data));
-	*(this->out_) = data;
+	*this->out_ = data;
 	this->is_init_ = true;
 	this->notify();
 	return *this;

@@ -15,7 +15,7 @@ std::vector<double> l2normalize (const std::vector<double>& in, double norm_fact
 	{
 	    l2norm += a*a;
 	}
-	l2norm = norm_factor / std::sqrt(l2norm)
+	l2norm = norm_factor / std::sqrt(l2norm);
 	for (double a : in)
 	{
 	    out.push_back(a * l2norm);

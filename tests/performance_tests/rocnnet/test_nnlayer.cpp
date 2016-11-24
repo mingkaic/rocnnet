@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include "gd_net.hpp"
+#include "gtest/gtest.h"
 
 #define VECS std::pair<std::vector<double>, std::vector<double> >
 
@@ -92,8 +93,8 @@ TEST(PERCEPTRON, layer_action)
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	std::vector<double> exout = {1, 2, 3};
 	nnet::layer_perceptron layer(vin.size(), exout.size());
-	nnet::nnet::placeholder<double> in(std::vector<size_t>{5}, "layerin");
-	nnet::varptr<double> res = layer(var);
+	nnet::placeholder<double> in(std::vector<size_t>{5}, "layerin");
+	nnet::varptr<double> res = layer(&in);
 	// initialize weight
 	sess.initialize_all<double>();
 	// feed data
@@ -171,7 +172,7 @@ TEST(PERCEPTRON, mlp_action)
 
 TEST(PERCEPTRON, layer_optimizer)
 {
-	nnet::gd_optimizer optimizer(0.001);
+ 	nnet::gd_optimizer optimizer(0.001);
 	nnet::session& sess = nnet::session::get_instance();
 	sess.seed_rand_eng(1);
 	size_t n_in = 10;
@@ -189,7 +190,7 @@ TEST(PERCEPTRON, layer_optimizer)
 	nnet::placeholder<double> in((std::vector<size_t>{10}), "layerin");
 	nnet::varptr<double> res = mlp(&in);
 	nnet::placeholder<double> expect_out((std::vector<size_t>{5}), "expectout");
-	nnet::varptr<double> diff = res - varptr<double>(&expect_out);
+	nnet::varptr<double> diff = res - nnet::varptr<double>(&expect_out);
 	nnet::varptr<double> err = diff * diff;
 
 	// set up optimizer to minimize error value diff
@@ -198,7 +199,7 @@ TEST(PERCEPTRON, layer_optimizer)
 
 	// initialize
 	sess.initialize_all<double>();
-	
+
 	// train
 	size_t train_size = 100;
 	std::vector<VECS> samples;
@@ -211,7 +212,7 @@ TEST(PERCEPTRON, layer_optimizer)
 		// update
 		optimizer.execute();
 	}
-	
+
 	// test
 	size_t fails = 0;
 	size_t test_size = 100;
@@ -256,7 +257,7 @@ TEST(PERCEPTRON, gd_train) {
 	net.set_the_record_str8(true);
 	nnet::placeholder<double> fanin((std::vector<size_t>{n_in, batch_size}), "fanin");
 	nnet::varptr<double> fanout = net(&fanin);
-	
+
 	// initialize
 	sess.initialize_all<double>();
 

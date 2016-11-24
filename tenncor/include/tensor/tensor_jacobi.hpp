@@ -22,7 +22,7 @@ class tensor_jacobi : public tensor<T, A>
 		bool transposeA_;
 		bool transposeB_;
 		ivariable<T>* k_ = nullptr; // no ownership on k
-		std::vector<std::shared_ptr<ivariable<T> > > owner_;
+		std::vector<std::shared_ptr<ivariable<T> > > owner_; // shared to avoid deep copying when cloning
 		ivariable<T>* root_ = nullptr; // deleted when clear
 
 		void clear_ownership (void);

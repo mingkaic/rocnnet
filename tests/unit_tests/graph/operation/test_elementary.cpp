@@ -24,7 +24,7 @@ void unaryElemTest (UNARY func,
 	nnet::placeholder<double> pin(std::vector<size_t>{edge, edge, edge}, "unar_in");
 	
 	// link in operation tree
-	nnet::varptr<double> res = func(pin);
+	nnet::varptr<double> res = func(nnet::varptr<double>(&pin));
 
 	// didn't initialize
 	EXPECT_DEATH({ res->get_eval(); }, ".*");
@@ -72,9 +72,9 @@ void binaryElemTest (
 	EXPECT_DEATH({func(p1, bad); }, ".*");
 	EXPECT_DEATH({func(bad, p1); }, ".*");
 
-	nnet::varptr<double> res = func(p1, p2);
-	nnet::varptr<double> res1 = func1(p1, 2);
-	nnet::varptr<double> res2 = func2(2, p1);
+	nnet::varptr<double> res = func(nnet::varptr<double>(&p1), nnet::varptr<double>(&p2));
+	nnet::varptr<double> res1 = func1(nnet::varptr<double>(&p1), 2);
+	nnet::varptr<double> res2 = func2(2, nnet::varptr<double>(&p1));
 
 	// didn't initialize
 	EXPECT_DEATH({ res->get_eval(); }, ".*");
@@ -116,7 +116,7 @@ void binaryElemTest (
 			raw[i]);
 		EXPECT_EQ(op(expect1[i], 2), 
 			raw1[i]);
-		EXPECT_EQ(op(2, r1[i]), 
+		EXPECT_EQ(op(2, expect1[i]),
 			raw2[i]);
 	}
 	// prevent shape eval from leaking to other test

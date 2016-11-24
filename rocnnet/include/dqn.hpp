@@ -69,10 +69,10 @@ class dq_net {
 		nnet::placeholder<double>* action_mask;
 
 		// fanouts
-		nnet::variable<double>* predicted_actions;
-		nnet::variable<double>* prediction_error;
+		nnet::varptr<double> predicted_actions;
+		nnet::varptr<double> prediction_error;
 		// update
-		optimizer<double>* train_op_;
+		ioptimizer<double>* train_op_;
 		group<double> net_train;
 
 		void variable_setup (void);

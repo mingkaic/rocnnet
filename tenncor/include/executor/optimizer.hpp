@@ -50,9 +50,18 @@ class ioptimizer : public iexecutor<T>
 	
 	protected:
 		std::unordered_map<ivariable<T>*, ivariable<T>*> grad_top_;
-		
+
+		virtual iexecutor<T>* clone_impl (void) = 0;
+
 		// build updater_ from on grad_top_ map
 		virtual group<T>* apply_grad (void) const = 0;
+
+		void copy (const ioptimizer<T>& other)
+		{
+			updater_ = other.updater_;
+			grader_ = other.grader_->clone();
+			ignore_set_ = other.ignore_set_;
+		}
 
 	public:
 		ioptimizer (void) {}
@@ -66,6 +75,12 @@ class ioptimizer : public iexecutor<T>
 			{
 				delete grader_;
 			}
+		}
+
+		// COPY
+		ioptimizer<T>* clone (void)
+		{
+			return static_cast<ioptimizer<T>*>(clone_impl());
 		}
 
 		// build time setup-methods
@@ -145,10 +160,27 @@ class gd_optimizer : public ioptimizer<double>
 		double learning_rate_;
 
 	protected:
+		gd_optimizer (const gd_optimizer& other)
+		{
+			learning_rate_ = other.learning_rate_;
+			ioptimizer<double>::copy(other);
+		}
+
+		virtual iexecutor<double>* clone_impl (void)
+		{
+			return new gd_optimizer(*this);
+		}
+
 		virtual group<double>* apply_grad (void) const;
 		
 	public:
 		gd_optimizer (double learning_rate);
+
+		// COPY
+		gd_optimizer* clone (void)
+		{
+			return static_cast<gd_optimizer*>(clone_impl());
+		}
 };
 
 // MOMENTUM BASED OPTIMIZATION

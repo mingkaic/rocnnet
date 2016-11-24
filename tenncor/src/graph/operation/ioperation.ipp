@@ -42,11 +42,12 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 	size_t jacobi_count = 0;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(sub))
+		if (ivariable<T>* v = dynamic_cast<ivariable<T>*>(sub))
 		{
-			if (o->channel(jacobi))
-			{
-				jacobi_count++;
+			if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(v)) {
+				if (o->channel(jacobi)) {
+					jacobi_count++;
+				}
 			}
 		}
 	}

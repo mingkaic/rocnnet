@@ -32,6 +32,9 @@ using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 template <typename T>
 class gradient;
 
+template <typename T>
+class jacobian;
+
 // INTERFACE OPERATION
 
 // inheritance join at reactive_node
@@ -60,6 +63,7 @@ class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver
 		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
 
 		friend class gradient<T>;
+		friend class jacobian<T>;
 
 	public:
 		virtual ~ioperation (void);

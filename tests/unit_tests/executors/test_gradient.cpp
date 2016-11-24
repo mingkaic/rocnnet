@@ -5,7 +5,7 @@
 #include <limits>
 #include "gtest/gtest.h"
 #include "executor/gradient.hpp"
-#include "graph/function.hpp"
+#include "graph/functions.hpp"
 
 static const double epi = std::numeric_limits<double>::epsilon();
 

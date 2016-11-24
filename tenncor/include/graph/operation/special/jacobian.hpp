@@ -32,7 +32,7 @@ class jacobian : public ioperation<T>
 	private:
 		class hidden_jacobi;
 
-		hidden_jacobi hidden_;
+		std::unique_ptr<hidden_jacobi> hidden_;
 
 	protected:
 		// jacobian is inherently a gradient agent (it exists in some first order or above derivative function)

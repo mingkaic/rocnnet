@@ -73,6 +73,8 @@ tensorshape matmul<T>::shape_eval (void)
 
 template <typename T>
 matmul<T>::matmul (const matmul<T>& other, std::string name) :
+	ccoms::iobserver(other),
+	ivariable<T>(other, name),
 	ioperation<T>(other, name),
 	transposeA_(other.transposeA_),
 	transposeB_(other.transposeB_) {}
@@ -132,7 +134,7 @@ matmul<T>* matmul<T>::clone (std::string name)
 }
 
 template <typename T>
-matmul<T>& matmul<T>::operator = (const ivariable<T>& other)
+matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 {
 	if (this != &other)
 	{
@@ -162,7 +164,7 @@ void matmul<T>::update (ccoms::subject* caller)
 	}
 	if (this->valid_tensor_)
 	{
-		*(this->out_)(std::vector<tensor<T>*>{at, bt});
+		(*this->out_)(std::vector<tensor<T>*>{at, bt});
 	}
 
 	this->notify();

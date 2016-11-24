@@ -49,6 +49,8 @@ tensorshape transform<T>::shape_eval (void)
 
 template <typename T>
 transform<T>::transform (const transform<T>& other, std::string name) :
+	ccoms::iobserver(other),
+	ivariable<T>(other, name),
 	ioperation<T>(other, name),
 	collect_(other.collect_),
 	shape_(other.shape_),
@@ -114,14 +116,14 @@ void transform<T>::update (ccoms::subject* caller)
 	
 	// t is var's eval if caller is nullptr, otherwise
 	// t is one if var is the caller, nullptr otherwise
-	this->valid_tensor = nullptr != t;
+	this->valid_tensor_ = nullptr != t;
 	if (!this->out_->is_alloc())
 	{
 		this->out_->set_shape(shape_eval());
 	}
-	if (this->valid_tensor)
+	if (this->valid_tensor_)
 	{
-		*(this->out_)(std::vector<tensor<T>*>{t});
+		(*this->out_)(std::vector<tensor<T>*>{t});
 	}
 
 	this->notify();
@@ -155,7 +157,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
  		[cap](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return clip_norm(a->get_gradient(), cap);
+ 			return clip_norm(varptr<double>(a->get_gradient()), cap);
  		},
  	"clip_norm(" + a->get_name() + ")");
  	return op;
@@ -215,7 +217,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
  	ivariable<T>* op = transform<T>::build(a,
  		[watch, a](T* dest, const T* src, tensorshape ts)
  		{
-			std::vector<size_t> orig = a->get_eval()->get_shape().as_list();
+			std::vector<size_t> orig = a->get_shape().as_list();
 			std::vector<size_t> tv = ts.as_list();
 			size_t total = ts.n_elems();
 
@@ -223,7 +225,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 			T temp2[ts.n_elems()];
 
 			const T* super_src = src;
-			T* super_dest = &temp;
+			T* super_dest = temp;
 			size_t below_dim = 1;
 
 			for (size_t index = 0; index < tv.size(); index++)
@@ -255,21 +257,21 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 						src_addr += i * below;
 						for (size_t j = 0; j < mult; j++)
 						{
-							const T* dest_addr = super_dest + below * (mult * i + j);
+							T* dest_addr = super_dest + below * (mult * i + j);
 							std::memcpy(dest_addr, src_addr, below * sizeof(T));
 						}
 					}
 					// state update: below_dim, super_src, and super_dest
 					below_dim *= mult;
-					if (super_src == &temp)
+					if (super_src == temp)
 					{
-						super_src = &temp2;
-						super_dest = &temp;
+						super_src = temp2;
+						super_dest = temp;
 					}
 					else
 					{
-						super_src = &temp;
-						super_dest = &temp2;
+						super_src = temp;
+						super_dest = temp2;
 					}
 				}
 			}
@@ -278,14 +280,14 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
  		[watch](tensorshape ts)
  		{
 			ts.assert_is_fully_defined();
-			tensorshape s = watch->get_eval()->get_shape();
+			tensorshape s = watch->get_shape();
 			assert(s.n_elems() >= ts.n_elems());
 			return s;
 		},
  		[watch](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return fit(a->get_gradient(), watch);
+ 			return fit(varptr<double>(a->get_gradient()), watch);
  		},
  	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
  	return op;
@@ -354,22 +356,26 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 }
 
 template <typename T>
-varptr<T> compress (const varptr<T> a, size_t index,
+varptr<T> compress (const varptr<T> a, int index,
 	std::function<T(const std::vector<T>&)> collector)
-	{
+{
 	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = transform<T>::build(a,
- 		[index, collector, a](const T*& dest, T* src, tensorshape ts)
- 		{
+	std::function<void(T*,const T*,tensorshape)> gatherer;
+	std::function<tensorshape(tensorshape)> shaper;
+	if (index >= 0)
+	{
+		gatherer = std::function<void(T*,const T*,tensorshape)>(
+		[index, collector, a](T* dest, const T* src, tensorshape ts)
+		{
 			assert(index < ts.n_dims());
 			std::vector<size_t> tv = ts.as_list();
-			tensorshape orig = a->get_eval()->get_shape();
+			tensorshape orig = a->get_shape();
 			size_t idx_val = orig.as_list()[index];
- 			size_t below = 1;
- 			for (size_t i = 0; i <= index; i++)
- 			{
- 				below *= tv[i];
- 			}
+			size_t below = 1;
+			for (size_t i = 0; i <= index; i++)
+			{
+				below *= tv[i];
+			}
 			size_t above = orig.n_elems() / (below*idx_val);
 
 			// copy over data
@@ -387,9 +393,10 @@ varptr<T> compress (const varptr<T> a, size_t index,
 					dest[dest_idx] = collector(gather);
 				}
 			}
- 		},
- 		[index](tensorshape ts)
- 		{
+		});
+		shaper = std::function<tensorshape(tensorshape)>(
+		[index](tensorshape ts)
+		{
 			ts.assert_is_fully_defined();
 			assert(index < ts.n_dims());
 			std::vector<size_t> tv = ts.as_list();
@@ -407,11 +414,29 @@ varptr<T> compress (const varptr<T> a, size_t index,
 				tv[index] = 1;
 			}
 			return tv;
-		},
+		});
+	}
+	else
+	{
+		gatherer = std::function<void(T*,const T*,tensorshape)>(
+		[collector, a](T* dest, const T* src, tensorshape ts)
+		{
+			std::vector<size_t> tv = ts.as_list();
+			size_t total = ts.n_elems();
+			dest[0] = collector(std::vector<T>(dest, dest+total));
+		});
+		shaper = std::function<tensorshape(tensorshape)>(
+		[index](tensorshape ts)
+		{
+			return std::vector<size_t>{1};
+		});
+	}
+
+ 	ivariable<T>* op = transform<T>::build(a, gatherer, shaper,
  		[index, collector](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return compress(a->get_gradient(), index, collector);
+ 			return compress(varptr<T>(a->get_gradient()), index, collector);
  		},
  	nnutils::formatter() << "compress[" << index << "](" << a->get_name() + ")");
  	return op;

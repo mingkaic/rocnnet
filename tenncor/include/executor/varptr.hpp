@@ -21,9 +21,10 @@ template <typename T>
 class varptr
 {
 	private:
-		ivariable<T>* ptr_;
+		ivariable<T>* ptr_ = nullptr;
 
 	public:
+		varptr (void) {}
 		varptr (ivariable<T>* ptr);
 		varptr<T>& operator = (ivariable<T>* other);
 		varptr<T>& operator = (const varptr<T>& other);
@@ -39,9 +40,10 @@ template <typename T>
 class placeptr
 {
 	private:
-		placeholder<T>* ptr_;
+		placeholder<T>* ptr_ = nullptr;
 
 	public:
+		placeptr (void) {}
 		placeptr (placeholder<T>* ptr);
 		placeptr<T>& operator = (placeholder<T>* other);
 		placeptr<T>& operator = (const placeptr<T>& other);

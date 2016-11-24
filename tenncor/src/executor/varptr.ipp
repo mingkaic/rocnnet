@@ -14,7 +14,7 @@ template <typename T>
 varptr<T>::varptr (ivariable<T>* ptr) : ptr_(ptr) {}
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (ivariable<T>* other) { ptr_ = other; }
+varptr<T>& varptr<T>::operator = (ivariable<T>* other) { ptr_ = other; return *this; }
 
 template <typename T>
 varptr<T>& varptr<T>::operator = (const varptr<T>& other) { ptr_ = other.ptr_; return *this; }

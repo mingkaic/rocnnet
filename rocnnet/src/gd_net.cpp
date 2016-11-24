@@ -19,12 +19,12 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		varptr<double> batch_size,
 		std::vector<HID_PAIR>& layers,
 		std::queue<varptr<double> >& layer_out,
-		std::stack<varptr<double> >& prime_out)
+		std::stack<gradient<double>*>& prime_out)
 {
 	// err_n = (out-y)*act'(z_n)
 	// where z_n is the input to the nth layer (last)
 	// and act is the activation operation
-	varptr<double> err = diff_func * prime_out.top();
+	varptr<double> err = diff_func * prime_out.top()->get_root();
 	prime_out.pop();
 	std::stack<varptr<double> > errs;
 	errs.push(err);
@@ -38,7 +38,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		ivariable<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
 		varptr<double> mres = matmul<double>::build(err, weight_i, false ,true);
-		err = mres * prime_out.top();
+		err = mres * prime_out.top()->get_root();
 		prime_out.pop();
 		errs.push(err);
 	}
@@ -57,7 +57,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 		varptr<double> dweights = cost * learn_batch;
 
 		// expecting err to be output by batchsize, compress along batchsize
-		varptr<double> compressed_err = new compress<double>(err, 1);
+		varptr<double> compressed_err = compress<double>(err, 1);
 		varptr<double> dbias = compressed_err * learn_batch;
 
 		// update weights and bias
@@ -80,7 +80,7 @@ void gd_net::train_set_up (void)
 {
 	// follow () operator for ml_perceptron except store hypothesis
 	std::queue<varptr<double> > layer_out;
-	std::stack<varptr<double> > prime_out;
+	std::stack<gradient<double>*> prime_out;
 
 	// not so generic setup
 	varptr<double> output = train_in_;
@@ -90,12 +90,11 @@ void gd_net::train_set_up (void)
 		output = (hp.second)(hypothesis);
 		layer_out.push(output);
 		// act'(z_i)
-		varptr<double> grad = new derive<double>(output, hypothesis);
-		prime_out.push(grad);
+		prime_out.push(new gradient<double>(output, hypothesis));
 	}
 
 	// preliminary setup for any update algorithm
-	diff_ = output - expected_out;
+	diff_ = output - varptr<double>(expected_out_);
 
 	// optimizer_ and updates are two separate executors (updates technically NOT an executor)
 	// TODO: get rid of updates at some point (once optimizer proves to work)
@@ -103,13 +102,13 @@ void gd_net::train_set_up (void)
 	{
 		updates = ad_hoc_gd_setup(
 			learning_rate,
-			train_in_, diff,
+			train_in_, diff_,
 			batch_size, this->layers,
 			layer_out, prime_out);
 	}
 	else
 	{
-		optimizer_->set_root(diff * diff);
+		optimizer_->set_root(diff_ * diff_);
 		optimizer_->freeze();
 	}
 }
@@ -121,20 +120,20 @@ gd_net::gd_net (const gd_net& net, std::string scope) :
 	learning_rate = net.learning_rate;
 	batch_size = net.batch_size->clone();
 	train_in_ = net.train_in_->clone();
-	expected_out = net.expected_out->clone();
+	expected_out_ = net.expected_out_->clone();
 	train_set_up();
 }
 
 gd_net::gd_net (size_t n_input,
 	std::vector<IN_PAIR> hiddens,
-	OPTIMIZER<double> optimizer,
+	ioptimizer<double>* optimizer,
 	std::string scope) : 
 	ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) 
 {
 	size_t n_out = hiddens.back().first;
 	batch_size = new placeholder<double>(std::vector<size_t>{0}, "batch_size");
 	train_in_ = new placeholder<double>(std::vector<size_t>{n_input, 0}, "train_in");
-	expected_out = new placeholder<double>(std::vector<size_t>{n_out, 0}, "expected_out");
+	expected_out_ = new placeholder<double>(std::vector<size_t>{n_out, 0}, "expected_out");
 	train_set_up();
 }
 
@@ -146,8 +145,8 @@ gd_net::gd_net (size_t n_input,
 void gd_net::train (std::vector<double> train_in, std::vector<double> expected_out) 
 {
 	(*this->batch_size) = std::vector<double>{(double) train_in.size() / n_input};
-	(*train_in_) = train_in;
-	(*this->expected_out) = expected_out;
+	*train_in_ = train_in;
+	*expected_out_ = expected_out;
 	// trigger update
 	if (optimizer_)
 	{

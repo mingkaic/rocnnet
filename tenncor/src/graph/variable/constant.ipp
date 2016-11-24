@@ -30,14 +30,14 @@ constant<T>::constant (T scalar) :
 	nnutils::formatter() << scalar)
 {
 	this->out_->allocate();
-	(*this->init_)(*(this->out_));
+	(*this->init_)(*this->out_);
 	this->is_init_ = true;
 }
 
 template <typename T>
 constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 	ileaf<T>(shape,
-	new typename ileaf<T>::dyn_init(*(this->out_)),
+	new typename ileaf<T>::dyn_init(*this->out_),
 	nnutils::formatter() << raw.front() << ".." << raw.back() << raw.end())
 {
 	this->out_->allocate();

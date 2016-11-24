@@ -36,29 +36,29 @@ void dq_net::variable_setup (void) {
 	nnet::ivariable<double>* next_action_scores = (*target_net)(next_observation);
 	// reduce max
 	nnet::varptr<double> target_values = compress<double>(next_action_scores, 1,
-		[](const std::vector<double>& v) {
-			double big;
-			auto it = v.begin();
-			big = *it;
-			for (it++; v.end() != it; it++) {
-				big = big > *it ? big : *it;
-			}
-			return big;
-		});
+	[](const std::vector<double>& v) {
+		double big;
+		auto it = v.begin();
+		big = *it;
+		for (it++; v.end() != it; it++) {
+			big = big > *it ? big : *it;
+		}
+		return big;
+	});
 	// future rewards = rewards + discount * target action
-	nnet::varptr<double> future_rewards = nnet::var_ptr<double>(rewards) + (discount_rate * target_values);
+	nnet::varptr<double> future_rewards = nnet::varptr<double>(rewards) + (discount_rate * target_values);
 
 	// PREDICT ERROR
 	// ===============================
 	nnet::varptr<double> masked_action_score = // reduce sum
-			compress<double>(action_scores * action_mask, 1,
-												[](const std::vector<double>& v) {
-													double accum;
-													for (double d : v) {
-														accum += d;
-													}
-													return accum;
-												});
+	compress<double>(action_scores * varptr<double>(action_mask), 1,
+	[](const std::vector<double>& v) {
+		double accum;
+		for (double d : v) {
+			accum += d;
+		}
+		return accum;
+	});
 	nnet::varptr<double> diff = masked_action_score - future_rewards;
 	prediction_error = compress<double>(diff * diff); // reduce mean
 	// action score is used for prediction error, no need to update twice, 
@@ -68,11 +68,11 @@ void dq_net::variable_setup (void) {
 	// sets root, freeze, then manipulate.
 	// evaluate gradient of prediction_error (minimize it)
 	train_op_->set_manipulate(prediction_error,
-	[](ivariable<T>* key,ivariable<T>*& value)
+	[](ivariable<double>* key,ivariable<double>*& value)
 	{
 		// manipulate gradient by clipping to reduce outliers
 		if (nullptr != value) {
-			value = new clip_norm<double>(value, 5);
+			value = clip_norm<double>(value, 5);
 		}
 		return true;
 	});
@@ -82,14 +82,12 @@ void dq_net::variable_setup (void) {
 	std::vector<WB_PAIR> q_net_var = q_net->get_variables();
 	std::vector<WB_PAIR> target_q_net_var = q_net->get_variables();
 	for (size_t i = 0; i < q_net_var.size(); i++) {
-		nnet::varptr<double> dwt = update_rate * (q_net_var[i].first - target_q_net_var[i].first);
-		nnet::varptr<double> dbt = update_rate * (q_net_var[i].second - target_q_net_var[i].second);
+		nnet::varptr<double> dwt = update_rate * (varptr<double>(q_net_var[i].first) - varptr<double>(target_q_net_var[i].first));
+		nnet::varptr<double> dbt = update_rate * (varptr<double>(q_net_var[i].second) - varptr<double>(target_q_net_var[i].second));
 
 		WB_PAIR wb = target_q_net_var[i];
-		iexecutor<double>* w_evok = new assign_sub<double>(
-			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.first), dwt);
-		iexecutor<double>* b_evok = new assign_sub<double>(
-			std::static_pointer_cast<variable<double>, ivariable<double> >(wb.second), dbt);
+		iexecutor<double>* w_evok = new assign_sub<double>(wb.first, dwt);
+		iexecutor<double>* b_evok = new assign_sub<double>(wb.second, dbt);
 		net_train.add(w_evok);
 		net_train.add(b_evok);
 	}
@@ -167,7 +165,7 @@ dq_net::dq_net (
 	rewards = new placeholder<double>(std::vector<size_t>{0}, "rewards");
 	action_mask = new placeholder<double>(std::vector<size_t>{n_actions, 0}, "action_mask");
 
-	train_op_ = optimizer_; // clone?
+	train_op_ = optimizer; // clone?
 	variable_setup();
 
 	sess.initialize_all<double>();
@@ -252,10 +250,10 @@ void dq_net::train (std::vector<std::vector<double> > train_batch) {
 //		prediction_error->eval(); // cost
 
 		// weight training
-		train_op_->eval();
+		train_op_->execute();
 
 		// update q nets
-		net_train.eval();
+		net_train.execute();
 
 		iteration++;
 	}

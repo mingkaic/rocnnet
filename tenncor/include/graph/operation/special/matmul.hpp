@@ -51,7 +51,7 @@ class matmul : public ioperation<T>
 
 		// COPY
 		matmul<T>* clone (std::string name = "");
-		virtual matmul<T>& operator = (const ivariable<T>& other);
+		virtual matmul<T>& operator = (const matmul<T>& other);
 		
 		// MOVES
 		// TODO: implement
