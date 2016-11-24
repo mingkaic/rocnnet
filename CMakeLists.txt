@@ -184,8 +184,6 @@ else()
 endif()
 
 # Link
-target_link_libraries(${PERFORMANCE_TEST_NAME}
-		${CMAKE_THREAD_LIBS_INIT}
-        ${ROCNNET_DLL})
+target_link_libraries(${PERFORMANCE_TEST_NAME} ${CMAKE_THREAD_LIBS_INIT} ${ROCNNET_DLL})
 add_test(perform ${PERFORM_TEST_NAME})
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE PERFORMANCE TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

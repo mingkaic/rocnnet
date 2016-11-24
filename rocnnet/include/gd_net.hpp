@@ -8,6 +8,7 @@
 
 #include <unordered_set>
 #include "mlp.hpp"
+#include "executor/group.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
