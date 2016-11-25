@@ -7,7 +7,6 @@
 //
 
 #include "graph/operation/ioperation.hpp"
-#include "jacobian.hpp"
 
 #pragma once
 #ifndef matop_hpp

@@ -16,7 +16,6 @@
 
 #include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
-#include "tensor/tensor_jacobi.hpp"
 #include "executor/varptr.hpp"
 
 #pragma once

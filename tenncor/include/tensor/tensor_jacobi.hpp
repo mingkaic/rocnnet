@@ -7,6 +7,9 @@
 //
 
 #include "tensor.hpp"
+#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/general/transform.hpp"
+#include "graph/operation/special/matmul.hpp"
 
 #pragma once
 #ifndef tensor_jacobi_hpp

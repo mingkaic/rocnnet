@@ -7,6 +7,7 @@
 //
 
 #include "graph/operation/ioperation.hpp"
+#include "tensor/tensor_jacobi.hpp"
 
 #pragma once
 #ifndef jacobian_hpp

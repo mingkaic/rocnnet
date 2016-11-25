@@ -8,8 +8,6 @@
 
 #ifdef tensor_jacobi_hpp
 
-#include "graph/operation/special/matmul.hpp"
-
 namespace nnet
 {
 

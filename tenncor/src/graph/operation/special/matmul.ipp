@@ -8,6 +8,8 @@
 
 #ifdef matop_hpp
 
+#include "graph/operation/special/jacobian.hpp"
+
 namespace nnet
 {
 

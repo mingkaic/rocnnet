@@ -317,7 +317,7 @@ varptr<T> cot (const varptr<T> a)
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
 		[](T& collector, T other)
 		{
-			collector = 1/std::tan(other);
+			collector = std::cos(other)/std::sin(other);
 		},
 		[](std::vector<ivariable<T>*> args)
 		{
@@ -365,7 +365,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		[min, max](std::vector<ivariable<T>*> args)
 		{
 			varptr<T> a = args.front();
-			return clip_val(a->get_gradient(), min, max);
+			return clip_val(varptr<T>(a->get_gradient()), min, max);
 		}, 
 	"clip_val(" + a->get_name() + ")");
 	return op;

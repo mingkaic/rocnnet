@@ -8,6 +8,7 @@
 
 #include "iexecutor.hpp"
 #include "graph/variable/constant.hpp"
+#include "tensor/tensor_jacobi.hpp"
 
 #pragma once
 #ifndef gradient_hpp

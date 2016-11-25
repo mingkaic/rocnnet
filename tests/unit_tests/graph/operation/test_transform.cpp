@@ -49,11 +49,11 @@ TEST(OPERATION, ClipNorm)
 	std::vector<double> exa = l2normalize(av, norm_factor);
 	std::vector<double> exb = l2normalize(bv, norm_factor);
 	std::vector<double> exc = l2normalize(cv, norm_factor);
-	
+
 	nnet::placeholder<double> A((std::vector<size_t>{2, 4}), "a");
 	nnet::placeholder<double> B((std::vector<size_t>{3, 4}), "b");
 	nnet::placeholder<double> C((std::vector<size_t>{4, 5}), "c");
-	
+
 	nnet::varptr<double> resa = nnet::clip_norm<double>(&A, norm_factor);
 	nnet::varptr<double> resb = nnet::clip_norm<double>(&B, norm_factor);
 	nnet::varptr<double> resc = nnet::clip_norm<double>(&C, norm_factor);
@@ -108,7 +108,7 @@ TEST(OPERATION, Transpose)
 	nnet::placeholder<double> A((std::vector<size_t>{2, 4}), "a");
 	nnet::placeholder<double> B((std::vector<size_t>{3, 4}), "b");
 	nnet::placeholder<double> C((std::vector<size_t>{4, 5}), "c");
-	
+
 	nnet::varptr<double> resa = nnet::transpose<double>(&A);
 	nnet::varptr<double> resb = nnet::transpose<double>(&B);
 	nnet::varptr<double> resc = nnet::transpose<double>(&C);
@@ -125,7 +125,7 @@ TEST(OPERATION, Transpose)
 	{
 		for (size_t y = 0; y < 2; y++)
 		{
-			EXPECT_EQ(ex1[y][x], ta.get({x, y}));
+			EXPECT_EQ(ex1[y][x], ta->get({x, y}));
 		}
 	}
 	nnet::tensor<double>* tb = resb->get_eval();
@@ -138,7 +138,7 @@ TEST(OPERATION, Transpose)
 	{
 		for (size_t y = 0; y < 3; y++)
 		{
-			EXPECT_EQ(ex2[y][x], tb.get({x, y}));
+			EXPECT_EQ(ex2[y][x], tb->get({x, y}));
 		}
 	}
 	nnet::tensor<double>* tc = resc->get_eval();
@@ -151,7 +151,7 @@ TEST(OPERATION, Transpose)
 	{
 		for (size_t y = 0; y < 4; y++)
 		{
-			EXPECT_EQ(ex3[y][x], tc.get({x, y}));
+			EXPECT_EQ(ex3[y][x], tc->get({x, y}));
 		}
 	}
 }
@@ -235,7 +235,7 @@ TEST(OPERATION, Extend) {
 	{
 		EXPECT_EQ(ex1[i], raw[i]);
 	}
-	
+
     raw = nnet::expose<double>(e2);
 	std::vector<size_t> ts2 = e2->get_shape().as_list();
 	ASSERT_EQ(3, ts2.size());
@@ -247,7 +247,7 @@ TEST(OPERATION, Extend) {
 	{
 		EXPECT_EQ(ex2[i], raw[i]);
 	}
-	
+
     raw = nnet::expose<double>(e3);
 	std::vector<size_t> ts3 = e3->get_shape().as_list();
 	ASSERT_EQ(3, ts3.size());
@@ -259,7 +259,7 @@ TEST(OPERATION, Extend) {
 	{
 		EXPECT_EQ(ex3[i], raw[i]);
 	}
-	
+
     raw = nnet::expose<double>(e4);
 	std::vector<size_t> ts4 = e4->get_shape().as_list();
 	ASSERT_EQ(4, ts4.size());
@@ -323,12 +323,12 @@ TEST(OPERATION, Compress)
 	B = in2;
 	C = in3;
 
-	nnet::varptr<double> c1 = nnet::compress<double>(A, 0); // expect vector of 2
-	nnet::varptr<double> c2 = nnet::compress<double>(B, 1); // expect vector of 2
-	nnet::varptr<double> c3 = nnet::compress<double>(C, 1); // expect shape of 2, 1, 2
+	nnet::varptr<double> c1 = nnet::compress<double>(nnet::varptr<double>(&A), 0); // expect vector of 2
+	nnet::varptr<double> c2 = nnet::compress<double>(nnet::varptr<double>(&B), 1); // expect vector of 2
+	nnet::varptr<double> c3 = nnet::compress<double>(nnet::varptr<double>(&C), 1); // expect shape of 2, 1, 2
 
-	std::vector<double> raw = nnet::expose<double>(e1);
-	std::vector<size_t> v1 = e1->get_shape().as_list();
+	std::vector<double> raw = nnet::expose<double>(c1);
+	std::vector<size_t> v1 = c1->get_shape().as_list();
 	ASSERT_EQ(1, v1.size());
 	ASSERT_EQ(2, v1[0]);
 	for (size_t i = 0; i < raw.size(); i++)
@@ -336,8 +336,8 @@ TEST(OPERATION, Compress)
 		EXPECT_EQ(exp1[i], raw[i]);
 	}
 
-	raw = nnet::expose<double>(e2);
-	std::vector<size_t> v2 = e2->get_shape().as_list();
+	raw = nnet::expose<double>(c2);
+	std::vector<size_t> v2 = c2->get_shape().as_list();
 	ASSERT_EQ(1, v2.size());
 	ASSERT_EQ(2, v2[0]);
 	for (size_t i = 0; i < raw.size(); i++)
@@ -345,8 +345,8 @@ TEST(OPERATION, Compress)
 		EXPECT_EQ(exp2[i], raw[i]);
 	}
 
-	raw = nnet::expose<double>(e3);
-	std::vector<size_t> v3 = e3->get_shape().as_list();
+	raw = nnet::expose<double>(c3);
+	std::vector<size_t> v3 = c3->get_shape().as_list();
 	ASSERT_EQ(3, v3.size());
 	ASSERT_EQ(2, v3[0]);
 	ASSERT_EQ(1, v3[1]);

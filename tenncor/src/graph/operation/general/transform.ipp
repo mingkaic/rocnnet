@@ -157,7 +157,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
  		[cap](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return clip_norm(varptr<double>(a->get_gradient()), cap);
+ 			return clip_norm(varptr<T>(a->get_gradient()), cap);
  		},
  	"clip_norm(" + a->get_name() + ")");
  	return op;
@@ -201,7 +201,7 @@ varptr<T> transpose (const varptr<T> a)
  		[](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return transpose(a->get_gradient());
+ 			return transpose(varptr<T>(a->get_gradient()));
  		},
  	"transpose(" + a->get_name() + ")");
  	return op;
@@ -287,7 +287,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
  		[watch](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return fit(varptr<double>(a->get_gradient()), watch);
+ 			return fit(varptr<T>(a->get_gradient()), watch);
  		},
  	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
  	return op;
@@ -317,7 +317,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 				src_addr += i * below;
 				for (size_t j = 0; j < multiplier; j++)
 				{
-					const T* dest_addr = dest + below * (multiplier * i + j);
+					T* dest_addr = dest + below * (multiplier * i + j);
 					std::memcpy(dest_addr, src_addr, below * sizeof(T));
 				}
 			}
@@ -348,7 +348,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
  		[index, multiplier](std::vector<ivariable<T>*> args)
  		{
  			ivariable<T>* a = args.front();
- 			return extend(a->get_gradient(), index, multiplier);
+ 			return extend(varptr<T>(a->get_gradient()), index, multiplier);
  		},
  	nnutils::formatter() << "extend[" << index << "," <<
  		multiplier << "](" << a->get_name() + ")");
