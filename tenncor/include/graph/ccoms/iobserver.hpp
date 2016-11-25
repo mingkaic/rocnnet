@@ -7,6 +7,7 @@
 //
 
 #include <vector>
+#include <functional>
 #include "subject.hpp"
 
 #pragma once

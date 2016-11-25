@@ -30,10 +30,8 @@ class assign : public iexecutor<T>
 		// determines how element-wise assignment works, defaults to direct assignment
 		ASSIGN_OP<T> transfer_;
 		// target (weak pointer, no ownership)
-		variable<T>* dest_ = nullptr;
+		variable<T>* dest_;
 		std::vector<T> local_cpy_;
-		// listen state
-		bool listening_ = true;
 
 	protected:
 		// used by copy constructor and copy assignment

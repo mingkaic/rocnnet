@@ -6,6 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <functional>
 #include <algorithm>
 #include <complex>
 

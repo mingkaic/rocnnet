@@ -6,6 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <cstring>
 #include <functional> // for std::bad_function_call();
 
 #ifdef tensor_hpp
@@ -23,7 +24,7 @@ void tensor<T,A>::copy (const tensor<T,A>& other)
 
 	// modify depending on raw_data_ implementation
 	raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
-	memcpy(raw_data_, other.raw_data_, sizeof(T) * nelem);
+	std::memcpy(raw_data_, other.raw_data_, sizeof(T) * nelem);
 }
 
 template <typename T, typename A>
