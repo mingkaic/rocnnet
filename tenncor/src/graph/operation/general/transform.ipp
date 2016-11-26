@@ -49,22 +49,24 @@ tensorshape transform<T>::shape_eval (void)
 
 template <typename T>
 transform<T>::transform (const transform<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
-	ioperation<T>(other, name),
 	collect_(other.collect_),
 	shape_(other.shape_),
-	der_(other.der_) {}
+	der_(other.der_),
+	ioperation<T>(other, name),
+	ivariable<T>(other, name),
+	ccoms::iobserver(other) {}
 
 template <typename T>
 transform<T>::transform (ivariable<T>* arg,
 	std::function<void(T*,const T*,tensorshape)> op,
 	std::function<tensorshape(tensorshape)> trans,
 	BUILD_DERIVE<T> der, std::string name) :
-	ccoms::iobserver(std::vector<ccoms::subject*>{arg}),
+	collect_(op), 
+	shape_(trans), 
+	der_(der),
 	ivariable<T>(std::vector<size_t>{}, name),
-	ioperation<T>(std::vector<ivariable<T>*>{arg}, name),
-	collect_(op), shape_(trans), der_(der)
+	ccoms::iobserver(std::vector<ccoms::subject*>{arg}),
+	ioperation<T>(std::vector<ivariable<T>*>{arg}, name)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
 	[this](T* dest, std::vector<const T*> srcs)
@@ -367,12 +369,12 @@ varptr<T> compress (const varptr<T> a, int index,
 		gatherer = std::function<void(T*,const T*,tensorshape)>(
 		[index, collector, a](T* dest, const T* src, tensorshape ts)
 		{
-			assert(index < ts.n_dims());
+			assert((unsigned) index < ts.n_dims());
 			std::vector<size_t> tv = ts.as_list();
 			tensorshape orig = a->get_shape();
 			size_t idx_val = orig.as_list()[index];
 			size_t below = 1;
-			for (size_t i = 0; i <= index; i++)
+			for (int i = 0; i <= index; i++)
 			{
 				below *= tv[i];
 			}
@@ -398,14 +400,14 @@ varptr<T> compress (const varptr<T> a, int index,
 		[index](tensorshape ts)
 		{
 			ts.assert_is_fully_defined();
-			assert(index < ts.n_dims());
+			assert((unsigned) index < ts.n_dims());
 			std::vector<size_t> tv = ts.as_list();
 			if (0 == index)
 			{ // pop front
 				tv.front() = std::move(tv.back());
 				tv.pop_back();
 			}
-			else if (tv.size()-1 == index)
+			else if (tv.size()-1 == (unsigned) index)
 			{
 				tv.pop_back();
 			}

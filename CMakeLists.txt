@@ -10,11 +10,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+set(UNIT_MAIN "" CACHE STRING "path to unit-test main")
+set(PERFORM_MAIN "" CACHE STRING "path to performance-test main")
+
 #-------------------
 # Other flags
 #-------------------
 if(CMAKE_COMPILER_IS_GNUCXX)
-	add_definitions(-Wall -ansi -Wno-deprecated -pthread)
+	add_definitions(-Wno-reorder -Wall -ansi -Wno-deprecated -pthread)
 endif()
 
 if (MSVC)
@@ -72,7 +75,7 @@ FILE(GLOB_RECURSE ROCNNET_SRC
 include_directories(${ROCNNET_INCLUDE})
 
 set(ROCNNET_DLL rocnnet)
-add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC})
+add_library(${ROCNNET_DLL} STATIC ${ROCNNET_SRC})
 target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -102,7 +105,7 @@ include_directories(${GTEST_INCLUDE_DIRS} ${TENNCOR_INCLUDE} ${MOCK_INCLUDE})
 file(GLOB_RECURSE UNIT_TEST_SRC
     ${UNIT_TEST_PATH}/*.cpp)
 
-add_executable(${UNIT_TEST_NAME} ${UNIT_TEST_SRC})
+add_executable(${UNIT_TEST_NAME} ${UNIT_TEST_SRC} ${UNIT_MAIN})
 
 #-------------------
 # Test dependencies
@@ -155,7 +158,7 @@ include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE})
 file(GLOB_RECURSE PERFORM_TEST_SRC
 		${PERFORM_TEST_PATH}/*.cpp)
 
-add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC})
+add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC} ${PERFORM_MAIN})
 
 #-------------------
 # Test dependencies
@@ -185,8 +188,10 @@ else()
 endif()
 
 # Link
-target_link_libraries(${PERFORMANCE_TEST_NAME}
-    ${CMAKE_THREAD_LIBS_INIT}
+target_link_libraries(${PERFORM_TEST_NAME} 
+	pthread
+	gtest
+	${CMAKE_THREAD_LIBS_INIT}
     ${ROCNNET_DLL}
     ${TENNCOR_LIB})
 add_test(perform ${PERFORM_TEST_NAME})

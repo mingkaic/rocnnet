@@ -67,6 +67,8 @@ class ivariable : public ccoms::subject
 		virtual tensorshape get_shape (void) const { return this->out_->get_shape(); }
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		// get eval simply returns the node's tensor
+		// the node will not check if tensor is valid for evaluation...
 		virtual tensor<T>* get_eval (void) { return out_.get(); }
 
 		virtual ivariable<T>* get_gradient (void) = 0;

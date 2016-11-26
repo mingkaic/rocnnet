@@ -32,8 +32,8 @@ iexecutor<T>* assign<T>::clone_impl (void)
 
 template <typename T>
 assign<T>::assign (variable<T>* dest, ivariable<T>* src, ASSIGN_OP<T> trans) :
-	dest_(dest), 
-	transfer_(trans)
+	transfer_(trans),
+	dest_(dest)
 {
 	this->add(src);
 }

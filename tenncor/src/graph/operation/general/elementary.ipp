@@ -53,11 +53,11 @@ tensorshape elementary<T>::shape_eval (void)
 
 template <typename T>
 elementary<T>::elementary (const elementary<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
-	ioperation<T>(other, name),
 	for_each_(other.for_each_),
-	der_(other.der_) {}
+	der_(other.der_),
+	ioperation<T>(other, name),
+	ivariable<T>(other, name),
+	ccoms::iobserver(other) {}
 
 template <typename T>
 ivariable<T>* elementary<T>::clone_impl (std::string name)
@@ -69,11 +69,11 @@ template <typename T>
 elementary<T>::elementary (std::vector<ivariable<T>*> args, 
 	std::function<void(T&, T)> op, BUILD_DERIVE<T> der,
 	std::string name) :
-	ccoms::iobserver(std::vector<ccoms::subject*>(args.begin(), args.end())),
-	ivariable<T>(std::vector<size_t>{}, name),
-	ioperation<T>(args, name),
 	for_each_(op),
-	der_(der)
+	der_(der),
+	ioperation<T>(args, name),
+	ivariable<T>(std::vector<size_t>{}, name),
+	ccoms::iobserver(std::vector<ccoms::subject*>(args.begin(), args.end()))
 {
 	// TODO: simplify operation arguments
 	// TODO: no need to call shape_eval twice

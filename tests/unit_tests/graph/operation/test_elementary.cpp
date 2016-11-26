@@ -36,8 +36,9 @@ void unaryElemTest (UNARY func,
 	// link in operation tree
 	nnet::varptr<double> res = func(nnet::varptr<double>(&pin));
 
-	// didn't initialize
-	EXPECT_DEATH({ res->get_eval(); }, ".*");
+	// didn't initialize, but nothing interesting would happen
+	// since we're using reactive
+	nnet::expose<double>(res);
 
 	// initialize
 	std::vector<double> expect_out;
@@ -87,9 +88,9 @@ void binaryElemTest (
 	nnet::varptr<double> res2 = func2(2, nnet::varptr<double>(&p1));
 
 	// didn't initialize
-	EXPECT_DEATH({ res->get_eval(); }, ".*");
-	EXPECT_DEATH({ res1->get_eval(); }, ".*");
-	EXPECT_DEATH({ res2->get_eval(); }, ".*");
+	EXPECT_DEATH({ nnet::expose<double>(res); }, ".*");
+	EXPECT_DEATH({ nnet::expose<double>(res1); }, ".*");
+	EXPECT_DEATH({ nnet::expose<double>(res2); }, ".*");
 
 	// initialize
 	std::vector<double> expect1;

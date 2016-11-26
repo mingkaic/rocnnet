@@ -95,7 +95,7 @@ tensor<T>* ioperation<T>::get_eval (void)
 	{
 		return nullptr;
 	}
-	return this->out_.get();
+	return ivariable<T>::get_eval();
 }
 
 template <typename T>
