@@ -46,6 +46,16 @@ class ileaf : public ivariable<T>
 		// MOVES
 		// todo: implement move clone
 
+		// inherited from ivariable
+		virtual tensor<T>* get_eval (void)
+		{
+			if (false == is_init())
+			{
+				return nullptr;
+			}
+			return ivariable<T>::get_eval();
+		}
+
 		// GET INFO
 		bool can_init (void) const;
 		bool is_init (void) const { return is_init_; }
