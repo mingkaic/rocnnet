@@ -7,10 +7,10 @@ int main (void)
     const size_t n_observation = 10;
     const size_t n_hidden = 10;
     const size_t n_actions = 8;
-    nnet::ioptimizer<double>* optimizer = new gd_optimizer(0.001);
+    nnet::ioptimizer<double>* optimizer = new nnet::gd_optimizer(0.001);
     nnet::dq_net model(
-        bot_sight,
-		std::vector<nnet::IN_PAIR>{
+        n_observation,
+		std::vector<IN_PAIR>{
         	IN_PAIR(n_hidden, nnet::sigmoid<double>),
         	IN_PAIR(n_hidden, nnet::sigmoid<double>),
         	IN_PAIR(n_actions, nnet::sigmoid<double>),

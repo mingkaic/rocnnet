@@ -13,12 +13,12 @@ std::vector<double> l2normalize (const std::vector<double>& in, double norm_fact
 	double l2norm = 0;
 	for (double a : in)
 	{
-	    l2norm += a*a;
+		l2norm += a*a;
 	}
 	l2norm = norm_factor / std::sqrt(l2norm);
 	for (double a : in)
 	{
-	    out.push_back(a * l2norm);
+		out.push_back(a * l2norm);
 	}
 	return out;
 }
@@ -26,7 +26,7 @@ std::vector<double> l2normalize (const std::vector<double>& in, double norm_fact
 
 TEST(OPERATION, ClipNorm)
 {
-    const double norm_factor = 13;
+	const double norm_factor = 13;
 	std::vector<double> av = {
 		3, 4,
 		41, 6,
@@ -157,7 +157,8 @@ TEST(OPERATION, Transpose)
 }
 
 
-TEST(OPERATION, Extend) {
+TEST(OPERATION, Extend)
+{
 	nnet::placeholder<double> A((std::vector<size_t>{2, 1, 2}), "a");
 	nnet::placeholder<double> B((std::vector<size_t>{2, 2, 1}), "b");
 	nnet::placeholder<double> C((std::vector<size_t>{2, 2, 2}), "c");
@@ -236,7 +237,7 @@ TEST(OPERATION, Extend) {
 		EXPECT_EQ(ex1[i], raw[i]);
 	}
 
-    raw = nnet::expose<double>(e2);
+	raw = nnet::expose<double>(e2);
 	std::vector<size_t> ts2 = e2->get_shape().as_list();
 	ASSERT_EQ(3, ts2.size());
 	for (size_t s : ts2)
@@ -248,7 +249,7 @@ TEST(OPERATION, Extend) {
 		EXPECT_EQ(ex2[i], raw[i]);
 	}
 
-    raw = nnet::expose<double>(e3);
+	raw = nnet::expose<double>(e3);
 	std::vector<size_t> ts3 = e3->get_shape().as_list();
 	ASSERT_EQ(3, ts3.size());
 	for (size_t s : ts3)
@@ -260,7 +261,7 @@ TEST(OPERATION, Extend) {
 		EXPECT_EQ(ex3[i], raw[i]);
 	}
 
-    raw = nnet::expose<double>(e4);
+	raw = nnet::expose<double>(e4);
 	std::vector<size_t> ts4 = e4->get_shape().as_list();
 	ASSERT_EQ(4, ts4.size());
 	for (size_t s : ts4)
