@@ -54,3 +54,4 @@ docs/
 build/
 ext/
 .idea/
+cmake-build-debug/

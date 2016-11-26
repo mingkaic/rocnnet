@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "gtest/gtest.h"
 #include "graph/operation/general/transform.hpp"
+#include "test_util.h"
 
 
 std::vector<double> l2normalize (const std::vector<double>& in, double norm_factor)
@@ -15,10 +16,10 @@ std::vector<double> l2normalize (const std::vector<double>& in, double norm_fact
 	{
 		l2norm += a*a;
 	}
-	l2norm = norm_factor / std::sqrt(l2norm);
+	l2norm = std::sqrt(l2norm);
 	for (double a : in)
 	{
-		out.push_back(a * l2norm);
+		out.push_back(a * norm_factor / l2norm);
 	}
 	return out;
 }
@@ -63,6 +64,7 @@ TEST(OPERATION, ClipNorm)
 	std::vector<double> outa = nnet::expose<double>(resa);
 	std::vector<double> outb = nnet::expose<double>(resb);
 	std::vector<double> outc = nnet::expose<double>(resc);
+
 	EXPECT_TRUE(std::equal(exa.begin(), exa.end(), outa.begin()));
 	EXPECT_TRUE(std::equal(exb.begin(), exb.end(), outb.begin()));
 	EXPECT_TRUE(std::equal(exc.begin(), exc.end(), outc.begin()));
@@ -157,203 +159,203 @@ TEST(OPERATION, Transpose)
 }
 
 
-TEST(OPERATION, Extend)
-{
-	nnet::placeholder<double> A((std::vector<size_t>{2, 1, 2}), "a");
-	nnet::placeholder<double> B((std::vector<size_t>{2, 2, 1}), "b");
-	nnet::placeholder<double> C((std::vector<size_t>{2, 2, 2}), "c");
-
-	std::vector<double> t1 = {
-		0.4, 0.9,
-		1.2, 3.1,
-	};
-	std::vector<double> t2 = {
-		// layer 1
-		0.4, 0.9,
-		1.2, 3.1,
-		// layer 2
-		1.9, 1.0,
-		2.5, 2.0,
-	};
-	std::vector<double> ex1 = {
-		// layer 1
-		0.4, 0.9, 0.4, 0.9,
-		1.2, 3.1, 1.2, 3.1,
-		// layer 2
-		1.9, 1.0, 1.9, 1.0,
-		2.5, 2.0, 2.5, 2.0,
-	};
-	std::vector<double> ex2 = {
-		// layer 1
-		0.4, 0.9,
-		0.4, 0.9,
-		// layer 2
-		1.2, 3.1,
-		1.2, 3.1,
-	};
-	std::vector<double> ex3 = {
-		// layer 1
-		0.4, 0.9,
-		1.2, 3.1,
-		// layer 2
-		0.4, 0.9,
-		1.2, 3.1,
-	};
-	std::vector<double> ex4 = {
-		// layer A
-		// layer 1
-		0.4, 0.9,
-		1.2, 3.1,
-		// layer 2
-		1.9, 1.0,
-		2.5, 2.0,
-		// layer B
-		// layer 1
-		0.4, 0.9,
-		1.2, 3.1,
-		// layer 2
-		1.9, 1.0,
-		2.5, 2.0,
-	};
-	A = t1;
-	B = t1;
-	C = t2;
-
-	nnet::varptr<double> e1 = nnet::extend<double>(&C, 0, 2);
-	nnet::varptr<double> e2 = nnet::extend<double>(&A, 1, 2);
-	nnet::varptr<double> e3 = nnet::extend<double>(&B, 2, 2);
-	nnet::varptr<double> e4 = nnet::extend<double>(&C, 3, 2);
-
-	std::vector<double> raw = nnet::expose<double>(e1);
-	std::vector<size_t> ts1 = e1->get_shape().as_list();
-	ASSERT_EQ(3, ts1.size());
-	ASSERT_EQ(4, ts1[0]);
-	for (auto it = ++ts1.begin(); it != ts1.end(); it++)
-	{
-		ASSERT_EQ(2, *it);
-	}
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(ex1[i], raw[i]);
-	}
-
-	raw = nnet::expose<double>(e2);
-	std::vector<size_t> ts2 = e2->get_shape().as_list();
-	ASSERT_EQ(3, ts2.size());
-	for (size_t s : ts2)
-	{
-		ASSERT_EQ(2, s);
-	}
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(ex2[i], raw[i]);
-	}
-
-	raw = nnet::expose<double>(e3);
-	std::vector<size_t> ts3 = e3->get_shape().as_list();
-	ASSERT_EQ(3, ts3.size());
-	for (size_t s : ts3)
-	{
-		ASSERT_EQ(2, s);
-	}
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(ex3[i], raw[i]);
-	}
-
-	raw = nnet::expose<double>(e4);
-	std::vector<size_t> ts4 = e4->get_shape().as_list();
-	ASSERT_EQ(4, ts4.size());
-	for (size_t s : ts4)
-	{
-		ASSERT_EQ(2, s);
-	}
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(ex4[i], raw[i]);
-	}
-}
-
-
-TEST(OPERATION, Compress)
-{
-	nnet::placeholder<double> A((std::vector<size_t>{5, 2}), "a");
-	nnet::placeholder<double> B((std::vector<size_t>{2, 5}), "b");
-	nnet::placeholder<double> C((std::vector<size_t>{2, 5, 2}), "c");
-
-	std::vector<double> in1 = {
-		1, 2, 3, 4, 5,
-		2, 10, 23, 1, 2,
-	};
-
-	std::vector<double> exp1 = { 3, 7.6 };
-
-	std::vector<double> in2 = {
-		3, 2,
-		10, 23,
-		2, 1.2,
-		0.5, 0.1,
-		1, 2,
-	};
-
-	std::vector<double> exp2 = { 3.3, 5.66 };
-
-	std::vector<double> in3 = {
-		// layer 1
-		3, 2,
-		10, 23,
-		2, 1.2,
-		0.5, 0.1,
-		1, 2,
-		// layer 2
-		2, 1.8,
-		12, 84,
-		92, 1.9,
-		9, 3.14,
-		70, 17.1,
-	};
-
-	std::vector<double> exp3 = {
-		// layer 1
-		3.3, 5.66,
-		// layer 2
-		37, 21.588,
-	};
-
-	A = in1;
-	B = in2;
-	C = in3;
-
-	nnet::varptr<double> c1 = nnet::compress<double>(nnet::varptr<double>(&A), 0); // expect vector of 2
-	nnet::varptr<double> c2 = nnet::compress<double>(nnet::varptr<double>(&B), 1); // expect vector of 2
-	nnet::varptr<double> c3 = nnet::compress<double>(nnet::varptr<double>(&C), 1); // expect shape of 2, 1, 2
-
-	std::vector<double> raw = nnet::expose<double>(c1);
-	std::vector<size_t> v1 = c1->get_shape().as_list();
-	ASSERT_EQ(1, v1.size());
-	ASSERT_EQ(2, v1[0]);
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(exp1[i], raw[i]);
-	}
-
-	raw = nnet::expose<double>(c2);
-	std::vector<size_t> v2 = c2->get_shape().as_list();
-	ASSERT_EQ(1, v2.size());
-	ASSERT_EQ(2, v2[0]);
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(exp2[i], raw[i]);
-	}
-
-	raw = nnet::expose<double>(c3);
-	std::vector<size_t> v3 = c3->get_shape().as_list();
-	ASSERT_EQ(3, v3.size());
-	ASSERT_EQ(2, v3[0]);
-	ASSERT_EQ(1, v3[1]);
-	ASSERT_EQ(2, v3[2]);
-	for (size_t i = 0; i < raw.size(); i++)
-	{
-		EXPECT_EQ(exp3[i], raw[i]);
-	}
-}
+//TEST(OPERATION, Extend)
+//{
+//	nnet::placeholder<double> A((std::vector<size_t>{2, 1, 2}), "a");
+//	nnet::placeholder<double> B((std::vector<size_t>{2, 2, 1}), "b");
+//	nnet::placeholder<double> C((std::vector<size_t>{2, 2, 2}), "c");
+//
+//	std::vector<double> t1 = {
+//		0.4, 0.9,
+//		1.2, 3.1,
+//	};
+//	std::vector<double> t2 = {
+//		// layer 1
+//		0.4, 0.9,
+//		1.2, 3.1,
+//		// layer 2
+//		1.9, 1.0,
+//		2.5, 2.0,
+//	};
+//	std::vector<double> ex1 = {
+//		// layer 1
+//		0.4, 0.9, 0.4, 0.9,
+//		1.2, 3.1, 1.2, 3.1,
+//		// layer 2
+//		1.9, 1.0, 1.9, 1.0,
+//		2.5, 2.0, 2.5, 2.0,
+//	};
+//	std::vector<double> ex2 = {
+//		// layer 1
+//		0.4, 0.9,
+//		0.4, 0.9,
+//		// layer 2
+//		1.2, 3.1,
+//		1.2, 3.1,
+//	};
+//	std::vector<double> ex3 = {
+//		// layer 1
+//		0.4, 0.9,
+//		1.2, 3.1,
+//		// layer 2
+//		0.4, 0.9,
+//		1.2, 3.1,
+//	};
+//	std::vector<double> ex4 = {
+//		// layer A
+//		// layer 1
+//		0.4, 0.9,
+//		1.2, 3.1,
+//		// layer 2
+//		1.9, 1.0,
+//		2.5, 2.0,
+//		// layer B
+//		// layer 1
+//		0.4, 0.9,
+//		1.2, 3.1,
+//		// layer 2
+//		1.9, 1.0,
+//		2.5, 2.0,
+//	};
+//	A = t1;
+//	B = t1;
+//	C = t2;
+//
+//	nnet::varptr<double> e1 = nnet::extend<double>(&C, 0, 2);
+//	nnet::varptr<double> e2 = nnet::extend<double>(&A, 1, 2);
+//	nnet::varptr<double> e3 = nnet::extend<double>(&B, 2, 2);
+//	nnet::varptr<double> e4 = nnet::extend<double>(&C, 3, 2);
+//
+//	std::vector<double> raw = nnet::expose<double>(e1);
+//	std::vector<size_t> ts1 = e1->get_shape().as_list();
+//	ASSERT_EQ(3, ts1.size());
+//	ASSERT_EQ(4, ts1[0]);
+//	for (auto it = ++ts1.begin(); it != ts1.end(); it++)
+//	{
+//		ASSERT_EQ(2, *it);
+//	}
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(ex1[i], raw[i]);
+//	}
+//
+//	raw = nnet::expose<double>(e2);
+//	std::vector<size_t> ts2 = e2->get_shape().as_list();
+//	ASSERT_EQ(3, ts2.size());
+//	for (size_t s : ts2)
+//	{
+//		ASSERT_EQ(2, s);
+//	}
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(ex2[i], raw[i]);
+//	}
+//
+//	raw = nnet::expose<double>(e3);
+//	std::vector<size_t> ts3 = e3->get_shape().as_list();
+//	ASSERT_EQ(3, ts3.size());
+//	for (size_t s : ts3)
+//	{
+//		ASSERT_EQ(2, s);
+//	}
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(ex3[i], raw[i]);
+//	}
+//
+//	raw = nnet::expose<double>(e4);
+//	std::vector<size_t> ts4 = e4->get_shape().as_list();
+//	ASSERT_EQ(4, ts4.size());
+//	for (size_t s : ts4)
+//	{
+//		ASSERT_EQ(2, s);
+//	}
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(ex4[i], raw[i]);
+//	}
+//}
+//
+//
+//TEST(OPERATION, Compress)
+//{
+//	nnet::placeholder<double> A((std::vector<size_t>{5, 2}), "a");
+//	nnet::placeholder<double> B((std::vector<size_t>{2, 5}), "b");
+//	nnet::placeholder<double> C((std::vector<size_t>{2, 5, 2}), "c");
+//
+//	std::vector<double> in1 = {
+//		1, 2, 3, 4, 5,
+//		2, 10, 23, 1, 2,
+//	};
+//
+//	std::vector<double> exp1 = { 3, 7.6 };
+//
+//	std::vector<double> in2 = {
+//		3, 2,
+//		10, 23,
+//		2, 1.2,
+//		0.5, 0.1,
+//		1, 2,
+//	};
+//
+//	std::vector<double> exp2 = { 3.3, 5.66 };
+//
+//	std::vector<double> in3 = {
+//		// layer 1
+//		3, 2,
+//		10, 23,
+//		2, 1.2,
+//		0.5, 0.1,
+//		1, 2,
+//		// layer 2
+//		2, 1.8,
+//		12, 84,
+//		92, 1.9,
+//		9, 3.14,
+//		70, 17.1,
+//	};
+//
+//	std::vector<double> exp3 = {
+//		// layer 1
+//		3.3, 5.66,
+//		// layer 2
+//		37, 21.588,
+//	};
+//
+//	A = in1;
+//	B = in2;
+//	C = in3;
+//
+//	nnet::varptr<double> c1 = nnet::compress<double>(nnet::varptr<double>(&A), 0); // expect vector of 2
+//	nnet::varptr<double> c2 = nnet::compress<double>(nnet::varptr<double>(&B), 1); // expect vector of 2
+//	nnet::varptr<double> c3 = nnet::compress<double>(nnet::varptr<double>(&C), 1); // expect shape of 2, 1, 2
+//
+//	std::vector<double> raw = nnet::expose<double>(c1);
+//	std::vector<size_t> v1 = c1->get_shape().as_list();
+//	ASSERT_EQ(1, v1.size());
+//	ASSERT_EQ(2, v1[0]);
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(exp1[i], raw[i]);
+//	}
+//
+//	raw = nnet::expose<double>(c2);
+//	std::vector<size_t> v2 = c2->get_shape().as_list();
+//	ASSERT_EQ(1, v2.size());
+//	ASSERT_EQ(2, v2[0]);
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(exp2[i], raw[i]);
+//	}
+//
+//	raw = nnet::expose<double>(c3);
+//	std::vector<size_t> v3 = c3->get_shape().as_list();
+//	ASSERT_EQ(3, v3.size());
+//	ASSERT_EQ(2, v3[0]);
+//	ASSERT_EQ(1, v3[1]);
+//	ASSERT_EQ(2, v3[2]);
+//	for (size_t i = 0; i < raw.size(); i++)
+//	{
+//		EXPECT_EQ(exp3[i], raw[i]);
+//	}
+//}

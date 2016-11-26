@@ -15,16 +15,6 @@
 static const double epi = std::numeric_limits<double>::epsilon();
 
 
-void print (std::vector<double> raw)
-{
-	for (double r : raw)
-	{
-		std::cout << r << " ";
-	}
-	std::cout << "\n";
-}
-
-
 void unaryElemTest (UNARY func,
 	std::function<double(double)> expect_op)
 {
@@ -79,8 +69,9 @@ void binaryElemTest (
 	nnet::placeholder<double> p2(goodshape, "bin_in2");
 	nnet::placeholder<double> bad((std::vector<size_t>{edge, edge}), "bad");
 
-	EXPECT_DEATH({func(nnet::varptr<double>(&p1), nnet::varptr<double>(&bad)); }, ".*");
-	EXPECT_DEATH({func(nnet::varptr<double>(&bad), nnet::varptr<double>(&p1)); }, ".*");
+	// shape doesn't match
+	EXPECT_THROW({ func(nnet::varptr<double>(&p1), nnet::varptr<double>(&bad)); }, std::invalid_argument);
+	EXPECT_THROW({ func(nnet::varptr<double>(&bad), nnet::varptr<double>(&p1)); }, std::invalid_argument);
 
 	nnet::varptr<double> res = func(nnet::varptr<double>(&p1), nnet::varptr<double>(&p2));
 	nnet::varptr<double> res1 = func1(nnet::varptr<double>(&p1), 2);
@@ -122,12 +113,9 @@ void binaryElemTest (
 
 	for (size_t i = 0; i < supersize; i++)
 	{
-		EXPECT_EQ(op(expect1[i], expect2[i]),
-			raw[i]);
-		EXPECT_EQ(op(expect1[i], 2),
-			raw1[i]);
-		EXPECT_EQ(op(2, expect1[i]),
-			raw2[i]);
+		EXPECT_EQ(op(expect1[i], expect2[i]), raw[i]);
+		EXPECT_EQ(op(expect1[i], 2), raw1[i]);
+		EXPECT_EQ(op(2, expect1[i]), raw2[i]);
 	}
 	// prevent shape eval from leaking to other test
 	sess.disable_shape_eval();
@@ -199,7 +187,7 @@ TEST(OPERATION, Cot)
 }
 
 
-TEST(OPERATION, Rxp)
+TEST(OPERATION, Exp)
 {
 	unaryElemTest(
 	[](nnet::varptr<double> in) { return nnet::exp(in); },
@@ -237,42 +225,42 @@ TEST(OPERATION, ClipVal)
 	});
 }
 
-//
-//TEST(OPERATION, Add)
-//{
-//	binaryElemTest(
-//	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a+b; },
-//	[](nnet::varptr<double> a, double b) { return a+b; },
-//	[](double a, nnet::varptr<double> b) { return a+b; },
-//	[](double a, double b) { return a+b; });
-//}
-//
-//
-//TEST(OPERATION, Sub)
-//{
-//	binaryElemTest(
-//	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a-b; },
-//	[](nnet::varptr<double> a, double b) { return a-b; },
-//	[](double a, nnet::varptr<double> b) { return a-b; },
-//	[](double a, double b) { return a-b; });
-//}
-//
-//
-//TEST(OPERATION, Mul)
-//{
-//	binaryElemTest(
-//	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a * b; },
-//	[](nnet::varptr<double> a, double b) { return a * b; },
-//	[](double a, nnet::varptr<double> b) { return a * b; },
-//	[](double a, double b) { return a * b; });
-//}
-//
-//
-//TEST(OPERATION, Div)
-//{
-//	binaryElemTest(
-//	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a/b; },
-//	[](nnet::varptr<double> a, double b) { return a/b; },
-//	[](double a, nnet::varptr<double> b) { return a/b; },
-//	[](double a, double b) { return a/b; });
-//}
+
+TEST(OPERATION, Add)
+{
+	binaryElemTest(
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a+b; },
+	[](nnet::varptr<double> a, double b) { return a+b; },
+	[](double a, nnet::varptr<double> b) { return a+b; },
+	[](double a, double b) { return a+b; });
+}
+
+
+TEST(OPERATION, Sub)
+{
+	binaryElemTest(
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a-b; },
+	[](nnet::varptr<double> a, double b) { return a-b; },
+	[](double a, nnet::varptr<double> b) { return a-b; },
+	[](double a, double b) { return a-b; });
+}
+
+
+TEST(OPERATION, Mul)
+{
+	binaryElemTest(
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a * b; },
+	[](nnet::varptr<double> a, double b) { return a * b; },
+	[](double a, nnet::varptr<double> b) { return a * b; },
+	[](double a, double b) { return a * b; });
+}
+
+
+TEST(OPERATION, Div)
+{
+	binaryElemTest(
+	[](nnet::varptr<double> a, nnet::varptr<double> b) { return a/b; },
+	[](nnet::varptr<double> a, double b) { return a/b; },
+	[](double a, nnet::varptr<double> b) { return a/b; },
+	[](double a, double b) { return a/b; });
+}

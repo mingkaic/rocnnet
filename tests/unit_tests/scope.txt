@@ -90,6 +90,7 @@ E503 - copying subjects will not copy over the observers
 // BASE OPERATION NODE
 F000 - ioperation holding poorly defined tensors (null inputs) return null on evaluation
 F001 - ioperation must reuse its gradient object
+F002 - exposing operation nodes with null/invalid tensors will fail
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

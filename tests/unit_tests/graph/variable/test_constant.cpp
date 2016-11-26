@@ -29,7 +29,7 @@ TEST(CONSTANT, Initialization_D401) {
 
 
 // Behavior D402
-TEST(CONSTANT, ZeroConstGrad_D302) {
+TEST(CONSTANT, ZeroConstGrad_D402) {
 	nnet::constant<double>* c = nnet::constant<double>::build(1);
 	nnet::ivariable<double>* gradient = c->get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);

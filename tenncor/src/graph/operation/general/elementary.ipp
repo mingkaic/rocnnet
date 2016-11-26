@@ -374,13 +374,41 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {
-	return varptr<T>(constant<T>::build(a)) + b;
+	// we don't want to return constant a otherwise it could leak if we're returning root
+	// (roots will never have an audience, so it will never self-destroy)
+	if (nullptr == (ivariable<T>*)b) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
+	[a](T& collector, T other)
+	{
+	  collector = other + a;
+	},
+	[](std::vector<ivariable<T>*> args)
+	{
+	  // h'(c, g(x)) = g'(x)
+		varptr<T> bx = args.back();
+	  return bx->get_gradient();
+	},
+	nnutils::formatter() << "(" << a << "+" << b->get_name() << ")");
+	return op;
 }
 
 template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
-	return a + varptr<T>(constant<T>::build(b));
+	if (nullptr == (ivariable<T>*)a) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
+	[b](T& collector, T other)
+	{
+		collector = other + b;
+	},
+	[](std::vector<ivariable<T>*> args)
+	{
+		// h'(f(x), c) = f'(x)
+		varptr<T> ax = args.front();
+		return ax->get_gradient();
+	},
+	nnutils::formatter() << "(" << a->get_name() << "+" << b << ")");
+	return op;
 }
 
 template <typename T>
@@ -412,13 +440,41 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b)
 {
-	return varptr<T>(constant<T>::build(a)) - b;
+	// we don't want to return constant a otherwise it could leak if we're returning root
+	// (roots will never have an audience, so it will never self-destroy)
+	if (nullptr == (ivariable<T>*)b) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
+	[a](T& collector, T other)
+	{
+		collector = a - other;
+	},
+	[](std::vector<ivariable<T>*> args)
+	{
+		// h'(c, g(x)) = -g'(x)
+		varptr<T> bx = args.back();
+		return -varptr<T>(bx->get_gradient());
+	},
+	nnutils::formatter() << "(" << a << "-" << b->get_name() << ")");
+	return op;
 }
 
 template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
-	return a - varptr<T>(constant<T>::build(b));
+	if (nullptr == (ivariable<T>*)a) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
+	[b](T& collector, T other)
+	{
+		collector = other - b;
+	},
+	[](std::vector<ivariable<T>*> args)
+	{
+		// h'(f(x), c) = f'(x)
+		varptr<T> ax = args.front();
+		return ax->get_gradient();
+	},
+	nnutils::formatter() << "(" << a->get_name() << "-" << b << ")");
+	return op;
 }
 
 template <typename T>
@@ -450,13 +506,41 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator * (T a, const varptr<T> b)
 {
-	return varptr<T>(constant<T>::build(a)) * b;
+	// we don't want to return constant a otherwise it could leak if we're returning root
+	// (roots will never have an audience, so it will never self-destroy)
+	if (nullptr == (ivariable<T>*)b) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
+	[a](T& collector, T other)
+	{
+		collector = other * a;
+	},
+	[a](std::vector<ivariable<T>*> args)
+	{
+		// h'(c, g(x)) = c*g'(x)
+		varptr<T> bx = args.back();
+		return a * varptr<T>(bx->get_gradient());
+	},
+	nnutils::formatter() << "(" << a << "*" << b->get_name() << ")");
+	return op;
 }
 
 template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
-	return a * varptr<T>(constant<T>::build(b));
+	if (nullptr == (ivariable<T>*)a) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
+	[b](T& collector, T other)
+	{
+		collector = other * b;
+	},
+	[b](std::vector<ivariable<T>*> args)
+	{
+		// h'(f(x), c) = c*f'(x)
+		varptr<T> ax = args.front();
+		return b * varptr<T>(ax->get_gradient());
+	},
+	nnutils::formatter() << "(" << a->get_name() << "*" << b << ")");
+	return op;
 }
 
 template <typename T>
@@ -484,13 +568,41 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator / (T a, const varptr<T> b)
 {
-	return varptr<T>(constant<T>::build(a)) / b;
+	// we don't want to return constant a otherwise it could leak if we're returning root
+	// (roots will never have an audience, so it will never self-destroy)
+	if (nullptr == (ivariable<T>*)b) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
+	[a](T& collector, T other)
+	{
+		collector = a / other;
+	},
+	[a](std::vector<ivariable<T>*> args)
+	{
+		// h'(c, g(x)) = -c*g'(x)/g^2(x)
+		varptr<T> bx = args.back();
+		return -a * varptr<T>(bx->get_gradient()) / (bx * bx);
+	},
+	nnutils::formatter() << "(" << a << "/" << b->get_name() << ")");
+	return op;
 }
 
 template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
-	return a / varptr<T>(constant<T>::build(b));
+	if (nullptr == (ivariable<T>*)a) return nullptr;
+	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
+	[b](T& collector, T other)
+	{
+		collector = other / b;
+	},
+	[b](std::vector<ivariable<T>*> args)
+	{
+		// h'(f(x), c) = f'(x)/c
+		varptr<T> ax = args.front();
+		return varptr<T>(ax->get_gradient()) / b;
+	},
+	nnutils::formatter() << "(" << a->get_name() << "/" << b << ")");
+	return op;
 }
 
 template <typename T>
