@@ -70,9 +70,6 @@ class transform : public ioperation<T>
 };
 
 template <typename T>
-varptr<T> clip_norm (const varptr<T> a, T cap);
-
-template <typename T>
 varptr<T> transpose (const varptr<T> a);
 
 // fit to watch

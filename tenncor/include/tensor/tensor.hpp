@@ -54,6 +54,16 @@ class tensor
 		// protected accessor... this isn't overengineering! I swear.
 		virtual T* get_raw (void) { return raw_data_; }
 
+		// forcefully deallocates raw_data (reserved for children only... hopefully)
+		void change_shape (tensorshape res_shape)
+		{
+			// deallocate if raw_data_ is not null (allocator checks for raw nulls)
+			alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+			raw_data_ = nullptr;
+			// reshape
+			set_shape(res_shape);
+		}
+
 		friend class assign<T>;
 		friend class gradient<T>;
 		friend class initializer<T>;
@@ -76,7 +86,7 @@ class tensor
 		// rule of three
 		virtual ~tensor (void);
 		tensor<T,A>* clone (void) { return clone_impl(); }
-		tensor<T,A>& operator = (const tensor<T,A>& other);
+		tensor<T,A>& operator = (tensor<T,A>& other);
 		// act on tensor
 		virtual const tensor<T,A>& operator () (std::vector<tensor<T,A>*> args) { return *this; }
 
@@ -112,7 +122,7 @@ class tensor
 		// get bytes allocated
 		size_t total_bytes (void) const;
 		// get data at indices
-		T get (std::vector<size_t> indices) const;
+		T get (std::vector<size_t> indices);
 
 		// setter
 		// set shape if not allocated

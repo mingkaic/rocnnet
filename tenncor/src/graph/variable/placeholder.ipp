@@ -72,9 +72,8 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 
 // changes shape
 template <typename T>
-placeholder<T>& placeholder<T>::operator = (const tensor<T>& data)
+placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 {
-	assert(this->out_->is_compatible_with(data));
 	*this->out_ = data;
 	this->is_init_ = true;
 	this->notify();

@@ -73,6 +73,10 @@ transform<T>::transform (ivariable<T>* arg,
 	{
 		tensorshape ts = shape_eval();
 		collect_(dest, srcs[0], ts);
+	},
+	[trans](std::vector<tensorshape> shapes)
+	{
+		return trans(shapes[0]);
 	});
 	// try to update
 	update(nullptr);
@@ -119,50 +123,12 @@ void transform<T>::update (ccoms::subject* caller)
 	// t is var's eval if caller is nullptr, otherwise
 	// t is one if var is the caller, nullptr otherwise
 	this->valid_tensor_ = nullptr != t;
-	if (!this->out_->is_alloc())
-	{
-		this->out_->set_shape(shape_eval());
-	}
 	if (this->valid_tensor_)
 	{
 		(*this->out_)(std::vector<tensor<T>*>{t});
 	}
 
 	this->notify();
-}
-
-template <typename T>
-varptr<T> clip_norm (const varptr<T> a, T cap)
-{
-	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = transform<T>::build(a,
- 		[cap](T* dest, const T* src, tensorshape ts)
- 		{
- 			T l2norm = 0;
- 			size_t n = ts.n_elems();
- 			for (size_t i = 0; i < n; i++)
- 			{
- 				l2norm += src[i]*src[i];
- 			}
-			l2norm = std::sqrt(l2norm);
-
- 			for (size_t i = 0; i < n; i++)
- 			{
-				dest[i] = src[i] * cap / l2norm;
- 			}
- 		},
- 		[](tensorshape ts)
- 		{
-			ts.assert_is_fully_defined();
-			return ts;
-		},
- 		[cap](std::vector<ivariable<T>*> args)
- 		{
- 			ivariable<T>* a = args.front();
- 			return clip_norm(varptr<T>(a->get_gradient()), cap);
- 		},
- 	"clip_norm(" + a->get_name() + ")");
- 	return op;
 }
 
 template <typename T>
@@ -302,21 +268,34 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
  	ivariable<T>* op = transform<T>::build(a,
  		[index, multiplier](T* dest, const T* src, tensorshape ts)
  		{
+ 			// REMEMBER that ts is the resulting shape, not the original shape
+ 			// both above and below values are calculations based on the original shape
 			std::vector<size_t> tv = ts.as_list();
+			// below calculates all elements encompassed up to the index dimension
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// below = 1 * 2 * 3 = 6
  			size_t below = 1;
- 			for (size_t i = 0; i <= index; i++)
+ 			for (size_t i = 0; i < index; i++)
  			{
  				below *= tv[i];
  			}
+ 			// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
+ 			// so to obtain the original dimension, we divide by multiplier
  			below *= tv[index] / multiplier;
+			// above calculates the number of tensors (of index rank) within the original tensor
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
+			// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
+			// above is 4
+			// above = original total / below
+			// original total = resulting total / multiplier
+			size_t above = ts.n_elems() / (multiplier * below);
 
-			size_t above = ts.n_elems() / below;
 			// copy over data
-			const T* src_addr = src;
 			for (size_t i = 0; i < above; i++)
 			{
 				// copy data multiplier times
-				src_addr += i * below;
+				const T* src_addr = src + i * below;
 				for (size_t j = 0; j < multiplier; j++)
 				{
 					T* dest_addr = dest + below * (multiplier * i + j);
@@ -369,15 +348,22 @@ varptr<T> compress (const varptr<T> a, int index,
 		gatherer = std::function<void(T*,const T*,tensorshape)>(
 		[index, collector, a](T* dest, const T* src, tensorshape ts)
 		{
-			assert((unsigned) index < ts.n_dims());
-			std::vector<size_t> tv = ts.as_list();
+			// REMEMBER that ts is the resulting shape, not the original shape
+			// both above and below values are calculations based on the original shape
+			// original shape
 			tensorshape orig = a->get_shape();
-			size_t idx_val = orig.as_list()[index];
+			assert((unsigned) index < orig.n_dims());
+			std::vector<size_t> tv = orig.as_list();
+			size_t idx_val = tv[index];
+			// below for compression calculates all elements below the index dimension
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// below = 1 * 2 = 2
 			size_t below = 1;
-			for (int i = 0; i <= index; i++)
+			for (int i = 0; i < index; i++)
 			{
 				below *= tv[i];
 			}
+			// above denotes the same above as the one in extend
 			size_t above = orig.n_elems() / (below*idx_val);
 
 			// copy over data

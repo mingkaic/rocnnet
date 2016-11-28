@@ -38,7 +38,7 @@ class placeholder : public ileaf<T>
 		// DATA ASSIGNMENT
 		// assign raw data according to 1 dimension representation of inner tensor
 		virtual placeholder<T>& operator = (std::vector<T> data);
-		virtual placeholder<T>& operator = (const tensor<T>& data);
+		virtual placeholder<T>& operator = (tensor<T>& data);
 
 		// MOVES
 		// todo: implement move clone

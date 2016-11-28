@@ -226,6 +226,69 @@ TEST(OPERATION, ClipVal)
 }
 
 
+std::vector<double> l2normalize (const std::vector<double>& in, double norm_factor)
+{
+	std::vector<double> out;
+	double l2norm = 0;
+	for (double a : in)
+	{
+		l2norm += a*a;
+	}
+	l2norm = std::sqrt(l2norm);
+	for (double a : in)
+	{
+		out.push_back(a * norm_factor / l2norm);
+	}
+	return out;
+}
+
+
+TEST(OPERATION, ClipNorm)
+{
+	const double norm_factor = 13;
+	std::vector<double> av = {
+			3, 4,
+			41, 6,
+			8, 1,
+			18, 2,
+	};
+	std::vector<double> bv = {
+			2, 3, 10,
+			12, 54, 11,
+			0, 9, 0,
+			0.1, 29, 0
+	};
+	std::vector<double> cv = {
+			11, 22, 32, 9,
+			6, 4, 45, 3.2,
+			6, 3, 3, 3,
+			12, 10, 22, 32,
+			0, 2, 2, 1
+	};
+	std::vector<double> exa = l2normalize(av, norm_factor);
+	std::vector<double> exb = l2normalize(bv, norm_factor);
+	std::vector<double> exc = l2normalize(cv, norm_factor);
+
+	nnet::placeholder<double> A((std::vector<size_t>{2, 4}), "a");
+	nnet::placeholder<double> B((std::vector<size_t>{3, 4}), "b");
+	nnet::placeholder<double> C((std::vector<size_t>{4, 5}), "c");
+
+	nnet::varptr<double> resa = nnet::clip_norm<double>(&A, norm_factor);
+	nnet::varptr<double> resb = nnet::clip_norm<double>(&B, norm_factor);
+	nnet::varptr<double> resc = nnet::clip_norm<double>(&C, norm_factor);
+	A = av;
+	B = bv;
+	C = cv;
+	std::vector<double> outa = nnet::expose<double>(resa);
+	std::vector<double> outb = nnet::expose<double>(resb);
+	std::vector<double> outc = nnet::expose<double>(resc);
+
+	EXPECT_TRUE(std::equal(exa.begin(), exa.end(), outa.begin()));
+	EXPECT_TRUE(std::equal(exb.begin(), exb.end(), outb.begin()));
+	EXPECT_TRUE(std::equal(exc.begin(), exc.end(), outc.begin()));
+}
+
+
 TEST(OPERATION, Add)
 {
 	binaryElemTest(

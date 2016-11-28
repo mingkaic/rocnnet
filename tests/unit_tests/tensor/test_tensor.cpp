@@ -137,8 +137,11 @@ TEST(TENSOR, Operation_B103)
 				dest[i] += src[i];
 			}
 		}
+	},
+	[unified](std::vector<nnet::tensorshape> shapes)
+	{
+		return unified;
 	});
-	op.set_shape(unified);
 	op(std::vector<nnet::tensor<double>*>{&A, &B});
 	rinit(A);
 	rinit(B);

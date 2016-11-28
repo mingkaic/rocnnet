@@ -19,7 +19,6 @@ namespace nnet
 template <typename T>
 class elementary : public ioperation<T> {
 	private:
-		std::function<void(T&, T)> for_each_;
 		BUILD_DERIVE<T> der_;
 		
 	protected:
@@ -32,13 +31,13 @@ class elementary : public ioperation<T> {
 
 		// protect elementary constructor to ensure heap allocation
 		elementary (std::vector<ivariable<T>*> args,
-			std::function<void(T&, T)> op,
+			TEN_OP<T> op,
 			BUILD_DERIVE<T> der,
 			std::string name);
 
 	public:
 		static ivariable<T>* build (std::vector<ivariable<T>*> args,
-			std::function<void(T&, T)> op,
+			TEN_OP<T> op,
 			BUILD_DERIVE<T> der,
 			std::string name = "")
 		{
@@ -91,6 +90,9 @@ varptr<T> pow (const varptr<T> a, T scalar); // TODO implement
 
 template<typename T>
 varptr<T> clip_val (const varptr<T> a, T min, T max);
+
+template <typename T>
+varptr<T> clip_norm (const varptr<T> a, T cap);
 
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b);

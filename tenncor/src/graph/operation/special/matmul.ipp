@@ -120,6 +120,40 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 				}
 			}
 		}
+	},
+	[this](std::vector<tensorshape> shapes)
+	{
+		tensorshape t1s = shapes[0];
+		tensorshape t2s = shapes[1];
+
+		if (5 > (t1s.n_dims() + t2s.n_dims()))
+		{
+			std::vector<size_t> al = t1s.as_list();
+			std::vector<size_t> bl = t2s.as_list();
+
+			size_t ax = t1s.n_dims() ? al[0] : 0;
+			size_t ay = t1s.n_dims() > 1 ? al[1] : 1;
+			size_t bx = t2s.n_dims() ? bl[0] : 0;
+			size_t by = t2s.n_dims() > 1 ? bl[1] : 1;
+
+			if (ay == bx && transposeA_ && transposeB_)
+			{
+				return std::vector<size_t>{by, ax};
+			}
+			else if (ay == by && transposeA_)
+			{
+				return std::vector<size_t>{bx, ax};
+			}
+			else if (ax == bx && transposeB_)
+			{
+				return std::vector<size_t>{by, ay};
+			}
+			else if (ax == by && !transposeA_ && !transposeB_)
+			{
+				return std::vector<size_t>{bx, ay};
+			}
+		}
+		return std::vector<size_t>{};
 	});
 	// try to update
 	update(nullptr);

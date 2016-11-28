@@ -17,14 +17,36 @@ namespace nnet
 template <typename T, typename A>
 void tensor<T,A>::copy (const tensor<T,A>& other)
 {
-	alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
-	size_t nelem = other.n_elems();
-	allowed_shape_ = other.allowed_shape_;
-	alloc_shape_ = other.alloc_shape_;
+	T* other_raw = other.raw_data_;
 
-	// modify depending on raw_data_ implementation
-	raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
-	std::memcpy(raw_data_, other.raw_data_, sizeof(T) * nelem);
+	if (nullptr == other_raw)
+	{
+		// other has no content, copy shape over
+		allowed_shape_ = other.allowed_shape_;
+		alloc_shape_ = other.alloc_shape_;
+	}
+	else if (1 < other.n_elems())
+	{
+		assert(this->is_compatible_with(other));
+		if (is_alloc())
+		{
+			alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
+		}
+		size_t nelem = other.n_elems();
+		// copy over all elements and shapes
+		allowed_shape_ = other.allowed_shape_;
+		alloc_shape_ = other.alloc_shape_;
+
+		// modify depending on raw_data_ implementation
+		raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
+		std::memcpy(raw_data_, other_raw, sizeof(T) * nelem);
+	}
+	else
+	{
+		// other is a scalar, fill this with scalar values without changing shape
+		size_t ns = n_elems();
+		std::fill(raw_data_, raw_data_+ns, other_raw[0]);
+	}
 }
 
 template <typename T, typename A>
@@ -72,10 +94,11 @@ tensor<T,A>::~tensor (void)
 }
 
 template <typename T, typename A>
-tensor<T,A>& tensor<T,A>::operator = (const tensor<T,A>& other)
+tensor<T,A>& tensor<T,A>::operator = (tensor<T,A>& other)
 {
 	if (this != &other)
 	{
+		other.get_raw();
 		this->copy(other);
 	}
 	return *this;
@@ -238,9 +261,9 @@ size_t tensor<T,A>::total_bytes (void) const
 
 // extension of matrix index representation idx = x+y*col
 template <typename T, typename A>
-T tensor<T,A>::get (std::vector<size_t> indices) const
+T tensor<T,A>::get (std::vector<size_t> indices)
 {
-	assert(is_alloc()); // otherwise meaningless
+	T* raw = this->get_raw();
 	size_t rank = alloc_shape_.n_dims();
 	if (indices.size() > rank)
 	{
@@ -255,7 +278,7 @@ T tensor<T,A>::get (std::vector<size_t> indices) const
 		raw_idx += indices[i] * accum;
 		accum *= dims[i];
 	}
-	return raw_data_[raw_idx];
+	return raw[raw_idx];
 }
 
 template <typename T, typename A>

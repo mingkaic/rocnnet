@@ -134,7 +134,8 @@ void gradient<T>::execute (void)
 		leaf_grad->notify(it_grad); // special notify to nullify all leaf nodes except *it
 	}
 	// assign g_root's tensor to leaf_map's placeholder
-	*(leaf_map_[it_grad]) = *(g_root_->get_eval());
+	tensor<T>* root_res = g_root_->get_eval();
+	*(leaf_map_[it_grad]) = *root_res;
 	// now that every leaf except *it is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current
@@ -144,7 +145,7 @@ void gradient<T>::execute (void)
 		it_grad = it->first->get_gradient();
 		previous->notify(it_grad);
 		it_grad->notify(it_grad);
-		*(leaf_map_[it_grad]) = *(g_root_->get_eval());
+		*(leaf_map_[it_grad]) = *root_res;
 		previous = it_grad;
 	}
 }

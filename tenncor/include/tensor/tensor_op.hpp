@@ -7,6 +7,7 @@
 //
 
 #include <functional>
+#include <stdexcept>
 #include "tensor.hpp"
 
 #pragma once
@@ -19,12 +20,15 @@ namespace nnet
 template <typename T>
 using TEN_OP = std::function<void(T*,std::vector<const T*>)>;
 
+using SHAPE = std::function<tensorshape(std::vector<tensorshape>)>;
+
 // operates by pull protocol (non-reactive)
 template <typename T, typename A=ram_alloc>
 class tensor_op : public tensor<T,A>
 {
 	private:
 		TEN_OP<T> op_;
+		SHAPE shape_;
 		std::vector<const T*> raws_;
 
 	protected:
@@ -37,8 +41,8 @@ class tensor_op : public tensor<T,A>
 		virtual T* get_raw (void);
 
 	public:
-		tensor_op (TEN_OP<T> op);
-		tensor_op (TEN_OP<T> op, const alloc_attrib& attrib);
+		tensor_op (TEN_OP<T> op, SHAPE shaper);
+		tensor_op (TEN_OP<T> op, SHAPE shaper, const alloc_attrib& attrib);
 		// we don't own any of the raws so we don't need destructor
 
 		tensor_op<T,A>* clone (void);
