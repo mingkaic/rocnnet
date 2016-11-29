@@ -69,9 +69,8 @@ transform<T>::transform (ivariable<T>* arg,
 	ioperation<T>(std::vector<ivariable<T>*>{arg}, name)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](T* dest, std::vector<const T*> srcs)
+	[this](tensorshape ts, T* dest, std::vector<const T*> srcs)
 	{
-		tensorshape ts = shape_eval();
 		collect_(dest, srcs[0], ts);
 	},
 	[trans](std::vector<tensorshape> shapes)
@@ -106,26 +105,30 @@ transform<T>& transform<T>::operator = (const transform<T>& other)
 }
 
 template <typename T>
-void transform<T>::update (ccoms::subject* caller)
+void transform<T>::update (ccoms::update_message msg)
 {
-	ivariable<T>* arg = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
-	tensor<T> one(1);
-	tensor<T>* t;
-	if (nullptr == caller)
+	static tensor<T> one(1);
+	// cast caller dependency as ivariable
+	ivariable<T>* caller = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	
+	// grad must be a leaf
+	ileaf<T>* grad = dynamic_cast<ileaf<T>*>(msg.grad_);
+	
+	tensor<T>* storage;
+	if (nullptr == grad) // don't care about grad, get best evaluation
 	{
-		t = arg->get_eval();
+		storage = caller->get_eval();
 	}
 	else
 	{
-		t = arg == caller ? &one : nullptr;
+		storage = grad == caller ? &one : nullptr;
 	}
 	
-	// t is var's eval if caller is nullptr, otherwise
-	// t is one if var is the caller, nullptr otherwise
-	this->valid_tensor_ = nullptr != t;
+	this->valid_tensor_ = nullptr != storage; // no point in operating if nullptr
 	if (this->valid_tensor_)
 	{
-		(*this->out_)(std::vector<tensor<T>*>{t});
+		// null is treated as erroneous zero
+		(*this->out_)(std::vector<tensor<T>*>{storage});
 	}
 
 	this->notify();
@@ -308,7 +311,6 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 			ts.assert_is_fully_defined();
 			std::vector<size_t> tv = ts.as_list();
 			// allocated additional space along index
-			bool shape_changed = false;
 			size_t dims = ts.n_dims();
 			if (index >= dims)
 			{

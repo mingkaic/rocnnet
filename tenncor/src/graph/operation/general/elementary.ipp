@@ -54,6 +54,7 @@ tensorshape elementary<T>::shape_eval (void)
 template <typename T>
 elementary<T>::elementary (const elementary<T>& other, std::string name) :
 	der_(other.der_),
+	tens_buffer_(other.tens_buffer_),
 	ioperation<T>(other, name),
 	ivariable<T>(other, name),
 	ccoms::iobserver(other) {}
@@ -69,12 +70,11 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	TEN_OP<T> op, BUILD_DERIVE<T> der,
 	std::string name) :
 	der_(der),
+	tens_buffer_(args.size(), nullptr), // tens_buffer_ buffered with null
 	ioperation<T>(args, name),
 	ivariable<T>(std::vector<size_t>{}, name),
 	ccoms::iobserver(std::vector<ccoms::subject*>(args.begin(), args.end()))
 {
-	// TODO: simplify operation arguments
-	// TODO: no need to call shape_eval twice
 	this->out_ = std::make_unique<tensor_op<T> >(op,
 	[](std::vector<tensorshape> shapes)
 	{
@@ -95,7 +95,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 		return first;
 	});
 	// try to update
-	update(nullptr);
+	update(ccoms::update_message(nullptr));
 	if (session::pre_shape_eval())
 	{
 		shape_eval();
@@ -120,45 +120,66 @@ elementary<T>& elementary<T>::operator = (const elementary<T>& other)
 }
 
 template <typename T>
-void elementary<T>::update (ccoms::subject* caller)
+void elementary<T>::update (ccoms::update_message msg)
 {
 	static tensor<T> one(1);
-	std::vector<tensor<T>*> tens;
-	this->valid_tensor_ = true;
-
-	// store var's eval if caller is nullptr, otherwise
-	// store one for vars that are the caller, nullptr otherwise
+	
+	// cast caller dependency as ivariable
+	ivariable<T>* caller = dynamic_cast<ivariable<T>*>(msg.caller_);
+	tensor<T>* storage = nullptr;
+	// if caller is null then update all tensors
 	if (nullptr == caller)
 	{
-		for (ccoms::subject *sub : this->dependencies_)
+		size_t n_args = this->dependencies_.size();
+		for (size_t i = 0; i < n_args; i++)
 		{
-			if (ivariable<T> *var = dynamic_cast<ivariable<T> *>(sub))
+			if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(this->dependencies_[i]))
 			{
-				tensor<T>* a = var->get_eval();
-				if (nullptr == a)
+				storage = var->get_eval();
+				tens_buffer_[i] = storage;
+				if (nullptr == storage)
 				{
 					this->valid_tensor_ = false;
-					break;
 				}
-				tens.push_back(a);
 			}
 		}
 	}
 	else
 	{
-		for (ccoms::subject *sub : this->dependencies_)
+		// grad must be a leaf
+		ileaf<T>* grad = dynamic_cast<ileaf<T>*>(msg.grad_);
+		
+		this->valid_tensor_ = true;
+		// determine caller index
+		size_t idx = 0;
+		for (ccoms::subject* sub : this->dependencies_)
 		{
-			if (ivariable<T> *var = dynamic_cast<ivariable<T> *>(sub))
+			if (sub == caller) break;
+			idx++;
+		}
+		assert(idx < this->dependencies_.size()); // same as caller is in dependencies
+		
+		if (nullptr == grad) // don't care about grad, get best evaluation
+		{
+			storage = caller->get_eval();
+			if (nullptr == storage)
 			{
-				tens.push_back(var == caller ? &one : nullptr);
+				this->valid_tensor_ = false;
 			}
 		}
+		else // grab one if caller is grad, null otherwise
+		{
+			storage = grad == caller ? &one : nullptr;
+		}
+		// update caller tensor only
+		tens_buffer_[idx] = storage;
 	}
 
-	// tensor update
+	// tensor update when ready
 	if (this->valid_tensor_)
 	{
-		(*this->out_)(tens);
+		// null is treated as erroneous zero
+		(*this->out_)(tens_buffer_);
 	}
 
 	this->notify();
@@ -172,9 +193,9 @@ varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	return elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -193,9 +214,9 @@ varptr<T> operator - (const varptr<T> a)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	return elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -215,9 +236,9 @@ varptr<T> sin (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -240,9 +261,9 @@ varptr<T> cos (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -265,9 +286,9 @@ varptr<T> tan (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -292,9 +313,9 @@ varptr<T> csc (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -318,9 +339,9 @@ varptr<T> sec (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -344,9 +365,9 @@ varptr<T> cot (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -370,9 +391,9 @@ varptr<T> exp (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -395,9 +416,9 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, min, max](T* dest, std::vector<const T*> args)
+	[min, max](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* in = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -421,11 +442,11 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 {
 	if (nullptr == a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, cap](T* dest, std::vector<const T*> args)
+	[cap](tensorshape out, T* dest, std::vector<const T*> args)
 	{
 		const T* in = args[0];
 
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		// calculate l2norm
 		T l2norm = 0;
 		for (size_t i = 0; i < ns; i++)
@@ -455,9 +476,9 @@ varptr<T> operator + (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (nullptr == (ivariable<T>*)b) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[a](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = b->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* bd = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -479,9 +500,9 @@ varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, b](T* dest, std::vector<const T*> args)
+	[b](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -505,9 +526,9 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	else if (nullptr == (ivariable<T>*)b) return a;
 
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		const T* bd = args[1];
 		for (size_t i = 0; i < ns; i++)
@@ -537,9 +558,9 @@ varptr<T> operator - (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (nullptr == (ivariable<T>*)b) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[a](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = b->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* bd = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -561,9 +582,9 @@ varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, b](T* dest, std::vector<const T*> args)
+	[b](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -587,9 +608,9 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	else if (nullptr == (ivariable<T>*)b) return a;
 
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		const T* bd = args[1];
 		for (size_t i = 0; i < ns; i++)
@@ -619,9 +640,9 @@ varptr<T> operator * (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (nullptr == (ivariable<T>*)b) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[a](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = b->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* bd = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -643,9 +664,9 @@ varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, b](T* dest, std::vector<const T*> args)
+	[b](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -667,9 +688,9 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (ivariable<T>*)a || nullptr == (ivariable<T>*)b) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		const T* bd = args[1];
 		for (size_t i = 0; i < ns; i++)
@@ -697,9 +718,9 @@ varptr<T> operator / (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (nullptr == (ivariable<T>*)b) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[a](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = b->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* bd = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -721,9 +742,9 @@ varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (ivariable<T>*)a) return nullptr;
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a},
-	[a, b](T* dest, std::vector<const T*> args)
+	[b](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		for (size_t i = 0; i < ns; i++)
 		{
@@ -747,9 +768,9 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	assert (nullptr != (ivariable<T>*)b); // don't allow infinity
 
 	ivariable<T>* op = elementary<T>::build(std::vector<ivariable<T>*>{a, b},
-	[a, b](T* dest, std::vector<const T*> args)
+	[](tensorshape out, T* dest, std::vector<const T*> args)
 	{
-		size_t ns = a->get_shape().n_elems();
+		size_t ns = out.n_elems();
 		const T* ad = args[0];
 		const T* bd = args[1];
 		for (size_t i = 0; i < ns; i++)

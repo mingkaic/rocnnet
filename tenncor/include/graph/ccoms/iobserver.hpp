@@ -44,7 +44,7 @@ class iobserver : public reactive_node
 		virtual ~iobserver (void);
 		
 		void leaves_collect (std::function<void(subject*)> collector);
-		virtual void update (subject* caller) = 0;
+		virtual void update (update_message msg) = 0;
 };
 
 }

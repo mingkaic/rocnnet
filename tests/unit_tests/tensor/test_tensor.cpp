@@ -46,7 +46,7 @@ TEST(TENSOR, Copy)
     nnet::tensor<double> com(std::vector<size_t>{1, 2, 3});
 
     rinit(com);
-
+    
     nnet::tensor<double>* fresh_incom = incom.clone();
     nnet::tensor<double>* fresh_pcom = pcom.clone();
     nnet::tensor<double>* fresh_com = com.clone();
@@ -127,8 +127,9 @@ TEST(TENSOR, Operation_B103)
 	const nnet::tensorshape unified = std::vector<size_t>{2, 3};
 	nnet::tensor<double> A(unified);
 	nnet::tensor<double> B(unified);
-	nnet::tensor_op<double> op([&elems](double* dest,std::vector<const double*> srcs)
+	nnet::tensor_op<double> op([](nnet::tensorshape ts, double* dest, std::vector<const double*> srcs)
 	{
+		size_t elems = ts.n_elems();
 		std::memset(dest, 0, elems * sizeof(double));
 		for (const double* src: srcs)
 		{

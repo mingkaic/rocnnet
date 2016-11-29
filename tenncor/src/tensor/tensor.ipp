@@ -18,34 +18,38 @@ template <typename T, typename A>
 void tensor<T,A>::copy (const tensor<T,A>& other)
 {
 	T* other_raw = other.raw_data_;
-
-	if (nullptr == other_raw)
+	
+	if (1 != other.n_elems()) // not a scalar
 	{
-		// other has no content, copy shape over
-		allowed_shape_ = other.allowed_shape_;
-		alloc_shape_ = other.alloc_shape_;
-	}
-	else if (1 < other.n_elems())
-	{
-		assert(this->is_compatible_with(other));
-		if (is_alloc())
+		// allocate if other is allocated
+		if (nullptr != other_raw)
 		{
-			alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
+			assert(this->is_compatible_with(other));
+			if (is_alloc())
+			{
+				alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
+			}
+			size_t nelem = other.n_elems();
+			// modify depending on raw_data_ implementation
+			raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
+			std::memcpy(raw_data_, other_raw, sizeof(T) * nelem);
 		}
-		size_t nelem = other.n_elems();
-		// copy over all elements and shapes
+		// shape info copies over regardless
 		allowed_shape_ = other.allowed_shape_;
 		alloc_shape_ = other.alloc_shape_;
-
-		// modify depending on raw_data_ implementation
-		raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
-		std::memcpy(raw_data_, other_raw, sizeof(T) * nelem);
 	}
-	else
+	else // fill current tensor with scalar value
 	{
-		// other is a scalar, fill this with scalar values without changing shape
+		assert(other_raw); // other must be allocated
+		T scalar = other_raw[0];
+		
+		if (false == is_alloc()) // this must be allocated
+		{
+			allocate();
+		}
+		
 		size_t ns = n_elems();
-		std::fill(raw_data_, raw_data_+ns, other_raw[0]);
+		std::fill(raw_data_, raw_data_+ns, scalar);
 	}
 }
 

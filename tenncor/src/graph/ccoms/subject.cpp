@@ -57,11 +57,13 @@ subject::~subject (void)
 	}
 }
 
-void subject::notify (subject* caller)
+void subject::notify (subject* grad)
 {
 	for (iobserver* viewer : audience_)
 	{
-		viewer->update(caller);
+		update_message msg(this);
+		msg.grad_ = grad;
+		viewer->update(msg);
 	}
 }
 

@@ -44,7 +44,7 @@ class MockObserver : public ccoms::iobserver
 		{
 			return this->dependencies_;
 		}
-		MOCK_METHOD1(update, void(ccoms::subject*));
+		MOCK_METHOD1(update, void(ccoms::update_message));
 };
 
 #endif //ROCNNET_MOCK_CCOMS_H

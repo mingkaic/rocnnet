@@ -31,7 +31,7 @@ class placeholder : public ileaf<T>
 	public:
 		placeholder (const tensorshape& shape, std::string name = "");
 		placeholder (const tensorshape& shape, initializer<T>& init, std::string name = "");
-			
+
 		// COPY
 		placeholder<T>* clone (std::string name = "");
 

@@ -136,6 +136,7 @@ void gradient<T>::execute (void)
 	// assign g_root's tensor to leaf_map's placeholder
 	tensor<T>* root_res = g_root_->get_eval();
 	*(leaf_map_[it_grad]) = *root_res;
+	
 	// now that every leaf except *it is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current

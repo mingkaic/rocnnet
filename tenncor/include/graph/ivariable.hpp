@@ -74,6 +74,13 @@ class ivariable : public ccoms::subject
 		virtual ivariable<T>* get_gradient (void) = 0;
 };
 
+template <typename T>
+std::vector<T> expose (ivariable<T>* var)
+{
+	tensor<T>* ten = var->get_eval();
+	return expose(ten);
+}
+
 }
 
 #include "../../src/graph/ivariable.ipp"

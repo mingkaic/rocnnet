@@ -55,7 +55,7 @@ class matmul : public ioperation<T>
 		// MOVES
 		// TODO: implement
 
-		virtual void update (ccoms::subject* caller);
+		virtual void update (ccoms::update_message msg);
 };
 
 }

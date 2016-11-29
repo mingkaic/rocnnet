@@ -18,6 +18,14 @@ namespace ccoms
 class iobserver;
 class subject;
 
+struct update_message
+{
+	subject* caller_;
+	subject* grad_;
+	
+	update_message (subject* caller) : caller_(caller) {}
+};
+
 // abstract for communication nodes that records leaves
 class reactive_node
 {
@@ -70,7 +78,7 @@ class subject : public reactive_node
 	public:
 		virtual ~subject (void);
 	
-		void notify (subject* caller = nullptr);
+		void notify (subject* grad = nullptr);
 		bool no_audience (void);
 };
 

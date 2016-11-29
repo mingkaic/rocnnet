@@ -17,8 +17,12 @@
 namespace nnet
 {
 
+// TODO: allow TEN_OP to handler tensorshape before the change
+// TODO: simplify tensor operation by implementing intermediate shape-data buffer object
+// TEN_OP takes the resulting tensorshape, resulting raw data address, 
+// and a vector of argument data address blocks
 template <typename T>
-using TEN_OP = std::function<void(T*,std::vector<const T*>)>;
+using TEN_OP = std::function<void(tensorshape,T*,std::vector<const T*>)>;
 
 using SHAPE = std::function<tensorshape(std::vector<tensorshape>)>;
 

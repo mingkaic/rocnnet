@@ -97,9 +97,8 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](T* dest, std::vector<const T*> srcs)
+	[this](tensorshape ts, T* dest, std::vector<const T*> srcs)
 	{
-		tensorshape ts = shape_eval();
 		ts.assert_is_fully_defined();
 		std::vector<size_t> dims = ts.as_list();
 		size_t dimX = dims[0]; size_t dimY = dims[1];
@@ -185,7 +184,7 @@ matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 }
 
 template <typename T>
-void matmul<T>::update (ccoms::subject* caller)
+void matmul<T>::update (ccoms::update_message msg)
 {
 	// caller is never used because we know matmul will never be the parent of a gradient leaf
 	ivariable<T>* a = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);

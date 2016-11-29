@@ -59,7 +59,7 @@ class jacobian<T>::hidden_jacobi : public ioperation<T>
 			return *this;
 	    }
 
-		virtual void update (ccoms::subject* caller)
+		virtual void update (ccoms::update_message msg) // we don't care about messages
 		{
 			this->notify();
 		}
@@ -139,7 +139,7 @@ jacobian<T>& jacobian<T>::operator = (const jacobian<T>& other)
 }
 
 template <typename T>
-void jacobian<T>::update (ccoms::subject* caller)
+void jacobian<T>::update (ccoms::update_message msg)
 {
 	ivariable<T>* a = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	ivariable<T>* b = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);

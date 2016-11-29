@@ -149,13 +149,6 @@ std::vector<T> expose (tensor<T>* ten)
 	return std::vector<T>(raw, raw + ten->n_elems());
 }
 
-template <typename T>
-std::vector<T> expose (ivariable<T>* var)
-{
-	tensor<T>* ten = var->get_eval();
-	return expose(ten);
-}
-
 }
 
 #include "../../src/tensor/tensor.ipp"

@@ -37,7 +37,7 @@ class iexecutor : public ccoms::iobserver // TODO: we really don't need to inher
 		
 		virtual void add (ivariable<T>* node);
 		
-		virtual void update (ccoms::subject* sub) {}
+		virtual void update (ccoms::update_message msg) {}
 		// stage 2: perform primary objective
 		virtual void execute (void) = 0;
 		
