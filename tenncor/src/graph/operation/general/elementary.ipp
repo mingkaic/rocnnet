@@ -302,7 +302,7 @@ varptr<T> tan (const varptr<T> a)
 		varptr<T> grad = a->get_gradient(); // wrap
 		return grad / (denom * denom);
 	},
- 	"tan(" + a->get_name() + ")");
+	"tan(" + a->get_name() + ")");
 	return op;
 }
 
@@ -485,9 +485,9 @@ varptr<T> operator + (T a, const varptr<T> b)
 	},
 	[](std::vector<ivariable<T>*> args)
 	{
-	  // h'(c, g(x)) = g'(x)
-		varptr<T> bx = args.back();
-	  return bx->get_gradient();
+		// h'(c, g(x)) = g'(x)
+		ivariable<T>* b = args[0];
+		return b->get_gradient();
 	},
 	nnutils::formatter() << "(" << a << "+" << b->get_name() << ")");
 	return op;
@@ -510,8 +510,8 @@ varptr<T> operator + (const varptr<T> a, T b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), c) = f'(x)
-		varptr<T> ax = args.front();
-		return ax->get_gradient();
+		ivariable<T>* a = args[0];
+		return a->get_gradient();
 	},
 	nnutils::formatter() << "(" << a->get_name() << "+" << b << ")");
 	return op;
@@ -542,13 +542,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), g(x)) = f'(x) + g'(x)
-		auto it = args.begin();
-		varptr<T> res = (*it)->get_gradient();
-		for (it++; args.end() != it; it++) {
-			varptr<T> grad = (*it)->get_gradient();
-			res = res + grad;
-		}
-		return res;
+		ivariable<T>* a = args[0];
+		ivariable<T>* b = args[1];
+		varptr<T> ag = a->get_gradient();
+		varptr<T> bg = b->get_gradient();
+		return ag + bg;
 	},
 	"(" + a->get_name() + "+" + b->get_name() + ")");
 	return op;
@@ -573,8 +571,8 @@ varptr<T> operator - (T a, const varptr<T> b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(c, g(x)) = -g'(x)
-		varptr<T> bx = args.back();
-		return -varptr<T>(bx->get_gradient());
+		ivariable<T>* b = args[0];
+		return -varptr<T>(b->get_gradient());
 	},
 	nnutils::formatter() << "(" << a << "-" << b->get_name() << ")");
 	return op;
@@ -597,8 +595,8 @@ varptr<T> operator - (const varptr<T> a, T b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), c) = f'(x)
-		varptr<T> ax = args.front();
-		return ax->get_gradient();
+		ivariable<T>* a = args[0];
+		return a->get_gradient();
 	},
 	nnutils::formatter() << "(" << a->get_name() << "-" << b << ")");
 	return op;
@@ -629,13 +627,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), g(x)) = f'(x) - g'(x)
-		auto it = args.begin();
-		varptr<T> res = (*it)->get_gradient();
-		for (it++; args.end() != it; it++) {
-			varptr<T> grad = (*it)->get_gradient();
-			res = res - grad;
-		}
-		return res;
+		ivariable<T>* a = args[0];
+		ivariable<T>* b = args[1];
+		varptr<T> ag = a->get_gradient();
+		varptr<T> bg = b->get_gradient();
+		return ag - bg;
 	},
 	"(" + a->get_name() + "-" + b->get_name() + ")");
 	return op;
@@ -660,8 +656,8 @@ varptr<T> operator * (T a, const varptr<T> b)
 	[a](std::vector<ivariable<T>*> args)
 	{
 		// h'(c, g(x)) = c*g'(x)
-		varptr<T> bx = args.back();
-		return a * varptr<T>(bx->get_gradient());
+		varptr<T> bg = args[0]->get_gradient();
+		return a * bg;
 	},
 	nnutils::formatter() << "(" << a << "*" << b->get_name() << ")");
 	return op;
@@ -684,8 +680,8 @@ varptr<T> operator * (const varptr<T> a, T b)
 	[b](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), c) = c*f'(x)
-		varptr<T> ax = args.front();
-		return b * varptr<T>(ax->get_gradient());
+		varptr<T> ag = args[0]->get_gradient();
+		return b * ag;
 	},
 	nnutils::formatter() << "(" << a->get_name() << "*" << b << ")");
 	return op;
@@ -714,10 +710,10 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-		varptr<T> a = args.front();
-		varptr<T> b = args.back();
+		varptr<T> a = args[0];
+		varptr<T> b = args[1];
 		varptr<T> ag = a->get_gradient();
-		varptr<T> bg = a->get_gradient();
+		varptr<T> bg = b->get_gradient();
 		return ag * b + bg * a;
 	},
 	"(" + a->get_name() + "*" + b->get_name() + ")");
@@ -743,8 +739,9 @@ varptr<T> operator / (T a, const varptr<T> b)
 	[a](std::vector<ivariable<T>*> args)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
-		varptr<T> bx = args.back();
-		return -a * varptr<T>(bx->get_gradient()) / (bx * bx);
+		varptr<T> b = args[0];
+		varptr<T> bg = b->get_gradient();
+		return -a * bg / (b * b);
 	},
 	nnutils::formatter() << "(" << a << "/" << b->get_name() << ")");
 	return op;
@@ -767,8 +764,8 @@ varptr<T> operator / (const varptr<T> a, T b)
 	[b](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), c) = f'(x)/c
-		varptr<T> ax = args.front();
-		return varptr<T>(ax->get_gradient()) / b;
+		varptr<T> ag = args[0]->get_gradient();
+		return ag / b;
 	},
 	nnutils::formatter() << "(" << a->get_name() << "/" << b << ")");
 	return op;
@@ -799,10 +796,10 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	[](std::vector<ivariable<T>*> args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-		varptr<T> a = args.front();
-		varptr<T> b = args.back();
+		varptr<T> a = args[0];
+		varptr<T> b = args[1];
 		varptr<T> ag = a->get_gradient();
-		varptr<T> bg = a->get_gradient();
+		varptr<T> bg = b->get_gradient();
 		return (ag * b - bg * a) / (b * b);
 	},
 	"(" + a->get_name() + "/" + b->get_name() + ")");

@@ -193,10 +193,6 @@ void matmul<T>::update (ccoms::update_message msg)
 	tensor<T>* bt = b->get_eval();
 
 	this->valid_tensor_ = at && bt;
-	if (!this->out_->is_alloc())
-	{
-		this->out_->set_shape(shape_eval());
-	}
 	if (this->valid_tensor_)
 	{
 		(*this->out_)(std::vector<tensor<T>*>{at, bt});

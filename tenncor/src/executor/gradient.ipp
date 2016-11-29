@@ -45,14 +45,18 @@ template <typename T>
 gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 	g_root_(root->get_gradient())
 {
-	// set up gradient tree from root's lowest leaf
-	if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(g_root_))
+	// collect leaves from root
+	if (ioperation<T>* root_op = dynamic_cast<ioperation<T>*>(root))
 	{
 		// collect potential sources
-		op->leaves_collect([this](ccoms::subject* src)
+		root_op->leaves_collect([this](ccoms::subject* src)
 		{
 			potential_srcs_.push_back(src);
 		});
+		
+		// collect jacobians from the gradient root
+		ioperation<T>* op = dynamic_cast<ioperation<T>*>(g_root_);
+		assert(op);
 		// collect all the jacobians (change/remove once channel-notify merge concludes)
 		// >>
 		std::stack<ivariable<T>*> jacobs;
@@ -77,6 +81,7 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 	{
 		potential_srcs_.push_back(root);
 	}
+	
 	// deal with leaf if necessary
 	if (leaf)
 	{
@@ -105,12 +110,13 @@ gradient<T>& gradient<T>::operator = (const gradient<T>& other)
 template <typename T>
 void gradient<T>::freeze (void)
 {
-	// populate leaf_map_
+	// select leaves (as dependencies or potential srcs)
 	std::vector<ccoms::subject*> leaves = this->dependencies_;
 	if (this->dependencies_.empty())
 	{
 		leaves = potential_srcs_;
 	}
+	// populate leaf_map_
 	for (ccoms::subject* leaf : leaves)
 	{
 		if (ivariable<T>* var =
@@ -137,8 +143,8 @@ void gradient<T>::execute (void)
 	// assign g_root's tensor to leaf_map's placeholder
 	tensor<T>* root_res = g_root_->get_eval();
 	*(leaf_map_[it_leaf]) = *root_res;
-	
-	// now that every leaf except *it is nulled
+
+	// now that every leaf except it_grad is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current
 	ivariable<T>* previous = it_leaf;
@@ -146,7 +152,7 @@ void gradient<T>::execute (void)
 	{
 		it_leaf = it->first;
 		it_grad = it_leaf->get_gradient();
-		previous->notify(it_grad);
+		previous->get_gradient()->notify(it_grad);
 		it_grad->notify(it_grad);
 		*(leaf_map_[it_leaf]) = *root_res;
 		previous = it_leaf;

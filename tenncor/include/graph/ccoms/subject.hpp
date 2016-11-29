@@ -6,8 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include<iostream>
-
+#include <cassert>
 #include <unordered_set>
 
 #pragma once
@@ -31,6 +30,9 @@ struct update_message
 // abstract for communication nodes that records leaves
 class reactive_node
 {
+	private:
+		void** ptrr_ = nullptr;
+	
 	protected:
 		// returns true if suicide on safe_destroy
 		// we should always have protected constructors with a static builder
@@ -49,9 +51,22 @@ class reactive_node
 		}
 	
 	public:
-		virtual ~reactive_node (void) {}
+		virtual ~reactive_node (void)
+		{
+			if (nullptr != ptrr_)
+			{
+				*ptrr_ = nullptr;
+			}
+		}
 		// return true if this is successfully flagged for deletion
 		bool safe_destroy (void); // non-virtual to ensure safe virtual inheritance
+		// set ptr to null on death
+		void set_death (void** ptr)
+		{
+			// ptr must point to this
+			assert(this == *ptr);
+			ptrr_ = ptr;
+		}
 };
 
 // AKA leaf

@@ -31,14 +31,8 @@ tensor<T,A>* tensor_op<T,A>::clone_impl (void) { return new tensor_op<T,A>(*this
 
 template <typename T, typename A>
 T* tensor_op<T,A>::get_raw (void) {
-	if (false == this->is_alloc())
-	{
-		this->allocate();
-	}
-	T* dest = tensor<T,A>::get_raw();
-	assert(false == raws_.empty());
-	op_(info_, dest, raws_);
-	return dest;
+	raw_update();
+	return tensor<T,A>::get_raw();
 }
 
 template <typename T, typename A>
@@ -70,7 +64,9 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 	{
 		if (nullptr == t)
 		{
-			raws_.push_back(nullptr);
+			// null are treated as 0
+			raws_.push_back(&zero);
+			shapes.push_back(std::vector<size_t>{1});
 		}
 		else
 		{
@@ -89,6 +85,13 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 		info_.res_shape_ = res_shape;
 	}
 	return *this;
+}
+
+template <typename T, typename A>
+T tensor_op<T, A>::get (std::vector<size_t> indices)
+{
+	raw_update();
+	return tensor<T, A>::get(indices);
 }
 
 }

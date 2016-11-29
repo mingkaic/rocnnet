@@ -72,72 +72,77 @@ TEST(DERIVE, unary)
 }
 
 
-//TEST(DERIVE, binary)
-//{
-//	const size_t edge = 10;
-//	const size_t supersize = edge*edge*edge;
-//	nnet::session& sess = nnet::session::get_instance();
-//	nnet::random_uniform<double> rinit(0, 523);
-//	nnet::varptr<double> a = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "a");
-//	nnet::varptr<double> b = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "b");
-//	nnet::varptr<double> bad = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "bad");
-//
-//	std::vector<nnet::varptr<double> > univars = {
-//		a+b, a-b, a*b, a/b,
-//	};
-//
-//	std::vector<std::function<double(double, double, bool)> > derivs = {
-//		[](double a, double b, bool is_a) { return 1; },
-//		[](double a, double b, bool is_a) { return is_a ? 1 : -1; },
-//		[](double a, double b, bool is_a) { return is_a ? b : a; },
-//		[](double a, double b, bool is_a) { return is_a ? 1/b : -a/(b*b); },
-//	};
-//
-//	// not part of TEST
-//	assert(univars.size() == derivs.size());
-//	sess.initialize_all<double>();
-//
-//	std::vector<double> ra = nnet::expose<double>(a);
-//	std::vector<double> rb = nnet::expose<double>(b);
-//
-//	for (size_t i = 0; i < univars.size(); i++) {
-//		nnet::gradient<double>* grad = new nnet::gradient<double>(univars[i]);
-//		nnet::gradient<double>* bad_grad = new nnet::gradient<double>(univars[i], bad);
-//
-//		grad->freeze();
-//		bad_grad->freeze();
-//		size_t count = 0;
-//		std::vector<double> raw1;
-//		std::vector<double> raw2;
-//		grad->collect_grad([&count, &raw1, &raw2](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-//		{
-//			if (0 == count)
-//			{
-//				raw1 = nnet::expose<double>(value);
-//			}
-//			else
-//			{
-//				raw2 = nnet::expose<double>(value);
-//			}
-//			count++;
-//		});
-//		ASSERT_EQ(2, count);
-//		count = 0;
-//		bad_grad->collect_grad([&count](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-//		{
-//			count++;
-//		});
-//		ASSERT_EQ(0, count);
-//
-//		ASSERT_EQ(raw1.size(), raw2.size());
-//		for (size_t j = 0; j < raw1.size(); j++) {
-//			double erra = std::abs(derivs[i](ra[j], rb[j], true) - raw1[j]);
-//			double errb = std::abs(derivs[i](ra[j], rb[j], false) - raw2[j]);
-//			EXPECT_LE(erra, epi);
-//			EXPECT_LE(errb, epi);
-//		}
-//	}
-//}
+TEST(DERIVE, binary)
+{
+	const size_t edge = 10;
+	const size_t supersize = edge*edge*edge;
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::random_uniform<double> rinit(0, 523);
+	nnet::varptr<double> a = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "a");
+	nnet::varptr<double> b = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "b");
+	nnet::varptr<double> bad = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "bad");
+
+	std::vector<nnet::varptr<double> > univars = {
+		a+b, a-b, a*b, a/b,
+	};
+
+	std::vector<std::function<double(double, double, bool)> > derivs = {
+		[](double a, double b, bool is_a) { return 1; },
+		[](double a, double b, bool is_a) { return is_a ? 1 : -1; },
+		[](double a, double b, bool is_a) { return is_a ? b : a; },
+		[](double a, double b, bool is_a) { return is_a ? 1/b : -a/(b*b); },
+	};
+
+	// not part of TEST
+	assert(univars.size() == derivs.size());
+	sess.initialize_all<double>();
+
+	std::vector<double> ra = nnet::expose<double>(a);
+	std::vector<double> rb = nnet::expose<double>(b);
+
+	for (size_t i = 0; i < univars.size(); i++) {
+		nnet::gradient<double>* grad = new nnet::gradient<double>(univars[i]);
+		nnet::gradient<double>* bad_grad = new nnet::gradient<double>(univars[i], bad);
+
+		grad->freeze();
+		bad_grad->freeze();
+		grad->execute();
+		bad_grad->execute();
+		size_t count = 0;
+		std::vector<double> raw1;
+		std::vector<double> raw2;
+		grad->collect_grad([&count, &raw1, &raw2](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		{
+			if (0 == count)
+			{
+				raw1 = nnet::expose<double>(value);
+			}
+			else
+			{
+				raw2 = nnet::expose<double>(value);
+			}
+			count++;
+		});
+		ASSERT_EQ(2, count);
+		count = 0;
+		bad_grad->collect_grad([&count](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		{
+			// TODO: what should we do for bad gradients?
+			count++;
+		});
+		EXPECT_EQ(1, count); // expect since we'll never check bad_grad anyways...
+
+		ASSERT_EQ(raw1.size(), raw2.size());
+		for (size_t j = 0; j < raw1.size(); j++) {
+			double erra = std::abs(derivs[i](ra[j], rb[j], true) - raw1[j]);
+			double errb = std::abs(derivs[i](ra[j], rb[j], false) - raw2[j]);
+			EXPECT_LE(erra, epi);
+			EXPECT_LE(errb, epi);
+		}
+		delete grad;
+	}
+	delete a; delete b; delete bad;
+}
 
 
 // TODO: write these

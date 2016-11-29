@@ -122,7 +122,7 @@ class tensor
 		// get bytes allocated
 		size_t total_bytes (void) const;
 		// get data at indices
-		T get (std::vector<size_t> indices);
+		virtual T get (std::vector<size_t> indices);
 
 		// setter
 		// set shape if not allocated

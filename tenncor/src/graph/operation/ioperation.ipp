@@ -104,6 +104,8 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 	if (nullptr == grad_)
 	{
 		setup_gradient();
+		// set grad_ to null on safe_destroy
+		grad_->set_death((void**) &grad_);
 	}
 	return grad_;
 }
