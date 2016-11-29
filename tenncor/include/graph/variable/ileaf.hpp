@@ -24,6 +24,9 @@ class ileaf : public ivariable<T>
 	protected:
 		// used by assignment operators to dynamically initialize tensors
 		struct dyn_init;
+
+		// TODO make suicide an option for constants
+		std::unique_ptr<variable<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
 		
 		// we own our initializer
 		initializer<T>* init_ = nullptr;
@@ -59,9 +62,6 @@ class ileaf : public ivariable<T>
 		// GET INFO
 		bool can_init (void) const;
 		bool is_init (void) const { return is_init_; }
-
-		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual ivariable<T>* get_gradient (void);
 };
 
 }

@@ -127,9 +127,9 @@ TEST(TENSOR, Operation_B103)
 	const nnet::tensorshape unified = std::vector<size_t>{2, 3};
 	nnet::tensor<double> A(unified);
 	nnet::tensor<double> B(unified);
-	nnet::tensor_op<double> op([](nnet::tensorshape ts, double* dest, std::vector<const double*> srcs)
+	nnet::tensor_op<double> op([](nnet::shapeinfo info, double* dest, std::vector<const double*> srcs)
 	{
-		size_t elems = ts.n_elems();
+		size_t elems = info.res_shape_.n_elems();
 		std::memset(dest, 0, elems * sizeof(double));
 		for (const double* src: srcs)
 		{

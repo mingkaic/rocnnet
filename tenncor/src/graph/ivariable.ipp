@@ -49,6 +49,7 @@ ivariable<T>::ivariable (const tensorshape& shape, std::string name) :
 template <typename T>
 ivariable<T>::~ivariable (void)
 {
+	std::cout << "DEATH " << name_ << std::endl;
 	session& sess = session::get_instance();
 	sess.unregister_obj(*this);
 }

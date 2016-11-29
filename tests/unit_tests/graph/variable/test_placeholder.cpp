@@ -58,13 +58,10 @@ TEST(PLACEHOLDER, ConstructInit_D301) {
 
 // Behavior D302
 TEST(PLACEHOLDER, ZeroConstGrad_D302) {
-	const size_t insize = 1;
 	nnet::placeholder<double> invar(std::vector<size_t>{1}, "in");
 	invar = std::vector<double>{1};
 	nnet::ivariable<double>* gradient = invar.get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);
 	ASSERT_EQ(res.size(), 1);
-	for (size_t i = 0; i < insize; i++) {
-		EXPECT_EQ(0, res[i]);
-	}
+	EXPECT_EQ(0, res[0]);
 }

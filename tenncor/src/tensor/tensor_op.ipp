@@ -37,7 +37,7 @@ T* tensor_op<T,A>::get_raw (void) {
 	}
 	T* dest = tensor<T,A>::get_raw();
 	assert(false == raws_.empty());
-	op_(this->alloc_shape_, dest, raws_);
+	op_(info_, dest, raws_);
 	return dest;
 }
 
@@ -81,10 +81,12 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 	// change shape?
 	tensorshape og_shape = this->get_shape();
 	tensorshape res_shape = shape_(shapes);
+	info_.arg_shape_ = shapes;
 	if (false == og_shape.is_fully_defined() ||
 		false == og_shape.is_compatible_with(res_shape))
 	{
 		this->change_shape(res_shape);
+		info_.res_shape_ = res_shape;
 	}
 	return *this;
 }

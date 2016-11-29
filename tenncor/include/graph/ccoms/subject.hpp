@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include<iostream>
+
 #include <unordered_set>
 
 #pragma once
@@ -21,7 +23,7 @@ class subject;
 struct update_message
 {
 	subject* caller_;
-	subject* grad_;
+	subject* grad_ = nullptr;
 	
 	update_message (subject* caller) : caller_(caller) {}
 };

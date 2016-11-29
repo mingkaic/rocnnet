@@ -69,9 +69,9 @@ transform<T>::transform (ivariable<T>* arg,
 	ioperation<T>(std::vector<ivariable<T>*>{arg}, name)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](tensorshape ts, T* dest, std::vector<const T*> srcs)
+	[this](shapeinfo info, T* dest, std::vector<const T*> srcs)
 	{
-		collect_(dest, srcs[0], ts);
+		collect_(dest, srcs[0], info.res_shape_);
 	},
 	[trans](std::vector<tensorshape> shapes)
 	{
@@ -107,7 +107,6 @@ transform<T>& transform<T>::operator = (const transform<T>& other)
 template <typename T>
 void transform<T>::update (ccoms::update_message msg)
 {
-	static tensor<T> one(1);
 	// cast caller dependency as ivariable
 	ivariable<T>* caller = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
 	
@@ -121,7 +120,7 @@ void transform<T>::update (ccoms::update_message msg)
 	}
 	else
 	{
-		storage = grad == caller ? &one : nullptr;
+		storage = grad == caller ? grad->get_eval() : nullptr;
 	}
 	
 	this->valid_tensor_ = nullptr != storage; // no point in operating if nullptr

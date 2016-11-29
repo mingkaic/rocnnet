@@ -50,18 +50,13 @@ TEST(DERIVE, unary)
 	 std::vector<double> in_raw = nnet::expose<double>(in);
 	for (size_t i = 0; i < len; i++)
 	{
-		std::cout << "gradient " << i << std::endl;
 		nnet::gradient<double>* grad = new nnet::gradient<double>(univars[i], in);
-		std::cout << "grad creation successful\n";
 		grad->freeze();
-		std::cout << "grad freeze successful\n";
 		grad->execute();
-		std::cout << "grad execution successful\n";
 		size_t count = 0;
 		std::vector<double> raw;
 		grad->collect_grad([&count, &raw](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
 		{
-			std::cout << "exposing\n";
 			raw = nnet::expose<double>(value);
 			count++;
 		});
@@ -71,9 +66,7 @@ TEST(DERIVE, unary)
 		{
 			EXPECT_EQ(derivs[i](in_raw[j]), raw[j]);
 		}
-		std::cout << "grad deletion\n";
 		delete grad;
-		std::cout << "grad deletion successful\n";
 	}
 	delete in.get();
 }

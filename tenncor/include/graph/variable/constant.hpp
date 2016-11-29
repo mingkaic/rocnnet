@@ -49,6 +49,16 @@ class constant : public ileaf<T>
 
 		// COPY
 		constant<T>* clone (std::string name = "");
+
+		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		virtual ivariable<T>* get_gradient (void)
+		{
+			if (nullptr == this->grad_)
+			{
+				this->grad_ = std::make_unique<variable<T> >(0);
+			}
+			return this->grad_.get();
+		}
 };
 
 }

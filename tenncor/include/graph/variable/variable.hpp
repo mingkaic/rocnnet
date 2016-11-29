@@ -44,6 +44,16 @@ class variable : public ileaf<T>
 		// TODO: allow session to flag variables as init once only to ensure safety
 		virtual tensor<T>& initialize (void);
 		virtual tensor<T>& initialize (tensorshape alloc_shape);
+
+		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		virtual ivariable<T>* get_gradient (void)
+		{
+			if (nullptr == this->grad_)
+			{
+				this->grad_ = std::make_unique<variable<T> >(1);
+			}
+			return this->grad_.get();
+		}
 };
 
 }

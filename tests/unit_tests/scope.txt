@@ -70,7 +70,7 @@ D001 - random initializers must share a distribution engine
 // VARIABLE LEAF NODES
 D100 - ileaf inheriteds should auto notify when initialized or reinitialized
 D200 - variables auto initialize scalar on construction
-D201 - variable's gradient is itself
+D201 - variable's gradient is a one variable
 D300 - assigning raw data or tensors to placeholders will initialize it
 D301 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
 D302 - placeholder's gradient is a zero constant

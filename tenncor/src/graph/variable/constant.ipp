@@ -26,7 +26,7 @@ ivariable<T>* constant<T>::clone_impl (std::string name)
 template <typename T>
 constant<T>::constant (T scalar) :
 	ileaf<T>(std::vector<size_t>{1},
-	new const_init<T>(scalar), 
+	new const_init<T>(scalar),
 	nnutils::formatter() << scalar)
 {
 	this->out_->allocate();

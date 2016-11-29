@@ -95,12 +95,6 @@ bool ileaf<T>::can_init (void) const
 	return init_ != nullptr;
 }
 
-template <typename T>
-ivariable<T>* ileaf<T>::get_gradient (void)
-{
-	return this;
-}
-
 }
 
 #endif

@@ -91,9 +91,12 @@ TEST(VARIABLE, ConstructUninit)
 
 
 // Behavior D201
-TEST(VARIABLE, Gradient_D201)
+TEST(VARIABLE, OneVarGradient_D201)
 {
 	nnet::variable<double> cvar(std::vector<size_t>{3, 3}, cinit, "constant_arr");
 	nnet::ivariable<double>* grad = cvar.get_gradient();
-	ASSERT_EQ(&cvar, grad);
+	cvar.initialize();
+	std::vector<double> res = nnet::expose<double>(grad);
+	ASSERT_EQ(res.size(), 1);
+	EXPECT_EQ(1, res[0]);
 }

@@ -46,7 +46,7 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 	g_root_(root->get_gradient())
 {
 	// set up gradient tree from root's lowest leaf
-	if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(root))
+	if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(g_root_))
 	{
 		// collect potential sources
 		op->leaves_collect([this](ccoms::subject* src)
@@ -117,7 +117,7 @@ void gradient<T>::freeze (void)
 			dynamic_cast<ivariable<T>*>(leaf))
 		{
 			// expect gradients to be the same shape as leaves
-			leaf_map_[var] = new placeholder<T>(var->get_shape());
+			leaf_map_[var] = new placeholder<T>(var->get_shape(), "grad_in:" + var->get_name());
 		}
 	}
 }
@@ -127,7 +127,8 @@ void gradient<T>::execute (void)
 {
 	// notify leaves and extract gradient to leaf_map
 	auto it = leaf_map_.begin();
-	ivariable<T>* it_grad = it->first->get_gradient();
+	ivariable<T>* it_leaf = it->first;
+	ivariable<T>* it_grad = it_leaf->get_gradient();
 	for (auto leaf_pair : leaf_map_)
 	{
 		ivariable<T>* leaf_grad = leaf_pair.first->get_gradient();
@@ -135,19 +136,20 @@ void gradient<T>::execute (void)
 	}
 	// assign g_root's tensor to leaf_map's placeholder
 	tensor<T>* root_res = g_root_->get_eval();
-	*(leaf_map_[it_grad]) = *root_res;
+	*(leaf_map_[it_leaf]) = *root_res;
 	
 	// now that every leaf except *it is nulled
 	// we only need to notify the previous leaf and the current leaf
 	// nullifying previous and un-nullifying current
-	ivariable<T>* previous = it_grad;
+	ivariable<T>* previous = it_leaf;
 	for (it++; leaf_map_.end() != it; it++)
 	{
-		it_grad = it->first->get_gradient();
+		it_leaf = it->first;
+		it_grad = it_leaf->get_gradient();
 		previous->notify(it_grad);
 		it_grad->notify(it_grad);
-		*(leaf_map_[it_grad]) = *root_res;
-		previous = it_grad;
+		*(leaf_map_[it_leaf]) = *root_res;
+		previous = it_leaf;
 	}
 }
 

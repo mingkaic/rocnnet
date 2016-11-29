@@ -97,10 +97,10 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](tensorshape ts, T* dest, std::vector<const T*> srcs)
+	[this](shapeinfo info, T* dest, std::vector<const T*> srcs)
 	{
-		ts.assert_is_fully_defined();
-		std::vector<size_t> dims = ts.as_list();
+		info.res_shape_.assert_is_fully_defined();
+		std::vector<size_t> dims = info.res_shape_.as_list();
 		size_t dimX = dims[0]; size_t dimY = dims[1];
 		size_t dimZ = common_dim();
 

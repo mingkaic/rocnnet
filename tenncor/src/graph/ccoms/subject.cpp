@@ -45,6 +45,9 @@ void subject::detach (iobserver* viewer)
 
 subject::~subject (void)
 {
+	static size_t id = 0;
+	size_t i = id++;
+	std::cout << audience_.size() << "\n";
 	auto it = audience_.begin();
 	while (audience_.end() != it)
 	{
@@ -54,15 +57,17 @@ subject::~subject (void)
 		iobserver* captive = *it;
 		it++;
 		captive->safe_destroy(); // flag captive for destruction
+		std::cout << i << " " << audience_.size() << std::endl;
 	}
 }
 
 void subject::notify (subject* grad)
 {
+	update_message msg(this);
+	msg.grad_ = grad;
+	// everyone get the same message
 	for (iobserver* viewer : audience_)
 	{
-		update_message msg(this);
-		msg.grad_ = grad;
 		viewer->update(msg);
 	}
 }
