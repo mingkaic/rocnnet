@@ -25,14 +25,10 @@ class jacobian<T>::hidden_jacobi : public ioperation<T>
 		}
 
 		hidden_jacobi (const hidden_jacobi& other, std::string name) :
-			ccoms::iobserver(other),
-			ivariable<T>(other, name),
 			ioperation<T>(other, name) {}
 
 	public:
 		hidden_jacobi (jacobian<T>* outer, bool transposeA, bool transposeB) :
-			ccoms::iobserver(std::vector<ccoms::subject*>{outer}),
-			ivariable<T>(std::vector<size_t>{}, "jacobian_hidden"),
 			ioperation<T>(std::vector<ivariable<T>*>{outer}, "jacobian_hidden")
 		{
 			this->out_ = std::make_unique<tensor_jacobi<T> >(transposeA, transposeB);
@@ -67,8 +63,6 @@ class jacobian<T>::hidden_jacobi : public ioperation<T>
 
 template <typename T>
 jacobian<T>::jacobian (const jacobian<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
 	ioperation<T>(other, name)
 {
 	hidden_ = std::unique_ptr<hidden_jacobi>(other.hidden_->clone());
@@ -91,7 +85,7 @@ bool jacobian<T>::channel (std::stack<ivariable<T>*>& jacobi)
 	size_t jacobi_count = 0;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(sub))
+		if (ivariable<T>* o = sub->to_type<ivariable<T> >())
 		{
 			// operation node's gradient SHOULD be an operation
 			ioperation<T>* go = dynamic_cast<ioperation<T>*>(o->get_gradient());
@@ -112,8 +106,6 @@ bool jacobian<T>::channel (std::stack<ivariable<T>*>& jacobi)
 template <typename T>
 jacobian<T>::jacobian (ivariable<T>* arga, ivariable<T>* argb,
 	bool transposeA, bool transposeB, std::string name) :
-	ccoms::iobserver(std::vector<ccoms::subject*>{arga, argb}),
-	ivariable<T>(std::vector<size_t>{}, name),
 	ioperation<T>(std::vector<ivariable<T>*>{arga, argb}, name)
 {
 	hidden_ = std::make_unique<hidden_jacobi>(this, transposeA, transposeB);
@@ -141,8 +133,8 @@ jacobian<T>& jacobian<T>::operator = (const jacobian<T>& other)
 template <typename T>
 void jacobian<T>::update (ccoms::update_message msg)
 {
-	ivariable<T>* a = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
-	ivariable<T>* b = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
+	ivariable<T>* a = this->dependencies_[0]->template to_type<ivariable<T> >();
+	ivariable<T>* b = this->dependencies_[1]->template to_type<ivariable<T> >();
 	if (a && b)
 	{
 		(*hidden_)(a, b);

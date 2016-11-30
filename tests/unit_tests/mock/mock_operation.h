@@ -13,9 +13,7 @@ class MockOperation : public virtual nnet::ioperation<double>
 {
 	private:
 		MockOperation (ivariable<double>* in) :
-			ivariable<double>(std::vector<size_t>{}, ""),
-			ioperation<double>(std::vector<ivariable<double>*>{in}, ""),
-			iobserver(std::vector<ccoms::subject*>{in})
+			ioperation<double>(std::vector<ivariable<double>*>{in}, "")
 		{ /* this->out remains null */ }
 
 

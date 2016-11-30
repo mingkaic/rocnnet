@@ -54,7 +54,7 @@ template <typename T>
 void assign<T>::freeze (void)
 {
 	tensor<T>* out = dest_->get_eval();
-	if (ivariable<T>* src = dynamic_cast<ivariable<T>*>(this->dependencies_[0]))
+	if (ivariable<T>* src = this->dependencies_[0])
 	{
 		tensor<T>* in = src->get_eval();
 		if (out->is_same_size(*in))

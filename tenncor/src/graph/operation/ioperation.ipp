@@ -42,7 +42,7 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 	size_t jacobi_count = 0;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ivariable<T>* v = dynamic_cast<ivariable<T>*>(sub))
+		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
 		{
 			if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(v)) {
 				if (o->channel(jacobi)) {
@@ -60,8 +60,14 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-	ccoms::iobserver(std::vector<ccoms::subject*>(dependencies.begin(), dependencies.end())),
-	ivariable<T>(std::vector<size_t>{}, name) {}
+	ccoms::iobserver(nnutils::to_vec<ivariable<T>*, ccoms::subject*>(dependencies, var_to_sub<T>)),
+	ivariable<T>(std::vector<size_t>{}, name)
+{
+	for (ivariable<T>* dep : dependencies)
+	{
+		dep->merge_leaves(leaves_);
+	}
+}
 
 template <typename T>
 ioperation<T>::~ioperation (void)
@@ -108,6 +114,15 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 		grad_->set_death((void**) &grad_);
 	}
 	return grad_;
+}
+
+template <typename T>
+void ioperation<T>::leaves_collect (std::function<void(ivariable<T>*)> collector)
+{
+	for (ivariable<T>* leaf : leaves_)
+	{
+		collector(leaf);
+	}
 }
 
 }

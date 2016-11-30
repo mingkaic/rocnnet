@@ -21,18 +21,11 @@ namespace ccoms
 
 class iobserver : public reactive_node
 {
-	private:
-		// remember that once leaf subjects are destroyed, 
-		// everyone in this graph including this is destroyed
-		// so we don't need to bother with cleaning leaves_
-		std::unordered_set<subject*> leaves_;
-
 	protected:
 		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
 		void add_dependency (subject* dep);
-		virtual void merge_leaves (std::unordered_set<subject*>& src);
 		
 		// attach dependencies
 		iobserver (const iobserver& other); // copy over dependencies and leaves
@@ -42,8 +35,7 @@ class iobserver : public reactive_node
 
 	public:
 		virtual ~iobserver (void);
-		
-		void leaves_collect (std::function<void(subject*)> collector);
+
 		virtual void update (update_message msg) = 0;
 };
 

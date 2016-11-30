@@ -20,7 +20,7 @@ iexecutor<T>* iexecutor<T>::clone (void)
 template <typename T>
 void iexecutor<T>::add (ivariable<T>* node)
 {
-    add_dependency(node);
+    dependencies_.push_back(node);
 }
 
 }

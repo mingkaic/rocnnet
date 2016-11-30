@@ -18,8 +18,7 @@ namespace nnet
 template <typename T>
 size_t matmul<T>::common_dim (void) const
 {
-	std::vector<size_t> t = dynamic_cast<ivariable<T>*>(
-		this->dependencies_[0])->get_shape().as_list();
+	std::vector<size_t> t = this->dependencies_[0]->template to_type<ivariable<T> >()->get_shape().as_list();
 	if (transposeA_)
 	{
 		return 2 == t.size() ? t[1] : 1;
@@ -31,8 +30,8 @@ template <typename T>
 void matmul<T>::setup_gradient (void)
 {
 	// matmul'(f, g) = jacobian(f, g)
-	ivariable<T>* arga = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
-	ivariable<T>* argb = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
+	ivariable<T>* arga = this->dependencies_[0]->template to_type<ivariable<T> >();
+	ivariable<T>* argb = this->dependencies_[1]->template to_type<ivariable<T> >();
 	assert(arga && argb);
 	this->grad_ = jacobian<T>::build(arga, argb, transposeA_, transposeB_, "J(" + this->get_name() + ")");
 }
@@ -40,8 +39,8 @@ void matmul<T>::setup_gradient (void)
 template <typename T>
 tensorshape matmul<T>::shape_eval (void)
 {
-	tensorshape t1s = dynamic_cast<ivariable<T>*>(this->dependencies_[0])->get_shape();
-	tensorshape t2s = dynamic_cast<ivariable<T>*>(this->dependencies_[1])->get_shape();
+	tensorshape t1s = this->dependencies_[0]->template to_type<ivariable<T> >()->get_shape();
+	tensorshape t2s = this->dependencies_[1]->template to_type<ivariable<T> >()->get_shape();
 
 	if (5 > (t1s.n_dims() + t2s.n_dims()))
 	{
@@ -75,8 +74,6 @@ tensorshape matmul<T>::shape_eval (void)
 
 template <typename T>
 matmul<T>::matmul (const matmul<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
 	ioperation<T>(other, name),
 	transposeA_(other.transposeA_),
 	transposeB_(other.transposeB_) {}
@@ -89,9 +86,6 @@ ivariable<T>* matmul<T>::clone_impl (std::string name) {
 template <typename T>
 matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	bool transposeA, bool transposeB) :
-	ccoms::iobserver(std::vector<ccoms::subject*>{a, b}),
-	ivariable<T>(std::vector<size_t>{},
-	"(" + a->get_name() + "•" + b->get_name() + ")"),
 	ioperation<T>((std::vector<ivariable<T>*>{a, b}),
 	"(" + a->get_name() + "•" + b->get_name() + ")"),
 	transposeA_(transposeA), transposeB_(transposeB)
@@ -187,8 +181,8 @@ template <typename T>
 void matmul<T>::update (ccoms::update_message msg)
 {
 	// caller is never used because we know matmul will never be the parent of a gradient leaf
-	ivariable<T>* a = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
-	ivariable<T>* b = dynamic_cast<ivariable<T>*>(this->dependencies_[1]);
+	ivariable<T>* a = this->dependencies_[0]->template to_type<ivariable<T> >();
+	ivariable<T>* b = this->dependencies_[1]->template to_type<ivariable<T> >();
 	tensor<T>* at = a->get_eval();
 	tensor<T>* bt = b->get_eval();
 

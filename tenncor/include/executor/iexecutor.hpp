@@ -16,16 +16,16 @@
 namespace nnet
 {
 
-// inheriting from iobserver for the sole purpose of deletion once sources (dependencies) are deleted
-// could be dangerous if iexecutor is not meant to be destroyed... consider revise later.
+// does not check if variables in dependencies_ are deleted
+// owns nothing in dependencies_
+// please don't delete :(
 template <typename T>
-class iexecutor : public ccoms::iobserver // TODO: we really don't need to inherit from iobserver at all...
+class iexecutor
 {
 	protected:
-		virtual iexecutor<T>* clone_impl (void) = 0;
+		std::vector<ivariable<T>*> dependencies_;
 
-		iexecutor (void) :
-			ccoms::iobserver(std::vector<ccoms::subject*>{}) {}
+		virtual iexecutor<T>* clone_impl (void) = 0;
 
 	public:
 		virtual ~iexecutor (void) {}

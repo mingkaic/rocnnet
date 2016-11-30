@@ -23,11 +23,6 @@ bool reactive_node::safe_destroy (void)
 	}
 	return false;
 }
-	
-void subject::merge_leaves (std::unordered_set<subject*>& src)
-{
-	src.emplace(this);
-}
 
 void subject::attach (iobserver* viewer)
 {
@@ -55,6 +50,7 @@ subject::~subject (void)
 		it++;
 		captive->safe_destroy(); // flag captive for destruction
 	}
+	delete var_;
 }
 
 void subject::notify (subject* grad)
@@ -68,7 +64,7 @@ void subject::notify (subject* grad)
 	}
 }
 
-bool subject::no_audience (void)
+bool subject::no_audience (void) const
 {
 	return audience_.empty();
 }

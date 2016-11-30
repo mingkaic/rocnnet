@@ -19,7 +19,7 @@ void transform<T>::setup_gradient (void)
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_)
 	{
-		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child))
+		if (ivariable<T>* arg = child->to_type<ivariable<T> >())
 		{
 			args.push_back(arg);
 		}
@@ -39,7 +39,7 @@ tensorshape transform<T>::shape_eval (void)
 	tensorshape first;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ivariable<T>* v = dynamic_cast<ivariable<T>*>(sub))
+		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
 		{
 			first = shape_(v->get_shape());
 		}
@@ -52,9 +52,7 @@ transform<T>::transform (const transform<T>& other, std::string name) :
 	collect_(other.collect_),
 	shape_(other.shape_),
 	der_(other.der_),
-	ioperation<T>(other, name),
-	ivariable<T>(other, name),
-	ccoms::iobserver(other) {}
+	ioperation<T>(other, name) {}
 
 template <typename T>
 transform<T>::transform (ivariable<T>* arg,
@@ -64,8 +62,6 @@ transform<T>::transform (ivariable<T>* arg,
 	collect_(op), 
 	shape_(trans), 
 	der_(der),
-	ivariable<T>(std::vector<size_t>{}, name),
-	ccoms::iobserver(std::vector<ccoms::subject*>{arg}),
 	ioperation<T>(std::vector<ivariable<T>*>{arg}, name)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(
@@ -108,10 +104,14 @@ template <typename T>
 void transform<T>::update (ccoms::update_message msg)
 {
 	// cast caller dependency as ivariable
-	ivariable<T>* caller = dynamic_cast<ivariable<T>*>(this->dependencies_[0]);
+	ivariable<T>* caller = this->dependencies_[0]->template to_type<ivariable<T> >();
 	
 	// grad must be a leaf
-	ileaf<T>* grad = dynamic_cast<ileaf<T>*>(msg.grad_);
+	ileaf<T>* grad = nullptr;
+	if (msg.grad_)
+	{
+		grad = msg.grad_->to_type<ileaf<T> >();
+	}
 	
 	tensor<T>* storage;
 	if (nullptr == grad) // don't care about grad, get best evaluation

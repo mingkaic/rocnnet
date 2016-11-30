@@ -28,7 +28,7 @@ class gradient : public iexecutor<T>
 	private:
 		// gradient owns values in leaf_map_
 		ivariable<T>* g_root_;
-		std::vector<ccoms::subject*> potential_srcs_;
+		std::vector<ivariable<T>*> potential_srcs_;
 		GRAD_MAP<T> leaf_map_;
 
 	protected:

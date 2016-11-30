@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../memory/session.hpp"
+#include "memory/session.hpp"
 #include "initializer.hpp"
 #include "tensor/tensor_op.hpp"
 #include "tensor/tensor.hpp"
@@ -23,16 +23,23 @@ template <typename T>
 class assign;
 template <typename T>
 class ioptimizer;
+template <typename T>
+class ioperation;
 
 // VARIABLE INTERFACE
 
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable : public ccoms::subject
+class ivariable
 {
 	private:
 		std::string name_;
+		// WE OWN CALLER!
+		ccoms::subject* caller_ = nullptr;
+
+		template <typename U>
+		friend ccoms::subject* var_to_sub (ivariable<U>* var);
 		
 	protected:
 		// WRAPPER CONTENT
@@ -40,6 +47,11 @@ class ivariable : public ccoms::subject
 
 		// GRADIENT STATE
 		// TODO: somehow differentiate gradient order (0 = non-gradient node, 1st order, etc.)
+
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
+		{
+			src.emplace(this);
+		}
 
 		void copy (const ivariable<T>& other, std::string name = "");
 		ivariable (const ivariable<T>& other, std::string name);
@@ -51,6 +63,7 @@ class ivariable : public ccoms::subject
 		// protected members need to be accessed by other operations
 		friend class assign<T>;
 		friend class ioptimizer<T>;
+		friend class ioperation<T>;
 
 	public:
 		virtual ~ivariable (void);
@@ -70,9 +83,40 @@ class ivariable : public ccoms::subject
 		// get eval simply returns the node's tensor
 		// the node will not check if tensor is valid for evaluation...
 		virtual tensor<T>* get_eval (void) { return out_.get(); }
-
 		virtual ivariable<T>* get_gradient (void) = 0;
+
+		// BRIDGE TO CALLER
+		void notify (ivariable<T>* grad = nullptr)
+		{
+			if (grad)
+			{
+				caller_->notify(grad->caller_);
+			}
+			else
+			{
+				caller_->notify();
+			}
+		}
+		bool no_audience (void) const
+		{
+			return caller_->no_audience();
+		}
+		// BRIDGE TO CALLER's reactive_node
+		bool safe_destroy (void)
+		{
+			return caller_->safe_destroy();
+		}
+		void set_death (void** ptr)
+		{
+			caller_->set_death(ptr);
+		}
 };
+
+template <typename T>
+ccoms::subject* var_to_sub (ivariable<T>* var)
+{
+	return var->caller_;
+}
 
 template <typename T>
 std::vector<T> expose (ivariable<T>* var)

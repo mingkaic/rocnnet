@@ -36,13 +36,24 @@ class jacobian;
 
 // INTERFACE OPERATION
 
-// inheritance join at reactive_node
 template <typename T>
-class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver
+class ioperation : public ivariable<T>, public ccoms::iobserver
 {
+	private:
+		// remember that once leaf subjects are destroyed,
+		// everyone in this graph including this is destroyed
+		// so we don't need to bother with cleaning leaves_
+		std::unordered_set<ivariable<T>*> leaves_;
+
 	protected:
 		bool valid_tensor_ = false;
 		ivariable<T>* grad_ = nullptr;
+
+
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
+		{
+			src.insert(this->leaves_.begin(), this->leaves_.end());
+		}
 
 		// implement unique method of consuming input variables
 		// to extract shape info
@@ -78,6 +89,9 @@ class ioperation : virtual public ivariable<T>, virtual public ccoms::iobserver
 		
 		// non-inherited
 		virtual ivariable<T>* get_gradient (void);
+
+		// operations only
+		void leaves_collect (std::function<void(ivariable<T>*)> collector);
 };
 
 }

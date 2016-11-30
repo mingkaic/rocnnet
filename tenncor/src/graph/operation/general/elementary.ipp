@@ -19,7 +19,7 @@ void elementary<T>::setup_gradient (void)
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_)
 	{
-		if (ivariable<T>* arg = dynamic_cast<ivariable<T>*>(child))
+		if (ivariable<T>* arg = child->to_type<ivariable<T> >())
 		{
 			args.push_back(arg);
 		}
@@ -33,7 +33,7 @@ tensorshape elementary<T>::shape_eval (void)
 	tensorshape first = std::vector<size_t>{1};
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ivariable<T>* v = dynamic_cast<ivariable<T>*>(sub))
+		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
 		{
 			tensorshape s = v->get_shape();
 			if (1 != first.n_dims() && 1 != s.n_dims() &&
@@ -55,9 +55,7 @@ template <typename T>
 elementary<T>::elementary (const elementary<T>& other, std::string name) :
 	der_(other.der_),
 	tens_buffer_(other.tens_buffer_),
-	ioperation<T>(other, name),
-	ivariable<T>(other, name),
-	ccoms::iobserver(other) {}
+	ioperation<T>(other, name) {}
 
 template <typename T>
 ivariable<T>* elementary<T>::clone_impl (std::string name)
@@ -70,10 +68,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	TEN_OP<T> op, BUILD_DERIVE<T> der,
 	std::string name) :
 	der_(der),
-	tens_buffer_(args.size(), nullptr), // tens_buffer_ buffered with null
-	ioperation<T>(args, name),
-	ivariable<T>(std::vector<size_t>{}, name),
-	ccoms::iobserver(std::vector<ccoms::subject*>(args.begin(), args.end()))
+	ioperation<T>(args, name)
 {
 	this->out_ = std::make_unique<tensor_op<T> >(op,
 	[](std::vector<tensorshape> shapes)
@@ -122,21 +117,27 @@ elementary<T>& elementary<T>::operator = (const elementary<T>& other)
 template <typename T>
 void elementary<T>::update (ccoms::update_message msg)
 {
+	static tensor<T> ones(1);
+
 	// cast caller dependency as ivariable
-	ivariable<T>* caller = dynamic_cast<ivariable<T>*>(msg.caller_);
+	ivariable<T>* caller = nullptr;
+	if (msg.caller_)
+	{
+		caller = msg.caller_->to_type<ivariable<T> >();
+	}
 	tensor<T>* storage = nullptr;
 	this->valid_tensor_ = true;
 
 	// if caller is null then update all tensors
 	if (nullptr == caller)
 	{
-		size_t n_args = this->dependencies_.size();
-		for (size_t i = 0; i < n_args; i++)
+		tens_buffer_.clear();
+		for (ccoms::subject* sub : this->dependencies_)
 		{
-			if (ivariable<T>* var = dynamic_cast<ivariable<T>*>(this->dependencies_[i]))
+			if (ivariable<T>* var = sub->to_type<ivariable<T> >())
 			{
 				storage = var->get_eval();
-				tens_buffer_[i] = storage;
+				tens_buffer_.push_back(storage);
 				if (nullptr == storage)
 				{
 					this->valid_tensor_ = false;
@@ -146,13 +147,16 @@ void elementary<T>::update (ccoms::update_message msg)
 	}
 	else
 	{
-		// grad must be a leaf
-		ileaf<T>* grad = dynamic_cast<ileaf<T>*>(msg.grad_);
+		ivariable<T>* grad = nullptr;
+		if (msg.grad_)
+		{
+			grad = msg.grad_->to_type<ivariable<T> >();
+		}
 		// determine caller index
 		size_t idx = 0;
 		for (ccoms::subject* sub : this->dependencies_)
 		{
-			if (sub == caller) break;
+			if (sub->to_type<ivariable<T> >() == caller) break;
 			idx++;
 		}
 		assert(idx < this->dependencies_.size()); // same as caller is in dependencies
@@ -165,9 +169,13 @@ void elementary<T>::update (ccoms::update_message msg)
 				this->valid_tensor_ = false;
 			}
 		}
-		else // eval if caller is grad, null otherwise
+		else if (ileaf<T>* leaf = dynamic_cast<ileaf<T>*>(grad)) // eval if caller is grad, null otherwise
 		{
-			storage = grad == caller ? grad->get_eval() : nullptr;
+			storage = leaf == caller ? leaf->get_eval() : nullptr;
+		}
+		else
+		{
+			storage = grad == caller ? &ones : nullptr;
 		}
 		// update caller tensor only
 		tens_buffer_[idx] = storage;

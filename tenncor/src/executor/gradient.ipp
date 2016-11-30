@@ -49,7 +49,7 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 	if (ioperation<T>* root_op = dynamic_cast<ioperation<T>*>(root))
 	{
 		// collect potential sources
-		root_op->leaves_collect([this](ccoms::subject* src)
+		root_op->leaves_collect([this](ivariable<T>* src)
 		{
 			potential_srcs_.push_back(src);
 		});
@@ -111,20 +111,16 @@ template <typename T>
 void gradient<T>::freeze (void)
 {
 	// select leaves (as dependencies or potential srcs)
-	std::vector<ccoms::subject*> leaves = this->dependencies_;
+	std::vector<ivariable<T>*> leaves = this->dependencies_;
 	if (this->dependencies_.empty())
 	{
 		leaves = potential_srcs_;
 	}
 	// populate leaf_map_
-	for (ccoms::subject* leaf : leaves)
+	for (ivariable<T>* var : leaves)
 	{
-		if (ivariable<T>* var =
-			dynamic_cast<ivariable<T>*>(leaf))
-		{
-			// expect gradients to be the same shape as leaves
-			leaf_map_[var] = new placeholder<T>(var->get_shape(), "grad_in:" + var->get_name());
-		}
+		// expect gradients to be the same shape as leaves
+		leaf_map_[var] = new placeholder<T>(var->get_shape(), "grad_in:" + var->get_name());
 	}
 }
 

@@ -80,8 +80,7 @@ D402 - constant's gradient is a zero constant
 
 // REACTIVE BEHAVIOR
 E000 - iobserver should detach (unsubscribe) from subject on destruction
-E001 - iobserver should provide information regarding about its leaf subjects (purely independent nodes)
-E002 - copying observers will copy over its dependencies (subjects)
+E001 - copying observers will copy over its dependencies (subjects)
 
 E500 - subject should detach and mark all observers for destruction on destruction
 E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers

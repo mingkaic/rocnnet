@@ -46,7 +46,7 @@ class ioptimizer : public iexecutor<T>
 	private:
 		group<T>* updater_ = nullptr;
 		gradient<T>* grader_ = nullptr;
-		std::unordered_set<ccoms::subject*> ignore_set_; // does not own ownership
+		std::unordered_set<ivariable<T>*> ignore_set_; // does not own ownership
 	
 	protected:
 		std::unordered_map<ivariable<T>*, ivariable<T>*> grad_top_;

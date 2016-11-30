@@ -145,8 +145,8 @@ TEST(DERIVE, BinaryElementary)
 			double erra = std::abs(derivs[i](ra[j], rb[j], true) - raw1[j]);
 			double errb = std::abs(derivs[i](ra[j], rb[j], false) - raw2[j]);
 			// error allow slightly less stringent for binaries
-			EXPECT_LE(erra, 2*epi);
-			EXPECT_LE(errb, 2*epi);
+			EXPECT_LE(erra, 100*epi);
+			EXPECT_LE(errb, 100*epi);
 		}
 		delete grad;
 	}
@@ -187,7 +187,7 @@ TEST(DERIVE, ComplexElementary) {
 	size_t count = 0;
 	grad.collect_grad(
 	[&count, &dp1, &dp2, p1, p2](
-		nnet::ivariable<double>* key, 
+		nnet::ivariable<double>* key,
 		nnet::placeholder<double>* value)
 	{
 		if (0 == count)
@@ -211,7 +211,6 @@ TEST(DERIVE, ComplexElementary) {
 	for (size_t i = 0; i < raw.size(); i++) {
 		EXPECT_EQ(sin(r1[i])+r1[i]*r2[i], raw[i]);
 	}
-	
 	// assert derivative over p1 is correct
 	for (size_t i = 0; i < dp1.size(); i++) {
 		EXPECT_EQ(cos(r1[i])+r2[i], dp1[i]);

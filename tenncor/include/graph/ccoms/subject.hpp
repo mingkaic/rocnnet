@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <unordered_set>
+#include "memory/safe_ptr.hpp"
 
 #pragma once
 #ifndef subject_hpp
@@ -38,7 +39,6 @@ class reactive_node
 		// we should always have protected constructors with a static builder
 		// if suicidal is true, since suicide never accounts for stack allocation
 		virtual bool suicidal (void) = 0;
-		virtual void merge_leaves (std::unordered_set<subject*>& src) = 0;
 
 		// allocation is moved here because I want safe destroy and node_allocation 
 		// to eventually form a separate abstract factory object
@@ -63,8 +63,6 @@ class reactive_node
 		// set ptr to null on death
 		void set_death (void** ptr)
 		{
-			// ptr must point to this
-			assert(this == *ptr);
 			ptrr_ = ptr;
 		}
 };
@@ -76,27 +74,45 @@ class reactive_node
 class subject : public reactive_node
 {
 	private:
+		// content (does not own... meaning memory leak/corruption if we delete this without variable)
+		nnet::safe_ptr* var_ = nullptr;
+		// dependents
 		std::unordered_set<iobserver*> audience_;
 
 	protected:
-		virtual void merge_leaves (std::unordered_set<subject*>& src);
-		
 		// must explicitly destroy using delete
 		virtual bool suicidal (void) { return false; }
 		void attach (iobserver* viewer);
 		// if suicidal, safe_destroy when detaching last audience
 		virtual void detach (iobserver* viewer);
-		
-		subject (const subject& other) {} // prevent audience from being copied over
-		subject (void) {}
 
 		friend class iobserver;
 		
 	public:
+		subject (void) {}
+
 		virtual ~subject (void);
+
+		subject (const subject& other) {} // prevent audience from being copied over
 	
 		void notify (subject* grad = nullptr);
-		bool no_audience (void);
+		bool no_audience (void) const;
+
+		// variable connection
+		template <typename T>
+		void store_var (T* var)
+		{
+			if (nullptr != var_) delete var_;
+			var_ = new nnet::safe_ptr {
+				var, // ptr_
+				typeid(T), // info
+			};
+		}
+
+		template <typename T>
+		T* to_type (void) {
+			return var_->cast<T>();
+		}
 };
 
 }

@@ -58,6 +58,17 @@ class formatter
 		}
 };
 
+template <typename T, typename U>
+std::vector<U> to_vec (std::vector<T> vec, std::function<U(T)> convert)
+{
+	std::vector<U> res;
+	for (T v : vec)
+	{
+		res.push_back(convert(v));
+	}
+	return res;
+}
+
 }
 
 #endif /* utils_hpp */
