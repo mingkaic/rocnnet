@@ -11,7 +11,7 @@ static const double epi = std::numeric_limits<double>::epsilon();
 
 // DERIVATIVES
 
-TEST(DERIVE, unary)
+TEST(DERIVE, UnaryElementary)
 {
 	const size_t edge = 10;
 	const size_t supersize = edge * edge * edge;
@@ -28,6 +28,10 @@ TEST(DERIVE, unary)
 		nnet::sec(in),
 		nnet::cot(in),
 		nnet::exp(in),
+		// nnet::sqrt(in),
+		// nnet::pow(in, 3),
+		nnet::clip_val(in, 2.0, 4.0),
+		nnet::clip_norm(in, 0.5),
 	};
 
 	std::vector<std::function<double(double)> > derivs = {
@@ -40,6 +44,10 @@ TEST(DERIVE, unary)
 		[](double e) { return tan(e)/cos(e); },
 		[](double e) { return -(1.0/sin(e))*(1.0/sin(e)); },
 		[](double e) { return exp(e); },
+		// [](double e) { return 1/(2*std::sqrt(e)); },
+		// [](double e) { return 3*e*e; },
+		[](double e) { return 2; },
+		[](double e) { return 0.5; },
 	};
 
 	size_t len = univars.size();
@@ -72,7 +80,7 @@ TEST(DERIVE, unary)
 }
 
 
-TEST(DERIVE, binary)
+TEST(DERIVE, BinaryElementary)
 {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
@@ -136,8 +144,9 @@ TEST(DERIVE, binary)
 		for (size_t j = 0; j < raw1.size(); j++) {
 			double erra = std::abs(derivs[i](ra[j], rb[j], true) - raw1[j]);
 			double errb = std::abs(derivs[i](ra[j], rb[j], false) - raw2[j]);
-			EXPECT_LE(erra, epi);
-			EXPECT_LE(errb, epi);
+			// error allow slightly less stringent for binaries
+			EXPECT_LE(erra, 2*epi);
+			EXPECT_LE(errb, 2*epi);
 		}
 		delete grad;
 	}
@@ -146,51 +155,74 @@ TEST(DERIVE, binary)
 
 
 // TODO: write these
-// TEST(DERIVE, transpose) {
+// TEST(DERIVE, Transform) {
 
 // }
 
 
-// TEST(DERIVE, matop) {
+// TEST(DERIVE, Matmul) {
 
 // }
 
 
-// TEST(DERIVE, complex) {
-// 	const size_t edge = 10;
-// 	const size_t supersize = edge*edge*edge;
-// 	nnet::session& sess = nnet::session::get_instance();
-// 	nnet::random_uniform<double> rinit(0, 523);
-// 	nnet::varptr<double> p1 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
-// 	nnet::varptr<double> p2 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p2");
+TEST(DERIVE, ComplexElementary) {
+	const size_t edge = 10;
+	const size_t supersize = edge*edge*edge;
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::random_uniform<double> rinit(0, 523);
+	nnet::varptr<double> p1 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p1");
+	nnet::varptr<double> p2 = new nnet::variable<double>((std::vector<size_t>{edge, edge, edge}), rinit, "p2");
 
-// 	sess.initialize_all<double>();
-// 	nnet::varptr<double> o = nnet::sin(p1) + p1 * p2;
-// 	nnet::expose<double>* res = new nnet::expose<double>(o);
+	sess.initialize_all<double>();
+	nnet::varptr<double> o = nnet::sin(p1) + p1 * p2;
 
-// 	std::vector<double> r1 = new nnet::expose<double>(p1)->get_raw();
-// 	std::vector<double> r2 = new nnet::expose<double>(p2)->get_raw();
+	std::vector<double> r1 = nnet::expose<double>(p1);
+	std::vector<double> r2 = nnet::expose<double>(p2);
 
-// 	nnet::varptr<double> grad1 = new nnet::gradient<double>(res, p1);
-// 	nnet::varptr<double> grad2 = new nnet::gradient<double>(res, p2);
+	nnet::gradient<double> grad(o);
+	grad.freeze();
+	grad.execute();
+	std::vector<double> dp1;
+	std::vector<double> dp2;
+	size_t count = 0;
+	grad.collect_grad(
+	[&count, &dp1, &dp2, p1, p2](
+		nnet::ivariable<double>* key, 
+		nnet::placeholder<double>* value)
+	{
+		if (0 == count)
+		{
+			dp1 = nnet::expose<double>(value);
+		}
+		else
+		{
+			dp2 = nnet::expose<double>(value);
+		}
+		count++;
+	});
 
-// 	// res = f(a,b) = sin(a)+a*b
-// 	// df(a,b)/da = cos(a)+b
-// 	// df(a,b)/db = a
-// 	std::vector<double> raw = res->get_raw();
-// 	std::vector<double> dp1 = new nnet::expose<double>(grad1)->get_raw();
-// 	std::vector<double> dp2 = new nnet::expose<double>(grad2)->get_raw();
+	// res = f(a,b) = sin(a)+a*b
+	// df(a,b)/da = cos(a)+b
+	// df(a,b)/db = a
+	std::vector<double> raw = nnet::expose<double>(o);
+	ASSERT_EQ(2, count);
 
-// 	for (size_t i = 0; i < raw.size(); i++) {
-// 		EXPECT_EQ(sin(r1[i])+r1[i]*r2[i], raw[i]);
-// 	}
-// 	for (size_t i = 0; i < dp1.size(); i++) {
-// 		EXPECT_EQ(cos(r1[i])+r2[i], dp1[i]);
-// 	}
-// 	for (size_t i = 0; i < dp2.size(); i++) {
-// 		EXPECT_EQ(r1[i], dp2[i]);
-// 	}
-// }
+	// expect the equation is correct
+	for (size_t i = 0; i < raw.size(); i++) {
+		EXPECT_EQ(sin(r1[i])+r1[i]*r2[i], raw[i]);
+	}
+	
+	// assert derivative over p1 is correct
+	for (size_t i = 0; i < dp1.size(); i++) {
+		EXPECT_EQ(cos(r1[i])+r2[i], dp1[i]);
+	}
+	// assert derivative over p2 is correct
+	for (size_t i = 0; i < dp2.size(); i++) {
+		EXPECT_EQ(r1[i], dp2[i]);
+	}
+	delete p1;
+	delete p2;
+}
 
 
 // // tests deriving with respect to leaf (variable) nodes using sigmoid

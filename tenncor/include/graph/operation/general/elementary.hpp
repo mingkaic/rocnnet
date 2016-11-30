@@ -87,7 +87,7 @@ template<typename T>
 varptr<T> exp (const varptr<T> a);
 
 template <typename T>
-varptr<T> root (const varptr<T> a); // TODO implement
+varptr<T> sqrt (const varptr<T> a); // TODO implement
 
 template <typename T>
 varptr<T> pow (const varptr<T> a, T scalar); // TODO implement

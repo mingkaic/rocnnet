@@ -24,10 +24,9 @@ ivariable<T>* variable<T>::clone_impl (std::string name)
 }
 
 template <typename T>
-variable<T>::variable (T scalar) :
+variable<T>::variable (T scalar, std::string name) :
 	ileaf<T>(std::vector<size_t>{1},
-	new const_init<T>(scalar),
-	nnutils::formatter() << "scalar")
+	new const_init<T>(scalar), name)
 {
 	initialize();
 }

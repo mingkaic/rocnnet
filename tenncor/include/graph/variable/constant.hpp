@@ -55,7 +55,7 @@ class constant : public ileaf<T>
 		{
 			if (nullptr == this->grad_)
 			{
-				this->grad_ = std::make_unique<variable<T> >(0);
+				this->grad_ = std::make_unique<variable<T> >(0, "0");
 			}
 			return this->grad_.get();
 		}

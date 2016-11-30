@@ -30,7 +30,7 @@ class variable : public ileaf<T>
 		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
-		variable (T scalar);
+		variable (T scalar, std::string name = "scalar");
 		variable (const tensorshape& shape, std::string name = "");
 		variable (const tensorshape& shape, initializer<T>& init, std::string name = "");
 
@@ -50,7 +50,7 @@ class variable : public ileaf<T>
 		{
 			if (nullptr == this->grad_)
 			{
-				this->grad_ = std::make_unique<variable<T> >(1);
+				this->grad_ = std::make_unique<variable<T> >(1, "grad<" + this->get_name() + ">");
 			}
 			return this->grad_.get();
 		}
