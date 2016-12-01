@@ -84,6 +84,7 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 		this->change_shape(res_shape);
 		info_.res_shape_ = res_shape;
 	}
+	
 	return *this;
 }
 

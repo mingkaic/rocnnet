@@ -26,6 +26,11 @@ template <typename T>
 class variable : public ileaf<T>
 {
 	protected:
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
+		{
+			src.emplace(this);
+		}
+		
 		variable (const variable<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 

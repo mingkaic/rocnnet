@@ -18,7 +18,6 @@ template <typename T, typename A>
 void tensor<T,A>::copy (const tensor<T,A>& other)
 {
 	T* other_raw = other.raw_data_;
-	
 	if (1 != other.n_elems()) // not a scalar
 	{
 		// allocate if other is allocated
@@ -98,11 +97,10 @@ tensor<T,A>::~tensor (void)
 }
 
 template <typename T, typename A>
-tensor<T,A>& tensor<T,A>::operator = (tensor<T,A>& other)
+tensor<T,A>& tensor<T,A>::operator = (const tensor<T,A>& other)
 {
 	if (this != &other)
 	{
-		other.get_raw();
 		this->copy(other);
 	}
 	return *this;
@@ -237,7 +235,7 @@ bool tensor<T,A>::is_compatible_with (std::vector<T> data) const
 template <typename T, typename A>
 bool tensor<T,A>::is_compatible_with (const tensor<T,A>& other) const
 {
-	return allowed_shape_.is_compatible_with(other.get_shape());
+	return get_shape().is_compatible_with(other.get_shape());
 }
 
 template <typename T, typename A>

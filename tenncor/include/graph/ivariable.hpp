@@ -48,10 +48,7 @@ class ivariable
 		// GRADIENT STATE
 		// TODO: somehow differentiate gradient order (0 = non-gradient node, 1st order, etc.)
 
-		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
-		{
-			src.emplace(this);
-		}
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) = 0;
 
 		void copy (const ivariable<T>& other, std::string name = "");
 		ivariable (const ivariable<T>& other, std::string name);
@@ -77,7 +74,14 @@ class ivariable
 		// TODO Implement
 
 		std::string get_name (void) const { return name_; }
-		virtual tensorshape get_shape (void) const { return this->out_->get_shape(); }
+		virtual tensorshape get_shape (void) const
+		{
+			if (nullptr != this->out_)
+			{
+				return this->out_->get_shape();
+			}
+			return std::vector<size_t>{};
+		}
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
 		// get eval simply returns the node's tensor
@@ -100,15 +104,6 @@ class ivariable
 		bool no_audience (void) const
 		{
 			return caller_->no_audience();
-		}
-		// BRIDGE TO CALLER's reactive_node
-		bool safe_destroy (void)
-		{
-			return caller_->safe_destroy();
-		}
-		void set_death (void** ptr)
-		{
-			caller_->set_death(ptr);
 		}
 };
 

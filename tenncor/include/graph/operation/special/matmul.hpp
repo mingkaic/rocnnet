@@ -42,7 +42,7 @@ class matmul : public ioperation<T>
 			bool transposeA = false, bool transposeB = false);
 
 	public:
-		static ivariable<T>* build (ivariable<T>* a, ivariable<T>* b,
+		static matmul<T>* build (ivariable<T>* a, ivariable<T>* b,
 			bool transposeA = false, bool transposeB = false)
 		{
 			return new matmul<T>(a, b, transposeA, transposeB);

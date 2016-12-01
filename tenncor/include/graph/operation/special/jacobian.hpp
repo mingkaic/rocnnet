@@ -52,7 +52,7 @@ class jacobian : public ioperation<T>
 			bool transposeA, bool transposeB, std::string name);
 
 	public:
-		static ivariable<T>* build (ivariable<T>* a, ivariable<T>* b,
+		static jacobian<T>* build (ivariable<T>* a, ivariable<T>* b,
 			bool transposeA, bool transposeB, std::string name = "")
 		{
 			return new jacobian<T>(a, b, transposeA, transposeB, name);

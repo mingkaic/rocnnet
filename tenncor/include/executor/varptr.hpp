@@ -16,7 +16,7 @@ namespace nnet
 {
 
 // tensor variable pointer wrapper
-
+// TODO: override delete to destroy ptr directly
 template <typename T>
 class varptr
 {

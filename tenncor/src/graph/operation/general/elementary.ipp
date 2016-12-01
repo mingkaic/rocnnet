@@ -24,7 +24,7 @@ void elementary<T>::setup_gradient (void)
 			args.push_back(arg);
 		}
 	}
-	this->grad_ = der_(args);
+	this->grad_ = dynamic_cast<ioperation<T>*>(der_(args));
 }
 
 template <typename T>
@@ -180,7 +180,6 @@ void elementary<T>::update (ccoms::update_message msg)
 		// update caller tensor only
 		tens_buffer_[idx] = storage;
 	}
-
 	// tensor update when ready
 	if (this->valid_tensor_)
 	{

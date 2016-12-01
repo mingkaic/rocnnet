@@ -50,7 +50,6 @@ subject::~subject (void)
 		it++;
 		captive->safe_destroy(); // flag captive for destruction
 	}
-	delete var_;
 }
 
 void subject::notify (subject* grad)

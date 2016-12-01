@@ -31,6 +31,9 @@ class ileaf : public ivariable<T>
 		// we own our initializer
 		initializer<T>* init_ = nullptr;
 		bool is_init_ = false;
+		
+		// only add to source if this is a ivariable
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) {}
 
 		void copy (const ileaf<T>& other, std::string name = "");
 		ileaf (const ileaf<T>& other, std::string name);

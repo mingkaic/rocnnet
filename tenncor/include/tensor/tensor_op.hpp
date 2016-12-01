@@ -52,17 +52,6 @@ class tensor_op : public tensor<T,A>
 		// inherited and override. evaluates before returning raw. 
 		// told you it's not overengineered
 		virtual T* get_raw (void);
-		
-		void raw_update (void)
-		{
-			if (false == this->is_alloc())
-			{
-				this->allocate();
-			}
-			T* dest = tensor<T,A>::get_raw();
-			assert(false == raws_.empty());
-			op_(info_, dest, raws_);
-		}
 
 	public:
 		tensor_op (TEN_OP<T> op, SHAPE shaper);
@@ -78,6 +67,17 @@ class tensor_op : public tensor<T,A>
 		
 		// overwrite tensor's get
 		virtual T get (std::vector<size_t> indices);
+		
+		virtual void raw_update (void)
+		{
+			if (false == this->is_alloc())
+			{
+				this->allocate();
+			}
+			T* dest = tensor<T,A>::get_raw();
+			assert(false == raws_.empty());
+			op_(info_, dest, raws_);
+		}
 };
 
 }

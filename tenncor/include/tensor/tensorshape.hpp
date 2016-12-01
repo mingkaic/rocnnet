@@ -6,6 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <iostream>
 #include <cassert>
 #include <stdexcept>
 #include <vector>
@@ -77,7 +78,11 @@ class tensorshape
 		void assert_has_rank (size_t rank) const;
 		void assert_same_rank (const tensorshape& other) const;
 		void assert_is_fully_defined (void) const;
+
+		void undefine (void) { dimensions_.clear(); }
 };
+
+void print_shape (tensorshape ts);
 
 }
 

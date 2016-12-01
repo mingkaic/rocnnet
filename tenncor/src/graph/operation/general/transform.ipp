@@ -24,7 +24,7 @@ void transform<T>::setup_gradient (void)
 			args.push_back(arg);
 		}
 	}
-	this->grad_ = der_(args);
+	this->grad_ = dynamic_cast<ioperation<T>*>(der_(args));
 }
 
 template <typename T>
@@ -137,9 +137,9 @@ template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
- 	ivariable<T>* op = transform<T>::build(a,
- 		[](T* dest, const T* src, tensorshape ts)
- 		{
+	ivariable<T>* op = transform<T>::build(a,
+		[](T* dest, const T* src, tensorshape ts)
+		{
 			// we have the new shape
 			std::vector<size_t> inl = ts.as_list();
 			// old dimensions
@@ -152,12 +152,12 @@ varptr<T> transpose (const varptr<T> a)
 					dest[y+x*dimY] = src[x+y*dimX];
 				}
 			}
- 		},
- 		[](tensorshape ts)
- 		{
- 			if (ts.is_fully_defined())
- 			{
- 				// restrict shape to no greater than 2-D for now
+		},
+		[](tensorshape ts)
+		{
+			if (ts.is_fully_defined())
+			{
+				// restrict shape to no greater than 2-D for now
 				assert(ts.n_dims() <= 2);
 				std::vector<size_t> inl = ts.as_list();
 				if (ts.n_dims() == 1)
@@ -168,13 +168,13 @@ varptr<T> transpose (const varptr<T> a)
 			}
 			return std::vector<size_t>{};
 		},
- 		[](std::vector<ivariable<T>*> args)
- 		{
- 			ivariable<T>* a = args.front();
- 			return transpose(varptr<T>(a->get_gradient()));
- 		},
- 	"transpose(" + a->get_name() + ")");
- 	return op;
+		[](std::vector<ivariable<T>*> args)
+		{
+			ivariable<T>* a = args.front();
+			return transpose(varptr<T>(a->get_gradient()));
+		},
+	"transpose(" + a->get_name() + ")");
+	return op;
 }
 
 // fit to watch
@@ -184,9 +184,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
- 	ivariable<T>* op = transform<T>::build(a,
- 		[watch, a](T* dest, const T* src, tensorshape ts)
- 		{
+	ivariable<T>* op = transform<T>::build(a,
+		[watch, a](T* dest, const T* src, tensorshape ts)
+		{
 			std::vector<size_t> orig = a->get_shape().as_list();
 			std::vector<size_t> tv = ts.as_list();
 			size_t total = ts.n_elems();
@@ -246,44 +246,44 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 				}
 			}
 			std::memcpy(dest, super_dest, total * sizeof(T));
- 		},
- 		[watch](tensorshape ts)
- 		{
+		},
+		[watch](tensorshape ts)
+		{
 			ts.assert_is_fully_defined();
 			tensorshape s = watch->get_shape();
 			assert(s.n_elems() >= ts.n_elems());
 			return s;
 		},
- 		[watch](std::vector<ivariable<T>*> args)
- 		{
- 			ivariable<T>* a = args.front();
- 			return fit(varptr<T>(a->get_gradient()), watch);
- 		},
- 	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
- 	return op;
+		[watch](std::vector<ivariable<T>*> args)
+		{
+			ivariable<T>* a = args.front();
+			return fit(varptr<T>(a->get_gradient()), watch);
+		},
+	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
+	return op;
 }
 
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
- 	ivariable<T>* op = transform<T>::build(a,
- 		[index, multiplier](T* dest, const T* src, tensorshape ts)
- 		{
- 			// REMEMBER that ts is the resulting shape, not the original shape
- 			// both above and below values are calculations based on the original shape
+	ivariable<T>* op = transform<T>::build(a,
+		[index, multiplier](T* dest, const T* src, tensorshape ts)
+		{
+			// REMEMBER that ts is the resulting shape, not the original shape
+			// both above and below values are calculations based on the original shape
 			std::vector<size_t> tv = ts.as_list();
 			// below calculates all elements encompassed up to the index dimension
 			// that is for a shape of <1, 2, 3, 4> and index 2
 			// below = 1 * 2 * 3 = 6
- 			size_t below = 1;
- 			for (size_t i = 0; i < index; i++)
- 			{
- 				below *= tv[i];
- 			}
- 			// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
- 			// so to obtain the original dimension, we divide by multiplier
- 			below *= tv[index] / multiplier;
+			size_t below = 1;
+			for (size_t i = 0; i < index; i++)
+			{
+				below *= tv[i];
+			}
+			// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
+			// so to obtain the original dimension, we divide by multiplier
+			below *= tv[index] / multiplier;
 			// above calculates the number of tensors (of index rank) within the original tensor
 			// that is for a shape of <1, 2, 3, 4> and index 2
 			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
@@ -304,9 +304,9 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 					std::memcpy(dest_addr, src_addr, below * sizeof(T));
 				}
 			}
- 		},
- 		[index, multiplier](tensorshape ts)
- 		{
+		},
+		[index, multiplier](tensorshape ts)
+		{
 			ts.assert_is_fully_defined();
 			std::vector<size_t> tv = ts.as_list();
 			// allocated additional space along index
@@ -327,14 +327,14 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 			}
 			return tv;
 		},
- 		[index, multiplier](std::vector<ivariable<T>*> args)
- 		{
- 			ivariable<T>* a = args.front();
- 			return extend(varptr<T>(a->get_gradient()), index, multiplier);
- 		},
- 	nnutils::formatter() << "extend[" << index << "," <<
- 		multiplier << "](" << a->get_name() + ")");
- 	return op;
+		[index, multiplier](std::vector<ivariable<T>*> args)
+		{
+			ivariable<T>* a = args.front();
+			return extend(varptr<T>(a->get_gradient()), index, multiplier);
+		},
+	nnutils::formatter() << "extend[" << index << "," <<
+		multiplier << "](" << a->get_name() + ")");
+	return op;
 }
 
 template <typename T>
@@ -421,14 +421,14 @@ varptr<T> compress (const varptr<T> a, int index,
 		});
 	}
 
- 	ivariable<T>* op = transform<T>::build(a, gatherer, shaper,
- 		[index, collector](std::vector<ivariable<T>*> args)
- 		{
- 			ivariable<T>* a = args.front();
- 			return compress(varptr<T>(a->get_gradient()), index, collector);
- 		},
- 	nnutils::formatter() << "compress[" << index << "](" << a->get_name() + ")");
- 	return op;
+	ivariable<T>* op = transform<T>::build(a, gatherer, shaper,
+		[index, collector](std::vector<ivariable<T>*> args)
+		{
+			ivariable<T>* a = args.front();
+			return compress(varptr<T>(a->get_gradient()), index, collector);
+		},
+	nnutils::formatter() << "compress[" << index << "](" << a->get_name() + ")");
+	return op;
 }
 
 }

@@ -60,8 +60,9 @@ class tensor
 			// deallocate if raw_data_ is not null (allocator checks for raw nulls)
 			alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
 			raw_data_ = nullptr;
-			// reshape
+			// reshape allowed_shape_
 			set_shape(res_shape);
+			alloc_shape_.undefine(); // make undefine since we're no longer allocated
 		}
 
 		friend class assign<T>;
@@ -86,7 +87,7 @@ class tensor
 		// rule of three
 		virtual ~tensor (void);
 		tensor<T,A>* clone (void) { return clone_impl(); }
-		tensor<T,A>& operator = (tensor<T,A>& other);
+		tensor<T,A>& operator = (const tensor<T,A>& other);
 		// act on tensor
 		virtual const tensor<T,A>& operator () (std::vector<tensor<T,A>*> args) { return *this; }
 
@@ -138,6 +139,7 @@ class tensor
 		// size_t buffer_hash (void) const;
 		// bool from_proto (const tensorproto& other);
 		// bool from_proto (iallocator* a, const tensorproto& other);
+		virtual void raw_update (void) {}
 };
 
 template <typename T>

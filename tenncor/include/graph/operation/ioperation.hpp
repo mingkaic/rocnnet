@@ -47,8 +47,7 @@ class ioperation : public ivariable<T>, public ccoms::iobserver
 
 	protected:
 		bool valid_tensor_ = false;
-		ivariable<T>* grad_ = nullptr;
-
+		ioperation<T>* grad_ = nullptr;
 
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
 		{

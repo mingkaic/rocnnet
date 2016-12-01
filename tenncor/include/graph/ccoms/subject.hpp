@@ -32,7 +32,7 @@ struct update_message
 class reactive_node
 {
 	private:
-		void** ptrr_ = nullptr;
+		std::vector<void**> ptrrs_;
 	
 	protected:
 		// returns true if suicide on safe_destroy
@@ -53,9 +53,9 @@ class reactive_node
 	public:
 		virtual ~reactive_node (void)
 		{
-			if (nullptr != ptrr_)
+			for (void** ptrr : ptrrs_)
 			{
-				*ptrr_ = nullptr;
+				*ptrr = nullptr;
 			}
 		}
 		// return true if this is successfully flagged for deletion
@@ -63,7 +63,7 @@ class reactive_node
 		// set ptr to null on death
 		void set_death (void** ptr)
 		{
-			ptrr_ = ptr;
+			ptrrs_.push_back(ptr);
 		}
 };
 

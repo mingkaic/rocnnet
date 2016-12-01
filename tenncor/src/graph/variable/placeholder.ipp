@@ -53,6 +53,11 @@ placeholder<T>* placeholder<T>::clone (std::string name)
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 {
+	if (nullptr == this->out_)
+	{
+		// we lack the shape data error out!
+		throw std::exception(); // TODO: determine the error type
+	}
 	// note: if this is allocated,
 	// compatibility is compared to allocated shape instead of allowed
 	assert(this->out_->is_compatible_with(data));
@@ -74,7 +79,16 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 {
-	*this->out_ = data;
+	data.raw_update();
+	if (nullptr == this->out_)
+	{
+		this->out_ = std::make_unique<tensor<T> >(data.get_shape());
+		*this->out_ = data;
+	}
+	else
+	{
+		*this->out_ = data;
+	}
 	this->is_init_ = true;
 	this->notify();
 	return *this;
