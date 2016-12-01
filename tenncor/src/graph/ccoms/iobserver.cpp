@@ -15,8 +15,8 @@ namespace ccoms
 		
 void iobserver::add_dependency (subject* dep)
 {
+	dep->attach(this, dependencies_.size());
 	dependencies_.push_back(dep);
-	dep->attach(this);
 }
 
 iobserver::iobserver (const iobserver& other)

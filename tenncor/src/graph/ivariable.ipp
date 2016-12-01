@@ -40,10 +40,7 @@ ivariable<T>::ivariable (const tensorshape& shape, std::string name) : name_(nam
 {
 	caller_ = new ccoms::subject();
 	caller_->store_var(this);
-	if (shape.is_fully_defined())
-	{ // TODO: cover all cases when shape is undefined and this is a ileaf
-		out_ = std::make_unique<tensor<T> >(shape);
-	}
+	out_ = std::make_unique<tensor<T> >(shape);
 	session& sess = session::get_instance();
 	sess.register_obj(*this);
 }

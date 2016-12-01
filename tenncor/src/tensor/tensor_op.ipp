@@ -17,6 +17,7 @@ void tensor_op<T,A>::copy (const tensor_op<T,A>& other)
 	op_ = other.op_;
 	shape_ = other.shape_;
 	raws_ = other.raws_;
+	info_ = other.info_;
 	tensor<T,A>::copy(other);
 }
 
@@ -46,10 +47,11 @@ template <typename T, typename A>
 tensor_op<T,A>* tensor_op<T,A>::clone (void) { return static_cast<tensor_op<T,A>*>(clone_impl()); }
 
 template <typename T, typename A>
-tensor_op<T,A>& tensor_op<T,A>::operator = (const tensor_op<T,A>& other)
+tensor_op<T,A>& tensor_op<T,A>::operator = (tensor_op<T,A>& other)
 {
 	if (this != &other)
 	{
+		other.raw_update();
 		this->copy(other);
 	}
 	return *this;

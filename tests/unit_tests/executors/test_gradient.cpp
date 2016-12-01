@@ -13,7 +13,7 @@ static std::function<double(double)> sig = [](double x) {
 	return 1 / (1 + std::exp(-x));
 };
 
-static std::function<double(double)> sig_prime = [&sig](double x) {
+static std::function<double(double)> sig_prime = [](double x) {
 	double s = sig(x);
 	return s * (1 - s);
 };
@@ -312,11 +312,11 @@ TEST(DERIVE, SigmoidComplex) {
 
 // tests deriving with respect to operation nodes
 TEST(DERIVE, OperationDerive) {
-	const size_t limit = 523;
+	const size_t limit = 11;
 	const size_t edge = 10;
 	const size_t supersize = edge*edge;
 	nnet::session& sess = nnet::session::get_instance();
-	nnet::random_uniform<double> rinit(0, 523);
+	nnet::random_uniform<double> rinit(-1, limit);
 
 	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
 	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
@@ -327,7 +327,6 @@ TEST(DERIVE, OperationDerive) {
 	grad.freeze();
 	
 	sess.initialize_all<double>();
-std::cout << "initialized successful\n";
 	std::vector<double> placeholder_in;
 	for (size_t i = 0; i < supersize; i++) {
 		placeholder_in.push_back(fmod(rand(), limit));

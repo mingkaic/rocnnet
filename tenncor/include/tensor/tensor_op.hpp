@@ -49,25 +49,6 @@ class tensor_op : public tensor<T,A>
 		tensor_op (const tensor_op<T,A>& other);
 		virtual tensor<T,A>* clone_impl (void);
 
-		// inherited and override. evaluates before returning raw. 
-		// told you it's not overengineered
-		virtual T* get_raw (void);
-
-	public:
-		tensor_op (TEN_OP<T> op, SHAPE shaper);
-		tensor_op (TEN_OP<T> op, SHAPE shaper, const alloc_attrib& attrib);
-		// we don't own any of the raws so we don't need destructor
-
-		tensor_op<T,A>* clone (void);
-		tensor_op<T,A>& operator = (const tensor_op<T,A>& other);
-
-		// buffer arguments
-		// null tensors's raw are recorded as null as well
-		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T,A>*> args);
-		
-		// overwrite tensor's get
-		virtual T get (std::vector<size_t> indices);
-		
 		virtual void raw_update (void)
 		{
 			if (false == this->is_alloc())
@@ -78,6 +59,25 @@ class tensor_op : public tensor<T,A>
 			assert(false == raws_.empty());
 			op_(info_, dest, raws_);
 		}
+
+		// inherited and override. evaluates before returning raw. 
+		// told you it's not overengineered
+		virtual T* get_raw (void);
+
+	public:
+		tensor_op (TEN_OP<T> op, SHAPE shaper);
+		tensor_op (TEN_OP<T> op, SHAPE shaper, const alloc_attrib& attrib);
+		// we don't own any of the raws so we don't need destructor
+
+		tensor_op<T,A>* clone (void);
+		virtual tensor_op<T,A>& operator = (tensor_op<T,A>& other);
+
+		// buffer arguments
+		// null tensors's raw are recorded as null as well
+		virtual const tensor_op<T,A>& operator () (std::vector<tensor<T,A>*> args);
+		
+		// overwrite tensor's get
+		virtual T get (std::vector<size_t> indices);
 };
 
 }

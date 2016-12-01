@@ -97,10 +97,11 @@ tensor<T,A>::~tensor (void)
 }
 
 template <typename T, typename A>
-tensor<T,A>& tensor<T,A>::operator = (const tensor<T,A>& other)
+tensor<T,A>& tensor<T,A>::operator = (tensor<T,A>& other)
 {
 	if (this != &other)
 	{
+		other.raw_update();
 		this->copy(other);
 	}
 	return *this;

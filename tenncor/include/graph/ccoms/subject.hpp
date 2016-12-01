@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <unordered_set>
+#include "utils.hpp"
 #include "memory/safe_ptr.hpp"
 
 #pragma once
@@ -23,6 +24,7 @@ class subject;
 struct update_message
 {
 	subject* caller_;
+	size_t caller_idx_ = 0;
 	subject* grad_ = nullptr;
 	
 	update_message (subject* caller) : caller_(caller) {}
@@ -77,12 +79,12 @@ class subject : public reactive_node
 		// content (does not own... meaning memory leak/corruption if we delete this without variable)
 		nnet::safe_ptr* var_ = nullptr;
 		// dependents
-		std::unordered_set<iobserver*> audience_;
+		std::unordered_map<iobserver*, std::vector<size_t> > audience_;
 
 	protected:
 		// must explicitly destroy using delete
 		virtual bool suicidal (void) { return false; }
-		void attach (iobserver* viewer);
+		void attach (iobserver* viewer, size_t idx);
 		// if suicidal, safe_destroy when detaching last audience
 		virtual void detach (iobserver* viewer);
 

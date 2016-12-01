@@ -69,10 +69,6 @@ template <typename T>
 tensor<T>& variable<T>::initialize (tensorshape alloc_shape)
 {
 	assert(this->init_ != nullptr);
-	if (nullptr == this->out_)
-	{
-		this->out_ = std::make_unique<tensor<T> >(alloc_shape);
-	}
 	if (false == this->out_->is_alloc())
 	{ // if not alloc, allocate
 		this->out_->allocate(alloc_shape);

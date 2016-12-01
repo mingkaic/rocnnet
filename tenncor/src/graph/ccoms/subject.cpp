@@ -24,9 +24,9 @@ bool reactive_node::safe_destroy (void)
 	return false;
 }
 
-void subject::attach (iobserver* viewer)
+void subject::attach (iobserver* viewer, size_t idx)
 {
-	audience_.emplace(viewer);
+	audience_[viewer].push_back(idx);
 }
 
 void subject::detach (iobserver* viewer)
@@ -46,7 +46,7 @@ subject::~subject (void)
 		// when an observer is destroyed, 
 		// the observer attempts to detach itself from its subjects
 		// that's why we increment iterator before we delete
-		iobserver* captive = *it;
+		iobserver* captive = it->first;
 		it++;
 		captive->safe_destroy(); // flag captive for destruction
 	}
@@ -57,9 +57,14 @@ void subject::notify (subject* grad)
 	update_message msg(this);
 	msg.grad_ = grad;
 	// everyone get the same message
-	for (iobserver* viewer : audience_)
+	for (auto it : audience_)
 	{
-		viewer->update(msg);
+		for (size_t idx : it.second)
+		{
+			msg.caller_idx_ = idx;
+			iobserver *viewer = it.first;
+			viewer->update(msg);
+		}
 	}
 }
 

@@ -152,14 +152,9 @@ void elementary<T>::update (ccoms::update_message msg)
 		{
 			grad = msg.grad_->to_type<ivariable<T> >();
 		}
-		// determine caller index
-		size_t idx = 0;
-		for (ccoms::subject* sub : this->dependencies_)
-		{
-			if (sub->to_type<ivariable<T> >() == caller) break;
-			idx++;
-		}
-		assert(idx < this->dependencies_.size()); // same as caller is in dependencies
+		// grab caller_id from message
+		size_t callerid = msg.caller_idx_;
+		assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
 		
 		if (nullptr == grad) // don't care about grad, get best evaluation
 		{
@@ -178,7 +173,7 @@ void elementary<T>::update (ccoms::update_message msg)
 			storage = grad == caller ? &ones : nullptr;
 		}
 		// update caller tensor only
-		tens_buffer_[idx] = storage;
+		tens_buffer_[callerid] = storage;
 	}
 	// tensor update when ready
 	if (this->valid_tensor_)

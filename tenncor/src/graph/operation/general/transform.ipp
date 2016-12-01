@@ -105,6 +105,7 @@ void transform<T>::update (ccoms::update_message msg)
 {
 	// cast caller dependency as ivariable
 	ivariable<T>* caller = this->dependencies_[0]->template to_type<ivariable<T> >();
+	assert(msg.caller_idx_ == 0); // transform is a univariable function
 	
 	// grad must be a leaf
 	ileaf<T>* grad = nullptr;
