@@ -163,57 +163,57 @@ TEST(DERIVE, BinaryElementary)
 }
 
 
-// TEST(DERIVE, Transform) {
-// 	const size_t edge = 10;
-// 	const size_t supersize = edge * edge * edge;
-// 	nnet::random_uniform<double> rinit(0, 523);
-// 	nnet::varptr<double> in = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "in");
+TEST(DERIVE, Transform) {
+	const size_t edge = 10;
+	nnet::tensorshape commonshape = std::vector<size_t>{2, edge};
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::random_uniform<double> rinit(0, 523);
+	nnet::varptr<double> in = new nnet::variable<double>(commonshape, rinit, "in");
 
-// 	std::vector<nnet::varptr<double> > univars = {
-// 		nnet::transpose(in), // derivative has shape <1>
-// 		nnet::fit(in, in), // derivative must fit it's base node
-// 		nnet::extend(in, 0, 10), // derivative is expected to be shape <10>
-// 		nnet::compress(in), // very boring, consider change in the future
-// 	};
+	std::vector<nnet::varptr<double> > univars = {
+		nnet::transpose(in), // derivative has shape <1>
+		nnet::fit(in, in), // very boring,
+		nnet::extend(in, 0, 5), // derivative is expected to be shape <10>
+		nnet::compress(in), // very boring too, consider change in the future
+	};
 
-// 	nnet::varptr<double> ex_grad_leaf = new nnet::variable<double>(1);
-// 	std::vector<nnet::varptr<double> > derivs = {
-// 		nnet::transpose(ex_grad_leaf),
-// 		nnet::fit(ex_grad_leaf, in),
-// 		nnet::extend(ex_grad_leaf, 0, 10),
-// 		nnet::compress(ex_grad_leaf),
-// 	};
+	nnet::varptr<double> ex_grad_leaf = new nnet::variable<double>(1);
+	std::vector<nnet::varptr<double> > derivs = {
+		nnet::transpose(ex_grad_leaf),
+		nnet::fit(ex_grad_leaf, in),
+		nnet::extend(ex_grad_leaf, 0, 5),
+		nnet::compress(ex_grad_leaf),
+	};
 
-// 	size_t len = univars.size();
-// 	// not part of TEST
-// 	assert(len == derivs.size());
+	size_t len = univars.size();
+	// not part of TEST
+	assert(len == derivs.size());
 
-// 	static_cast<nnet::variable<double>*>(in.get())->initialize();
-// 	for (size_t i = 0; i < len; i++)
-// 	{
-// 		std::cout << i << std::endl;
-// 		std::vector<double> ex_grad = nnet::expose<double>(derivs[i]);
-// 		// nnet::gradient<double>* grad = new nnet::gradient<double>(univars[i], in);
-// 		// grad->freeze();
-// 		// grad->execute();
-// 		// size_t count = 0;
-// 		// std::vector<double> raw;
-// 		// grad->collect_grad([&count, &raw](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-// 		// {
-// 		// 	raw = nnet::expose<double>(value);
-// 		// 	count++;
-// 		// });
-// 		// ASSERT_EQ(1, count);
+	sess.initialize_all<double>();
+	for (size_t i = 0; i < len; i++)
+	{
+		std::vector<double> ex_grad = nnet::expose<double>(derivs[i]);
+		nnet::gradient<double>* grad = new nnet::gradient<double>(univars[i], in);
+		grad->freeze();
+		grad->execute();
+		size_t count = 0;
+		std::vector<double> raw;
+		grad->collect_grad([&count, &raw](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		{
+			raw = nnet::expose<double>(value);
+			count++;
+		});
+		ASSERT_EQ(1, count);
 
-// 		// ASSERT_EQ(ex_grad.size(), raw.size());
-// 		// for (size_t j = 0; j < raw.size(); j++)
-// 		// {
-// 		// 	EXPECT_EQ(ex_grad[j], raw[j]);
-// 		// }
-// 		// delete grad;
-// 	}
-// 	delete in.get(); delete ex_grad_leaf.get();
-// }
+		ASSERT_EQ(ex_grad.size(), raw.size());
+		for (size_t j = 0; j < raw.size(); j++)
+		{
+			EXPECT_EQ(ex_grad[j], raw[j]);
+		}
+		delete grad;
+	}
+	delete in.get(); delete ex_grad_leaf.get();
+}
 
 
 TEST(DERIVE, ComplexElementary) {

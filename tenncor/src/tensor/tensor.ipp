@@ -44,7 +44,8 @@ void tensor<T,A>::copy (const tensor<T,A>& other)
 		
 		if (false == is_alloc()) // this must be allocated
 		{
-			allocate();
+			if (get_shape().is_fully_defined()) allocate();
+			else allocate(other.get_shape());
 		}
 		
 		size_t ns = n_elems();

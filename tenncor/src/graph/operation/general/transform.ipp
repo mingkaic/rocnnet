@@ -197,50 +197,57 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 
 			const T* super_src = src;
 			T* super_dest = temp;
-			size_t below_dim = 1;
+			size_t below = 1;
+			size_t ototal = a->get_shape().n_elems(); // old total
 
 			for (size_t index = 0; index < tv.size(); index++)
 			{
-				below_dim *= tv[index];
 				size_t mult = 0;
 				if (index < orig.size())
 				{
+					// original dimension must be equal or less than the result dimension
 					assert(orig[index] <= tv[index]);
-					if (0 == orig[index] % tv[index])
+					if (0 == tv[index] % orig[index])
 					{
 						mult = tv[index] / orig[index];
+						below *= orig[index];
+						ototal *= mult;
+					}
+					else
+					{
+						// TODO: dimension expansion doesn't match nicely, implement later
+						throw std::bad_function_call();
 					}
 				}
 				else
 				{
 					mult = tv[index];
 				}
-				if (mult)
-				{
-					size_t below = below_dim * tv[index] / mult;
-					size_t above = total / below;
+				// expand original across resulting dimension
+				size_t above = ototal / below;
 
-					// copy over data
-					const T* src_addr = super_src;
-					for (size_t i = 0; i < above; i++)
+				// copy over data
+				const T* src_addr = super_src;
+				for (size_t i = 0; i < above; i++)
+				{
+					// copy data mult times
+					src_addr += i * below;
+					for (size_t j = 0; j < mult; j++)
 					{
-						// copy data mult times
-						src_addr += i * below;
-						for (size_t j = 0; j < mult; j++)
-						{
-							T* dest_addr = super_dest + below * (mult * i + j);
-							std::memcpy(dest_addr, src_addr, below * sizeof(T));
-						}
+						T* dest_addr = super_dest + below * (mult * i + j);
+						std::memcpy(dest_addr, src_addr, below * sizeof(T));
 					}
-					// state update: below_dim, super_src, and super_dest
-					below_dim *= mult;
-					if (super_src == temp)
-					{
+				}
+				// state update: below_dim, super_src, and super_dest
+				below *= mult;
+
+				// swap super buffers as long as it's not the last one
+				if (index < tv.size()-1)
+				{
+					if (super_src == temp) {
 						super_src = temp2;
 						super_dest = temp;
-					}
-					else
-					{
+					} else {
 						super_src = temp;
 						super_dest = temp2;
 					}

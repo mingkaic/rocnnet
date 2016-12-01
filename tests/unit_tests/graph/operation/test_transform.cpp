@@ -96,51 +96,52 @@ TEST(OPERATION, Transpose)
 }
 
 
-// TEST(OPERATION, Fit)
-// {
-// 	nnet::placeholder<double> A((std::vector<size_t>{1}), "a");
-// 	nnet::placeholder<double> B((std::vector<size_t>{10}), "b");
-// 	nnet::placeholder<double> C((std::vector<size_t>{10, 5}), "c");
-	
-// 	std::placeholder<double> shape(std::vector<size_t>{10, 10}, "shape");
+TEST(OPERATION, Fit)
+{
+	nnet::placeholder<double> A((std::vector<size_t>{1}), "a");
+	nnet::placeholder<double> B((std::vector<size_t>{10}), "b");
+	nnet::placeholder<double> C((std::vector<size_t>{10, 5}), "c");
 
-// 	nnet::varptr<double> resa = nnet::fit<double>(&A, &shape);
-// 	nnet::varptr<double> resb = nnet::fit<double>(&B, &shape);
-// 	nnet::varptr<double> resc = nnet::fit<double>(&C, &shape);
-// 	A = std::vector<double>{1};
-// 	B = std::vector<double>{1, 10};
-// 	C = std::vector<double>{1, 50};
-// 	std::vector<double> a = nnet::expose<double>(resa);
-// 	nnet::tensorshape sa = resa->get_shape();
-// 	std::vector<size_t> va = sa.as_list();
-// 	ASSERT_EQ(va.size(), 2);
-// 	ASSERT_EQ(va[0], 10);
-// 	ASSERT_EQ(va[1], 10);
-// 	for (double v : a)
-// 	{
-// 		EXPECT_EQ(1, v);
-// 	}
-// 	std::vector<double> b = nnet::expose<double>(resb);
-// 	nnet::tensorshape sb = resb->get_shape();
-// 	std::vector<size_t> vb = sb.as_list();
-// 	ASSERT_EQ(vb.size(), 2);
-// 	ASSERT_EQ(vb[0], 10);
-// 	ASSERT_EQ(vb[1], 10);
-// 	for (double v : b)
-// 	{
-// 		EXPECT_EQ(1, v);
-// 	}
-// 	std::vector<double> c = nnet::expose<double>(resc);
-// 	nnet::tensorshape sc = resc->get_shape();
-// 	std::vector<size_t> vc = sc.as_list();
-// 	ASSERT_EQ(vc.size(), 2);
-// 	ASSERT_EQ(vc[0], 10);
-// 	ASSERT_EQ(vc[1], 10);
-// 	for (double v : a)
-// 	{
-// 		EXPECT_EQ(1, v);
-// 	}
-// }
+	nnet::placeholder<double> shape(std::vector<size_t>{10, 10}, "shape");
+
+	nnet::varptr<double> resa = nnet::fit<double>(&A, &shape);
+	nnet::varptr<double> resb = nnet::fit<double>(&B, &shape);
+	nnet::varptr<double> resc = nnet::fit<double>(&C, &shape);
+	A = std::vector<double>{1};
+	B = std::vector<double>(10, 1);
+	C = std::vector<double>(50, 1);
+	std::vector<double> a = nnet::expose<double>(resa);
+	nnet::tensorshape sa = resa->get_shape();
+	std::vector<size_t> va = sa.as_list();
+	ASSERT_EQ(va.size(), 2);
+	ASSERT_EQ(va[0], 10);
+	ASSERT_EQ(va[1], 10);
+	size_t count = 0;
+	for (double v : a)
+	{
+		EXPECT_EQ(1, v);
+	}
+	std::vector<double> b = nnet::expose<double>(resb);
+	nnet::tensorshape sb = resb->get_shape();
+	std::vector<size_t> vb = sb.as_list();
+	ASSERT_EQ(vb.size(), 2);
+	ASSERT_EQ(vb[0], 10);
+	ASSERT_EQ(vb[1], 10);
+	for (double v : b)
+	{
+		EXPECT_EQ(1, v);
+	}
+	std::vector<double> c = nnet::expose<double>(resc);
+	nnet::tensorshape sc = resc->get_shape();
+	std::vector<size_t> vc = sc.as_list();
+	ASSERT_EQ(vc.size(), 2);
+	ASSERT_EQ(vc[0], 10);
+	ASSERT_EQ(vc[1], 10);
+	for (double v : a)
+	{
+		EXPECT_EQ(1, v);
+	}
+}
 
 
 TEST(OPERATION, Extend)

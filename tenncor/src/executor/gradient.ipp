@@ -110,6 +110,7 @@ gradient<T>& gradient<T>::operator = (const gradient<T>& other)
 template <typename T>
 void gradient<T>::freeze (void)
 {
+	clear_map();
 	// select leaves (as dependencies or potential srcs)
 	std::vector<ivariable<T>*> leaves = this->dependencies_;
 	if (this->dependencies_.empty())
@@ -120,7 +121,7 @@ void gradient<T>::freeze (void)
 	for (ivariable<T>* var : leaves)
 	{
 		// expect gradients to be the same shape as leaves
-		leaf_map_[var] = new placeholder<T>(var->get_shape(), "grad_in:" + var->get_name());
+		leaf_map_[var] = new placeholder<T>(std::vector<size_t>{}, "grad_in:" + var->get_name());
 	}
 }
 
