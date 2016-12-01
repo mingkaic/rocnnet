@@ -6,44 +6,29 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#pragma once
-#ifndef utils_hpp
-#define utils_hpp
-
 #include <string>
 #include <sstream>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
 
-namespace nnutils {
+#pragma once
+#ifndef utils_hpp
+#define utils_hpp
 
-template<typename T>
-struct weak_ptr_hash : public std::unary_function<std::weak_ptr<T>, size_t> {
-	size_t operator () (const std::weak_ptr<T>& wp) {
-		auto sp = wp.lock();
-		return std::hash<decltype(sp)>()(sp);
-	}
-};
+namespace nnutils
+{
 
-template<typename T>
-struct weak_ptr_equal : public std::unary_function<std::weak_ptr<T>, bool> {
-	bool operator () (const std::weak_ptr<T>& left, const std::weak_ptr<T>& right) {
-		return !left.owner_before(right) && !right.owner_before(left);
-	}
-};
-
-template <typename T>
-using WEAK_SET = std::unordered_set<std::weak_ptr<T>, weak_ptr_hash<T>, weak_ptr_equal<T> >;
-
-class formatter {
+class formatter
+{
 	private:
-		std::stringstream _stream;
+		std::stringstream stream_;
 
-		formatter(const formatter &);
-		formatter & operator = (formatter &);
+		formatter(const formatter&);
+		formatter& operator = (formatter&);
 	public:
-		enum convert_to_string {
+		enum convert_to_string
+		{
 			to_str
 		};
 
@@ -51,23 +36,38 @@ class formatter {
 		~formatter() {}
 
 		template <typename T>
-		formatter & operator << (const T & value) {
-			_stream << value;
+		formatter& operator << (const T& value)
+		{
+			stream_ << value;
 			return *this;
 		}
 
-		std::string str() const {
-			return _stream.str();
+		std::string str() const
+		{
+			return stream_.str();
 		}
 
-		operator std::string () const {
-			return _stream.str();
+		operator std::string () const
+		{
+			return stream_.str();
 		}
 
-		std::string operator >> (convert_to_string) {
-			return _stream.str();
+		std::string operator >> (convert_to_string)
+		{
+			return stream_.str();
 		}
 };
+
+template <typename T, typename U>
+std::vector<U> to_vec (std::vector<T> vec, std::function<U(T)> convert)
+{
+	std::vector<U> res;
+	for (T v : vec)
+	{
+		res.push_back(convert(v));
+	}
+	return res;
+}
 
 }
 

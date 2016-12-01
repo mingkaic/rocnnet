@@ -11,142 +11,86 @@
 #include <random>
 #include <functional>
 #include <limits>
-#include <queue>
 #include <memory>
+#include <stack>
+
+#include "graph/variable/variable.hpp"
+#include "graph/ccoms/iobserver.hpp"
+#include "executor/varptr.hpp"
 
 #pragma once
 #ifndef operation_hpp
 #define operation_hpp
 
-#include "graph/variable/variable.hpp"
+namespace nnet
+{
 
-namespace nnet {
+template <typename T>
+using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
+
+template <typename T>
+class gradient;
+
+template <typename T>
+class jacobian;
 
 // INTERFACE OPERATION
 
 template <typename T>
-class iunar_ops;
-template <typename T>
-class ibin_ops;
-template <typename T>
-class univar_func;
+class ioperation : public ivariable<T>, public ccoms::iobserver
+{
+	private:
+		// remember that once leaf subjects are destroyed,
+		// everyone in this graph including this is destroyed
+		// so we don't need to bother with cleaning leaves_
+		std::unordered_set<ivariable<T>*> leaves_;
 
-template <typename T>
-class ioperation : public ivariable<T> {
 	protected:
-		// used in calc_gradient to toggle operations between returning eval and returning one
-		bool derive_this = false;
-		VAR_PTR<T> grad = nullptr;
+		bool valid_tensor_ = false;
+		ioperation<T>* grad_ = nullptr;
 
-		virtual void set_gradient (VAR_PTR<T> g) {
-			if (nullptr == grad && nullptr != g) {
-				grad = g;
-				grad->integral = this->_self_ref;
-			}
+		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
+		{
+			src.insert(this->leaves_.begin(), this->leaves_.end());
 		}
 
-		// TODO: find a way to move shape evaluation functions out of here
-		// utility shape operations
-		tensor_shape get_element_shape (
-			const tensor<T>& t1,
-			const tensor<T>& t2) const;
-
-		tensor_shape transpose_shape (const tensor_shape& ins) const;
-
-		tensor_shape change_shape (
-			const tensor_shape& ins,
-			size_t index,
-			double multiplier,
-			size_t& below_dim,
-			size_t& at_idx) const;
-
-		tensor_shape get_matrix_shape (
-			const tensor<T>& t1, const tensor<T>& t2,
-			bool transposeA, bool transposeB,
-			size_t& common_dim) const;
-
-		// operator wrapper functions that handle variable scalar and shape
-		// differences. returned tensor's ownership transfers to caller
-		// reduce/filter functional
-		template <typename U>
-		void util_op (
-			U& out, const tensor<T>& in,
-			std::function<void(U&, T)> op) const;
-		// collector functions while maintaining tensor shape
-		void elem_op (
-			tensor<T>& out,
-			const tensor<T>& in,
-			std::function<void(T&, T)> op) const;
-
-		// TODO get rid of these in favor of collectors (no need to allocate new tensors)
-		tensor<T>* get_trace (const ivariable<T>& in) const;
-		// 1 to 1 map functional
-		tensor<T>* util_op (
-			const tensor<T>& in,
-			std::function<T(T)> op) const;
-		// 2 to 1 map functional
-		tensor<T>* util_op (
-			const tensor<T>& a,
-			const tensor<T>& b,
-			std::function<T(T, T)> op) const;
-		// operator wrapper functions that restricts shapes to matrices and
-		// retrieve raw value
-		tensor<T>* transpose_op (
-		    tensor<T> const & in) const;
-		tensor<T>* matmul_op (
-			const tensor<T>& a,
-			const tensor<T>& b,
-		    bool transposeA,
-		    bool transposeB) const;
-		tensor<T>* extend_op (const tensor<T>& in, size_t index, size_t multiplier) const;
-		tensor<T>* compress_op (
-			const tensor<T>& in,
-			signed index,
-			std::function<T(const std::vector<T>&)> collector) const;
-
-		// share friend priviledge with ivariable and tensor to descendants
-		// retrieve the last evaluated tensor
-		tensor<T>& get_eval (VAR_PTR<T> var) const {
-			return var->_out;
-		}
-
-		// clears input
-		void deconsume (ivariable<T>& food) {
-			food.consumers.erase(this);
-		}
-
-		// note keeping: record self as consumer of food
-		void consume (ivariable<T>& food) {
-			food.consumers.emplace(this);
-			this->_leaves.insert(food._leaves.begin(), food._leaves.end());
-		}
-
-		// changes input
-		virtual void replace (ivariable<T>* food, VAR_PTR<T> newfood) = 0;
-
-		// check if candidate_shape is worth propagating to consumers
-		// before assigning consumers with new shapes to consume
-		void update (tensor_shape candidate_shape);
 		// implement unique method of consuming input variables
 		// to extract shape info
-		virtual void shape_eval (void) = 0;
-		virtual void make_gradient (VAR_PTR<T>& safety_ref) = 0;
+		virtual tensorshape shape_eval (void) = 0;
+		
+		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
+		virtual void setup_gradient (void) = 0; // ioperation specific
 
-		friend class ivariable<T>;
-		friend class placeholder<T>;
-		friend class univar_func<T>;
+		void copy (const ioperation<T>& other, std::string name = "");
+		virtual ivariable<T>* clone_impl (std::string name) = 0;
+		ioperation (const ioperation<T>& other, std::string name);
+
+		// used specifically to pass jacobian tensors up the tree... could make generic use in the future
+		// combine with generalized notify/update
+		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
+
+		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
+
+		friend class gradient<T>;
+		friend class jacobian<T>;
 
 	public:
-		// clone remains abstract
-		virtual ~ioperation (void) {}
-		// eval remains abstract
+		virtual ~ioperation (void);
 
-		virtual VAR_PTR<T> get_gradient (void) {
-			VAR_PTR<T> safety_ref;
-			if (nullptr == this->grad) make_gradient(safety_ref);
-			else safety_ref = this->grad;
-			return safety_ref;
-		}
+		// COPY
+		ioperation<T>* clone (std::string name = "");
+		virtual ioperation<T>& operator = (const ioperation<T>& other);
+		
+		// MOVE
+		
+		// inherited from ioperation
+		virtual tensor<T>* get_eval (void); // override
+		
+		// non-inherited
+		virtual ivariable<T>* get_gradient (void);
+
+		// operations only
+		void leaves_collect (std::function<void(ivariable<T>*)> collector);
 };
 
 }

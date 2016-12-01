@@ -15,7 +15,8 @@
 #ifndef session_hpp
 #define session_hpp
 
-namespace nnet {
+namespace nnet
+{
 
 template <typename T>
 class ivariable;
@@ -24,75 +25,76 @@ template <typename T>
 class variable;
 
 // singleton object controller
-class session {
-    private:
-        // std::unordered_set<std::any> registry;
-        std::unordered_set<void*> registry;
-        std::default_random_engine generator;
+class session
+{
+	private:
+		// std::unordered_set<std::any> registry;
+		std::unordered_set<void*> registry;
+		std::default_random_engine generator_;
 
-    protected:
-    	bool shape_eval = false;
-        session (void) : generator(std::time(NULL)){}
-        ~session (void) {}
+	protected:
+		bool shape_eval = false;
+		session (void) : generator_(std::time(NULL)) {}
+		~session (void) {}
 
-    public:
-        static session& get_instance (void);
-        static std::default_random_engine& get_generator (void);
-        static bool pre_shape_eval(void) {
-        	session& inst = get_instance();
-        	return inst.shape_eval;
-        }
+	public:
+		static session& get_instance (void);
+		static std::default_random_engine& get_generator (void);
+		static bool pre_shape_eval (void);
 
-        // delete all copiers
-        session (session const&) = delete;
-        session (session&&) = delete;
-        session& operator = (session const&) = delete;
-        session& operator = (session &&) = delete;
+		// delete all copier and movers
+		session (session const&) = delete;
+		session (session&&) = delete;
+		session& operator = (session const&) = delete;
+		session& operator = (session &&) = delete;
 
-        // member setter
-        void seed_rand_eng (size_t seed) { generator.seed(seed); }
-        // member getter
-        std::default_random_engine& get_rand_generator (void) { return generator; }
+		// member setter
+		void seed_rand_eng (size_t seed);
+		// member getter
+		std::default_random_engine& get_rand_generator (void);
 
-        // object management
-        // void register_obj (ivariable<std::any>& obj);
+		// object management
+		// void register_obj (ivariable<std::any>& obj);
 
-        template <typename T>
-        void register_obj (ivariable<T>& obj) {
-            registry.emplace(&obj);
-        }
+		template <typename T>
+		void register_obj (ivariable<T>& obj) { registry.emplace(&obj); }
 
-        template <typename T>
-        void unregister_obj (ivariable<T>& obj) {
-            registry.erase(&obj);
-        }
+		template <typename T>
+		void unregister_obj (ivariable<T>& obj) { registry.erase(&obj); }
+		
+		bool ptr_registered (void* ptr)
+		{ 
+			return registry.end() != registry.find(ptr);
+		}
 
-        template <typename T>
-        void initialize_all (void) {
-            // replace void* with ivariable<T>*
-            for (void* ivar : registry) {
-                variable<T>* var =
-                    dynamic_cast<variable<T>*>((ivariable<T>*) ivar);
-                if (nullptr != var && var->can_init()) {
-                    var->initialize();
-                }
-            }
-        }
+		template <typename T>
+		void initialize_all (void)
+		{
+			for (void* ivar : registry)
+			{
+				// cast void* to ivariable<T>*
+				variable<T>* var = dynamic_cast<variable<T>*>((ivariable<T>*) ivar);
+				if (nullptr != var && var->can_init())
+				{
+					var->initialize();
+				}
+			}
+		}
 
-        template <typename T>
-        void save_all (void); // TODO implement
+		template <typename T>
+		void save_all (void); // TODO implement
 
-        // controls whether to shape evaluate at object construction during runtime
-        // potentially save space when running slow operations
-        // this option is not always desirable since full shape definition is required for shape evaluation
-        void enable_shape_eval (void) { shape_eval = true; }
-        void disable_shape_eval (void) { shape_eval = false; }
+		// controls whether to shape evaluate at object construction during runtime
+		// potentially save space when running slow operations
+		// this option is not always desirable since full shape definition is required for shape evaluation
+		void enable_shape_eval (void);
+		void disable_shape_eval (void);
 
-        // input is resultant operator required to deep copy the graph
-        template <typename T>
-        ivariable<T>* copy (ivariable<T>* src_res) {
-            return nullptr;
-        }
+		// input is resultant operator required to deep copy the graph
+		template <typename T>
+		ivariable<T>* copy (ivariable<T>* src_res) {
+			return nullptr;
+		}
 };
 
 }

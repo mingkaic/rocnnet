@@ -1,83 +1,116 @@
 ## Synopsis
 
-CNNet is a general purpose tensor manipulation, and machine learning library implemented in C++11. (not a library yet)
-Aside from a compiler supporting C++11 requirement, no dependencies are required.
+ROCNNet is a general purpose tensor-based automatic differentiation calculation, and machine learning library implemented in C++.
+Tensors are wrapped in variable nodes which form parts of reusable graph operations. Information propogate through this graph reactively, 
+meaning updates of individual nodes will trigger updates to corresponding operations when necessary.
 
-### Components
+### Library
 
-There are two components to this library:
-- tensor manipulation
-    * Like tensorflow, main actors are variables, tensors, and operations.
-    * Variables hold tensors.
-    * Operations operate on variables. Operations are differentiable.
+There are two libraries:
 
-- machine learning
-Some implemented mechanisms include:
-    * toy multilayer perceptron using linear regression
-    * deep q-neural nets https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
+- Tenncor, the tensor calculation library
+
+- Rocnnet, simple perceptron, and neural nets library
 
 ## Examples
 
-None
+#### Tenncor Library
 
-## Motivation
+    #include "executor/varptr.hpp"
+    #include "executor/gradient.hpp"
+    #include "graph/variable/variable.hpp"
+    #include "graph/operation/special/matmul.hpp"
+    #include "graph/operation/function.hpp"
+    
+    using namespace nnet;
+    
+    int main () {
+        tensorshape common = std::vector<size_t>{5, 5};
+        random_uniform<double> rinit(-1, 1);
+	    session& sess = session::get_instance();
+    
+        // initializes a 5 by 5 matrix with uniformly distributed
+        // doubles between -1 and 1
+        varptr<double> A = new variable<double>(common, rinit, "a");
+        placeptr<double> B = new placeholder<double>(common, "b");
+        varptr<double> C = matmul<double>::build(A, B);
+        varptr<double> D = sigmoid<double>(C);
+        
+        sess.initialize_all<double>();
+        B = std::vector<double>{...};
+        
+        gradient<double>* grad(D);
+        // prevent changes to B from cascading to gradient value
+        grad.freeze();
+        grad.execute();
+        
+        // forward accumulation
+        tensor<double>* result = D->get_eval();
+        // reverse accumulation
+        tensor<double>* grad_result;
+        grad.collect_grad(
+        [&grad_result](ivariable<double>* key, 
+                       placeholder<double>* value)
+        {
+            grad_result = value->get_eval();
+        });
+        
+        delete A;
+        delete B;
+    } 
 
-Tensor Component:
-Tensorflow's C++ API as of late is hilariously underwhelming for obvious reasons.
-(C++ code on tensors is very ugly.)
-This is my attempt at a tensor library that is less ugly (to me at least).
-Will consider boost to beautify and enforce stability in the future.
+## Build
 
-Neural Net Component:
-Use tensor component to implement various neural nets and machine learning mechanisms
-for demonstration and use on higher level machine learning systems.
+CMake 3.6 is required.
 
-## Installation
+Download cmake: https://cmake.org/download/
 
-Not a library yet
+Building from another directory is recommended:
+
+    mkdir build 
+    cd build
+    cmake ..
+    make
+
+Binaries and libraries should be found in the /bin directory
 
 ## API Reference
 
 Working in Progress (Using doxygen)
 
-## Tests
+## Components
 
-### For Mac and Linux:
+#### Tenncor
 
-`~$ make test` builds and runs an application that tests all features in the project
+Tenncor library holds generic classes for tensor calculation.
 
-`~$ make test_ten` builds and runs a test for tensorflow clone features
+At the lowest layer, tensors comprise of two components: raw data and tensor shape. 
+Raw data are allocated by Allocators objects supplied as a template parameter to the Tensor.
 
-`~$ make test_net` builds and runs a test for neural net features
+A tensor is simply an N-dimensional container. 
+A matrix is a 2-d container since it could be visualized as arrays of vectors which are 1-d containers.
+To clarify some terminology, the rank of a tensor is the maximum tensor's dimensionality (the N in N-dimension).
+The index is some dimensionality that is lower or equal to the rank; that is, for a 3 rank tensor, indices 0, 1, and 2 are possible.
+Dimensional value at index i is however many tensors of rank i-1 can potentially fit into the "column" at dimension i.
+For instance, the number of rows in a matrix can the dimensional value at index 0 or 1 (mathematical convention says 0, tenncor convention says 1).
+Also for matrices, rows are considered the y-coordinate, and columns the x-coordinate, so rows inhabit dimension-2 (index 1), while columns are dimension-1 (index 0).
 
-### For Windows:
+Shapes can be in any of 3 states: fully defined, partially defined, and undefined. By default, a tensor is undefined.
+Undefined tensors can potentially perform operations with any other tensors regardless of dimensional value or rank.
+Undefined tensors are not always desirable since it is often wise to verify shape compatibility before making an expensive calculation.
+Partially defined shapes has a definite rank, but potentially unspecified dimensional values.
+Fully defined shapes have specified rank and dimensional values.
+An unspecified dimensional value is simply 0.
 
-Nothing yet ;)
+Tensors are wrapped in variable nodes hold points to gradient nodes and corresponding operations.
+Variable and operation nodes are partitioned by composite pattern; operations and leaf nodes inherit from a variable interface.
+
+#### Rocnnet
+
+Some implemented mechanisms include:
+* multilayer perceptron using linear regression
+* deep q-neural nets (incomplete) https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
 
 ## Contributors
 
-No issue tracker, external websites yet
-
-## License
-
-MIT License
-
-Copyright (c) 2016 mingkaic
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Ming Kai Chen
