@@ -57,6 +57,8 @@ There are two libraries:
         
         delete A;
         delete B;
+        
+        return 0;
     } 
 
 ## Build
@@ -78,11 +80,11 @@ Binaries and libraries should be found in the /bin directory
 
 Working in Progress (Using doxygen)
 
-## Components
+## Components and Terminology
 
 #### Tenncor
 
-Tenncor library holds generic classes for tensor calculation.
+Tenncor library contains generic classes for tensor calculation.
 
 At the lowest layer, tensors comprise of two components: raw data and tensor shape. 
 Raw data are allocated by Allocators objects supplied as a template parameter to the Tensor.
@@ -105,11 +107,19 @@ An unspecified dimensional value is simply 0.
 Tensors are wrapped in variable nodes hold points to gradient nodes and corresponding operations.
 Variable and operation nodes are partitioned by composite pattern; operations and leaf nodes inherit from a variable interface.
 
+Leaf nodes consists of constants, placeholders, variables.
+
+* constant nodes must have values specified at construction by either a scalar, or a data container (a vector for now)
+* placeholder nodes require no specific initializers. Instead, placeholders can be assigned data (vector) or another tensor
+* variable nodes must be assigned an initializer at construction. variables can be initialized directly or by the session singleton controller 
+
 #### Rocnnet
+
+Rocnnet library implement machine learning models using tenncor library
 
 Some implemented mechanisms include:
 * multilayer perceptron using linear regression
-* deep q-neural nets (incomplete) https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
+* dqn (incomplete) <https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf>
 
 ## Contributors
 

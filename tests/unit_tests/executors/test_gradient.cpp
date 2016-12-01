@@ -356,7 +356,6 @@ TEST(DERIVE, OperationDerive) {
 }
 
 
-// TODO: write these
 // TESTS TENSOR JACOBI
 TEST(DERIVE, Matmul) {
 	nnet::session& sess = nnet::session::get_instance();
@@ -365,58 +364,60 @@ TEST(DERIVE, Matmul) {
 	nnet::varptr<double> A = new nnet::variable<double>((std::vector<size_t>{4, 5}), rinit, "in");
 	nnet::varptr<double> B = new nnet::variable<double>((std::vector<size_t>{6, 4}), rinit, "in");
 	nnet::varptr<double> C = nnet::matmul<double>::build(A, B);
-	// nnet::varptr<double> one = new nnet::variable<double>(1);
-	// nnet::varptr<double> ex_grad_leaf = nnet::fit(one, C);
+
+	// TODO: simplify this pattern
+	nnet::varptr<double> one = new nnet::variable<double>(1);
+	nnet::varptr<double> ex_grad_leaf = nnet::fit(one, C);
+
+	nnet::varptr<double> expect_dA = nnet::matmul<double>::build(ex_grad_leaf, B, false, true);
+	nnet::varptr<double> expect_dB = nnet::matmul<double>::build(A, ex_grad_leaf, true);
+
+	sess.initialize_all<double>();
 	
-	// nnet::varptr<double> expect_dA = nnet::matmul<double>::build(ex_grad_leaf, B, false, true);
-	// nnet::varptr<double> expect_dB = nnet::matmul<double>::build(A, ex_grad_leaf, true);
-	
-	// sess.initialize_all<double>();
-	
-	// // not part of test...
-	// std::vector<size_t> dAshape = expect_dA->get_shape().as_list();
-	// std::vector<size_t> dBshape = expect_dB->get_shape().as_list();
-	// assert(dAshape[0] == 4 && dAshape[1] == 5); // same as A
-	// assert(dBshape[0] == 6 && dBshape[1] == 4); // same as B
-	
-	// // actually derive C
-	// nnet::gradient<double> grad(C);
-	// grad.freeze();
-	// grad.execute();
-	// std::vector<double> rawA;
-	// std::vector<double> rawB;
-	// size_t count = 0;
-	// grad->collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-	// {
-	// 	if (key == A.get())
-	// 	{
-	// 		rawA = nnet::expose<double>(value);
-	// 	}
-	// 	if (key == B.get())
-	// 	{
-	// 		rawB = nnet::expose<double>(value);
-	// 	}
-	// 	count++;
-	// });
-	// ASSERT_EQ(2, count);
-	
-	// // verify against expected
-	// std::vector<double> exA = nnet::expose<double>(expect_dA);
-	// std::vector<double> exA = nnet::expose<double>(expect_dB);
-	
-	// size_t asize = exA.size();
-	// ASSERT_EQ(asize, rawA.size());
-	// for (size_t i = 0; i < asize; i++)
-	// {
-	// 	EXPECT_EQ(exA[i], rawA[i]);
-	// }
-	
-	// size_t bsize = exB.size();
-	// ASSERT_EQ(bsize, rawB.size());
-	// for (size_t i = 0; i < bsize; i++)
-	// {
-	// 	EXPECT_EQ(exB[i], rawB[i]);
-	// }
+	// not part of test...
+	std::vector<size_t> dAshape = expect_dA->get_shape().as_list();
+	std::vector<size_t> dBshape = expect_dB->get_shape().as_list();
+	assert(dAshape[0] == 4 && dAshape[1] == 5); // same as A
+	assert(dBshape[0] == 6 && dBshape[1] == 4); // same as B
+
+	// actually derive C
+	nnet::gradient<double> grad(C);
+	grad.freeze();
+	grad.execute();
+	std::vector<double> rawA;
+	std::vector<double> rawB;
+	size_t count = 0;
+	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		if (key == A.get())
+		{
+			rawA = nnet::expose<double>(value);
+		}
+		if (key == B.get())
+		{
+			rawB = nnet::expose<double>(value);
+		}
+		count++;
+	});
+	ASSERT_EQ(2, count);
+
+	// verify against expected
+	std::vector<double> exA = nnet::expose<double>(expect_dA);
+	std::vector<double> exB = nnet::expose<double>(expect_dB);
+
+	size_t asize = exA.size();
+	ASSERT_EQ(asize, rawA.size());
+	for (size_t i = 0; i < asize; i++)
+	{
+		EXPECT_EQ(exA[i], rawA[i]);
+	}
+
+	size_t bsize = exB.size();
+	ASSERT_EQ(bsize, rawB.size());
+	for (size_t i = 0; i < bsize; i++)
+	{
+		EXPECT_EQ(exB[i], rawB[i]);
+	}
 	
 	delete A.get(); delete B.get(); //delete one.get();
 }
