@@ -32,31 +32,49 @@ template <typename T>
 ivariable<T>* varptr<T>::get (void) const { return ptr_; }
 
 template <typename T>
-placeptr<T>::placeptr (placeholder<T>* ptr) : ptr_(ptr) {}
+placeptr<T>::placeptr (placeholder<T>* ptr) : varptr<T>(ptr) {}
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (placeholder<T>* other) { ptr_ = other; }
+placeptr<T>& placeptr<T>::operator = (placeholder<T>* other) { this->ptr_ = other; }
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other) { ptr_ = other.ptr_; }
+placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other) { this->ptr_ = other.ptr_; }
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (std::vector<T> vec) { *ptr_ = vec; }
+placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)
+{
+    *(static_cast<placeholder<T>*>(this->ptr_)) = vec;
+}
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (const tensor<T>& ten) { *ptr_ = ten; }
+placeptr<T>& placeptr<T>::operator = (tensor<T>& ten)
+{
+    *(static_cast<placeholder<T>*>(this->ptr_)) = ten;
+}
 
 template <typename T>
-placeptr<T>::operator placeholder<T>* (void) const { return ptr_; }
+placeptr<T>::operator placeholder<T>* (void) const
+{
+    return static_cast<placeholder<T>*>(this->ptr_);
+}
 
 template <typename T>
-placeholder<T>& placeptr<T>::operator * (void) { return *ptr_; }
+placeholder<T>& placeptr<T>::operator * (void)
+{
+    return *(static_cast<placeholder<T>*>(this->ptr_));
+}
 
 template <typename T>
-placeholder<T>* placeptr<T>::operator -> (void) { return ptr_; }
+placeholder<T>* placeptr<T>::operator -> (void)
+{
+    return static_cast<placeholder<T>*>(this->ptr_);
+}
 
 template <typename T>
-placeholder<T>* placeptr<T>::get (void) const { return ptr_; }
+placeholder<T>* placeptr<T>::get (void) const
+{
+    return static_cast<placeholder<T>*>(this->ptr_);
+}
 
 }
 

@@ -33,27 +33,21 @@ template <typename T>
 class transform : public ioperation<T>
 {
 	private:
-		std::function<void(T*,const T*,tensorshape)> collect_;
-		std::function<tensorshape(tensorshape)> shape_;
 		BUILD_DERIVE<T> der_;
 
 	protected:
 		virtual void setup_gradient (void);
 		virtual ivariable<T>* clone_impl (std::string name);
-		virtual tensorshape shape_eval (void);
 
 		transform (const transform<T>& other, std::string name);
 
 		// protect transform constructor to ensure heap allocation
-		transform (ivariable<T>* arg,
-			std::function<void(T*,const T*,tensorshape)> op,
-			std::function<tensorshape(tensorshape)> trans,
+		transform (std::vector<ivariable<T>*> args, TEN_OP<T> op, SHAPE trans,
 			BUILD_DERIVE<T> der, std::string name);
 		
 	public:
-		static ivariable<T>* build (ivariable<T>* args,
-			std::function<void(T*,const T*,tensorshape)> op,
-			std::function<tensorshape(tensorshape)> trans,
+		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+			TEN_OP<T> op, SHAPE trans,
 			BUILD_DERIVE<T> der, std::string name = "")
 		{
 			return new transform<T>(args, op, trans, der, name);
@@ -65,8 +59,6 @@ class transform : public ioperation<T>
 
 		// MOVES
 		// TODO: implement
-
-		virtual void update (ccoms::update_message msg);
 };
 
 template <typename T>

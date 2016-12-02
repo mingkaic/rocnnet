@@ -28,33 +28,8 @@ void elementary<T>::setup_gradient (void)
 }
 
 template <typename T>
-tensorshape elementary<T>::shape_eval (void)
-{
-	tensorshape first = std::vector<size_t>{1};
-	for (ccoms::subject* sub : this->dependencies_)
-	{
-		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
-		{
-			tensorshape s = v->get_shape();
-			if (1 != first.n_dims() && 1 != s.n_dims() &&
-				false == first.is_compatible_with(s))
-			{
-				throw std::invalid_argument(
-					"cannot element-wise operate on tensors of vastly different shapes");
-			}
-			if (s.n_dims() >= first.n_dims())
-			{
-				first = s;
-			}
-		}
-	}
-	return first;
-}
-
-template <typename T>
 elementary<T>::elementary (const elementary<T>& other, std::string name) :
 	der_(other.der_),
-	tens_buffer_(other.tens_buffer_),
 	ioperation<T>(other, name) {}
 
 template <typename T>
@@ -70,8 +45,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	der_(der),
 	ioperation<T>(args, name)
 {
-	this->out_ = std::make_unique<tensor_op<T> >(op,
-	[](std::vector<tensorshape> shapes)
+	this->shaper_ = [](std::vector<tensorshape> shapes)
 	{
 		tensorshape first = std::vector<size_t>{1};
 		for (tensorshape s : shapes)
@@ -88,12 +62,13 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 			}
 		}
 		return first;
-	});
+	};
+	this->out_ = std::make_unique<tensor_op<T> >(op, this->shaper_);
 	// try to update
-	update(ccoms::update_message(nullptr));
+	this->update(ccoms::update_message(nullptr));
 	if (session::pre_shape_eval())
 	{
-		shape_eval();
+		this->shape_eval();
 	}
 }
 
@@ -112,77 +87,6 @@ elementary<T>& elementary<T>::operator = (const elementary<T>& other)
 		this->copy(other);
 	}
 	return *this;
-}
-
-template <typename T>
-void elementary<T>::update (ccoms::update_message msg)
-{
-	static tensor<T> ones(1);
-
-	// cast caller dependency as ivariable
-	ivariable<T>* caller = nullptr;
-	if (msg.caller_)
-	{
-		caller = msg.caller_->to_type<ivariable<T> >();
-	}
-	tensor<T>* storage = nullptr;
-	this->valid_tensor_ = true;
-
-	// if caller is null then update all tensors
-	if (nullptr == caller)
-	{
-		tens_buffer_.clear();
-		for (ccoms::subject* sub : this->dependencies_)
-		{
-			if (ivariable<T>* var = sub->to_type<ivariable<T> >())
-			{
-				storage = var->get_eval();
-				tens_buffer_.push_back(storage);
-				if (nullptr == storage)
-				{
-					this->valid_tensor_ = false;
-				}
-			}
-		}
-	}
-	else
-	{
-		ivariable<T>* grad = nullptr;
-		if (msg.grad_)
-		{
-			grad = msg.grad_->to_type<ivariable<T> >();
-		}
-		// grab caller_id from message
-		size_t callerid = msg.caller_idx_;
-		assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
-		
-		if (nullptr == grad) // don't care about grad, get best evaluation
-		{
-			storage = caller->get_eval();
-			if (nullptr == storage)
-			{
-				this->valid_tensor_ = false;
-			}
-		}
-		else if (ileaf<T>* leaf = dynamic_cast<ileaf<T>*>(grad)) // eval if caller is grad, null otherwise
-		{
-			storage = leaf == caller ? leaf->get_eval() : nullptr;
-		}
-		else
-		{
-			storage = grad == caller ? &ones : nullptr;
-		}
-		// update caller tensor only
-		tens_buffer_[callerid] = storage;
-	}
-	// tensor update when ready
-	if (this->valid_tensor_)
-	{
-		// null is treated as erroneous zero
-		(*this->out_)(tens_buffer_);
-	}
-
-	this->notify();
 }
 
 // ELEMENTARY OPERATIONS

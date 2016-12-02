@@ -55,15 +55,7 @@ class tensor
 		virtual T* get_raw (void) { return raw_data_; }
 
 		// forcefully deallocates raw_data (reserved for children only... hopefully)
-		void change_shape (tensorshape res_shape)
-		{
-			// deallocate if raw_data_ is not null (allocator checks for raw nulls)
-			alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
-			raw_data_ = nullptr;
-			// reshape allowed_shape_
-			set_shape(res_shape);
-			alloc_shape_.undefine(); // make undefine since we're no longer allocated
-		}
+		void change_shape (tensorshape res_shape);
 		virtual void raw_update (void) {}
 
 		friend class assign<T>;

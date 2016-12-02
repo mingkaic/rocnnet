@@ -110,6 +110,7 @@ TEST(OPERATION, Fit)
 	A = std::vector<double>{1};
 	B = std::vector<double>(10, 1);
 	C = std::vector<double>(50, 1);
+	shape = std::vector<double>(100, 1); // special caveat: shape must be initialized for fit to access shape TODO: fix
 	std::vector<double> a = nnet::expose<double>(resa);
 	nnet::tensorshape sa = resa->get_shape();
 	std::vector<size_t> va = sa.as_list();

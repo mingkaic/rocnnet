@@ -243,6 +243,7 @@ void tensorshape::assert_is_fully_defined (void) const { assert(is_fully_defined
 void print_shape(tensorshape ts)
 {
 	std::vector<size_t> shape = ts.as_list();
+	if (shape.empty()) std::cout << "undefined\n";
 	for (size_t dim : shape)
 	{
 		std::cout << dim << " ";

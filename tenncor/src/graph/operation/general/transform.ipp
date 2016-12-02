@@ -34,50 +34,23 @@ ivariable<T>* transform<T>::clone_impl (std::string name)
 }
 
 template <typename T>
-tensorshape transform<T>::shape_eval (void)
-{
-	tensorshape first;
-	for (ccoms::subject* sub : this->dependencies_)
-	{
-		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
-		{
-			first = shape_(v->get_shape());
-		}
-	}
-	return first;
-}
-
-template <typename T>
 transform<T>::transform (const transform<T>& other, std::string name) :
-	collect_(other.collect_),
-	shape_(other.shape_),
 	der_(other.der_),
 	ioperation<T>(other, name) {}
 
 template <typename T>
-transform<T>::transform (ivariable<T>* arg,
-	std::function<void(T*,const T*,tensorshape)> op,
-	std::function<tensorshape(tensorshape)> trans,
-	BUILD_DERIVE<T> der, std::string name) :
-	collect_(op), 
-	shape_(trans), 
+transform<T>::transform (std::vector<ivariable<T>*> args,
+	TEN_OP<T> op, SHAPE trans, BUILD_DERIVE<T> der, std::string name) :
 	der_(der),
-	ioperation<T>(std::vector<ivariable<T>*>{arg}, name)
+	ioperation<T>(args, name)
 {
-	this->out_ = std::make_unique<tensor_op<T> >(
-	[this](shapeinfo info, T* dest, std::vector<const T*> srcs)
-	{
-		collect_(dest, srcs[0], info.res_shape_);
-	},
-	[trans](std::vector<tensorshape> shapes)
-	{
-		return trans(shapes[0]);
-	});
+	this->shaper_ = trans; // used in shape_eval
+	this->out_ = std::make_unique<tensor_op<T> >(op, trans);
 	// try to update
-	update(nullptr);
+	this->update(ccoms::update_message(nullptr));
 	if (session::pre_shape_eval())
 	{
-		shape_eval();
+		this->shape_eval();
 	}
 }
 
@@ -92,8 +65,6 @@ transform<T>& transform<T>::operator = (const transform<T>& other)
 {
 	if (this != &other)
 	{
-		collect_ = other.collect_;
-		shape_ = other.shape_;
 		der_ = other.der_;
 		this->copy(other);
 	}
@@ -101,79 +72,47 @@ transform<T>& transform<T>::operator = (const transform<T>& other)
 }
 
 template <typename T>
-void transform<T>::update (ccoms::update_message msg)
-{
-	// cast caller dependency as ivariable
-	ivariable<T>* caller = this->dependencies_[0]->template to_type<ivariable<T> >();
-	assert(msg.caller_idx_ == 0); // transform is a univariable function
-	
-	// grad must be a leaf
-	ileaf<T>* grad = nullptr;
-	if (msg.grad_)
-	{
-		grad = msg.grad_->to_type<ileaf<T> >();
-	}
-	
-	tensor<T>* storage;
-	if (nullptr == grad) // don't care about grad, get best evaluation
-	{
-		storage = caller->get_eval();
-	}
-	else
-	{
-		storage = grad == caller ? grad->get_eval() : nullptr;
-	}
-	
-	this->valid_tensor_ = nullptr != storage; // no point in operating if nullptr
-	if (this->valid_tensor_)
-	{
-		// null is treated as erroneous zero
-		(*this->out_)(std::vector<tensor<T>*>{storage});
-	}
-
-	this->notify();
-}
-
-template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	ivariable<T>* op = transform<T>::build(a,
-		[](T* dest, const T* src, tensorshape ts)
+	ivariable<T>* op = transform<T>::build(std::vector<ivariable<T>*>{a},
+	[](shapeinfo info, T* dest, std::vector<const T*> args)
+	{
+		const T* src = args[0];
+		// we have the new shape
+		std::vector<size_t> outs = info.res_shape_.as_list();
+		// old dimensions
+		size_t dimX = outs[1]; size_t dimY = outs[0];
+		// not in place so x = y+1 doesn't work
+		for (size_t y = 0; y < dimY; y++)
 		{
-			// we have the new shape
+			for (size_t x = 0; x < dimX; x++)
+			{
+				dest[y+x*dimY] = src[x+y*dimX];
+			}
+		}
+	},
+	[](std::vector<tensorshape> shapes)
+	{
+		tensorshape ts = shapes[0];
+		if (ts.is_fully_defined())
+		{
+			// restrict shape to no greater than 2-D for now
+			assert(ts.n_dims() <= 2);
 			std::vector<size_t> inl = ts.as_list();
-			// old dimensions
-			size_t dimX = inl[1]; size_t dimY = inl[0];
-			// not in place so x = y+1 doesn't work
-			for (size_t y = 0; y < dimY; y++)
+			if (ts.n_dims() == 1)
 			{
-				for (size_t x = 0; x < dimX; x++)
-				{
-					dest[y+x*dimY] = src[x+y*dimX];
-				}
+				return std::vector<size_t>{1, inl[0]};
 			}
-		},
-		[](tensorshape ts)
-		{
-			if (ts.is_fully_defined())
-			{
-				// restrict shape to no greater than 2-D for now
-				assert(ts.n_dims() <= 2);
-				std::vector<size_t> inl = ts.as_list();
-				if (ts.n_dims() == 1)
-				{
-					return std::vector<size_t>{1, inl[0]};
-				}
-				return std::vector<size_t>{inl[1], inl[0]};
-			}
-			return std::vector<size_t>{};
-		},
-		[](std::vector<ivariable<T>*> args)
-		{
-			ivariable<T>* a = args.front();
-			return transpose(varptr<T>(a->get_gradient()));
-		},
+			return std::vector<size_t>{inl[1], inl[0]};
+		}
+		return std::vector<size_t>{};
+	},
+	[](std::vector<ivariable<T>*> args)
+	{
+		ivariable<T>* a = args.front();
+		return transpose(varptr<T>(a->get_gradient()));
+	},
 	"transpose(" + a->get_name() + ")");
 	return op;
 }
@@ -185,88 +124,94 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
-	ivariable<T>* op = transform<T>::build(a,
-		[watch, a](T* dest, const T* src, tensorshape ts)
+	ivariable<T>* op = transform<T>::build(std::vector<ivariable<T>*>{a, watch},
+	[](shapeinfo info, T* dest, std::vector<const T*> args)
+	{
+		const T* src = args[0];
+		tensorshape oshape = info.arg_shape_[0];
+		std::vector<size_t> orig = oshape.as_list();
+		std::vector<size_t> tv = info.res_shape_.as_list();
+		size_t total = info.res_shape_.n_elems();
+
+		T temp[total];
+		T temp2[total];
+
+		const T* super_src = src;
+		T* super_dest = temp;
+		size_t below = 1;
+		size_t ototal = oshape.n_elems(); // old total
+
+		for (size_t index = 0; index < tv.size(); index++)
 		{
-			std::vector<size_t> orig = a->get_shape().as_list();
-			std::vector<size_t> tv = ts.as_list();
-			size_t total = ts.n_elems();
-
-			T temp[ts.n_elems()];
-			T temp2[ts.n_elems()];
-
-			const T* super_src = src;
-			T* super_dest = temp;
-			size_t below = 1;
-			size_t ototal = a->get_shape().n_elems(); // old total
-
-			for (size_t index = 0; index < tv.size(); index++)
+			size_t mult = 0;
+			if (index < orig.size())
 			{
-				size_t mult = 0;
-				if (index < orig.size())
+				// original dimension must be equal or less than the result dimension
+				assert(orig[index] <= tv[index]);
+				if (0 == tv[index] % orig[index])
 				{
-					// original dimension must be equal or less than the result dimension
-					assert(orig[index] <= tv[index]);
-					if (0 == tv[index] % orig[index])
-					{
-						mult = tv[index] / orig[index];
-						below *= orig[index];
-						ototal *= mult;
-					}
-					else
-					{
-						// TODO: dimension expansion doesn't match nicely, implement later
-						throw std::bad_function_call();
-					}
+					mult = tv[index] / orig[index];
+					below *= orig[index];
+					ototal *= mult;
 				}
 				else
 				{
-					mult = tv[index];
-				}
-				// expand original across resulting dimension
-				size_t above = ototal / below;
-
-				// copy over data
-				const T* src_addr = super_src;
-				for (size_t i = 0; i < above; i++)
-				{
-					// copy data mult times
-					src_addr += i * below;
-					for (size_t j = 0; j < mult; j++)
-					{
-						T* dest_addr = super_dest + below * (mult * i + j);
-						std::memcpy(dest_addr, src_addr, below * sizeof(T));
-					}
-				}
-				// state update: below_dim, super_src, and super_dest
-				below *= mult;
-
-				// swap super buffers as long as it's not the last one
-				if (index < tv.size()-1)
-				{
-					if (super_src == temp) {
-						super_src = temp2;
-						super_dest = temp;
-					} else {
-						super_src = temp;
-						super_dest = temp2;
-					}
+					// TODO: dimension expansion doesn't match nicely, implement later
+					throw std::bad_function_call();
 				}
 			}
-			std::memcpy(dest, super_dest, total * sizeof(T));
-		},
-		[watch](tensorshape ts)
+			else
+			{
+				mult = tv[index];
+			}
+			// expand original across resulting dimension
+			size_t above = ototal / below;
+
+			// copy over data
+			const T* src_addr = super_src;
+			for (size_t i = 0; i < above; i++)
+			{
+				// copy data mult times
+				src_addr += i * below;
+				for (size_t j = 0; j < mult; j++)
+				{
+					T* dest_addr = super_dest + below * (mult * i + j);
+					std::memcpy(dest_addr, src_addr, below * sizeof(T));
+				}
+			}
+			// state update: below_dim, super_src, and super_dest
+			below *= mult;
+
+			// swap super buffers as long as it's not the last one
+			if (index < tv.size()-1)
+			{
+				if (super_src == temp) {
+					super_src = temp2;
+					super_dest = temp;
+				} else {
+					super_src = temp;
+					super_dest = temp2;
+				}
+			}
+		}
+		std::memcpy(dest, super_dest, total * sizeof(T));
+	},
+	[](std::vector<tensorshape> shapes)
+	{
+		tensorshape orig = shapes[0];
+		tensorshape watchshape = shapes[1]; // watch is always argument 2
+		if (watchshape.is_fully_defined()
+			&& watchshape.n_elems() < orig.n_elems())
 		{
-			ts.assert_is_fully_defined();
-			tensorshape s = watch->get_shape();
-			assert(s.n_elems() >= ts.n_elems());
-			return s;
-		},
-		[watch](std::vector<ivariable<T>*> args)
-		{
-			ivariable<T>* a = args.front();
-			return fit(varptr<T>(a->get_gradient()), watch);
-		},
+			return tensorshape();
+		}
+		return watchshape;
+	},
+	[watch](std::vector<ivariable<T>*> args)
+	{
+		ivariable<T>* a = args.front();
+		return fit(varptr<T>(a->get_gradient()), watch);
+	},
 	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
 	return op;
 }
@@ -275,71 +220,73 @@ template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
-	ivariable<T>* op = transform<T>::build(a,
-		[index, multiplier](T* dest, const T* src, tensorshape ts)
+	ivariable<T>* op = transform<T>::build(std::vector<ivariable<T>*>{a},
+	[index, multiplier](shapeinfo info, T* dest, std::vector<const T*> args)
+	{
+		const T* src = args[0];
+		// REMEMBER that ts is the resulting shape, not the original shape
+		// both above and below values are calculations based on the original shape
+		std::vector<size_t> tv = info.res_shape_.as_list();
+		// below calculates all elements encompassed up to the index dimension
+		// that is for a shape of <1, 2, 3, 4> and index 2
+		// below = 1 * 2 * 3 = 6
+		size_t below = 1;
+		for (size_t i = 0; i < index; i++)
 		{
-			// REMEMBER that ts is the resulting shape, not the original shape
-			// both above and below values are calculations based on the original shape
-			std::vector<size_t> tv = ts.as_list();
-			// below calculates all elements encompassed up to the index dimension
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// below = 1 * 2 * 3 = 6
-			size_t below = 1;
-			for (size_t i = 0; i < index; i++)
-			{
-				below *= tv[i];
-			}
-			// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
-			// so to obtain the original dimension, we divide by multiplier
-			below *= tv[index] / multiplier;
-			// above calculates the number of tensors (of index rank) within the original tensor
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
-			// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
-			// above is 4
-			// above = original total / below
-			// original total = resulting total / multiplier
-			size_t above = ts.n_elems() / (multiplier * below);
+			below *= tv[i];
+		}
+		// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
+		// so to obtain the original dimension, we divide by multiplier
+		below *= tv[index] / multiplier;
+		// above calculates the number of tensors (of index rank) within the original tensor
+		// that is for a shape of <1, 2, 3, 4> and index 2
+		// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
+		// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
+		// above is 4
+		// above = original total / below
+		// original total = resulting total / multiplier
+		size_t above = info.res_shape_.n_elems() / (multiplier * below);
 
-			// copy over data
-			for (size_t i = 0; i < above; i++)
-			{
-				// copy data multiplier times
-				const T* src_addr = src + i * below;
-				for (size_t j = 0; j < multiplier; j++)
-				{
-					T* dest_addr = dest + below * (multiplier * i + j);
-					std::memcpy(dest_addr, src_addr, below * sizeof(T));
-				}
-			}
-		},
-		[index, multiplier](tensorshape ts)
+		// copy over data
+		for (size_t i = 0; i < above; i++)
 		{
-			ts.assert_is_fully_defined();
-			std::vector<size_t> tv = ts.as_list();
-			// allocated additional space along index
-			size_t dims = ts.n_dims();
-			if (index >= dims)
+			// copy data multiplier times
+			const T* src_addr = src + i * below;
+			for (size_t j = 0; j < multiplier; j++)
 			{
-				// extending extra dimensions
-				size_t extra_dims = index - dims;
-				if (extra_dims)
-				{
-					tv.insert(tv.end(), extra_dims, 1);
-				}
-				tv.push_back(multiplier);
+				T* dest_addr = dest + below * (multiplier * i + j);
+				std::memcpy(dest_addr, src_addr, below * sizeof(T));
 			}
-			else
-			{
-				tv[index] *= multiplier;
-			}
-			return tv;
-		},
-		[index, multiplier](std::vector<ivariable<T>*> args)
+		}
+	},
+	[index, multiplier](std::vector<tensorshape> shapes)
+	{
+		tensorshape ts = shapes[0];
+		ts.assert_is_fully_defined();
+		std::vector<size_t> tv = ts.as_list();
+		// allocated additional space along index
+		size_t dims = ts.n_dims();
+		if (index >= dims)
 		{
-			ivariable<T>* a = args.front();
-			return extend(varptr<T>(a->get_gradient()), index, multiplier);
-		},
+			// extending extra dimensions
+			size_t extra_dims = index - dims;
+			if (extra_dims)
+			{
+				tv.insert(tv.end(), extra_dims, 1);
+			}
+			tv.push_back(multiplier);
+		}
+		else
+		{
+			tv[index] *= multiplier;
+		}
+		return tv;
+	},
+	[index, multiplier](std::vector<ivariable<T>*> args)
+	{
+		ivariable<T>* a = args.front();
+		return extend(varptr<T>(a->get_gradient()), index, multiplier);
+	},
 	nnutils::formatter() << "extend[" << index << "," <<
 		multiplier << "](" << a->get_name() + ")");
 	return op;
@@ -350,17 +297,18 @@ varptr<T> compress (const varptr<T> a, int index,
 	std::function<T(const std::vector<T>&)> collector)
 {
 	if (nullptr == a) return nullptr;
-	std::function<void(T*,const T*,tensorshape)> gatherer;
-	std::function<tensorshape(tensorshape)> shaper;
+	TEN_OP<T> gatherer;
+	SHAPE shaper;
 	if (index >= 0)
 	{
-		gatherer = std::function<void(T*,const T*,tensorshape)>(
-		[index, collector, a](T* dest, const T* src, tensorshape ts)
+		gatherer = TEN_OP<T>(
+		[index, collector](shapeinfo info, T* dest, std::vector<const T*> args)
 		{
+			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
 			// both above and below values are calculations based on the original shape
 			// original shape
-			tensorshape orig = a->get_shape();
+			tensorshape orig = info.arg_shape_[0];
 			assert((unsigned) index < orig.n_dims());
 			std::vector<size_t> tv = orig.as_list();
 			size_t idx_val = tv[index];
@@ -391,9 +339,10 @@ varptr<T> compress (const varptr<T> a, int index,
 				}
 			}
 		});
-		shaper = std::function<tensorshape(tensorshape)>(
-		[index](tensorshape ts)
+		shaper = SHAPE(
+		[index](std::vector<tensorshape> shapes)
 		{
+			tensorshape ts = shapes[0];
 			ts.assert_is_fully_defined();
 			assert((unsigned) index < ts.n_dims());
 			std::vector<size_t> tv = ts.as_list();
@@ -415,21 +364,21 @@ varptr<T> compress (const varptr<T> a, int index,
 	}
 	else
 	{
-		gatherer = std::function<void(T*,const T*,tensorshape)>(
-		[collector, a](T* dest, const T* src, tensorshape ts)
+		gatherer = TEN_OP<T>(
+		[collector, a](shapeinfo info, T* dest, std::vector<const T*> args)
 		{
-			std::vector<size_t> tv = ts.as_list();
-			size_t total = ts.n_elems();
-			dest[0] = collector(std::vector<T>(dest, dest+total));
+			std::vector<size_t> tv = info.res_shape_.as_list();
+			size_t total = info.res_shape_.n_elems();
+			dest[0] = collector(std::vector<T>(args[0], args[0]+total));
 		});
-		shaper = std::function<tensorshape(tensorshape)>(
-		[index](tensorshape ts)
+		shaper = SHAPE(
+		[index](std::vector<tensorshape> shapes)
 		{
 			return std::vector<size_t>{1};
 		});
 	}
 
-	ivariable<T>* op = transform<T>::build(a, gatherer, shaper,
+	ivariable<T>* op = transform<T>::build(std::vector<ivariable<T>*>{a}, gatherer, shaper,
 		[index, collector](std::vector<ivariable<T>*> args)
 		{
 			ivariable<T>* a = args.front();

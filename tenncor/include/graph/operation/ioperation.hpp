@@ -44,10 +44,16 @@ class ioperation : public ivariable<T>, public ccoms::iobserver
 		// everyone in this graph including this is destroyed
 		// so we don't need to bother with cleaning leaves_
 		std::unordered_set<ivariable<T>*> leaves_;
+		
+		// buffer argument tensors 
+		// (each argument can return different tensors)
+		// update each tensor by position accordingly
+		std::vector<tensor<T>*> tens_buffer_;
 
 	protected:
 		bool valid_tensor_ = false;
 		ioperation<T>* grad_ = nullptr;
+		SHAPE shaper_;
 
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
 		{
@@ -56,7 +62,18 @@ class ioperation : public ivariable<T>, public ccoms::iobserver
 
 		// implement unique method of consuming input variables
 		// to extract shape info
-		virtual tensorshape shape_eval (void) = 0;
+		virtual tensorshape shape_eval (void)
+		{
+			std::vector<tensorshape> shapes;
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				if (ivariable<T>* v = sub->to_type<ivariable<T> >())
+				{
+					shapes.push_back(v->get_shape());
+				}
+			}
+			return shaper_(shapes);
+		}
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
 		virtual void setup_gradient (void) = 0; // ioperation specific
@@ -91,6 +108,9 @@ class ioperation : public ivariable<T>, public ccoms::iobserver
 
 		// operations only
 		void leaves_collect (std::function<void(ivariable<T>*)> collector);
+		
+		// inherited by elementary and transform, overwritten by matmul and jacobian
+		virtual void update (ccoms::update_message msg);
 };
 
 }

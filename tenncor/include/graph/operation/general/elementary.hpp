@@ -20,14 +20,9 @@ template <typename T>
 class elementary : public ioperation<T> {
 	private:
 		BUILD_DERIVE<T> der_;
-		// buffer argument tensors 
-		// (each argument can return different tensors)
-		// update each tensor by position accordingly
-		std::vector<tensor<T>*> tens_buffer_;
 		
 	protected:
 		virtual void setup_gradient (void);
-		virtual tensorshape shape_eval (void);
 
 		elementary (const elementary<T>& other, std::string name);
 			
@@ -54,8 +49,6 @@ class elementary : public ioperation<T> {
 		
 		// MOVES
 		// TODO: implement
-
-		virtual void update (ccoms::update_message msg);
 };
 
 // operators that will replace elementary operation objects
