@@ -74,13 +74,16 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 {
 	raws_.clear();
 	std::vector<tensorshape> shapes;
+	bool nullify = false;
+	tensorshape scalar_shape = std::vector<size_t>{1};
 	for (tensor<T,A>* t : args)
 	{
 		if (nullptr == t)
 		{
 			// null are treated as 0
 			raws_.push_back(&zero);
-			shapes.push_back(std::vector<size_t>{1});
+			shapes.push_back(scalar_shape);
+			nullify = true;
 		}
 		else
 		{
@@ -91,11 +94,18 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 	// change shape?
 	tensorshape og_shape = this->get_shape();
 	tensorshape res_shape;
-	try
+	if (false == nullify)
 	{
-		res_shape = shape_(shapes);
+		try
+		{
+			res_shape = shape_(shapes);
+		}
+		catch (std::invalid_argument &e) {}
 	}
-	catch (std::invalid_argument& e) {}
+	else
+	{
+		res_shape = scalar_shape;
+	}
 	info_.arg_shape_ = shapes;
 	if (res_shape.is_fully_defined() &&
 		(false == og_shape.is_fully_defined() ||

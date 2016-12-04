@@ -53,8 +53,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 			if (1 != first.n_dims() && 1 != s.n_dims() &&
 				false == first.is_compatible_with(s))
 			{
-				throw std::invalid_argument(
-						"cannot element-wise operate on tensors of vastly different shapes");
+				return tensorshape();
 			}
 			if (s.n_dims() >= first.n_dims())
 			{
@@ -67,7 +66,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	// try to update
 	if (session::pre_shape_eval())
 	{
-		this->shape_eval();
+		this->shape_eval().assert_is_fully_defined();
 	}
 	this->update(ccoms::caller_info());
 }

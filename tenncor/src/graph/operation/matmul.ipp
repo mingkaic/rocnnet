@@ -126,8 +126,8 @@ void matmul<T>::setup_gradient (void)
 
 	// matmul is special in that its grad_jacobi_ is the default jacobian leaf one
 	// grad_ is the jacobian instead
-	this->grad_jacobi_ = dynamic_cast<iconnector<T>*>(fit<double>(constant<T>::build(1), this).get());
-	buffer<T>* temp = buffer<T>::build(this->grad_jacobi_);
+	this->grad_ = dynamic_cast<iconnector<T>*>(fit<double>(constant<T>::build(1), this).get());
+	buffer<T>* temp = buffer<T>::build(this->grad_);
 	varptr<T> mA = matmul<T>::build(temp, argb, transposeA_, !transposeB_);
 	varptr<T> mB = matmul<T>::build(arga, temp, !transposeA_, transposeB_);
 
@@ -135,7 +135,7 @@ void matmul<T>::setup_gradient (void)
 	varptr<T> res = mA * grada + mB * gradb;
 	// reset shape eval here if necessary
 
-	this->grad_ = jgraph::build(res, temp);
+	this->grad_jacobi_ = jgraph::build(res, temp);
 }
 
 template <typename T>
@@ -156,7 +156,7 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	"(" + a->get_name() + "•" + b->get_name() + ")"),
 	transposeA_(transposeA), transposeB_(transposeB)
 {
-	this->shaper_ = [this](std::vector<tensorshape> shapes)
+	this->shaper_ = [this](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape t1s = shapes[0];
 		tensorshape t2s = shapes[1];
@@ -188,7 +188,7 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 				return std::vector<size_t>{bx, ay};
 			}
 		}
-		return std::vector<size_t>{};
+		return tensorshape();
 	};
 	this->out_ = std::make_unique<tensor_op<T> >(
 	[this](shapeinfo info, T* dest, std::vector<const T*> srcs)
@@ -217,7 +217,7 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	// try to update
 	if (session::pre_shape_eval())
 	{
-		this->shape_eval();
+		this->shape_eval().assert_is_fully_defined();
 	}
 	update(ccoms::caller_info());
 }

@@ -362,7 +362,7 @@ TEST(DERIVE, OperationDerive) {
 // TESTS TENSOR JACOBI
 TEST(DERIVE, Matmul) {
 	nnet::session& sess = nnet::session::get_instance();
-	size_t m = 4, n = 5, k = 6; 
+	size_t m = 4, n = 5, k = 6;
 	nnet::random_uniform<double> rinit(0, 523);
 	nnet::varptr<double> A = new nnet::variable<double>((std::vector<size_t>{m, n}), rinit, "A");
 	nnet::varptr<double> B = new nnet::variable<double>((std::vector<size_t>{k, m}), rinit, "B");
@@ -379,7 +379,7 @@ TEST(DERIVE, Matmul) {
 	nnet::varptr<double> expect_dB = nnet::matmul<double>::build(A, ex_grad_leaf, true);
 
 	sess.initialize_all<double>();
-	
+
 	// not part of test...
 	std::vector<size_t> dAshape = expect_dA->get_shape().as_list();
 	std::vector<size_t> dBshape = expect_dB->get_shape().as_list();
@@ -388,44 +388,46 @@ TEST(DERIVE, Matmul) {
 
 	// actually derive C
 	nnet::gradient<double> grad(C);
-//	grad.freeze();
-//	grad.execute();
-//	std::vector<double> rawA;
-//	std::vector<double> rawB;
-//	size_t count = 0;
-//	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-//	{
-//		if (key == A.get())
-//		{
-//			rawA = nnet::expose<double>(value);
-//		}
-//		if (key == B.get())
-//		{
-//			rawB = nnet::expose<double>(value);
-//		}
-//		count++;
-//	});
-//	ASSERT_EQ(2, count);
-//
-//	// verify against expected
-//	std::vector<double> exA = nnet::expose<double>(expect_dA);
-//	std::vector<double> exB = nnet::expose<double>(expect_dB);
-//
-//	size_t asize = exA.size();
-//	ASSERT_EQ(asize, rawA.size());
-//	for (size_t i = 0; i < asize; i++)
-//	{
-//		EXPECT_EQ(exA[i], rawA[i]);
-//	}
-//
-//	size_t bsize = exB.size();
-//	ASSERT_EQ(bsize, rawB.size());
-//	for (size_t i = 0; i < bsize; i++)
-//	{
-//		EXPECT_EQ(exB[i], rawB[i]);
-//	}
-	
-	delete A.get(); delete B.get(); delete one.get();
+	grad.freeze();
+	grad.execute();
+	std::vector<double> rawA;
+	std::vector<double> rawB;
+	size_t count = 0;
+	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		if (key == A.get())
+		{
+			rawA = nnet::expose<double>(value);
+		}
+		if (key == B.get())
+		{
+			rawB = nnet::expose<double>(value);
+		}
+		count++;
+	});
+	ASSERT_EQ(2, count);
+
+	// verify against expected
+	std::vector<double> exA = nnet::expose<double>(expect_dA);
+	std::vector<double> exB = nnet::expose<double>(expect_dB);
+
+	size_t asize = exA.size();
+	ASSERT_EQ(asize, rawA.size());
+	for (size_t i = 0; i < asize; i++)
+	{
+		EXPECT_EQ(exA[i], rawA[i]);
+	}
+
+	size_t bsize = exB.size();
+	ASSERT_EQ(bsize, rawB.size());
+	for (size_t i = 0; i < bsize; i++)
+	{
+		EXPECT_EQ(exB[i], rawB[i]);
+	}
+
+	delete A.get();
+	delete B.get();
+	delete one.get();
 }
 
 

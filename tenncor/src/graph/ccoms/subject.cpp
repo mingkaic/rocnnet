@@ -7,6 +7,7 @@
 //
 
 #include "graph/ccoms/iobserver.hpp"
+#include <iostream>
 
 #ifdef subject_hpp
 
@@ -131,7 +132,10 @@ subject_owner::subject_owner (const subject_owner& other)
 
 subject_owner::subject_owner (void) { caller_ = new subject(this); }
 
-subject_owner::~subject_owner (void) { delete caller_; }
+subject_owner::~subject_owner (void)
+{
+	delete caller_;
+}
 
 void subject_owner::notify (subject_owner* grad)
 {

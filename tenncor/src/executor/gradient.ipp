@@ -54,7 +54,8 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 			potential_srcs_.push_back(src);
 		});
 
-		if (igraph<T>* j = root_op->get_jacobian())
+		// take jacobian instead if available
+		if (ivariable<T>* j = root_op->get_jacobian())
 		{
 			g_root_ = j;
 		}

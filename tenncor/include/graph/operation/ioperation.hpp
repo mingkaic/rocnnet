@@ -46,11 +46,12 @@ class ioperation : public iconnector<T>
 		std::unique_ptr<tensor_op<T> > out_ = nullptr;
 
 		bool valid_tensor_ = false;
+		// shaper functional must return undefined shape in cases of error
 		SHAPE shaper_;
 
 		// GRADIENT CONTENTS
 		iconnector<T>* grad_ = nullptr; // general gradient node
-		iconnector<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
+		igraph<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
 
 		// to extract shape info
 		// this shape evaluation is for when arguments are not instantiated
@@ -133,7 +134,16 @@ class ioperation : public iconnector<T>
 
 		virtual ivariable<T>* get_gradient (void); // access general gradient
 
-		virtual igraph<T>* get_jacobian (void) { return dynamic_cast<igraph<T>*>(grad_jacobi_); }
+		virtual ivariable<T>* get_jacobian (void)
+		{
+			// by default grad_jacobi most likely has its root hidden
+			// do away with the graph behavior by exposing its root
+			if (nullptr != grad_jacobi_)
+			{
+				return grad_jacobi_->get_root();
+			}
+			return nullptr;
+		}
 		
 		// inherited by elementary and transform, overwritten by matmul and jacobian
 		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
