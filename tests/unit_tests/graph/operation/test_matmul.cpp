@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/operation/special/matmul.hpp"
+#include "graph/operation/matmul.hpp"
 
 
 TEST(OPERATION, Matmul) {

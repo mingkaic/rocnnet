@@ -13,7 +13,7 @@ TEST(PLACEHOLDER, InitNotify_D100)
 {
 	nnet::placeholder<double> invar(std::vector<size_t>{5, 5}, "const_arr");
 	MockOperation* op = MockOperation::build(&invar); // observes cvar
-	EXPECT_CALL(*op, update(_)).Times(1);
+	EXPECT_CALL(*op, mock_update(_, _)).Times(1);
 	// call update on initializations
 	std::vector<double> raw;
 	for (size_t i = 0; i < 25; i++)

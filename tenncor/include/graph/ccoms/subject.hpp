@@ -9,7 +9,6 @@
 #include <cassert>
 #include <unordered_set>
 #include "utils.hpp"
-#include "memory/safe_ptr.hpp"
 
 #pragma once
 #ifndef subject_hpp
@@ -20,21 +19,33 @@ namespace ccoms
 
 class iobserver;
 class subject;
+class subject_owner;
+
+template <typename T>
+class igraph;
 
 struct update_message
 {
+	subject* grad_ = nullptr; // this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
+	iobserver* jacobi_ = nullptr;
+	bool leave_update_ = false;
+};
+
+struct caller_info
+{
 	subject* caller_;
 	size_t caller_idx_ = 0;
-	subject* grad_ = nullptr;
-	
-	update_message (subject* caller) : caller_(caller) {}
+
+	caller_info (subject* caller = nullptr) : caller_(caller) {}
 };
 
 // abstract for communication nodes that records leaves
 class reactive_node
 {
 	private:
-		std::vector<void**> ptrrs_;
+		// used exclusively for controlling to pointers of this
+		// upon destruction all pointers ptrrs point to will be set to null
+		std::unordered_set<void**> ptrrs_;
 	
 	protected:
 		// returns true if suicide on safe_destroy
@@ -51,33 +62,29 @@ class reactive_node
 			// default new on heap for now, could be machine dependent later
 			return new E(args...);
 		}
+
+		reactive_node (void) {}
+		reactive_node (reactive_node& other) {} // prevent ptrrs from being copied
 	
 	public:
-		virtual ~reactive_node (void)
-		{
-			for (void** ptrr : ptrrs_)
-			{
-				*ptrr = nullptr;
-			}
-		}
+		virtual ~reactive_node (void); // set all ptrrs' pointer to null
 		// return true if this is successfully flagged for deletion
-		bool safe_destroy (void); // non-virtual to ensure safe virtual inheritance
-		// set ptr to null on death
-		void set_death (void** ptr)
-		{
-			ptrrs_.push_back(ptr);
-		}
+		virtual bool safe_destroy (void);
+		// set ptr to null on death,
+		// ptr might not necessary point to this, ptr could point to something affecting this
+		// this distinction must be determined by the caller, be warned
+		void set_death (void** ptr);
+		void unset_death (void** ptr);
 };
 
-// AKA leaf
 // subject retains control over all its observers,
 // once destroyed, all observers are flagged for deletion
 
 class subject : public reactive_node
 {
 	private:
-		// content (does not own... meaning memory leak/corruption if we delete this without variable)
-		nnet::safe_ptr* var_ = nullptr;
+		// content (does not own... meaning memory leak/corruption if we delete this without variable; will occur for constant)
+		subject_owner* var_ = nullptr;
 		// dependents
 		std::unordered_map<iobserver*, std::vector<size_t> > audience_;
 
@@ -91,30 +98,35 @@ class subject : public reactive_node
 		friend class iobserver;
 		
 	public:
-		subject (void) {}
-
+		subject (subject_owner* owner);
 		virtual ~subject (void);
-
-		subject (const subject& other) {} // prevent audience from being copied over
+		// prevent audience from being copied over
+		subject (const subject& other, subject_owner* owner);
 	
-		void notify (subject* grad = nullptr);
+		void notify (update_message msg = update_message());
 		bool no_audience (void) const;
+		// override reactive_node's safe_destroy to kill var_ should subject become suicidal
+		// killing var_ is essentially the same as suicide, since var_ will in turn kill this
+		virtual bool safe_destroy (void);
+		subject_owner* get_owner (void);
+};
 
-		// variable connection
-		template <typename T>
-		void store_var (T* var)
-		{
-			if (nullptr != var_) delete var_;
-			var_ = new nnet::safe_ptr {
-				var, // ptr_
-				typeid(T), // info
-			};
-		}
+class subject_owner
+{
+	protected:
+		subject* caller_ = nullptr;
 
-		template <typename T>
-		T* to_type (void) {
-			return var_->cast<T>();
-		}
+		void copy (const subject_owner& other);
+		subject_owner (const subject_owner& other);
+		subject_owner (void);
+
+	public:
+		virtual ~subject_owner (void);
+
+		// BRIDGE TO CALLER
+		void notify (subject_owner* grad = nullptr);
+		void notify (ccoms::update_message msg);
+		bool no_audience (void) const;
 };
 
 }

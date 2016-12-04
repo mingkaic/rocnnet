@@ -21,18 +21,24 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 	{
 		grad_->safe_destroy();
 	}
+	// treat grad_jacobi_ exactly like grads
+	if (nullptr != grad_jacobi_ && grad_jacobi_->no_audience())
+	{
+		grad_jacobi_->safe_destroy();
+	}
 	// shallow copy
 	grad_ = other.grad_;
+	grad_jacobi_ = other.grad_jacobi_;
 	tens_buffer_ = other.tens_buffer_;
-	ivariable<T>::copy(other, name);
+	iconnector<T>::copy(other, name);
 }
 
 template <typename T>
 ioperation<T>::ioperation (const ioperation<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
+	iconnector<T>(other, name),
 	valid_tensor_(other.valid_tensor_),
 	grad_(other.grad_),
+	grad_jacobi_(other.grad_jacobi_),
 	tens_buffer_(other.tens_buffer_) {}
 	
 template <typename T>
@@ -44,7 +50,7 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 	size_t jacobi_count = 0;
 	for (ccoms::subject* sub : this->dependencies_)
 	{
-		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
+		if (ivariable<T>* v = sub_to_var<T>(sub))
 		{
 			if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(v)) {
 				if (o->channel(jacobi)) {
@@ -62,14 +68,8 @@ bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
 
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-	ccoms::iobserver(nnutils::to_vec<ivariable<T>*, ccoms::subject*>(dependencies, var_to_sub<T>)),
-	ivariable<T>(std::vector<size_t>{}, name)
-{
-	for (ivariable<T>* dep : dependencies)
-	{
-		dep->merge_leaves(leaves_);
-	}
-}
+	iconnector<T>(dependencies, name)
+{}
 
 template <typename T>
 ioperation<T>::~ioperation (void)
@@ -77,6 +77,10 @@ ioperation<T>::~ioperation (void)
 	if (nullptr != grad_)
 	{
 		delete grad_;
+	}
+	if (nullptr != grad_jacobi_)
+	{
+		delete grad_jacobi_;
 	}
 }
 
@@ -103,7 +107,7 @@ tensor<T>* ioperation<T>::get_eval (void)
 	{
 		return nullptr;
 	}
-	return ivariable<T>::get_eval();
+	return out_.get();
 }
 
 template <typename T>
@@ -119,24 +123,18 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 }
 
 template <typename T>
-void ioperation<T>::leaves_collect (std::function<void(ivariable<T>*)> collector)
-{
-	for (ivariable<T>* leaf : leaves_)
-	{
-		collector(leaf);
-	}
-}
-
-template <typename T>
-void ioperation<T>::update (ccoms::update_message msg)
+void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 {
 	static tensor<T> ones(1);
 
+	// common update protocol based on the message
+	message_update(msg);
+
+	// UPDATING TENS_BUFFER
 	// cast caller dependency as ivariable
-	ivariable<T>* caller = msg.caller_ ? msg.caller_->to_type<ivariable<T> >() : nullptr;
-	ivariable<T>* grad = msg.grad_ ? msg.grad_->to_type<ivariable<T> >() : nullptr;
-	size_t callerid = msg.caller_idx_;
-		
+	ivariable<T>* caller = info.caller_ ? sub_to_var<T>(info.caller_) : nullptr;
+	ivariable<T>* grad = msg.grad_ ? sub_to_var<T>(msg.grad_) : nullptr;
+	size_t callerid = info.caller_idx_;
 	tensor<T>* storage = nullptr;
 	this->valid_tensor_ = true;
 
@@ -146,7 +144,7 @@ void ioperation<T>::update (ccoms::update_message msg)
 		tens_buffer_.clear();
 		for (ccoms::subject* sub : this->dependencies_)
 		{
-			if (ivariable<T>* var = sub->to_type<ivariable<T> >())
+			if (ivariable<T>* var = sub_to_var<T>(sub))
 			{
 				storage = var->get_eval();
 				tens_buffer_.push_back(storage);
@@ -159,6 +157,7 @@ void ioperation<T>::update (ccoms::update_message msg)
 	}
 	else
 	{
+		if (0 == tens_buffer_.size()) return;
 		assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
 		// grab caller_id from message
 		if (nullptr == grad) // don't care about grad, get best evaluation
@@ -184,10 +183,10 @@ void ioperation<T>::update (ccoms::update_message msg)
 	if (this->valid_tensor_)
 	{
 		// null is treated as erroneous zero
-		(*this->out_)(tens_buffer_);
+		(*out_)(tens_buffer_);
 	}
-
-	this->notify();
+	msg.grad_ = nullptr;
+	this->notify(msg);
 }
 
 }

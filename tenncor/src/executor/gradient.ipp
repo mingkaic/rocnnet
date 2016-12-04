@@ -53,31 +53,13 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 		{
 			potential_srcs_.push_back(src);
 		});
-		
-		// collect jacobians from the gradient root
-		ioperation<T>* op = dynamic_cast<ioperation<T>*>(g_root_);
-		assert(op);
-		// collect all the jacobians (change/remove once channel-notify merge concludes)
-		// >>
-		std::stack<ivariable<T>*> jacobs;
-		op->channel(jacobs); // expensive operation (traverses entire tree)
-		// connect jacobians
-		ivariable<T>* top = op; // start at the root
-		while (false == jacobs.empty())
+
+		if (igraph<T>* j = root_op->get_jacobian())
 		{
-			ivariable<T>* jac = jacobs.top(); // these jacs are hidden jacobian nodes
-			jacobs.pop();
-			// grab tensor_jacobi
-			tensor_jacobi<T>* ten_jac = 
-				static_cast<tensor_jacobi<T>*>(jac->get_eval());
-			// connect lowest jacobians to higher jacobians
-			ten_jac->set_root(top);
-			top = jac;
+			g_root_ = j;
 		}
-		g_root_ = top; // make resulting jacobian node the true gradient root
-		// << collection concludes here
 	}
-	else
+	else // either leaf, graph, or buffer
 	{
 		potential_srcs_.push_back(root);
 	}

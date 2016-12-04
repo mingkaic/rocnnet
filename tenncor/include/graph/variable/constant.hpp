@@ -20,15 +20,10 @@
 namespace nnet
 {
 
-// Never notifies... should consider inheriting from different parent
 template <typename T>
 class constant : public ileaf<T>
 {
 	protected:
-		// overriding subject: marks for self_destruction 
-		// once subject detaches last observer
-		virtual bool suicidal (void) { return true; }
-		
 		constant (const constant<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
 

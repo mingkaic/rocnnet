@@ -22,6 +22,9 @@ template <typename T>
 class ileaf : public ivariable<T>
 {
 	protected:
+		// WRAPPER CONTENT
+		std::unique_ptr<tensor<T> > out_ = nullptr;
+
 		// used by assignment operators to dynamically initialize tensors
 		struct dyn_init;
 
@@ -52,6 +55,15 @@ class ileaf : public ivariable<T>
 		// MOVES
 		// todo: implement move clone
 
+		virtual tensorshape get_shape (void) const
+		{
+			if (nullptr != out_)
+			{
+				return out_->get_shape();
+			}
+			return std::vector<size_t>{};
+		}
+
 		// inherited from ivariable
 		virtual tensor<T>* get_eval (void)
 		{
@@ -59,7 +71,7 @@ class ileaf : public ivariable<T>
 			{
 				return nullptr;
 			}
-			return ivariable<T>::get_eval();
+			return out_.get();
 		}
 
 		// GET INFO

@@ -6,6 +6,8 @@
 #include "gtest/gtest.h"
 #include "executor/gradient.hpp"
 #include "graph/functions.hpp"
+#include "graph/operation/transform.hpp"
+#include "graph/operation/matmul.hpp"
 
 static const double epi = std::numeric_limits<double>::epsilon();
 
@@ -362,8 +364,8 @@ TEST(DERIVE, Matmul) {
 	nnet::session& sess = nnet::session::get_instance();
 	size_t m = 4, n = 5, k = 6; 
 	nnet::random_uniform<double> rinit(0, 523);
-	nnet::varptr<double> A = new nnet::variable<double>((std::vector<size_t>{m, n}), rinit, "in");
-	nnet::varptr<double> B = new nnet::variable<double>((std::vector<size_t>{k, m}), rinit, "in");
+	nnet::varptr<double> A = new nnet::variable<double>((std::vector<size_t>{m, n}), rinit, "A");
+	nnet::varptr<double> B = new nnet::variable<double>((std::vector<size_t>{k, m}), rinit, "B");
 	nnet::varptr<double> C = nnet::matmul<double>::build(A, B);
 
 	// TODO: simplify this pattern
@@ -386,42 +388,42 @@ TEST(DERIVE, Matmul) {
 
 	// actually derive C
 	nnet::gradient<double> grad(C);
-	// grad.freeze();
-	// grad.execute();
-	// std::vector<double> rawA;
-	// std::vector<double> rawB;
-	// size_t count = 0;
-	// grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-	// {
-	// 	if (key == A.get())
-	// 	{
-	// 		rawA = nnet::expose<double>(value);
-	// 	}
-	// 	if (key == B.get())
-	// 	{
-	// 		rawB = nnet::expose<double>(value);
-	// 	}
-	// 	count++;
-	// });
-	// ASSERT_EQ(2, count);
-
-	// // verify against expected
-	// std::vector<double> exA = nnet::expose<double>(expect_dA);
-	// std::vector<double> exB = nnet::expose<double>(expect_dB);
-
-	// size_t asize = exA.size();
-	// ASSERT_EQ(asize, rawA.size());
-	// for (size_t i = 0; i < asize; i++)
-	// {
-	// 	EXPECT_EQ(exA[i], rawA[i]);
-	// }
-
-	// size_t bsize = exB.size();
-	// ASSERT_EQ(bsize, rawB.size());
-	// for (size_t i = 0; i < bsize; i++)
-	// {
-	// 	EXPECT_EQ(exB[i], rawB[i]);
-	// }
+//	grad.freeze();
+//	grad.execute();
+//	std::vector<double> rawA;
+//	std::vector<double> rawB;
+//	size_t count = 0;
+//	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+//	{
+//		if (key == A.get())
+//		{
+//			rawA = nnet::expose<double>(value);
+//		}
+//		if (key == B.get())
+//		{
+//			rawB = nnet::expose<double>(value);
+//		}
+//		count++;
+//	});
+//	ASSERT_EQ(2, count);
+//
+//	// verify against expected
+//	std::vector<double> exA = nnet::expose<double>(expect_dA);
+//	std::vector<double> exB = nnet::expose<double>(expect_dB);
+//
+//	size_t asize = exA.size();
+//	ASSERT_EQ(asize, rawA.size());
+//	for (size_t i = 0; i < asize; i++)
+//	{
+//		EXPECT_EQ(exA[i], rawA[i]);
+//	}
+//
+//	size_t bsize = exB.size();
+//	ASSERT_EQ(bsize, rawB.size());
+//	for (size_t i = 0; i < bsize; i++)
+//	{
+//		EXPECT_EQ(exB[i], rawB[i]);
+//	}
 	
 	delete A.get(); delete B.get(); delete one.get();
 }

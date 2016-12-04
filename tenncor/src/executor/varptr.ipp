@@ -44,12 +44,14 @@ template <typename T>
 placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)
 {
     *(static_cast<placeholder<T>*>(this->ptr_)) = vec;
+    return *this;
 }
 
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (tensor<T>& ten)
 {
-    *(static_cast<placeholder<T>*>(this->ptr_)) = ten;
+	*(static_cast<placeholder<T>*>(this->ptr_)) = ten;
+	return *this;
 }
 
 template <typename T>

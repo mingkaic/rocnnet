@@ -48,6 +48,7 @@ void ileaf<T>::copy (const ileaf<T>& other, std::string name)
 	{
 		delete init_;
 	}
+	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
 	init_ = other.init_->clone();
 	is_init_ = other.is_init_;
 	ivariable<T>::copy(other, name);
@@ -55,13 +56,14 @@ void ileaf<T>::copy (const ileaf<T>& other, std::string name)
 
 template <typename T>
 ileaf<T>::ileaf (const ileaf<T>& other, std::string name) :
-	ivariable<T>(other, name),
+	ivariable<T>(name),
+	out_(std::unique_ptr<tensor<T> >(other.out_->clone())),
 	init_(other.init_->clone()),
 	is_init_(other.is_init_) {}
 
 template <typename T>
 ileaf<T>::ileaf (const tensorshape& shape, initializer<T>* init, std::string name) :
-	ivariable<T>(shape, name), init_(init) {}
+	ivariable<T>(name), init_(init), out_(new tensor<T>(shape)) {}
 
 template <typename T>
 ileaf<T>::~ileaf (void)

@@ -25,7 +25,27 @@ class iobserver : public reactive_node
 		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
-		void add_dependency (subject* dep);
+		void add_dependency (subject* dep); // add in order
+
+		void replace_dep (subject* dep, size_t idx)
+		{
+			dependencies_[idx]->detach(this);
+			dependencies_[idx] = dep;
+			dep->attach(this, idx);
+		}
+
+		void copy (const iobserver& other)
+		{
+			for (subject* sub : dependencies_)
+			{
+				sub->detach(this);
+			}
+			dependencies_.clear();
+			for (subject* dep : other.dependencies_)
+			{
+				add_dependency(dep);
+			}
+		}
 		
 		// attach dependencies
 		iobserver (const iobserver& other); // copy over dependencies and leaves
@@ -36,7 +56,7 @@ class iobserver : public reactive_node
 	public:
 		virtual ~iobserver (void);
 
-		virtual void update (update_message msg) = 0;
+		virtual void update (caller_info info, update_message msg = ccoms::update_message()) = 0;
 };
 
 }

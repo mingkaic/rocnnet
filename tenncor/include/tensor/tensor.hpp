@@ -81,8 +81,6 @@ class tensor
 		virtual ~tensor (void);
 		tensor<T,A>* clone (void) { return clone_impl(); }
 		virtual tensor<T,A>& operator = (tensor<T,A>& other);
-		// act on tensor
-		virtual const tensor<T,A>& operator () (std::vector<tensor<T,A>*> args) { return *this; }
 
 		// allocate
 		// reallocation clear raw data

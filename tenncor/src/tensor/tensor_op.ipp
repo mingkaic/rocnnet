@@ -90,7 +90,12 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 	}
 	// change shape?
 	tensorshape og_shape = this->get_shape();
-	tensorshape res_shape = shape_(shapes);
+	tensorshape res_shape;
+	try
+	{
+		res_shape = shape_(shapes);
+	}
+	catch (std::invalid_argument& e) {}
 	info_.arg_shape_ = shapes;
 	if (res_shape.is_fully_defined() &&
 		(false == og_shape.is_fully_defined() ||

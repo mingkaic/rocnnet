@@ -24,27 +24,24 @@ class assign;
 template <typename T>
 class ioptimizer;
 template <typename T>
-class ioperation;
+class iconnector;
+template <typename T>
+class buffer;
 
 // VARIABLE INTERFACE
 
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
 template <typename T>
-class ivariable
+class ivariable : public ccoms::subject_owner
 {
 	private:
 		std::string name_;
-		// WE OWN CALLER!
-		ccoms::subject* caller_ = nullptr;
 
 		template <typename U>
 		friend ccoms::subject* var_to_sub (ivariable<U>* var);
 		
 	protected:
-		// WRAPPER CONTENT
-		std::unique_ptr<tensor<T> > out_ = nullptr;
-
 		// GRADIENT STATE
 		// TODO: somehow differentiate gradient order (0 = non-gradient node, 1st order, etc.)
 
@@ -55,12 +52,13 @@ class ivariable
 
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
-		ivariable (const tensorshape& shape, std::string name);
+		ivariable (std::string name);
 
 		// protected members need to be accessed by other operations
 		friend class assign<T>;
 		friend class ioptimizer<T>;
-		friend class ioperation<T>;
+		friend class iconnector<T>;
+		friend class buffer<T>;
 
 	public:
 		virtual ~ivariable (void);
@@ -74,43 +72,25 @@ class ivariable
 		// TODO Implement
 
 		std::string get_name (void) const { return name_; }
-		virtual tensorshape get_shape (void) const
-		{
-			if (nullptr != this->out_)
-			{
-				return this->out_->get_shape();
-			}
-			return std::vector<size_t>{};
-		}
+		virtual tensorshape get_shape (void) const = 0;
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
 		// get eval simply returns the node's tensor
 		// the node will not check if tensor is valid for evaluation...
-		virtual tensor<T>* get_eval (void) { return out_.get(); }
+		virtual tensor<T>* get_eval (void) = 0;
 		virtual ivariable<T>* get_gradient (void) = 0;
-
-		// BRIDGE TO CALLER
-		void notify (ivariable<T>* grad = nullptr)
-		{
-			if (grad)
-			{
-				caller_->notify(grad->caller_);
-			}
-			else
-			{
-				caller_->notify();
-			}
-		}
-		bool no_audience (void) const
-		{
-			return caller_->no_audience();
-		}
 };
 
 template <typename T>
 ccoms::subject* var_to_sub (ivariable<T>* var)
 {
 	return var->caller_;
+}
+
+template <typename T>
+ivariable<T>* sub_to_var (ccoms::subject* sub)
+{
+	return dynamic_cast<ivariable<T>*>(sub->get_owner());
 }
 
 template <typename T>

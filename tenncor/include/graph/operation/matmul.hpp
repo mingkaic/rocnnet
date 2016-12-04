@@ -6,7 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/operation/ioperation.hpp"
+#include "graph/operation/elementary.hpp"
+#include "graph/operation/transform.hpp"
+#include "graph/variable/constant.hpp"
+#include "graph/buffer/igraph.hpp"
+#include "graph/buffer/buffer.hpp"
 
 #pragma once
 #ifndef matop_hpp
@@ -29,10 +33,11 @@ class matmul : public ioperation<T>
 
 		size_t common_dim (void) const;
 
+		class jgraph; // rename to jacobian later
+
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void);
-		virtual tensorshape shape_eval (void);
 		
 		matmul (const matmul<T>& other, std::string name);
 		virtual ivariable<T>* clone_impl (std::string name);
@@ -55,11 +60,11 @@ class matmul : public ioperation<T>
 		// MOVES
 		// TODO: implement
 
-		virtual void update (ccoms::update_message msg);
+		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
 };
 
 }
 
-#include "../../../../src/graph/operation/special/matmul.ipp"
+#include "../../../src/graph/operation/matmul.ipp"
 
 #endif /* matop_hpp */

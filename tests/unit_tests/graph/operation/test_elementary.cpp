@@ -4,9 +4,9 @@
 
 #include <limits>
 #include "gtest/gtest.h"
-#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/elementary.hpp"
 
-
+// TODO: separate test according to expected behaviors (see scope.txt)
 #define UNARY std::function<nnet::varptr<double>(nnet::varptr<double>)>
 #define BINARY_BOTH std::function<nnet::varptr<double>(nnet::varptr<double>, nnet::varptr<double>)>
 #define BINARY_FIRST std::function<nnet::varptr<double>(nnet::varptr<double>, double)>

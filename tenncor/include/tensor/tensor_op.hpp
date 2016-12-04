@@ -58,7 +58,6 @@ class tensor_op : public tensor<T,A>
 	public:
 		tensor_op (TEN_OP<T> op, SHAPE shaper);
 		tensor_op (TEN_OP<T> op, SHAPE shaper, const alloc_attrib& attrib);
-		// we don't own any of the raws so we don't need destructor
 
 		tensor_op<T,A>* clone (void);
 		virtual tensor_op<T,A>& operator = (tensor_op<T,A>& other);

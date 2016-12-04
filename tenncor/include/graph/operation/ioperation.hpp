@@ -14,8 +14,7 @@
 #include <memory>
 #include <stack>
 
-#include "graph/variable/variable.hpp"
-#include "graph/ccoms/iobserver.hpp"
+#include "graph/buffer/igraph.hpp"
 #include "executor/varptr.hpp"
 
 #pragma once
@@ -29,50 +28,70 @@ template <typename T>
 using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 
 template <typename T>
-class gradient;
-
-template <typename T>
 class jacobian;
 
 // INTERFACE OPERATION
 
 template <typename T>
-class ioperation : public ivariable<T>, public ccoms::iobserver
+class ioperation : public iconnector<T>
 {
 	private:
-		// remember that once leaf subjects are destroyed,
-		// everyone in this graph including this is destroyed
-		// so we don't need to bother with cleaning leaves_
-		std::unordered_set<ivariable<T>*> leaves_;
-		
 		// buffer argument tensors 
 		// (each argument can return different tensors)
 		// update each tensor by position accordingly
 		std::vector<tensor<T>*> tens_buffer_;
 
 	protected:
+		// WRAPPER CONTENT
+		std::unique_ptr<tensor_op<T> > out_ = nullptr;
+
 		bool valid_tensor_ = false;
-		ioperation<T>* grad_ = nullptr;
 		SHAPE shaper_;
 
-		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
-		{
-			src.insert(this->leaves_.begin(), this->leaves_.end());
-		}
+		// GRADIENT CONTENTS
+		iconnector<T>* grad_ = nullptr; // general gradient node
+		iconnector<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
 
-		// implement unique method of consuming input variables
 		// to extract shape info
+		// this shape evaluation is for when arguments are not instantiated
+		// uninstantiated arguments evade the shape_eval phase
+		// naturally, shaper_ is passed into tensor_op which would evaluate shape at update time
 		virtual tensorshape shape_eval (void)
 		{
 			std::vector<tensorshape> shapes;
 			for (ccoms::subject* sub : this->dependencies_)
 			{
-				if (ivariable<T>* v = sub->to_type<ivariable<T> >())
+				if (ivariable<T>* v = sub_to_var<T>(sub))
 				{
 					shapes.push_back(v->get_shape());
 				}
 			}
 			return shaper_(shapes);
+		}
+
+		void message_update (ccoms::update_message msg)
+		{
+			// UPDATE JACOBIAN
+			if (igraph<T>* graph = dynamic_cast<igraph<T>*>(msg.jacobi_))
+			{
+				if (nullptr == grad_jacobi_)
+				{
+					// setup grad_jacobi_
+					grad_jacobi_ = graph;
+					graph->update_leaf([this](ivariable<T>* leaf, size_t idx)
+					{
+					   assert(idx == 0); // jacobian graph must have a singular leaf (the value of the buffer more specifically)
+					   return this;
+					});
+				}
+				assert(grad_jacobi_ == graph);
+			}
+
+			// LEAF UPDATE
+			if (msg.leave_update_)
+			{
+				this->leaves_update(); // TODO: have message notify whether or not to update leaves
+			}
 		}
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
@@ -99,18 +118,25 @@ class ioperation : public ivariable<T>, public ccoms::iobserver
 		virtual ioperation<T>& operator = (const ioperation<T>& other);
 		
 		// MOVE
-		
-		// inherited from ioperation
-		virtual tensor<T>* get_eval (void); // override
-		
-		// non-inherited
-		virtual ivariable<T>* get_gradient (void);
 
-		// operations only
-		void leaves_collect (std::function<void(ivariable<T>*)> collector);
+		// implement from ivariable
+		virtual tensorshape get_shape (void) const
+		{
+			if (false == valid_tensor_)
+			{
+				return tensorshape();
+			}
+			return this->out_->get_shape();
+		}
+
+		virtual tensor<T>* get_eval (void);
+
+		virtual ivariable<T>* get_gradient (void); // access general gradient
+
+		virtual igraph<T>* get_jacobian (void) { return dynamic_cast<igraph<T>*>(grad_jacobi_); }
 		
 		// inherited by elementary and transform, overwritten by matmul and jacobian
-		virtual void update (ccoms::update_message msg);
+		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
 };
 
 }

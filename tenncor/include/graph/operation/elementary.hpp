@@ -129,6 +129,6 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b);
 
 }
 
-#include "../../../../src/graph/operation/general/elementary.ipp"
+#include "../../../src/graph/operation/elementary.ipp"
 
 #endif /* elementary_hpp */

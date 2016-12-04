@@ -60,8 +60,8 @@ TEST(VARIABLE, InitNotify_D100)
 	nnet::variable<double> emptyvar(std::vector<size_t>{}, cinit, "undefined_arr");
 	MockOperation* op = MockOperation::build(&cvar); // observes cvar
 	MockOperation* op2 = MockOperation::build(&emptyvar); // observes cvar
-	EXPECT_CALL(*op, update(_)).Times(1);
-	EXPECT_CALL(*op2, update(_)).Times(1);
+	EXPECT_CALL(*op, mock_update(_, _)).Times(1);
+	EXPECT_CALL(*op2, mock_update(_, _)).Times(1);
 	// call update on initializations
 	cvar.initialize();
 	emptyvar.initialize(std::vector<size_t>{2, 3});

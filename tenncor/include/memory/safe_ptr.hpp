@@ -21,14 +21,14 @@ struct safe_ptr
 	const std::type_info& info_;
 
 	template<typename T>
-	T *cast()
+	T* cast()
 	{
 // TODO: repair type comparison (breaks on DERIVE transform) [investigate C++17]
 //		if (typeid(T) != info_)
 //		{
 //			throw std::bad_cast();
 //		}
-		return static_cast<T *>(ptr_);
+		return static_cast<T*>(ptr_);
 	}
 };
 

@@ -16,9 +16,6 @@ namespace nnet
 template <typename T>
 void ivariable<T>::copy (const ivariable<T>& other, std::string name)
 {
-	caller_ = new ccoms::subject();
-	caller_->store_var(this);
-	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
 	if (0 == name.size())
 	{
 		name_ = other.name_+"_cpy";
@@ -27,6 +24,7 @@ void ivariable<T>::copy (const ivariable<T>& other, std::string name)
 	{
 		name_ = name;
 	}
+	ccoms::subject_owner::copy(other);
 }
 
 template <typename T>
@@ -36,11 +34,9 @@ ivariable<T>::ivariable (const ivariable<T>& other, std::string name)
 }
 
 template <typename T>
-ivariable<T>::ivariable (const tensorshape& shape, std::string name) : name_(name)
+ivariable<T>::ivariable (std::string name) :
+	ccoms::subject_owner(), name_(name)
 {
-	caller_ = new ccoms::subject();
-	caller_->store_var(this);
-	out_ = std::make_unique<tensor<T> >(shape);
 	session& sess = session::get_instance();
 	sess.register_obj(*this);
 }
@@ -48,7 +44,6 @@ ivariable<T>::ivariable (const tensorshape& shape, std::string name) : name_(nam
 template <typename T>
 ivariable<T>::~ivariable (void)
 {
-	delete caller_;
 	session& sess = session::get_instance();
 	sess.unregister_obj(*this);
 }

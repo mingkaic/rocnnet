@@ -78,6 +78,6 @@ varptr<T> compress (const varptr<T> a, int index = -1,
 
 }
 
-#include "../../../../src/graph/operation/general/transform.ipp"
+#include "../../../src/graph/operation/transform.ipp"
 
 #endif /* transform_hpp */

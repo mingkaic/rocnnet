@@ -19,7 +19,7 @@ void elementary<T>::setup_gradient (void)
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_)
 	{
-		if (ivariable<T>* arg = child->to_type<ivariable<T> >())
+		if (ivariable<T>* arg = sub_to_var<T>(child))
 		{
 			args.push_back(arg);
 		}
@@ -65,11 +65,11 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	};
 	this->out_ = std::make_unique<tensor_op<T> >(op, this->shaper_);
 	// try to update
-	this->update(ccoms::update_message(nullptr));
 	if (session::pre_shape_eval())
 	{
 		this->shape_eval();
 	}
+	this->update(ccoms::caller_info());
 }
 
 template <typename T>

@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <random>
 #include <ctime>
+#include "memory/safe_ptr.hpp"
 
 #pragma once
 #ifndef session_hpp

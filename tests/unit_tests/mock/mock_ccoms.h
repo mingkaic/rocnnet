@@ -11,8 +11,8 @@
 class MockSubject : public ccoms::subject
 {
 	public:
-		MockSubject (void) {}
-		MockSubject(const MockSubject& other) : ccoms::subject(other) {}
+		MockSubject (void) : ccoms::subject(nullptr) {}
+		MockSubject(const MockSubject& other) : ccoms::subject(other, nullptr) {}
 		~MockSubject (void) {}
 
 		void mock_detach(ccoms::iobserver* obs)
@@ -44,7 +44,8 @@ class MockObserver : public ccoms::iobserver
 		{
 			return this->dependencies_;
 		}
-		MOCK_METHOD1(update, void(ccoms::update_message));
+		MOCK_METHOD1(update, void(ccoms::caller_info));
+		MOCK_METHOD2(update, void(ccoms::caller_info, ccoms::update_message));
 };
 
 #endif //ROCNNET_MOCK_CCOMS_H

@@ -21,10 +21,7 @@ void iobserver::add_dependency (subject* dep)
 
 iobserver::iobserver (const iobserver& other)
 {
-	for (subject* dep : other.dependencies_)
-	{
-		add_dependency(dep);
-	}
+	copy(other);
 }
 
 iobserver::iobserver (std::vector<subject*> dependencies)
