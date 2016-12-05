@@ -141,11 +141,21 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 	// if caller is null then update all tensors
 	if (nullptr == caller)
 	{
+		// CALLER IS THIS. MEANING THIS IS CALLED DURING CONSTRUCTION
 		tens_buffer_.clear();
 		for (ccoms::subject* sub : this->dependencies_)
 		{
 			if (ivariable<T>* var = sub_to_var<T>(sub))
 			{
+				// GET JACOBIAN FROM CHILDREN DURING CONSTRUCTION
+				if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(var))
+				{
+					// grad_jacobi must be obtained from at most 1
+					assert(nullptr == grad_jacobi_ ||
+						   nullptr == op->grad_jacobi_);
+					grad_jacobi_ = op->grad_jacobi_;
+				}
+				// tensor buffer initialize
 				storage = var->get_eval();
 				tens_buffer_.push_back(storage);
 				if (nullptr == storage)
@@ -162,6 +172,7 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 		// grab caller_id from message
 		if (nullptr == grad) // don't care about grad, get best evaluation
 		{
+			// tensor buffer update
 			storage = caller->get_eval();
 			if (nullptr == storage)
 			{

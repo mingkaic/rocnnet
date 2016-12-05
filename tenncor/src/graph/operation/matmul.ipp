@@ -81,10 +81,12 @@ class matmul<T>::jgraph : public igraph<T>
 		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message())
 		{
 			size_t callerid = info.caller_idx_;
-			// ignore leaf
+			// ignore leaf updates
+			// leaves update propagates to root, then root updates this
 			if (callerid != 0) return;
 
 			// core jacobian logic
+			// PASS JACOBIAN UP EXISTING GRAPH AFTER GRADIENT_SETUP
 			if (igraph<T>* jac = dynamic_cast<igraph<T>*>(msg.jacobi_))
 			{
 				// connect the jacobian from below the tree as the top jacobian
@@ -92,8 +94,11 @@ class matmul<T>::jgraph : public igraph<T>
 			}
 			else
 			{
+				// first jacobi in this operation flow
 				msg.jacobi_ = this;
 			}
+
+			// TODO: pass jacobi up during construction (message update)
 
 			msg.grad_ = nullptr;
 			this->notify(msg);

@@ -72,7 +72,7 @@ class ioperation : public iconnector<T>
 
 		void message_update (ccoms::update_message msg)
 		{
-			// UPDATE JACOBIAN
+			// UPDATE JACOBIAN IF GRADIENT IS SETUP AFTER CONSTRUCTION
 			if (igraph<T>* graph = dynamic_cast<igraph<T>*>(msg.jacobi_))
 			{
 				if (nullptr == grad_jacobi_)

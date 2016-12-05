@@ -41,8 +41,8 @@ class igraph : public iconnector<T>
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 
 		// auto extract leaves of root as dependencies
-		// THIS could be an issue if we have some buffer and graph leaves are changing
-		// TODO consider better extraction
+		// THIS could be an issue if graph leaves are changing (due to buffer)
+		// TODO consider better leaf extraction that accommodates changing leaves
 		igraph (ivariable<T>* root) :
 			iconnector<T>(root_dep_extract(root), "graph<" + root->get_name() + ">") {}
 

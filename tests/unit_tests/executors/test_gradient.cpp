@@ -431,46 +431,53 @@ TEST(DERIVE, Matmul) {
 }
 
 
-// TEST(DERIVE, OpDeriveMatmul) {
-// 	const size_t limit = 523;
-// 	const size_t edge = 10;
-// 	const size_t supersize = edge*edge;
-// 	nnet::session& sess = nnet::session::get_instance();
-// 	nnet::random_uniform<double> rinit(0, 523);
+TEST(DERIVE, MatmulComplex)
+{
 
-// 	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
-// 	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
-// 	nnet::varptr<double> mul = matmul<double>::build(x, nnet::varptr<double>(place.get())); // <X, IN>
+}
 
-// 	nnet::varptr<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
-// 	nnet::gradient<double> grad(o, mul); // d(1/(1+e^(-X * IN))) / d(<X, IN>)
-// 	sess.initialize_all<double>();
 
-// 	std::vector<double> placeholder_in;
-// 	for (size_t i = 0; i < supersize; i++) {
-// 		placeholder_in.push_back(fmod(rand(), limit));
-// 	}
-// 	*place = placeholder_in;
+TEST(DERIVE, OpDeriveMatmul) {
+	const size_t limit = 523;
+	const size_t edge = 10;
+	const size_t supersize = edge*edge;
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::random_uniform<double> rinit(0, 523);
 
-	// std::vector<double> xin = nnet::expose<double>(mul);
-	// std::vector<double> der;
-	// grad.freeze();
-	// grad.execute();
-	// grad.collect_grad(
-	// [&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-	// {
-	// 	der = nnet::expose<double>(value);
-	// });
+	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
+	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
+	nnet::varptr<double> mul = nnet::matmul<double>::build(x, nnet::varptr<double>(place.get())); // <X, IN>
 
-	// ASSERT_EQ(der.size(), xin.size());
+	nnet::varptr<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
+	nnet::gradient<double> grad(o, mul); // d(1/(1+e^(-X * IN))) / d(<X, IN>)
+	sess.initialize_all<double>();
 
-	// for (size_t i = 0; i < der.size(); i++) {
-	// 	// allow some errors since sig_prime and better ex are prone to rounding errors
-	// 	// sig_prime is a 2 step process:
-	// 	// 1. get sig which can cause rounding
-	// 	// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
-	// 	EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
-	// }
-	
-// 	delete x.get(); delete place.get();
-// }
+//	std::vector<double> placeholder_in;
+//	for (size_t i = 0; i < supersize; i++) {
+//		placeholder_in.push_back(fmod(rand(), limit));
+//	}
+//	*place = placeholder_in;
+//
+//	std::vector<double> xin = nnet::expose<double>(mul);
+//	std::vector<double> der;
+//	grad.freeze();
+//	grad.execute();
+//	grad.collect_grad(
+//	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+//	{
+//		der = nnet::expose<double>(value);
+//	});
+//
+//	ASSERT_EQ(der.size(), xin.size());
+//
+//	for (size_t i = 0; i < der.size(); i++) {
+//		// allow some errors since sig_prime and better ex are prone to rounding errors
+//		// sig_prime is a 2 step process:
+//		// 1. get sig which can cause rounding
+//		// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
+//		EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
+//	}
+
+	delete x.get();
+	delete place.get();
+}
