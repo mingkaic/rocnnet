@@ -19,6 +19,9 @@ namespace nnet
 template <typename T>
 class gradient;
 
+template <typename T>
+class igraph;
+
 // operates on nodes
 template <typename T>
 class iconnector : public ivariable<T>, public ccoms::iobserver
@@ -62,6 +65,8 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 		// get_eval remains abstract
 		// get_gradient remains abstract
 		// update remains abstract
+		
+		virtual igraph<T>* get_jacobian (void) = 0;
 };
 
 }

@@ -27,7 +27,6 @@ class igraph;
 struct update_message
 {
 	subject* grad_ = nullptr; // this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
-	iobserver* jacobi_ = nullptr;
 	bool leave_update_ = false;
 };
 

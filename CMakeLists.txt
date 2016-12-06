@@ -14,6 +14,10 @@ set(UNIT_MAIN "" CACHE STRING "path to unit-test main")
 set(PERFORM_MAIN "" CACHE STRING "path to performance-test main")
 
 #-------------------
+OPTION (OFFLINE "Building from offline?" OFF)
+#-------------------
+
+#-------------------
 # Other flags
 #-------------------
 if(CMAKE_COMPILER_IS_GNUCXX)

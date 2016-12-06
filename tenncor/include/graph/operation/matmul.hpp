@@ -61,16 +61,6 @@ class matmul : public ioperation<T>
 		// TODO: implement
 
 		// override ioperation
-		// matmul always has a grad_jacobi, it treats grad_jacobi as its general grad_
-		virtual ivariable<T>* get_gradient (void)
-		{
-			// performs all the gradient set up
-			ioperation<T>::get_gradient();
-			// treat grad_jacobi as grad
-			this->grad_jacobi_->set_death((void**) &this->grad_jacobi_);
-			// take grad_jacobi instead
-			return this->grad_jacobi_;
-		}
 		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
 };
 

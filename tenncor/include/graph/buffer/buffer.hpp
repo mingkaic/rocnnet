@@ -68,6 +68,15 @@ class buffer : public iconnector<T>
 		{
 			this->notify(msg);
 		}
+		
+		virtual igraph<T>* get_jacobian (void)
+		{
+			if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(get()))
+			{
+				return c->get_jacobian();
+			}
+			return nullptr;
+		}
 };
 
 }

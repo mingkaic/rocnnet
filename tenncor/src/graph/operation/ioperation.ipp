@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef operation_hpp
+#ifdef ioperation_hpp
 
 namespace nnet
 {
@@ -148,17 +148,16 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 			if (ivariable<T>* var = sub_to_var<T>(sub))
 			{
 				// GET JACOBIAN FROM CHILDREN DURING CONSTRUCTION
-				if (ioperation<T>* op = dynamic_cast<ioperation<T>*>(var))
+				if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(var))
 				{
-					// grad_jacobi must be obtained from at most 1
-					assert(nullptr == grad_jacobi_ ||
-						   nullptr == op->grad_jacobi_);
-					grad_jacobi_ = op->grad_jacobi_;
+					// if we get arguments with jacobians, we are most likely in reverse mode graph
+					setup_jacobian(c->get_jacobian());
 				}
 				// tensor buffer initialize
 				storage = var->get_eval();
 				tens_buffer_.push_back(storage);
-				if (nullptr == storage)
+				if (nullptr == storage ||
+					false == storage->get_shape().is_fully_defined())
 				{
 					this->valid_tensor_ = false;
 				}
@@ -174,7 +173,8 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 		{
 			// tensor buffer update
 			storage = caller->get_eval();
-			if (nullptr == storage)
+			if (nullptr == storage ||
+				false == storage->get_shape().is_fully_defined())
 			{
 				this->valid_tensor_ = false;
 			}

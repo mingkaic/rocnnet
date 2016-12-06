@@ -34,7 +34,10 @@ class matmul<T>::jgraph : public igraph<T>
 		}
 
 		jgraph (ivariable<T>* root, buffer<T>* leaf) :
-			igraph<T>(root, leaf) {}
+			igraph<T>(root, leaf)
+		{
+			update(ccoms::caller_info());
+		}
 
 	public:
 		static jgraph* build (ivariable<T>* root, buffer<T>* leaf)
@@ -71,38 +74,6 @@ class matmul<T>::jgraph : public igraph<T>
 			// reassign current buffer
 			*b = *lassign(b->get(), 0);
 		}
-
-		// override from buffer
-		virtual tensorshape get_shape (void) const { return this->get_root()->get_shape(); }
-		// special jacobian: eval the leaf instead of root
-		virtual tensor<T>* get_eval (void) { return get_leaf()->get_eval(); }
-		// jacobian special: evaluate leaf
-		virtual ivariable<T>* get_gradient (void) { return this->get_root()->get_gradient(); }
-		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message())
-		{
-			size_t callerid = info.caller_idx_;
-			// ignore leaf updates
-			// leaves update propagates to root, then root updates this
-			if (callerid != 0) return;
-
-			// core jacobian logic
-			// PASS JACOBIAN UP EXISTING GRAPH AFTER GRADIENT_SETUP
-			if (igraph<T>* jac = dynamic_cast<igraph<T>*>(msg.jacobi_))
-			{
-				// connect the jacobian from below the tree as the top jacobian
-				jac->connect_graph(this);
-			}
-			else
-			{
-				// first jacobi in this operation flow
-				msg.jacobi_ = this;
-			}
-
-			// TODO: pass jacobi up during construction (message update)
-
-			msg.grad_ = nullptr;
-			this->notify(msg);
-		}
 };
 
 // MATRIX MULTIPLICATION
@@ -128,11 +99,15 @@ void matmul<T>::setup_gradient (void)
 
 	varptr<T> grada = arga->get_gradient();
 	varptr<T> gradb = argb->get_gradient();
+	iconnector<T>* oga = dynamic_cast<iconnector<T>*>(grada.get());
+	iconnector<T>* ogb = dynamic_cast<iconnector<T>*>(gradb.get());
 
 	// matmul is special in that its grad_jacobi_ is the default jacobian leaf one
 	// grad_ is the jacobian instead
-	this->grad_ = dynamic_cast<iconnector<T>*>(fit<double>(constant<T>::build(1), this).get());
-	buffer<T>* temp = buffer<T>::build(this->grad_);
+	ioperation<T>* fgrad;
+	this->grad_ = fgrad = dynamic_cast<ioperation<T>*>(
+		fit<double>(constant<T>::build(1), this).get());
+	buffer<T>* temp = buffer<T>::build(fgrad); // use frad temporarily until parent connects
 	varptr<T> mA = matmul<T>::build(temp, argb, transposeA_, !transposeB_);
 	varptr<T> mB = matmul<T>::build(arga, temp, !transposeA_, transposeB_);
 
@@ -140,7 +115,20 @@ void matmul<T>::setup_gradient (void)
 	varptr<T> res = mA * grada + mB * gradb;
 	// reset shape eval here if necessary
 
-	this->grad_jacobi_ = jgraph::build(res, temp);
+	igraph<T>* prime_jacobi = jgraph::build(res, temp);
+	// check if oga or ogb for jacobi
+	igraph<T>* candidate_a = oga->get_jacobian();
+	igraph<T>* candidate_b = ogb->get_jacobian();
+	assert(nullptr == candidate_a || nullptr == candidate_b);
+	igraph<T>* chief = candidate_a ? candidate_a : candidate_b;
+	if (chief)
+	{
+		// ascend jacobians from below the graph
+		chief->connect_graph(prime_jacobi);
+		prime_jacobi = chief;
+	}
+	
+	fgrad->grad_jacobi_ = prime_jacobi;
 }
 
 template <typename T>

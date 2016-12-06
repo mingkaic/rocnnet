@@ -14,12 +14,12 @@
 #include <memory>
 #include <stack>
 
-#include "graph/buffer/igraph.hpp"
 #include "executor/varptr.hpp"
+#include "graph/buffer/igraph.hpp"
 
 #pragma once
-#ifndef operation_hpp
-#define operation_hpp
+#ifndef ioperation_hpp
+#define ioperation_hpp
 
 namespace nnet
 {
@@ -29,6 +29,9 @@ using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 
 template <typename T>
 class jacobian;
+// matmul needs permission to change grad_jacobi_
+template <typename T>
+class matmul;
 
 // INTERFACE OPERATION
 
@@ -69,25 +72,28 @@ class ioperation : public iconnector<T>
 			}
 			return shaper_(shapes);
 		}
+		
+		void setup_jacobian (igraph<T>* j)
+		{
+			if (nullptr == j) return;
+			if (nullptr == grad_jacobi_)
+			{
+				// setup grad_jacobi_
+				grad_jacobi_ = j;
+				j->update_leaf([this](ivariable<T>* leaf, size_t idx)
+				{
+					// jacobian graph must have a singular leaf (the value of the buffer more specifically)
+					assert(idx == 0);
+					return this;
+				});
+			}
+			// we can have at most 1 candiate grad_jacobi per node
+			// we may have repeated candidates
+			assert(grad_jacobi_ == j);
+		}
 
 		void message_update (ccoms::update_message msg)
 		{
-			// UPDATE JACOBIAN IF GRADIENT IS SETUP AFTER CONSTRUCTION
-			if (igraph<T>* graph = dynamic_cast<igraph<T>*>(msg.jacobi_))
-			{
-				if (nullptr == grad_jacobi_)
-				{
-					// setup grad_jacobi_
-					grad_jacobi_ = graph;
-					graph->update_leaf([this](ivariable<T>* leaf, size_t idx)
-					{
-					   assert(idx == 0); // jacobian graph must have a singular leaf (the value of the buffer more specifically)
-					   return this;
-					});
-				}
-				assert(grad_jacobi_ == graph);
-			}
-
 			// LEAF UPDATE
 			if (msg.leave_update_)
 			{
@@ -110,6 +116,7 @@ class ioperation : public iconnector<T>
 
 		friend class gradient<T>;
 		friend class jacobian<T>;
+		friend class matmul<T>;
 
 	public:
 		virtual ~ioperation (void);
@@ -134,16 +141,7 @@ class ioperation : public iconnector<T>
 
 		virtual ivariable<T>* get_gradient (void); // access general gradient
 
-		virtual ivariable<T>* get_jacobian (void)
-		{
-			// by default grad_jacobi most likely has its root hidden
-			// do away with the graph behavior by exposing its root
-			if (nullptr != grad_jacobi_)
-			{
-				return grad_jacobi_->get_root();
-			}
-			return nullptr;
-		}
+		virtual igraph<T>* get_jacobian (void) { return grad_jacobi_; }
 		
 		// inherited by elementary and transform, overwritten by matmul and jacobian
 		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
@@ -153,4 +151,4 @@ class ioperation : public iconnector<T>
 
 #include "../../../src/graph/operation/ioperation.ipp"
 
-#endif /* operation_hpp */
+#endif /* ioperation_hpp */

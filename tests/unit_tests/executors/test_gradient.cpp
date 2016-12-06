@@ -431,12 +431,6 @@ TEST(DERIVE, Matmul) {
 }
 
 
-TEST(DERIVE, MatmulComplex)
-{
-
-}
-
-
 TEST(DERIVE, OpDeriveMatmul) {
 	const size_t limit = 523;
 	const size_t edge = 10;
@@ -481,3 +475,26 @@ TEST(DERIVE, OpDeriveMatmul) {
 	delete x.get();
 	delete place.get();
 }
+
+
+// TEST(DERIVE, MatmulComplex)
+// {
+// 	size_t insize = 10;
+// 	size_t lay1 = 9;
+// 	size_t lay2 = 8;
+// 	nnet::random_uniform<double> rinit(-1, 1);
+// 	// simulate layers without bias (for simplicity)
+// 	// layer 1
+// 	nnet::placeptr<double> IN = new nnet::placeholder<double>(std::vector<size_t>{insize, 1}, "in");
+// 	nnet::varptr<double> W1 = new nnet::variable<double>((std::vector<size_t>{lay1, insize}), rinit, "w1");
+// 	nnet::varptr<double> layer1 = nnet::sigmoid(nnet::matmul<double>::build(IN, W1)); // shape <lay1, 1>
+// 	// layer 2
+// 	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
+// 	nnet::varptr<double> layer2 = nnet::sigmoid(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
+	
+// 	// expected grad:
+	
+	
+// 	nnet::gradient<double> grad(layer2); // leaves are W1 and W2
+// 	sess.initialize_all<double>();
+// }
