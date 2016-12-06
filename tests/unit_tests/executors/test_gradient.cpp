@@ -8,6 +8,7 @@
 #include "graph/functions.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/operation/matmul.hpp"
+#include "tensor_test_util.h"
 
 static const double epi = std::numeric_limits<double>::epsilon();
 
@@ -446,55 +447,89 @@ TEST(DERIVE, OpDeriveMatmul) {
 	nnet::gradient<double> grad(o, mul); // d(1/(1+e^(-X * IN))) / d(<X, IN>)
 	sess.initialize_all<double>();
 
-//	std::vector<double> placeholder_in;
-//	for (size_t i = 0; i < supersize; i++) {
-//		placeholder_in.push_back(fmod(rand(), limit));
-//	}
-//	*place = placeholder_in;
-//
-//	std::vector<double> xin = nnet::expose<double>(mul);
-//	std::vector<double> der;
-//	grad.freeze();
-//	grad.execute();
-//	grad.collect_grad(
-//	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-//	{
-//		der = nnet::expose<double>(value);
-//	});
-//
-//	ASSERT_EQ(der.size(), xin.size());
-//
-//	for (size_t i = 0; i < der.size(); i++) {
-//		// allow some errors since sig_prime and better ex are prone to rounding errors
-//		// sig_prime is a 2 step process:
-//		// 1. get sig which can cause rounding
-//		// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
-//		EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
-//	}
+	std::vector<double> placeholder_in;
+	for (size_t i = 0; i < supersize; i++) {
+		placeholder_in.push_back(fmod(rand(), limit));
+	}
+	place = placeholder_in;
+
+	std::vector<double> xin = nnet::expose<double>(mul);
+	std::vector<double> der;
+	grad.freeze();
+	grad.execute();
+	grad.collect_grad(
+	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		der = nnet::expose<double>(value);
+	});
+
+	ASSERT_EQ(der.size(), xin.size());
+
+	for (size_t i = 0; i < der.size(); i++) {
+		// allow some errors since sig_prime and better ex are prone to rounding errors
+		// sig_prime is a 2 step process:
+		// 1. get sig which can cause rounding
+		// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
+		EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
+	}
 
 	delete x.get();
 	delete place.get();
 }
 
 
-// TEST(DERIVE, MatmulComplex)
-// {
-// 	size_t insize = 10;
-// 	size_t lay1 = 9;
-// 	size_t lay2 = 8;
-// 	nnet::random_uniform<double> rinit(-1, 1);
-// 	// simulate layers without bias (for simplicity)
-// 	// layer 1
-// 	nnet::placeptr<double> IN = new nnet::placeholder<double>(std::vector<size_t>{insize, 1}, "in");
-// 	nnet::varptr<double> W1 = new nnet::variable<double>((std::vector<size_t>{lay1, insize}), rinit, "w1");
-// 	nnet::varptr<double> layer1 = nnet::sigmoid(nnet::matmul<double>::build(IN, W1)); // shape <lay1, 1>
-// 	// layer 2
-// 	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
-// 	nnet::varptr<double> layer2 = nnet::sigmoid(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
-	
-// 	// expected grad:
-	
-	
-// 	nnet::gradient<double> grad(layer2); // leaves are W1 and W2
-// 	sess.initialize_all<double>();
-// }
+TEST(DERIVE, MatmulComplex)
+{
+	nnet::session& sess = nnet::session::get_instance();
+ 	size_t insize = 10;
+ 	size_t lay1 = 9;
+ 	size_t lay2 = 8;
+ 	nnet::random_uniform<double> rinit(-1, 1);
+ 	// simulate layers without bias (for simplicity)
+ 	// layer 1
+ 	nnet::placeptr<double> IN = new nnet::placeholder<double>(std::vector<size_t>{insize, 1}, "in");
+ 	nnet::varptr<double> W1 = new nnet::variable<double>((std::vector<size_t>{lay1, insize}), rinit, "w1");
+ 	nnet::varptr<double> layer1 = nnet::sigmoid<double>(nnet::matmul<double>::build(IN, W1)); // shape <lay1, 1>
+ 	// layer 2
+ 	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
+ 	nnet::varptr<double> layer2 = nnet::sigmoid<double>(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
+
+	nnet::gradient<double> grad(layer2); // leaves are W1 and W2
+	sess.initialize_all<double>();
+
+	std::vector<double> inraw;
+	for (size_t i = 0; i < insize; i++) {
+		double val = fmod(rand(), 2);
+		inraw.push_back(1 - val);
+	}
+	IN = inraw;
+
+ 	// expected grad:
+	// wrt W1
+
+	// wrt W2
+
+	grad.freeze();
+	grad.execute();
+	std::vector<double> w1vec;
+	std::vector<double> w2vec;
+	grad.collect_grad(
+	[W1, W2, &w1vec, &w2vec](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		if (key == W1)
+		{
+			EXPECT_TRUE(tensorshape_equal(W1->get_shape(), value->get_shape()));
+			w1vec = nnet::expose<double>(value);
+		}
+		if (key == W2)
+		{
+			EXPECT_TRUE(tensorshape_equal(W2->get_shape(), value->get_shape()));
+			w2vec = nnet::expose<double>(value);
+		}
+	});
+
+	// compare expected and real values
+	delete IN.get();
+	delete W1.get();
+	delete W2.get();
+}

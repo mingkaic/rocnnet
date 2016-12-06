@@ -138,7 +138,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 
 		const T* super_src = src;
 		T* super_dest = temp;
-		size_t below = 1;
+		size_t super_below = 1;
 		size_t ototal = oshape.n_elems(); // old total
 
 		for (size_t index = 0; index < tv.size(); index++)
@@ -151,7 +151,6 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 				if (0 == tv[index] % orig[index])
 				{
 					mult = tv[index] / orig[index];
-					below *= orig[index];
 					ototal *= mult;
 				}
 				else
@@ -164,23 +163,36 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 			{
 				mult = tv[index];
 			}
+
+			// below calculates all elements encompassed up to the index dimension
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// below = 1 * 2 * 3 = 6
+			size_t below = super_below * tv[index] / mult;
+			// above calculates the number of tensors (of index rank) within the original tensor
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
+			// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
+			// above is 4
+			// above = original total / below
+			// original total = resulting total / multiplier
 			// expand original across resulting dimension
-			size_t above = ototal / below;
+			size_t above = total / (mult * below);
 
 			// copy over data
-			const T* src_addr = super_src;
+			size_t src_idx = 0;
+			size_t dest_idx = 0;
 			for (size_t i = 0; i < above; i++)
 			{
+				src_idx = i * below;
 				// copy data mult times
-				src_addr += i * below;
 				for (size_t j = 0; j < mult; j++)
 				{
-					T* dest_addr = super_dest + below * (mult * i + j);
-					std::memcpy(dest_addr, src_addr, below * sizeof(T));
+					dest_idx = below * (mult * i + j);
+					std::memcpy(super_dest + dest_idx, super_src + src_idx, below * sizeof(T));
 				}
 			}
 			// state update: below_dim, super_src, and super_dest
-			below *= mult;
+			super_below *= tv[index];
 
 			// swap super buffers as long as it's not the last one
 			if (index < tv.size()-1)

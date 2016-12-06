@@ -36,7 +36,7 @@ class matmul<T>::jgraph : public igraph<T>
 		jgraph (ivariable<T>* root, buffer<T>* leaf) :
 			igraph<T>(root, leaf)
 		{
-			update(ccoms::caller_info());
+			this->update(ccoms::caller_info());
 		}
 
 	public:
@@ -61,12 +61,15 @@ class matmul<T>::jgraph : public igraph<T>
 
 		virtual void connect_graph (igraph<T>* g_other)
 		{
+			// connect other's root to this leaf
 			buffer<T>* l_buffer = get_leaf();
 			ivariable<T>* g_root = g_other->get_root();
 			if (l_buffer->get() != g_root)
 			{
 				*l_buffer = *g_root;
 			}
+			// step 2: replace this leaf with other's leaf TODO
+
 		}
 		virtual void update_leaf (std::function<ivariable<T>*(ivariable<T>*,size_t)> lassign)
 		{
@@ -117,8 +120,9 @@ void matmul<T>::setup_gradient (void)
 
 	igraph<T>* prime_jacobi = jgraph::build(res, temp);
 	// check if oga or ogb for jacobi
-	igraph<T>* candidate_a = oga->get_jacobian();
-	igraph<T>* candidate_b = ogb->get_jacobian();
+	igraph<T>* candidate_a = oga ? oga->get_jacobian() : nullptr;
+	igraph<T>* candidate_b = ogb ? ogb->get_jacobian() : nullptr;
+	// we can only have one candidate
 	assert(nullptr == candidate_a || nullptr == candidate_b);
 	igraph<T>* chief = candidate_a ? candidate_a : candidate_b;
 	if (chief)
@@ -127,8 +131,8 @@ void matmul<T>::setup_gradient (void)
 		chief->connect_graph(prime_jacobi);
 		prime_jacobi = chief;
 	}
-	
-	fgrad->grad_jacobi_ = prime_jacobi;
+
+	fgrad->set_jacobian(prime_jacobi);
 }
 
 template <typename T>

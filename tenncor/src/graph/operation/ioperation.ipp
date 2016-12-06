@@ -28,7 +28,7 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 	}
 	// shallow copy
 	grad_ = other.grad_;
-	grad_jacobi_ = other.grad_jacobi_;
+	set_jacobian(other.grad_jacobi_);
 	tens_buffer_ = other.tens_buffer_;
 	iconnector<T>::copy(other, name);
 }

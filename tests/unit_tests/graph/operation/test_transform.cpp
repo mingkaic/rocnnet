@@ -99,24 +99,24 @@ TEST(OPERATION, Transpose)
 TEST(OPERATION, Fit)
 {
 	nnet::placeholder<double> A((std::vector<size_t>{1}), "a");
-	nnet::placeholder<double> B((std::vector<size_t>{10}), "b");
+	nnet::placeholder<double> B((std::vector<size_t>{10, 1}), "b");
 	nnet::placeholder<double> C((std::vector<size_t>{10, 5}), "c");
 
-	nnet::placeholder<double> shape(std::vector<size_t>{10, 10}, "shape");
+	nnet::placeholder<double> shape(std::vector<size_t>{10, 5}, "shape");
 
 	nnet::varptr<double> resa = nnet::fit<double>(&A, &shape);
 	nnet::varptr<double> resb = nnet::fit<double>(&B, &shape);
 	nnet::varptr<double> resc = nnet::fit<double>(&C, &shape);
+	shape = std::vector<double>(50, 1);
 	A = std::vector<double>{1};
 	B = std::vector<double>(10, 1);
-	C = std::vector<double>(50, 1);
-	shape = std::vector<double>(100, 1); // special caveat: shape must be initialized for fit to access shape TODO: fix
+	C = std::vector<double>(50, 1); // special caveat: shape must be initialized for fit to access shape TODO: fix
 	std::vector<double> a = nnet::expose<double>(resa);
 	nnet::tensorshape sa = resa->get_shape();
 	std::vector<size_t> va = sa.as_list();
 	ASSERT_EQ(va.size(), 2);
 	ASSERT_EQ(va[0], 10);
-	ASSERT_EQ(va[1], 10);
+	ASSERT_EQ(va[1], 5);
 	size_t count = 0;
 	for (double v : a)
 	{
@@ -127,7 +127,7 @@ TEST(OPERATION, Fit)
 	std::vector<size_t> vb = sb.as_list();
 	ASSERT_EQ(vb.size(), 2);
 	ASSERT_EQ(vb[0], 10);
-	ASSERT_EQ(vb[1], 10);
+	ASSERT_EQ(vb[1], 5);
 	for (double v : b)
 	{
 		EXPECT_EQ(1, v);
@@ -137,7 +137,7 @@ TEST(OPERATION, Fit)
 	std::vector<size_t> vc = sc.as_list();
 	ASSERT_EQ(vc.size(), 2);
 	ASSERT_EQ(vc[0], 10);
-	ASSERT_EQ(vc[1], 10);
+	ASSERT_EQ(vc[1], 5);
 	for (double v : a)
 	{
 		EXPECT_EQ(1, v);

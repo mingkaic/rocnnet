@@ -29,9 +29,6 @@ using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 
 template <typename T>
 class jacobian;
-// matmul needs permission to change grad_jacobi_
-template <typename T>
-class matmul;
 
 // INTERFACE OPERATION
 
@@ -79,7 +76,7 @@ class ioperation : public iconnector<T>
 			if (nullptr == grad_jacobi_)
 			{
 				// setup grad_jacobi_
-				grad_jacobi_ = j;
+				set_jacobian(j);
 				j->update_leaf([this](ivariable<T>* leaf, size_t idx)
 				{
 					// jacobian graph must have a singular leaf (the value of the buffer more specifically)
@@ -116,7 +113,6 @@ class ioperation : public iconnector<T>
 
 		friend class gradient<T>;
 		friend class jacobian<T>;
-		friend class matmul<T>;
 
 	public:
 		virtual ~ioperation (void);
@@ -141,6 +137,14 @@ class ioperation : public iconnector<T>
 
 		virtual ivariable<T>* get_gradient (void); // access general gradient
 
+		void set_jacobian (igraph<T>* j)
+		{
+			if (nullptr == grad_jacobi_)
+			{
+				grad_jacobi_ = j;
+				grad_jacobi_->set_death((void**) &grad_jacobi_);
+			}
+		}
 		virtual igraph<T>* get_jacobian (void) { return grad_jacobi_; }
 		
 		// inherited by elementary and transform, overwritten by matmul and jacobian
