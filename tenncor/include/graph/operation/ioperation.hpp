@@ -14,7 +14,7 @@
 #include <memory>
 #include <stack>
 
-#include "graph/graph.hpp"
+#include "graph/tensorless/graph.hpp"
 
 #pragma once
 #ifndef ioperation_hpp

@@ -9,7 +9,8 @@
 #include "graph/operation/elementary.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/variable/constant.hpp"
-#include "graph/graph.hpp"
+#include "graph/tensorless/graph.hpp"
+#include "graph/tensorless/selector.hpp"
 
 #pragma once
 #ifndef matop_hpp

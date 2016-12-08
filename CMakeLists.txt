@@ -17,7 +17,7 @@ set(PERFORM_MAIN "" CACHE STRING "path to performance-test main")
 # Options
 #-------------------
 OPTION (OFFLINE "Building from offline?" OFF)
-OPTION (DOCUMENT "Update doxygen documents?" OFF)
+OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 
 #-------------------
 # Other flags
@@ -50,39 +50,45 @@ if (OFFLINE)
     # adding googletest
     #-------------------
     find_package(GTest REQUIRED)
-    if(DOCUMENT)
+    if(BUILD_DOC)
         #-------------------
         # adding doxygen
         #-------------------
         find_package(Doxygen QUIET)
-    endif(DOCUMENT)
+    endif(BUILD_DOC)
 else(OFFLINE)
     # setup externals using in ext directory cmakelists
     #-------------------
     # adding googletest
     #-------------------
     add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
-    if(DOCUMENT)
+    if(BUILD_DOC)
         #-------------------
         # adding doxygen
         #-------------------
         add_subdirectory(${EXT_PROJECTS_DIR}/doxygen)
-    endif(DOCUMENT)
+    endif(BUILD_DOC)
 endif(OFFLINE)
 #>>>>>>>>>>>>>>>>>>>>>>>> EXTERNAL SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>> DOXYGEN SETUP COMMENCE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-if(DOCUMENT)
+if(BUILD_DOC)
     if(DOXYGEN_FOUND)
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-        add_custom_target(doc
-            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen" VERBATIM)
+        # set input and output files
+        set(DOXYGEN_IN ${PROJECT_SOURCE_DIR}/docs/Doxyfile.in)
+        set(DOXYGEN_OUT ${PROJECT_SOURCE_DIR}/src/Doxyfile)
+
+        message("Doxygen build started")
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        add_customer_target(doc_doxygen ALL
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating API Documentation with Doxygen"
+                VERBATIM)
     else (DOXYGEN_FOUND)
-        message(WARNING "Document mode active but doxygen not found. Will not update document")
+        message(WARNING "Doxygen need to be installed to generate the doxygen documetation")
     endif(DOXYGEN_FOUND)
-endif(DOCUMENT)
+endif(BUILD_DOC)
 #>>>>>>>>>>>>>>>>>>>>>>>> DOXYGEN SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

@@ -442,6 +442,7 @@ TEST(DERIVE, Matmul) {
 	size_t count = 0;
 	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
 	{
+		ASSERT_TRUE(key == A.get() || key == B.get());
 		if (key == A.get())
 		{
 			rawA = nnet::expose<double>(value);
@@ -493,7 +494,8 @@ TEST(DERIVE, MatmulComplex)
 	nnet::varptr<double> layer1 = nnet::sigmoid<double>(intermediate); // shape <lay1, 1>
 	// layer 2
 	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
-	nnet::varptr<double> layer2 = nnet::sigmoid<double>(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
+	nnet::varptr<double> intermediate2 = nnet::matmul<double>::build(layer1, W2);
+	nnet::varptr<double> layer2 = nnet::sigmoid<double>(intermediate2); // shape <lay2, 1>
 
 	nnet::gradient<double> grad(layer2); // leaves are W1 and W2
 	sess.initialize_all<double>();
@@ -504,22 +506,24 @@ TEST(DERIVE, MatmulComplex)
 		inraw.push_back(1 - val);
 	}
 	IN = inraw;
-	
+
 	// make sure jacobians at each node are mutually exclusive
-	nnet::gradient<double> it(intermediate);
+	nnet::gradient<double> it(layer1);
 	it.freeze();
 	it.execute();
 	// expected grad for intermediate value: matmul(IN, W1)
 	// expecting jacobian: <IN^T, fit(1, matmul(IN, W1))> * d(W1)
+	// d(sigmoid) = sigmoid * (1 - sigmoid)
 	nnet::varptr<double> one = new nnet::variable<double>(1);
-	nnet::varptr<double> ex1 = nnet::matmul<double>::build(IN, nnet::fit(one, intermediate), true);
+	nnet::varptr<double> sig = nnet::sigmoid<double>(nnet::fit(one, intermediate));
+	nnet::varptr<double> gsig = sig * (1.0 - sig);
+	nnet::varptr<double> ex1 = nnet::matmul<double>::build(IN, gsig, true);
 	
 	std::vector<double> exv = nnet::expose<double>(ex1);
 	it.collect_grad(
 	[W1, &exv](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
 	{
 		EXPECT_EQ(W1.get(), key);
-		print_tensor(value->get_eval());
 		std::vector<double> interv = nnet::expose<double>(value);
 		EXPECT_TRUE(tensorshape_equal(W1->get_shape(), value->get_shape()));
 		ASSERT_EQ(exv.size(), interv.size());

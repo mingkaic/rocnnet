@@ -140,6 +140,7 @@ void gradient<T>::execute (void)
 		it_grad = it_leaf->get_gradient();
 		previous->get_gradient()->notify(it_grad);
 		it_grad->notify(it_grad);
+		root_res = g_root_->get_eval();
 		*(leaf_map_[it_leaf]) = *root_res;
 		previous = it_leaf;
 	}

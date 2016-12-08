@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/graph.hpp"
+#include "graph/tensorless/graph.hpp"
 #include "graph/operation/elementary.hpp"
 
 
@@ -66,4 +66,17 @@ TEST(GRAPH, deletion_graph_F201)
     delete g1;
     delete leaf;
     delete leaf2;
+}
+
+
+TEST(GRAPH, var_deletion)
+{
+	nnet::ivariable<double>* leaf = new nnet::variable<double>(2);
+	nnet::graph<double>* g1 = nnet::graph<double>::build(leaf,
+	[](nnet::varptr<double> leaf)
+	{
+		return leaf;
+	});
+
+	delete leaf; // this should kill g1
 }

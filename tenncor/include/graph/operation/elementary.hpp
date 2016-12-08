@@ -35,7 +35,7 @@ class elementary : public ioperation<T> {
 			std::string name);
 
 	public:
-		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+		static elementary<T>* build (std::vector<ivariable<T>*> args,
 			TEN_OP<T> op,
 			BUILD_DERIVE<T> der,
 			std::string name = "")

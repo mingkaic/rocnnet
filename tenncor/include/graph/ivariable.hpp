@@ -74,7 +74,7 @@ class ivariable : public ccoms::subject_owner
 		// MOVE
 		// TODO Implement
 
-		std::string get_name (void) const { return name_; }
+		virtual std::string get_name (void) const { return name_; }
 		virtual tensorshape get_shape (void) = 0;
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES

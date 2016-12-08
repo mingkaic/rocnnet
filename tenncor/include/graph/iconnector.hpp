@@ -24,12 +24,13 @@ class gradient;
 template <typename T>
 class iconnector : public ivariable<T>, public ccoms::iobserver
 {
-	protected:
+	private:
 		// remember that once leaf subjects are destroyed,
 		// everyone in this graph including this is destroyed
 		// so we don't need to bother with cleaning leaves_
 		std::unordered_set<ivariable<T>*> leaves_;
-		
+
+	protected:
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src);
 
 		virtual ivariable<T>* clone_impl (std::string name) = 0;

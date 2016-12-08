@@ -46,7 +46,7 @@ class transform : public ioperation<T>
 			BUILD_DERIVE<T> der, std::string name);
 		
 	public:
-		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+		static transform<T>* build (std::vector<ivariable<T>*> args,
 			TEN_OP<T> op, SHAPE trans,
 			BUILD_DERIVE<T> der, std::string name = "")
 		{

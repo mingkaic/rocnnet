@@ -46,10 +46,8 @@ void matmul<T>::setup_gradient (void)
 	
 		varptr<T> mA = matmul<T>::build(leaf, argb, transposeA_, !transposeB_);
 		varptr<T> mB = matmul<T>::build(arga, leaf, !transposeA_, transposeB_);
-		
-		// TODO: we must shut down shape eval here (make pattern easier?)
-		varptr<T> res = mA * grada + mB * gradb;
-		// reset shape eval here if necessary
+
+		varptr<T> res = not_zero(mA * grada, mB * gradb);
 		
 		return res;
 	});

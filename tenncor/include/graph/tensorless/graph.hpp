@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "iconnector.hpp"
+#include "graph/iconnector.hpp"
 
 #pragma once
 #ifndef graph_hpp
@@ -70,6 +70,7 @@ class graph : public iconnector<T>
 				delete leaf_;
 			}
 			leaf_ = new buffer(sub_to_var<T>(this->dependencies_[0]));
+			leaf_->set_death((void**) &leaf_);
 			root_ = nullptr;
 		}
 	
@@ -105,8 +106,12 @@ class graph : public iconnector<T>
 			if (nullptr == leaf) return nullptr;
 			return new graph(leaf, build);
 		}
-		
-		virtual ~graph (void) { delete leaf_; } // kill graph
+
+		// kill graph
+		virtual ~graph (void)
+		{
+			if (leaf_) delete leaf_;
+		}
 
 		// COPY
 		graph* clone (std::string name = "")
@@ -121,7 +126,13 @@ class graph : public iconnector<T>
 			}
 			return *this;
 		}
-			
+
+
+		virtual std::string get_name (void) const
+		{
+			if (nullptr == root_) return "";
+			return root_->get_name();
+		}
 		ivariable<T>* init (void)
 		{
 			if (nullptr == root_)
@@ -157,5 +168,7 @@ class graph : public iconnector<T>
 };
 	
 }
+
+#include "../../../src/graph/tensorless/graph.ipp"
 
 #endif /* graph_hpp */
