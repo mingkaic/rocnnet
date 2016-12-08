@@ -3,7 +3,8 @@
 //
 
 #include <algorithm>
-#include "tensor_test_util.h"
+#include "gtest/gtest.h"
+#include "test_util.h"
 #include "tensor/tensor.hpp"
 #include "tensor/tensor_op.hpp"
 #include "graph/initializer.hpp"

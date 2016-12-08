@@ -97,12 +97,8 @@ F102 - elementary binary operations argument shapes must be equivalent (same ran
 F103 - matrix operations only takes 2-D tensors
 F104 - matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)
 
-F200 - buffer evaluation, shape accessor, and get gradient takes directly from its single dependency
-F201 - buffer, when assigned a new dependency, detaches from the old dependency
-F202 - buffer re-evaluates its leaf set and the leaf sets of its audience on reassignment
-F203 - buffer and its dependency var are treated as separate entites by other nodes (that is if buffer and var share the same audience that audience will be updated twice for one notification from var)
-
-F300 - graph
+F200 - each graph instance builds from a single variable; deleting graph will not change the variable
+F201 - graphs created from append_graph methods will preserve the input graph
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

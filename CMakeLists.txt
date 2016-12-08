@@ -14,19 +14,21 @@ set(UNIT_MAIN "" CACHE STRING "path to unit-test main")
 set(PERFORM_MAIN "" CACHE STRING "path to performance-test main")
 
 #-------------------
-OPTION (OFFLINE "Building from offline?" OFF)
+# Options
 #-------------------
+OPTION (OFFLINE "Building from offline?" OFF)
+OPTION (DOCUMENT "Update doxygen documents?" OFF)
 
 #-------------------
 # Other flags
 #-------------------
 if(CMAKE_COMPILER_IS_GNUCXX)
-	add_definitions(-Wno-reorder -Wall -ansi -Wno-deprecated -pthread)
+    add_definitions(-Wno-reorder -Wall -ansi -Wno-deprecated -pthread)
 endif()
 
 if (MSVC)
-	#vc 2012 fix for vararg templates
-	set(MSVC_COMPILER_DEFS "-D_VARIADIC_MAX=10")
+    #vc 2012 fix for vararg templates
+    set(MSVC_COMPILER_DEFS "-D_VARIADIC_MAX=10")
 endif()
 
 #-------------------
@@ -39,12 +41,49 @@ set (CMAKE_CXX_STANDARD 14)
 # set common include folder for module
 #-------------------
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
-
-#-------------------
-# setup googletest in external directory
-#-------------------
-add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
 #>>>>>>>>>>>>>>>>>>>>>>>> GENERAL SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>> EXTERNAL SETUP COMMENCE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+if (OFFLINE)
+    # find local externals
+    #-------------------
+    # adding googletest
+    #-------------------
+    find_package(GTest REQUIRED)
+    if(DOCUMENT)
+        #-------------------
+        # adding doxygen
+        #-------------------
+        find_package(Doxygen QUIET)
+    endif(DOCUMENT)
+else(OFFLINE)
+    # setup externals using in ext directory cmakelists
+    #-------------------
+    # adding googletest
+    #-------------------
+    add_subdirectory(${EXT_PROJECTS_DIR}/gtest)
+    if(DOCUMENT)
+        #-------------------
+        # adding doxygen
+        #-------------------
+        add_subdirectory(${EXT_PROJECTS_DIR}/doxygen)
+    endif(DOCUMENT)
+endif(OFFLINE)
+#>>>>>>>>>>>>>>>>>>>>>>>> EXTERNAL SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>> DOXYGEN SETUP COMMENCE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+if(DOCUMENT)
+    if(DOXYGEN_FOUND)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+        add_custom_target(doc
+            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM)
+    else (DOXYGEN_FOUND)
+        message(WARNING "Document mode active but doxygen not found. Will not update document")
+    endif(DOXYGEN_FOUND)
+endif(DOCUMENT)
+#>>>>>>>>>>>>>>>>>>>>>>>> DOXYGEN SETUP COMPLETE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 #-------------------
@@ -122,28 +161,28 @@ add_dependencies(${UNIT_TEST_NAME}
 # link googletest depending on  available libraries
 #-------------------
 if(NOT WIN32 OR MINGW)
-	target_link_libraries(${UNIT_TEST_NAME}
-			${GTEST_LIBS_DIR}/libgtest.a
-			${GTEST_LIBS_DIR}/libgtest_main.a
-			)
+    target_link_libraries(${UNIT_TEST_NAME}
+            ${GTEST_LIBS_DIR}/libgtest.a
+            ${GTEST_LIBS_DIR}/libgtest_main.a
+            )
 else()
-	target_link_libraries(${UNIT_TEST_NAME}
-			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-			)
-	target_link_libraries(${UNIT_TEST_NAME}
-			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-			)
+    target_link_libraries(${UNIT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+            )
+    target_link_libraries(${UNIT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+            )
 endif()
 
 # Link
 target_link_libraries(${UNIT_TEST_NAME}
-	pthread
-	gmock
-	gtest
-	${CMAKE_THREAD_LIBS_INIT}
-	${TENNCOR_LIB})
+    pthread
+    gmock
+    gtest
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TENNCOR_LIB})
 add_test(unit ${UNIT_TEST_NAME})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -160,7 +199,7 @@ enable_testing()
 include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE})
 
 file(GLOB_RECURSE PERFORM_TEST_SRC
-		${PERFORM_TEST_PATH}/*.cpp)
+        ${PERFORM_TEST_PATH}/*.cpp)
 
 add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC} ${PERFORM_MAIN})
 
@@ -168,34 +207,34 @@ add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC} ${PERFORM_MAIN})
 # Test dependencies
 #-------------------
 add_dependencies(${PERFORMANCE_TEST_NAME}
-		googletest
-		tenncor
-		rocnnet)
+        googletest
+        tenncor
+        rocnnet)
 
 #-------------------
-# link googletest depending on  available libraries
+# link googletest depending on available libraries
 #-------------------
 if(NOT WIN32 OR MINGW)
-	target_link_libraries(${UNIT_TEST_NAME}
-			${GTEST_LIBS_DIR}/libgtest.a
-			${GTEST_LIBS_DIR}/libgtest_main.a
-			)
+    target_link_libraries(${UNIT_TEST_NAME}
+            ${GTEST_LIBS_DIR}/libgtest.a
+            ${GTEST_LIBS_DIR}/libgtest_main.a
+            )
 else()
-	target_link_libraries(${UNIT_TEST_NAME}
-			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-			)
-	target_link_libraries(${UNIT_TEST_NAME}
-			debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-			optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-			)
+    target_link_libraries(${UNIT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+            )
+    target_link_libraries(${UNIT_TEST_NAME}
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+            )
 endif()
 
 # Link
 target_link_libraries(${PERFORM_TEST_NAME} 
-	pthread
-	gtest
-	${CMAKE_THREAD_LIBS_INIT}
+    pthread
+    gtest
+    ${CMAKE_THREAD_LIBS_INIT}
     ${ROCNNET_DLL}
     ${TENNCOR_LIB})
 add_test(perform ${PERFORM_TEST_NAME})

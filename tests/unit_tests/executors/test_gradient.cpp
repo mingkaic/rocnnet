@@ -8,7 +8,7 @@
 #include "graph/functions.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/operation/matmul.hpp"
-#include "tensor_test_util.h"
+#include "test_util.h"
 
 static const double epi = std::numeric_limits<double>::epsilon();
 
@@ -361,6 +361,52 @@ TEST(DERIVE, OperationDerive) {
 
 
 // TESTS TENSOR JACOBI
+TEST(DERIVE, OpDeriveMatmul) {
+	const size_t limit = 523;
+	const size_t edge = 10;
+	const size_t supersize = edge*edge;
+	nnet::session& sess = nnet::session::get_instance();
+	nnet::random_uniform<double> rinit(0, 523);
+
+	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
+	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
+	nnet::varptr<double> mul = nnet::matmul<double>::build(x, nnet::varptr<double>(place.get())); // <X, IN>
+
+	nnet::varptr<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
+	nnet::gradient<double> grad(o, mul); // d(1/(1+e^(-X * IN))) / d(<X, IN>)
+	sess.initialize_all<double>();
+
+	std::vector<double> placeholder_in;
+	for (size_t i = 0; i < supersize; i++) {
+		placeholder_in.push_back(fmod(rand(), limit));
+	}
+	place = placeholder_in;
+
+	std::vector<double> xin = nnet::expose<double>(mul);
+	std::vector<double> der;
+	grad.freeze();
+	grad.execute();
+	grad.collect_grad(
+	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		der = nnet::expose<double>(value);
+	});
+
+	ASSERT_EQ(der.size(), xin.size());
+
+	for (size_t i = 0; i < der.size(); i++) {
+		// allow some errors since sig_prime and better ex are prone to rounding errors
+		// sig_prime is a 2 step process:
+		// 1. get sig which can cause rounding
+		// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
+		EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
+	}
+
+	delete x.get();
+	delete place.get();
+}
+
+
 TEST(DERIVE, Matmul) {
 	nnet::session& sess = nnet::session::get_instance();
 	size_t m = 4, n = 5, k = 6;
@@ -432,67 +478,22 @@ TEST(DERIVE, Matmul) {
 }
 
 
-TEST(DERIVE, OpDeriveMatmul) {
-	const size_t limit = 523;
-	const size_t edge = 10;
-	const size_t supersize = edge*edge;
-	nnet::session& sess = nnet::session::get_instance();
-	nnet::random_uniform<double> rinit(0, 523);
-
-	nnet::varptr<double> x = new nnet::variable<double>((std::vector<size_t>{edge, edge}), rinit, "p1");
-	nnet::placeptr<double> place = new nnet::placeholder<double>(std::vector<size_t>{edge, edge}, "in");
-	nnet::varptr<double> mul = nnet::matmul<double>::build(x, nnet::varptr<double>(place.get())); // <X, IN>
-
-	nnet::varptr<double> o = nnet::sigmoid(mul); // 1/(1+e^(-<X, IN>))
-	nnet::gradient<double> grad(o, mul); // d(1/(1+e^(-X * IN))) / d(<X, IN>)
-	sess.initialize_all<double>();
-
-	std::vector<double> placeholder_in;
-	for (size_t i = 0; i < supersize; i++) {
-		placeholder_in.push_back(fmod(rand(), limit));
-	}
-	place = placeholder_in;
-
-	std::vector<double> xin = nnet::expose<double>(mul);
-	std::vector<double> der;
-	grad.freeze();
-	grad.execute();
-	grad.collect_grad(
-	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
-	{
-		der = nnet::expose<double>(value);
-	});
-
-	ASSERT_EQ(der.size(), xin.size());
-
-	for (size_t i = 0; i < der.size(); i++) {
-		// allow some errors since sig_prime and better ex are prone to rounding errors
-		// sig_prime is a 2 step process:
-		// 1. get sig which can cause rounding
-		// 2. taken sig * (1 - sig) which can cause further rounding at 1 - sig
-		EXPECT_LT(std::abs(sig_prime(xin[i]) - der[i]), 0.0001);
-	}
-
-	delete x.get();
-	delete place.get();
-}
-
-
 TEST(DERIVE, MatmulComplex)
 {
 	nnet::session& sess = nnet::session::get_instance();
- 	size_t insize = 10;
- 	size_t lay1 = 9;
- 	size_t lay2 = 8;
- 	nnet::random_uniform<double> rinit(-1, 1);
- 	// simulate layers without bias (for simplicity)
- 	// layer 1
- 	nnet::placeptr<double> IN = new nnet::placeholder<double>(std::vector<size_t>{insize, 1}, "in");
- 	nnet::varptr<double> W1 = new nnet::variable<double>((std::vector<size_t>{lay1, insize}), rinit, "w1");
- 	nnet::varptr<double> layer1 = nnet::sigmoid<double>(nnet::matmul<double>::build(IN, W1)); // shape <lay1, 1>
- 	// layer 2
- 	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
- 	nnet::varptr<double> layer2 = nnet::sigmoid<double>(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
+	size_t insize = 10;
+	size_t lay1 = 9;
+	size_t lay2 = 8;
+	nnet::random_uniform<double> rinit(-1, 1);
+	// simulate layers without bias (for simplicity)
+	// layer 1
+	nnet::placeptr<double> IN = new nnet::placeholder<double>(std::vector<size_t>{insize, 1}, "in");
+	nnet::varptr<double> W1 = new nnet::variable<double>((std::vector<size_t>{lay1, insize}), rinit, "w1");
+	nnet::varptr<double> intermediate = nnet::matmul<double>::build(IN, W1);
+	nnet::varptr<double> layer1 = nnet::sigmoid<double>(intermediate); // shape <lay1, 1>
+	// layer 2
+	nnet::varptr<double> W2 = new nnet::variable<double>((std::vector<size_t>{lay2, lay1}), rinit, "w2");
+	nnet::varptr<double> layer2 = nnet::sigmoid<double>(nnet::matmul<double>::build(layer1, W2)); // shape <lay2, 1>
 
 	nnet::gradient<double> grad(layer2); // leaves are W1 and W2
 	sess.initialize_all<double>();
@@ -503,8 +504,32 @@ TEST(DERIVE, MatmulComplex)
 		inraw.push_back(1 - val);
 	}
 	IN = inraw;
+	
+	// make sure jacobians at each node are mutually exclusive
+	nnet::gradient<double> it(intermediate);
+	it.freeze();
+	it.execute();
+	// expected grad for intermediate value: matmul(IN, W1)
+	// expecting jacobian: <IN^T, fit(1, matmul(IN, W1))> * d(W1)
+	nnet::varptr<double> one = new nnet::variable<double>(1);
+	nnet::varptr<double> ex1 = nnet::matmul<double>::build(IN, nnet::fit(one, intermediate), true);
+	
+	std::vector<double> exv = nnet::expose<double>(ex1);
+	it.collect_grad(
+	[W1, &exv](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	{
+		EXPECT_EQ(W1.get(), key);
+		print_tensor(value->get_eval());
+		std::vector<double> interv = nnet::expose<double>(value);
+		EXPECT_TRUE(tensorshape_equal(W1->get_shape(), value->get_shape()));
+		ASSERT_EQ(exv.size(), interv.size());
+		for (size_t i = 0; i < exv.size(); i++)
+		{
+			EXPECT_EQ(exv[i], interv[i]);
+		}
+	});
 
- 	// expected grad:
+	// expected grad for layer2:
 	// wrt W1
 
 	// wrt W2
@@ -516,6 +541,8 @@ TEST(DERIVE, MatmulComplex)
 	grad.collect_grad(
 	[W1, W2, &w1vec, &w2vec](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
 	{
+		nnet::print_shape(value->get_shape());
+		EXPECT_TRUE(key == W1 || key == W2);
 		if (key == W1)
 		{
 			EXPECT_TRUE(tensorshape_equal(W1->get_shape(), value->get_shape()));
@@ -529,7 +556,10 @@ TEST(DERIVE, MatmulComplex)
 	});
 
 	// compare expected and real values
+	
+	
 	delete IN.get();
 	delete W1.get();
 	delete W2.get();
+	delete one.get();
 }

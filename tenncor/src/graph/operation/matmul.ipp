@@ -11,78 +11,10 @@
 namespace nnet
 {
 
-// TODO: replace with tensor of tensors.
-// jacobian takes its root AND its buffer k as dependencies
-template <typename T>
-class matmul<T>::jgraph : public igraph<T>
-{
-	protected:
-		void copy (const jgraph& other, std::string name = "")
-		{
-			iconnector<T>::copy(other, name);
-		}
-		jgraph (const jgraph& other, std::string name) : igraph<T>(other, name) {}
-
-		virtual ivariable<T>* clone_impl (std::string name)
-		{
-			return new jgraph(*this, name);
-		}
-
-		virtual buffer<T>* get_leaf (void) const
-		{
-			return dynamic_cast<buffer<T>*>(this->dependencies_[1]->get_owner());
-		}
-
-		jgraph (ivariable<T>* root, buffer<T>* leaf) :
-			igraph<T>(root, leaf)
-		{
-			this->update(ccoms::caller_info());
-		}
-
-	public:
-		static jgraph* build (ivariable<T>* root, buffer<T>* leaf)
-		{
-			return new jgraph(root, leaf);
-		}
-
-		// COPY
-		jgraph* clone (std::string name = "")
-		{
-			return static_cast<jgraph*>(clone_impl(name));
-		}
-		jgraph& operator = (const jgraph& other)
-		{
-			if (this != &other)
-			{
-				copy(other);
-			}
-			return *this;
-		}
-
-		virtual void connect_graph (igraph<T>* g_other)
-		{
-			// connect other's root to this leaf
-			buffer<T>* l_buffer = get_leaf();
-			ivariable<T>* g_root = g_other->get_root();
-			if (l_buffer->get() != g_root)
-			{
-				*l_buffer = *g_root;
-			}
-			// step 2: replace this leaf with other's leaf TODO
-
-		}
-		virtual void update_leaf (std::function<ivariable<T>*(ivariable<T>*,size_t)> lassign)
-		{
-			buffer<T>* b = get_leaf();
-			// reassign current buffer
-			*b = *lassign(b->get(), 0);
-		}
-};
-
 // MATRIX MULTIPLICATION
 
 template <typename T>
-size_t matmul<T>::common_dim (void) const
+size_t matmul<T>::common_dim (void)
 {
 	std::vector<size_t> t = sub_to_var<T>(this->dependencies_[0])->get_shape().as_list();
 	if (transposeA_)
@@ -100,39 +32,49 @@ void matmul<T>::setup_gradient (void)
 	ivariable<T>* argb = sub_to_var<T>(this->dependencies_[1]);
 	assert(arga && argb);
 
-	varptr<T> grada = arga->get_gradient();
-	varptr<T> gradb = argb->get_gradient();
-	iconnector<T>* oga = dynamic_cast<iconnector<T>*>(grada.get());
-	iconnector<T>* ogb = dynamic_cast<iconnector<T>*>(gradb.get());
-
 	// matmul is special in that its grad_jacobi_ is the default jacobian leaf one
 	// grad_ is the jacobian instead
 	ioperation<T>* fgrad;
 	this->grad_ = fgrad = dynamic_cast<ioperation<T>*>(
 		fit<double>(constant<T>::build(1), this).get());
-	buffer<T>* temp = buffer<T>::build(fgrad); // use frad temporarily until parent connects
-	varptr<T> mA = matmul<T>::build(temp, argb, transposeA_, !transposeB_);
-	varptr<T> mB = matmul<T>::build(arga, temp, !transposeA_, transposeB_);
-
-	// TODO: we must shut down shape eval here (make pattern easier?)
-	varptr<T> res = mA * grada + mB * gradb;
-	// reset shape eval here if necessary
-
-	igraph<T>* prime_jacobi = jgraph::build(res, temp);
+		
+	graph<T>* jacobian = graph<T>::build(fgrad,
+	[this, arga, argb](varptr<T> leaf)
+	{
+		varptr<T> grada = arga->get_gradient();
+		varptr<T> gradb = argb->get_gradient();
+	
+		varptr<T> mA = matmul<T>::build(leaf, argb, transposeA_, !transposeB_);
+		varptr<T> mB = matmul<T>::build(arga, leaf, !transposeA_, transposeB_);
+		
+		// TODO: we must shut down shape eval here (make pattern easier?)
+		varptr<T> res = mA * grada + mB * gradb;
+		// reset shape eval here if necessary
+		
+		return res;
+	});
+	
+	iconnector<T>* oga = dynamic_cast<iconnector<T>*>(arga->get_gradient());
+	iconnector<T>* ogb = dynamic_cast<iconnector<T>*>(argb->get_gradient());
+	
 	// check if oga or ogb for jacobi
-	igraph<T>* candidate_a = oga ? oga->get_jacobian() : nullptr;
-	igraph<T>* candidate_b = ogb ? ogb->get_jacobian() : nullptr;
+	graph<T>* candidate_a = oga ? oga->get_jacobian() : nullptr;
+	graph<T>* candidate_b = ogb ? ogb->get_jacobian() : nullptr;
 	// we can only have one candidate
 	assert(nullptr == candidate_a || nullptr == candidate_b);
-	igraph<T>* chief = candidate_a ? candidate_a : candidate_b;
+	graph<T>* chief = candidate_a ? candidate_a : candidate_b;
 	if (chief)
 	{
-		// ascend jacobians from below the graph
-		chief->connect_graph(prime_jacobi);
-		prime_jacobi = chief;
+		// chief absorb prime's root as this leaf/leaves
+		chief = chief->append_graph(jacobian);
+	}
+	else
+	{
+		// first chief in the line of succession
+		chief = jacobian;
 	}
 
-	fgrad->set_jacobian(prime_jacobi);
+	fgrad->set_jacobian(chief);
 }
 
 template <typename T>
@@ -243,9 +185,6 @@ matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 template <typename T>
 void matmul<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 {
-	// common update protocol
-	this->message_update(msg);
-
 	// UPDATING ARGUMENTS
 	// caller is never used because we know matmul will never be the parent of a gradient leaf
 	ivariable<T>* a = sub_to_var<T>(this->dependencies_[0]);

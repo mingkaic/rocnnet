@@ -9,8 +9,7 @@
 #include "graph/operation/elementary.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/variable/constant.hpp"
-#include "graph/buffer/igraph.hpp"
-#include "graph/buffer/buffer.hpp"
+#include "graph/graph.hpp"
 
 #pragma once
 #ifndef matop_hpp
@@ -31,9 +30,7 @@ class matmul : public ioperation<T>
 		bool transposeA_;
 		bool transposeB_;
 
-		size_t common_dim (void) const;
-
-		class jgraph; // rename to jacobian later
+		size_t common_dim (void);
 
 	protected:
 		// backward chaining for AD

@@ -22,12 +22,11 @@ class subject;
 class subject_owner;
 
 template <typename T>
-class igraph;
+class graph;
 
 struct update_message
 {
 	subject* grad_ = nullptr; // this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
-	bool leave_update_ = false;
 };
 
 struct caller_info
@@ -107,7 +106,7 @@ class subject : public reactive_node
 		// override reactive_node's safe_destroy to kill var_ should subject become suicidal
 		// killing var_ is essentially the same as suicide, since var_ will in turn kill this
 		virtual bool safe_destroy (void);
-		subject_owner* get_owner (void);
+		subject_owner*& get_owner (void);
 };
 
 class subject_owner

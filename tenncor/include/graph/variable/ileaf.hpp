@@ -55,7 +55,7 @@ class ileaf : public ivariable<T>
 		// MOVES
 		// todo: implement move clone
 
-		virtual tensorshape get_shape (void) const
+		virtual tensorshape get_shape (void)
 		{
 			if (nullptr != out_)
 			{

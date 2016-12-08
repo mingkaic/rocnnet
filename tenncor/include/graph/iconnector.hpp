@@ -8,6 +8,7 @@
 
 #include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
+#include "executor/varptr.hpp"
 
 #pragma once
 #ifndef iconnector_hpp
@@ -19,36 +20,22 @@ namespace nnet
 template <typename T>
 class gradient;
 
-template <typename T>
-class igraph;
-
 // operates on nodes
 template <typename T>
 class iconnector : public ivariable<T>, public ccoms::iobserver
 {
-	private:
+	protected:
 		// remember that once leaf subjects are destroyed,
 		// everyone in this graph including this is destroyed
 		// so we don't need to bother with cleaning leaves_
 		std::unordered_set<ivariable<T>*> leaves_;
-
-	protected:
+		
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src);
 
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 		void copy (const iconnector<T>& other, std::string name = "");
 		iconnector (const iconnector<T>& other, std::string name);
 		iconnector (std::vector<ivariable<T>*> dependencies, std::string name);
-
-		void leaves_update (void)
-		{
-			leaves_.clear();
-			for (ccoms::subject* dep : this->dependencies_)
-			{
-				ivariable<T>* leaf = sub_to_var<T>(dep);
-				leaf->merge_leaves(leaves_);
-			}
-		}
 
 		friend class gradient<T>;
 
@@ -64,9 +51,8 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 		// get_shape remains abstract
 		// get_eval remains abstract
 		// get_gradient remains abstract
+		virtual graph<T>* get_jacobian (void) = 0;
 		// update remains abstract
-		
-		virtual igraph<T>* get_jacobian (void) = 0;
 };
 
 }

@@ -27,6 +27,8 @@ template <typename T>
 class iconnector;
 template <typename T>
 class buffer;
+template <typename T>
+class graph;
 
 // VARIABLE INTERFACE
 
@@ -59,6 +61,7 @@ class ivariable : public ccoms::subject_owner
 		friend class ioptimizer<T>;
 		friend class iconnector<T>;
 		friend class buffer<T>;
+		friend class graph<T>;
 
 	public:
 		virtual ~ivariable (void);
@@ -72,7 +75,7 @@ class ivariable : public ccoms::subject_owner
 		// TODO Implement
 
 		std::string get_name (void) const { return name_; }
-		virtual tensorshape get_shape (void) const = 0;
+		virtual tensorshape get_shape (void) = 0;
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
 		// get eval simply returns the node's tensor

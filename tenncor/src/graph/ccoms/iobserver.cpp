@@ -19,6 +19,19 @@ void iobserver::add_dependency (subject* dep)
 	dependencies_.push_back(dep);
 }
 
+void iobserver::copy (const iobserver& other)
+{
+	for (subject* sub : dependencies_)
+	{
+		sub->detach(this);
+	}
+	dependencies_.clear();
+	for (subject* dep : other.dependencies_)
+	{
+		add_dependency(dep);
+	}
+}
+
 iobserver::iobserver (const iobserver& other)
 {
 	copy(other);

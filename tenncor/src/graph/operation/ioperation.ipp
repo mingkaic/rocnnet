@@ -28,7 +28,7 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 	}
 	// shallow copy
 	grad_ = other.grad_;
-	set_jacobian(other.grad_jacobi_);
+	grad_jacobi_ = other.grad_jacobi_;
 	tens_buffer_ = other.tens_buffer_;
 	iconnector<T>::copy(other, name);
 }
@@ -126,9 +126,6 @@ template <typename T>
 void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 {
 	static tensor<T> ones(1);
-
-	// common update protocol based on the message
-	message_update(msg);
 
 	// UPDATING TENS_BUFFER
 	// cast caller dependency as ivariable

@@ -2,7 +2,8 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#include "tensor_test_util.h"
+#include "gtest/gtest.h"
+#include "test_util.h"
 
 
 // undefined

@@ -114,7 +114,7 @@ bool subject::safe_destroy (void)
 	return reactive_node::safe_destroy();
 }
 
-subject_owner* subject::get_owner (void) {
+subject_owner*& subject::get_owner (void) {
 	return var_;
 }
 

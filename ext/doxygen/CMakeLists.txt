@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 project(doxygen_builder C CXX)
 include(ExternalProject)
 
-Project_Add(doxygen
+ExternalProject_Add(doxygen
         GIT_REPOSITORY https://github.com/doxygen/doxygen.git
         CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
         -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
@@ -12,8 +12,7 @@ Project_Add(doxygen
         -DBUILD_GTEST=ON
         PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
         # Disable install step
-        INSTALL_COMMAND ""
-        )
+        INSTALL_COMMAND "")
 
 # Specify include dir
 ExternalProject_Get_Property(doxygen source_dir)

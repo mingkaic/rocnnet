@@ -36,7 +36,11 @@ iconnector<T>::iconnector (std::vector<ivariable<T>*> dependencies, std::string 
 	ccoms::iobserver(nnutils::to_vec<ivariable<T>*, ccoms::subject*>(dependencies, var_to_sub<T>)),
 	ivariable<T>(name)
 {
-	leaves_update();
+	for (ccoms::subject* dep : this->dependencies_)
+	{
+		ivariable<T>* leaf = sub_to_var<T>(dep);
+		leaf->merge_leaves(leaves_);
+	}
 }
 
 template <typename T>
