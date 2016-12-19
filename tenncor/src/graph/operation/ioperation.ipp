@@ -135,58 +135,30 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 	tensor<T>* storage = nullptr;
 	this->valid_tensor_ = true;
 
-	// if caller is null then update all tensors
-	if (nullptr == caller)
+	if (0 == tens_buffer_.size()) return;
+	assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
+	// grab caller_id from message
+	if (nullptr == grad) // don't care about grad, get best evaluation
 	{
-		// CALLER IS THIS. MEANING THIS IS CALLED DURING CONSTRUCTION
-		tens_buffer_.clear();
-		for (ccoms::subject* sub : this->dependencies_)
+		// tensor buffer update
+		storage = caller->get_eval();
+		if (nullptr == storage ||
+			false == storage->get_shape().is_fully_defined())
 		{
-			if (ivariable<T>* var = sub_to_var<T>(sub))
-			{
-				// GET JACOBIAN FROM CHILDREN DURING CONSTRUCTION
-				if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(var))
-				{
-					// if we get arguments with jacobians, we are most likely in reverse mode graph
-					setup_jacobian(c->get_jacobian());
-				}
-				// tensor buffer initialize
-				storage = var->get_eval();
-				tens_buffer_.push_back(storage);
-				if (nullptr == storage ||
-					false == storage->get_shape().is_fully_defined())
-				{
-					this->valid_tensor_ = false;
-				}
-			}
+			this->valid_tensor_ = false;
 		}
+	}
+	else if (ileaf<T>* leaf = dynamic_cast<ileaf<T>*>(grad)) // eval if caller is grad, null otherwise
+	{
+		storage = leaf == caller ? leaf->get_eval() : nullptr;
 	}
 	else
 	{
-		if (0 == tens_buffer_.size()) return;
-		assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
-		// grab caller_id from message
-		if (nullptr == grad) // don't care about grad, get best evaluation
-		{
-			// tensor buffer update
-			storage = caller->get_eval();
-			if (nullptr == storage ||
-				false == storage->get_shape().is_fully_defined())
-			{
-				this->valid_tensor_ = false;
-			}
-		}
-		else if (ileaf<T>* leaf = dynamic_cast<ileaf<T>*>(grad)) // eval if caller is grad, null otherwise
-		{
-			storage = leaf == caller ? leaf->get_eval() : nullptr;
-		}
-		else
-		{
-			storage = grad == caller ? &ones : nullptr;
-		}
-		// update caller tensor only
-		tens_buffer_[callerid] = storage;
+		storage = grad == caller ? &ones : nullptr;
 	}
+	// update caller tensor only
+	tens_buffer_[callerid] = storage;
+
 	// tensor update when ready
 	if (this->valid_tensor_)
 	{

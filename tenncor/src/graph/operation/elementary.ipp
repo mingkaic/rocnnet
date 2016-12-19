@@ -68,7 +68,7 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 	{
 		this->shape_eval().assert_is_fully_defined();
 	}
-	this->update(ccoms::caller_info());
+	this->initialize();
 }
 
 template <typename T>

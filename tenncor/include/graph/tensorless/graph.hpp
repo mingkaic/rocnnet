@@ -82,18 +82,20 @@ class graph : public iconnector<T>
 			iconnector<T>::copy(other, name);
 			remake_leaf();
 		}
-		graph (const graph<T>& other, graph<T>* back) : 
-			succession_(other.succession_),
+
+		graph (const graph<T>& other) :
+			iconnector<T>(other, ""),
 			builder_(other.builder_),
-			iconnector<T>(*back, "")
+			succession_(other.succession_) { remake_leaf(); }
+
+		graph (const graph<T>& src, graph<T>* top) : graph<T>(src)
 		{
-			remake_leaf();
-			if (back != &other)
-			{
-				succession_.push_back(back);
-			}
+			builder_ = top->builder_;
+			succession_ = top->succession_;
+			succession_.push_back(const_cast<graph<T>*>(&src));
 		}
-		virtual ivariable<T>* clone_impl (std::string name) { return new graph(*this, this); }
+
+		virtual ivariable<T>* clone_impl (std::string name) { return new graph(*this); }
 		
 		graph (ivariable<T>* leaf,  BUILD_GRAPH<T> build) :
 			builder_(build),
@@ -137,20 +139,28 @@ class graph : public iconnector<T>
 		{
 			if (nullptr == root_)
 			{
-				root_ = leaf_;
+				root_ = builder_(leaf_);
 				for (auto rit = succession_.rbegin(); succession_.rend() != rit; rit++)
 				{
 					root_ = ((*rit)->builder_)(root_);
 				}
-				root_ = builder_(root_);
 			}
 			return root_;
 		}
 		
 		// spawn a new graph appending input leaf to this
-		virtual graph<T>* append_leaf (ivariable<T>* base_root) { return new graph<T>(base_root, builder_); }
+		virtual graph<T>* append_leaf (ivariable<T>* base_root)
+		{
+			graph<T>* cpy = new graph<T>(base_root, builder_);
+			cpy->succession_ = this->succession_;
+			return cpy;
+		}
 		// make new graph with appending other's root to this leaf
-		virtual graph<T>* append_graph (graph<T>* other) { return new graph(*this, other); }
+		virtual graph<T>* append_graph (graph<T>* other)
+		{
+			// we take other's leaf but this build and succession stack as the new graph
+			return new graph(*other, this);
+		}
 
 		virtual tensorshape get_shape (void) { return init()->get_shape(); }
 		virtual tensor<T>* get_eval (void) { return init()->get_eval(); }

@@ -502,7 +502,7 @@ TEST(DERIVE, MatmulComplex)
 
 	std::vector<double> inraw;
 	for (size_t i = 0; i < insize; i++) {
-		double val = fmod(rand(), 2);
+		double val = (rand() % 523) / 522;
 		inraw.push_back(1 - val);
 	}
 	IN = inraw;

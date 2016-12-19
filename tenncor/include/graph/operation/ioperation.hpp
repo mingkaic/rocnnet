@@ -88,6 +88,37 @@ class ioperation : public iconnector<T>
 		virtual ivariable<T>* clone_impl (std::string name) = 0;
 		ioperation (const ioperation<T>& other, std::string name);
 
+		// set up tens_buffer
+		void initialize (void)
+		{
+			this->valid_tensor_ = true;
+			tens_buffer_.clear();
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				if (ivariable<T>* var = sub_to_var<T>(sub))
+				{
+					// grab jacobian
+					if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(var))
+					{
+						// if we get arguments with jacobians, we are most likely in reverse mode graph
+						setup_jacobian(c->get_jacobian());
+					}
+					// tensor buffer initialize
+					tensor<T>* temp = var->get_eval();
+					tens_buffer_.push_back(temp);
+					if (nullptr == temp || false == temp->get_shape().is_fully_defined())
+					{
+						this->valid_tensor_ = false;
+					}
+				}
+			}
+			if (this->valid_tensor_)
+			{
+				// null is treated as erroneous zero
+				(*out_)(tens_buffer_);
+			}
+		}
+
 		// used specifically to pass jacobian tensors up the tree... could make generic use in the future
 		// combine with generalized notify/update
 		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
