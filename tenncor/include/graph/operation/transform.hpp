@@ -33,13 +33,10 @@ template <typename T>
 class transform : public ioperation<T>
 {
 	private:
-		BUILD_DERIVE<T> der_;
+		BUILD_DERIVE<T> der_; // shallow
 
 	protected:
 		virtual void setup_gradient (void);
-		virtual ivariable<T>* clone_impl (std::string name);
-
-		transform (const transform<T>& other, std::string name);
 
 		// protect transform constructor to ensure heap allocation
 		transform (std::vector<ivariable<T>*> args, TEN_OP<T> op, SHAPE trans,
@@ -54,8 +51,7 @@ class transform : public ioperation<T>
 		}
 
 		// COPY
-		transform<T>* clone (std::string name = "");
-		virtual transform<T>& operator = (const transform<T>& other);
+		transform<T>* clone (void);
 
 		// MOVES
 		// TODO: implement

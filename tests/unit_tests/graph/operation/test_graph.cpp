@@ -3,21 +3,21 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/tensorless/graph.hpp"
+#include "graph/tensorless/functor.hpp"
 #include "graph/operation/elementary.hpp"
 
 
 // behavior F200
-TEST(GRAPH, deletion_var_F200)
+TEST(FUNCTOR, deletion_var_F200)
 {
     nnet::ivariable<double>* leaf = new nnet::variable<double>(1);
     nnet::ivariable<double>* leaf2 = new nnet::variable<double>(2);
-    nnet::graph<double>* g1 = nnet::graph<double>::build(leaf, 
+    nnet::functor<double>* g1 = nnet::functor<double>::build(leaf, 
     [](nnet::varptr<double> leaf)
     {
         return leaf;
     });
-    nnet::graph<double>* g2 = g1->append_leaf(leaf2);
+    nnet::functor<double>* g2 = g1->append_leaf(leaf2);
     
     std::vector<double> one = nnet::expose<double>(g1);
     std::vector<double> two = nnet::expose<double>(g2);
@@ -37,21 +37,21 @@ TEST(GRAPH, deletion_var_F200)
 }
 
 
-TEST(GRAPH, deletion_graph_F201)
+TEST(FUNCTOR, deletion_graph_F201)
 {
     nnet::ivariable<double>* leaf = new nnet::variable<double>(1);
     nnet::ivariable<double>* leaf2 = new nnet::variable<double>(2);
-    nnet::graph<double>* g1 = nnet::graph<double>::build(leaf, 
+    nnet::functor<double>* g1 = nnet::functor<double>::build(leaf, 
     [](nnet::varptr<double> leaf)
     {
         return leaf;
     });
-    nnet::graph<double>* g2 = nnet::graph<double>::build(leaf2, 
+    nnet::functor<double>* g2 = nnet::functor<double>::build(leaf2, 
     [](nnet::varptr<double> leaf)
     {
         return 1.0-leaf;
     });
-    nnet::graph<double>* g3 = g2->append_graph(g1); // should be zero
+    nnet::functor<double>* g3 = g2->append_functor(g1); // should be zero
     
     std::vector<double> zero = nnet::expose<double>(g3);
     
@@ -69,10 +69,10 @@ TEST(GRAPH, deletion_graph_F201)
 }
 
 
-TEST(GRAPH, var_deletion)
+TEST(FUNCTOR, var_deletion)
 {
 	nnet::ivariable<double>* leaf = new nnet::variable<double>(2);
-	nnet::graph<double>* g1 = nnet::graph<double>::build(leaf,
+	nnet::functor<double>* g1 = nnet::functor<double>::build(leaf,
 	[](nnet::varptr<double> leaf)
 	{
 		return leaf;

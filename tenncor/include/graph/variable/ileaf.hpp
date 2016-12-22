@@ -21,6 +21,9 @@ namespace nnet
 template <typename T>
 class ileaf : public ivariable<T>
 {
+	private:
+		void copy (const ileaf<T>& other);
+	
 	protected:
 		// WRAPPER CONTENT
 		std::unique_ptr<tensor<T> > out_ = nullptr;
@@ -38,9 +41,7 @@ class ileaf : public ivariable<T>
 		// only add to source if this is a ivariable
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) {}
 
-		void copy (const ileaf<T>& other, std::string name = "");
-		ileaf (const ileaf<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
+		ileaf (const ileaf<T>& other); // copy constructor required for out_, grad_, and init_ deep copy
 
 		ileaf (const tensorshape& shape, initializer<T>* init, std::string name);
 
@@ -48,9 +49,8 @@ class ileaf : public ivariable<T>
 		virtual ~ileaf (void);
 		
 		// COPY
-		// call abstract cloner
-		ileaf<T>* clone (std::string name = "");
-		virtual ileaf<T>& operator = (const ileaf<T>& other);
+		// abstract clone
+		ileaf<T>& operator = (const ileaf<T>& other);
 
 		// MOVES
 		// todo: implement move clone

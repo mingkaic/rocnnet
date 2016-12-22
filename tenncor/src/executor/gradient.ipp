@@ -57,7 +57,7 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 		// take jacobian instead if available
 		if (iconnector<T>* gconnect = dynamic_cast<iconnector<T>*>(g_root_))
 		{
-			if (graph<T>* j = gconnect->get_jacobian())
+			if (functor<T>* j = gconnect->get_jacobian())
 			{
 				// by default grad_jacobi most likely has its root hidden
 				// do away with the graph behavior by exposing its root

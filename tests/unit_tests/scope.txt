@@ -100,8 +100,12 @@ F104 - matrix operations argument shapes must match by according to the followin
 F200 - each graph instance builds from a single variable; deleting graph will not change the variable
 F201 - graphs created from append_graph methods will preserve the input graph
 
-F300 - selector's eval, shape, gradient, and jacobian are obtained from its active dependency (except for jacobian, and gradient; undefined behavior for now)
+F300 - conditional's eval, shape, gradient, and jacobian are obtained from its active dependency (except for jacobian, and gradient; undefined behavior for now)
 F301 - not_zero's active dependency is non-zero (scalar or otherwise) and is initialized (get_eval is non-null)
+NOT TESTED
+F302 - toggle activation will notify its dependencies of activation once, then return to default state
+F303 - toggle activation value will linger until explicitly called to update again
+F304 - when binding bindable_toggle, bound variables will reset and update previously active toggles
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

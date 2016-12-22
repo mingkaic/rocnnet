@@ -19,14 +19,10 @@ namespace nnet
 template <typename T>
 class elementary : public ioperation<T> {
 	private:
-		BUILD_DERIVE<T> der_;
+		BUILD_DERIVE<T> der_; // shallow copy (move to operation once matmul adopts the transform)
 		
 	protected:
 		virtual void setup_gradient (void);
-
-		elementary (const elementary<T>& other, std::string name);
-			
-		virtual ivariable<T>* clone_impl (std::string name);
 
 		// protect elementary constructor to ensure heap allocation
 		elementary (std::vector<ivariable<T>*> args,
@@ -44,8 +40,7 @@ class elementary : public ioperation<T> {
 		}
 	
 		// COPY
-		elementary<T>* clone (std::string name = "");
-		virtual elementary<T>& operator = (const elementary<T>& other);
+		virtual elementary<T>* clone (void);
 		
 		// MOVES
 		// TODO: implement

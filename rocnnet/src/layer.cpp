@@ -22,13 +22,9 @@ void layer_perceptron::copy (const layer_perceptron& other, std::string scope)
 {
 	n_input = other.n_input;
 	n_output = other.n_output;
-	if (0 == scope.size())
-	{
-		scope = other.scope + "_cpy";
-	}
 	this->scope = scope;
-	weights_ = other.weights_->clone(scope);
-	bias_ = other.bias_->clone(scope);
+	weights_ = other.weights_->clone();
+	bias_ = other.bias_->clone();
 }
 
 layer_perceptron::layer_perceptron (size_t n_input, size_t n_output, std::string scope) : 

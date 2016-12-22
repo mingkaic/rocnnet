@@ -1,5 +1,5 @@
 //
-//  graph.hpp
+//  functor.hpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-12-06.
@@ -9,21 +9,21 @@
 #include "graph/iconnector.hpp"
 
 #pragma once
-#ifndef graph_hpp
-#define graph_hpp
+#ifndef functor_hpp
+#define functor_hpp
 
 namespace nnet
 {
 	
 template <typename T>
-using BUILD_GRAPH = std::function<ivariable<T>*(varptr<T>)>;
+using BUILD_FUNCT = std::function<ivariable<T>*(varptr<T>)>;
 
 template <typename T>
-class graph : public iconnector<T>
+class functor : public iconnector<T>
 {
 	private:
-		std::vector<graph<T>*> succession_;
-		BUILD_GRAPH<T> builder_;
+		std::vector<functor<T>*> succession_;
+		BUILD_FUNCT<T> builder_;
 		ivariable<T>* root_ = nullptr; // delay instantiated
 		
 		// mimics its dependency in every way, acts as an insolator to safely destroy graph
@@ -31,23 +31,17 @@ class graph : public iconnector<T>
 		class buffer : public iconnector<T>
 		{
 			private:
-				buffer (const buffer& other, std::string name) : iconnector<T>(other, name) {}
-				virtual ivariable<T>* clone_impl (std::string name)
-				{
-					return new buffer(*this, name);
-				}
-				
 				ivariable<T>* get (void) const { return sub_to_var<T>(this->dependencies_[0]); }
 		
 			public:
 				buffer (ivariable<T>* var) : 
 					iconnector<T>(std::vector<ivariable<T>*>{var}, var->get_name()) {}
-				buffer* clone (std::string name = "") { return static_cast<buffer*>(clone_impl(name)); }
+				virtual buffer* clone (void) { return new buffer(*this); }
 		
 				virtual tensorshape get_shape (void) { return get()->get_shape(); }
 				virtual tensor<T>* get_eval (void) { return get()->get_eval(); }
 				virtual ivariable<T>* get_gradient (void) { return get()->get_gradient(); }
-				virtual graph<T>* get_jacobian (void)
+				virtual functor<T>* get_jacobian (void)
 				{
 					if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(get()))
 					{
@@ -63,7 +57,7 @@ class graph : public iconnector<T>
 		
 		buffer* leaf_ = nullptr;
 		
-		void remake_leaf (void) // refreshes entire graph
+		void remake_leaf (void) // refreshes entire functor
 		{
 			if (leaf_)
 			{
@@ -73,62 +67,55 @@ class graph : public iconnector<T>
 			leaf_->set_death((void**) &leaf_);
 			root_ = nullptr;
 		}
-	
-		// COPY
-		void copy (const graph& other, std::string name = "") 
-		{
-			succession_ = other.succession_;
-			builder_ = other.builder_;
-			iconnector<T>::copy(other, name);
-			remake_leaf();
-		}
 
-		graph (const graph<T>& other) :
-			iconnector<T>(other, ""),
+		functor (const functor<T>& other) :
+			iconnector<T>(other),
 			builder_(other.builder_),
 			succession_(other.succession_) { remake_leaf(); }
 
-		graph (const graph<T>& src, graph<T>* top) : graph<T>(src)
+		functor (const functor<T>& src, functor<T>* top) : functor<T>(src)
 		{
 			builder_ = top->builder_;
 			succession_ = top->succession_;
-			succession_.push_back(const_cast<graph<T>*>(&src));
+			succession_.push_back(const_cast<functor<T>*>(&src));
 		}
 
-		virtual ivariable<T>* clone_impl (std::string name) { return new graph(*this); }
+		virtual ivariable<T>* clone_impl (std::string name) { return new functor(*this); }
 		
-		graph (ivariable<T>* leaf,  BUILD_GRAPH<T> build) :
+		functor (ivariable<T>* leaf,  BUILD_FUNCT<T> build) :
 			builder_(build),
 			iconnector<T>(std::vector<ivariable<T>*>{leaf}, "") { remake_leaf(); }
 
 	public:
-		static graph* build (ivariable<T>* leaf, 
+		static functor* build (ivariable<T>* leaf, 
 			std::function<ivariable<T>*(varptr<T>)> build)
 		{
 			if (nullptr == leaf) return nullptr;
-			return new graph(leaf, build);
+			return new functor(leaf, build);
 		}
 
-		// kill graph
-		virtual ~graph (void)
+		// kill functor
+		virtual ~functor (void)
 		{
 			if (leaf_) delete leaf_;
 		}
 
 		// COPY
-		graph* clone (std::string name = "")
+		virtual functor* clone (void)
 		{
-			return static_cast<graph*>(clone_impl(name));
+			return new functor(*this);
 		}
-		graph& operator = (const graph& other)
+		functor& operator = (const functor& other)
 		{
 			if (this != &other)
 			{
-				copy(other);
+				iconnector<T>::operator = (other);
+				succession_ = other.succession_;
+				builder_ = other.builder_;
+				remake_leaf();
 			}
 			return *this;
 		}
-
 
 		virtual std::string get_name (void) const
 		{
@@ -148,24 +135,24 @@ class graph : public iconnector<T>
 			return root_;
 		}
 		
-		// spawn a new graph appending input leaf to this
-		virtual graph<T>* append_leaf (ivariable<T>* base_root)
+		// spawn a new functor appending input leaf to this
+		virtual functor<T>* append_leaf (ivariable<T>* base_root)
 		{
-			graph<T>* cpy = new graph<T>(base_root, builder_);
+			functor<T>* cpy = new functor<T>(base_root, builder_);
 			cpy->succession_ = this->succession_;
 			return cpy;
 		}
-		// make new graph with appending other's root to this leaf
-		virtual graph<T>* append_graph (graph<T>* other)
+		// make new functor with appending other's root to this leaf
+		virtual functor<T>* append_functor (functor<T>* other)
 		{
-			// we take other's leaf but this build and succession stack as the new graph
-			return new graph(*other, this);
+			// we take other's leaf but this build and succession stack as the new functor
+			return new functor(*other, this);
 		}
 
 		virtual tensorshape get_shape (void) { return init()->get_shape(); }
 		virtual tensor<T>* get_eval (void) { return init()->get_eval(); }
 		virtual ivariable<T>* get_gradient (void) { return init()->get_gradient(); }
-		virtual graph<T>* get_jacobian (void) {
+		virtual functor<T>* get_jacobian (void) {
 			if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(init()))
 			{
 				return c->get_jacobian();
@@ -179,6 +166,6 @@ class graph : public iconnector<T>
 	
 }
 
-#include "../../../src/graph/tensorless/graph.ipp"
+#include "../../../src/graph/tensorless/functor.ipp"
 
-#endif /* graph_hpp */
+#endif /* functor_hpp */

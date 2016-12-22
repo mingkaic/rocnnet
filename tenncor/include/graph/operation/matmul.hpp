@@ -9,8 +9,8 @@
 #include "graph/operation/elementary.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/variable/constant.hpp"
-#include "graph/tensorless/graph.hpp"
-#include "graph/tensorless/selector.hpp"
+#include "graph/tensorless/functor.hpp"
+#include "graph/state_selector/conditional.hpp"
 
 #pragma once
 #ifndef matop_hpp
@@ -36,9 +36,6 @@ class matmul : public ioperation<T>
 	protected:
 		// backward chaining for AD
 		virtual void setup_gradient (void);
-		
-		matmul (const matmul<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name);
 
 		// protect matrix constructor to ensure heap allocation
 		matmul (ivariable<T>* a, ivariable<T>* b,
@@ -52,8 +49,7 @@ class matmul : public ioperation<T>
 		}
 
 		// COPY
-		matmul<T>* clone (std::string name = "");
-		virtual matmul<T>& operator = (const matmul<T>& other);
+		matmul<T>* clone (void);
 		
 		// MOVES
 		// TODO: implement

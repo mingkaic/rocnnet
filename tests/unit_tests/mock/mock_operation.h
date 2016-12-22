@@ -43,12 +43,15 @@ class MockOperation : public DummyOp
 			DummyOp(a, b)
 		{ /* this->out remains null */ }
 
+		MockOperation (const MockOperation& other) : DummyOp(other) {}
 
 	public:
 		static MockOperation* build (ivariable<double>* in) { return new MockOperation(in); }
 		static MockOperation* build (ivariable<double>* a, ivariable<double>* b) { return new MockOperation(a, b); }
 
 		~MockOperation (void) {}
+		virtual MockOperation* clone (void) { return new MockOperation(*this); }
+		
 		// inherited from iobserver
 		MOCK_METHOD1(mock_update, void (ccoms::caller_info));
 		MOCK_METHOD2(mock_update, void (ccoms::caller_info, ccoms::update_message));

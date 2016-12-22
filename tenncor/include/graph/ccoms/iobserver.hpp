@@ -19,14 +19,14 @@ namespace ccoms
 
 // AKA root / intermediate node
 
-class iobserver : public reactive_node
+class iobserver : public ireactive_node
 {
 	protected:
 		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
 		void add_dependency (subject* dep); // add in order
-		void copy (const iobserver& other);
+		void copy (const iobserver& other); // for assignment ops
 		
 		// attach dependencies
 		iobserver (const iobserver& other); // copy over dependencies and leaves

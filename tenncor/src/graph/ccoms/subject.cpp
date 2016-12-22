@@ -14,38 +14,6 @@
 namespace ccoms
 {
 
-// REACTIVE NODE
-
-bool reactive_node::safe_destroy (void)
-{
-	if (suicidal())
-	{
-		// deletion logic, change here if we allow stack allocation in the future
-		delete this;
-		return true;
-	}
-	return false;
-}
-
-reactive_node::~reactive_node (void)
-{
-	for (void** ptrr : ptrrs_)
-	{
-		*ptrr = nullptr;
-	}
-}
-
-void reactive_node::set_death (void** ptr)
-{
-	ptrrs_.emplace(ptr);
-}
-void reactive_node::unset_death (void** ptr)
-{
-	ptrrs_.erase(ptr);
-}
-
-// SUBJECT
-
 void subject::attach (iobserver* viewer, size_t idx)
 {
 	audience_[viewer].push_back(idx);
@@ -106,55 +74,16 @@ bool subject::no_audience (void) const
 
 bool subject::safe_destroy (void)
 {
-	if (var_)
+	if (nullptr != var_)
 	{
 		delete var_;
 		return true;
 	}
-	return reactive_node::safe_destroy();
+	return ireactive_node::safe_destroy();
 }
 
 subject_owner*& subject::get_owner (void) {
 	return var_;
-}
-
-// SUBJECT OWNER
-
-void subject_owner::copy (const subject_owner& other)
-{
-	caller_ = new subject(*other.caller_, this);
-}
-
-subject_owner::subject_owner (const subject_owner& other)
-{
-	copy(other);
-}
-
-subject_owner::subject_owner (void) { caller_ = new subject(this); }
-
-subject_owner::~subject_owner (void)
-{
-	delete caller_;
-}
-
-void subject_owner::notify (subject_owner* grad)
-{
-	ccoms::update_message msg;
-	if (grad)
-	{
-		msg.grad_ = grad->caller_;
-	}
-	caller_->notify(msg);
-}
-
-void subject_owner::notify (ccoms::update_message msg)
-{
-	caller_->notify(msg);
-}
-
-bool subject_owner::no_audience (void) const
-{
-	return caller_->no_audience();
 }
 
 }

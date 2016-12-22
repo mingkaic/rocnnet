@@ -6,9 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <cassert>
-#include <unordered_set>
-#include "utils.hpp"
+#include "ireactive_node.hpp"
 
 #pragma once
 #ifndef subject_hpp
@@ -21,11 +19,10 @@ class iobserver;
 class subject;
 class subject_owner;
 
-template <typename T>
-class graph;
-
 struct update_message
 {
+	// preferrably we should move this to caller_info, but since caller_info isn't accessible from gradient, 
+	// we must resort to using update_message. TODO: change this to "reverse_mode_" 
 	subject* grad_ = nullptr; // this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
 };
 
@@ -37,48 +34,10 @@ struct caller_info
 	caller_info (subject* caller = nullptr) : caller_(caller) {}
 };
 
-// abstract for communication nodes that records leaves
-class reactive_node
-{
-	private:
-		// used exclusively for controlling to pointers of this
-		// upon destruction all pointers ptrrs point to will be set to null
-		std::unordered_set<void**> ptrrs_;
-	
-	protected:
-		// returns true if suicide on safe_destroy
-		// we should always have protected constructors with a static builder
-		// if suicidal is true, since suicide never accounts for stack allocation
-		virtual bool suicidal (void) = 0;
-
-		// allocation is moved here because I want safe destroy and node_allocation 
-		// to eventually form a separate abstract factory object
-		template <typename E, typename ...A>
-		static E* node_allocate (A... args)
-		{
-			// memory management for nodes
-			// default new on heap for now, could be machine dependent later
-			return new E(args...);
-		}
-
-		reactive_node (void) {}
-		reactive_node (reactive_node& other) {} // prevent ptrrs from being copied
-	
-	public:
-		virtual ~reactive_node (void); // set all ptrrs' pointer to null
-		// return true if this is successfully flagged for deletion
-		virtual bool safe_destroy (void);
-		// set ptr to null on death,
-		// ptr might not necessary point to this, ptr could point to something affecting this
-		// this distinction must be determined by the caller, be warned
-		void set_death (void** ptr);
-		void unset_death (void** ptr);
-};
-
 // subject retains control over all its observers,
 // once destroyed, all observers are flagged for deletion
 
-class subject : public reactive_node
+class subject : public ireactive_node
 {
 	private:
 		// content (does not own... meaning memory leak/corruption if we delete this without variable; will occur for constant)
@@ -103,28 +62,10 @@ class subject : public reactive_node
 	
 		void notify (update_message msg = update_message());
 		bool no_audience (void) const;
-		// override reactive_node's safe_destroy to kill var_ should subject become suicidal
+		// override ireactive_node's safe_destroy to kill var_ should subject become suicidal
 		// killing var_ is essentially the same as suicide, since var_ will in turn kill this
 		virtual bool safe_destroy (void);
 		subject_owner*& get_owner (void);
-};
-
-class subject_owner
-{
-	protected:
-		subject* caller_ = nullptr;
-
-		void copy (const subject_owner& other);
-		subject_owner (const subject_owner& other);
-		subject_owner (void);
-
-	public:
-		virtual ~subject_owner (void);
-
-		// BRIDGE TO CALLER
-		void notify (subject_owner* grad = nullptr);
-		void notify (ccoms::update_message msg);
-		bool no_audience (void) const;
 };
 
 }

@@ -42,7 +42,7 @@ struct ileaf<T>::dyn_init : public initializer<T>
 };
 
 template <typename T>
-void ileaf<T>::copy (const ileaf<T>& other, std::string name)
+void ileaf<T>::copy (const ileaf<T>& other)
 {
 	if (nullptr != init_)
 	{
@@ -51,15 +51,14 @@ void ileaf<T>::copy (const ileaf<T>& other, std::string name)
 	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
 	init_ = other.init_->clone();
 	is_init_ = other.is_init_;
-	ivariable<T>::copy(other, name);
 }
 
 template <typename T>
-ileaf<T>::ileaf (const ileaf<T>& other, std::string name) :
-	ivariable<T>(name),
-	out_(std::unique_ptr<tensor<T> >(other.out_->clone())),
-	init_(other.init_->clone()),
-	is_init_(other.is_init_) {}
+ileaf<T>::ileaf (const ileaf<T>& other) :
+	ivariable<T>(other)
+{
+	copy(other);
+}
 
 template <typename T>
 ileaf<T>::ileaf (const tensorshape& shape, initializer<T>* init, std::string name) :
@@ -75,18 +74,13 @@ ileaf<T>::~ileaf (void)
 }
 
 template <typename T>
-ileaf<T>* ileaf<T>::clone (std::string name)
-{
-	return static_cast<ileaf<T>*>(clone_impl(name));
-}
-
-template <typename T>
 ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other)
 {
 	if (this != &other)
 	{
+		ivariable<T>::operator = (other);
 		this->copy(other);
-		this->notify();
+		this->notify(); // content changed
 	}
 	return *this;
 }

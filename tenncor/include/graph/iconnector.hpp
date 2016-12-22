@@ -32,18 +32,17 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 
 	protected:
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src);
-
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
-		void copy (const iconnector<T>& other, std::string name = "");
-		iconnector (const iconnector<T>& other, std::string name);
+		
+		// CONSTRUCTOR
 		iconnector (std::vector<ivariable<T>*> dependencies, std::string name);
 
 		friend class gradient<T>;
 
 	public:
 		virtual ~iconnector (void) {}
-
-		iconnector<T>* clone (std::string name = "");
+		
+		// COPY
+		// abstract clone
 
 		// connectors only
 		void leaves_collect (std::function<void(ivariable<T>*)> collector);
@@ -52,7 +51,7 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 		// get_shape remains abstract
 		// get_eval remains abstract
 		// get_gradient remains abstract
-		virtual graph<T>* get_jacobian (void) = 0;
+		virtual functor<T>* get_jacobian (void) = 0;
 		// update remains abstract
 };
 

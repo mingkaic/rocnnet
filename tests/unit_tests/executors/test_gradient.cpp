@@ -479,7 +479,7 @@ TEST(DERIVE, Matmul) {
 }
 
 
-TEST(DERIVE, MatmulComplex)
+TEST(DERIVE, DISABLED_MatmulComplex)
 {
 	nnet::session& sess = nnet::session::get_instance();
 	size_t insize = 10;

@@ -21,7 +21,11 @@ namespace nnet
 {
 
 // extend tensors by composition
-// also holds initializer (in operation)f
+// also holds initializer (in operation)
+
+// TODO: merge variable and placeholder, add assignment node as a tensorless
+// then move initializers as a updating delegate object (as oppose to the current variable delegate)
+// variable may take assignments as an exclusive (non-reactive) dependency
 template <typename T>
 class variable : public ileaf<T>
 {
@@ -30,9 +34,6 @@ class variable : public ileaf<T>
 		{
 			src.emplace(this);
 		}
-		
-		variable (const variable<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
 		variable (T scalar, std::string name = "scalar");
@@ -40,7 +41,7 @@ class variable : public ileaf<T>
 		variable (const tensorshape& shape, initializer<T>& init, std::string name = "");
 
 		// COPY
-		variable<T>* clone (std::string name = "");
+		virtual variable<T>* clone (void);
 
 		// INITIALIZE VALUE
 		void set_initializer (initializer<T>& init);

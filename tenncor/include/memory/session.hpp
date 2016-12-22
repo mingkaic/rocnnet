@@ -26,6 +26,7 @@ template <typename T>
 class variable;
 
 // singleton object controller
+// manage graph info
 class session
 {
 	private:

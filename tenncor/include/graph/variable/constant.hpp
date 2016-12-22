@@ -24,9 +24,6 @@ template <typename T>
 class constant : public ileaf<T>
 {
 	protected:
-		constant (const constant<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name);
-
 		constant (T scalar);
 		constant (std::vector<T> raw, tensorshape shape);
 
@@ -43,7 +40,7 @@ class constant : public ileaf<T>
 		}
 
 		// COPY
-		constant<T>* clone (std::string name = "");
+		virtual constant<T>* clone (void);
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
 		virtual ivariable<T>* get_gradient (void)

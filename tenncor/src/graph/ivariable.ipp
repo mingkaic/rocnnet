@@ -14,28 +14,18 @@ namespace nnet
 // VARIABLE INTERFACE
 
 template <typename T>
-void ivariable<T>::copy (const ivariable<T>& other, std::string name)
+ivariable<T>::ivariable (const ivariable<T>& other) :
+	subject_owner(other),
+	id_(r_temp::temp_uuid(this))
 {
-	if (0 == name.size())
-	{
-		name_ = other.name_+"_cpy";
-	}
-	else
-	{
-		name_ = name;
-	}
-	ccoms::subject_owner::copy(other);
-}
-
-template <typename T>
-ivariable<T>::ivariable (const ivariable<T>& other, std::string name)
-{
-	copy(other, name);
+	name_ = other.name_;
 }
 
 template <typename T>
 ivariable<T>::ivariable (std::string name) :
-	ccoms::subject_owner(), name_(name)
+	ccoms::subject_owner(),
+	id_(r_temp::temp_uuid(this)),
+	name_(name)
 {
 	session& sess = session::get_instance();
 	sess.register_obj(*this);
@@ -49,17 +39,12 @@ ivariable<T>::~ivariable (void)
 }
 
 template <typename T>
-ivariable<T>* ivariable<T>::clone (std::string name)
-{
-	return clone_impl(name);
-}
-
-template <typename T>
 ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other)
 {
 	if (this != &other)
 	{
-		copy(other);
+		subject_owner::operator = (other);
+		name_ = other.name_;
 	}
 	return *this;
 }

@@ -10,7 +10,8 @@
 #include "initializer.hpp"
 #include "tensor/tensor_op.hpp"
 #include "tensor/tensor.hpp"
-#include "graph/ccoms/subject.hpp"
+#include "graph/ccoms/subject_owner.hpp"
+#include "utils/temp_utils.hpp"
 
 #pragma once
 #ifndef ivariable_hpp
@@ -28,31 +29,31 @@ class iconnector;
 template <typename T>
 class buffer;
 template <typename T>
-class graph;
+class functor;
 
 // VARIABLE INTERFACE
 
 // DEFAULTS TO DOWN-UP VARIABLE (INFORMATION IS OBTAINED FROM LEAF NODES: Synthesized Attribute as oppose to Inherited)
 
+// TODO: limit T down to numeric types using c++17 std::variant
+
 template <typename T>
 class ivariable : public ccoms::subject_owner
 {
 	private:
+		// node identifier per graph
+		const std::string id_;
+		
+		// variable label
 		std::string name_;
 
 		template <typename U>
 		friend ccoms::subject* var_to_sub (ivariable<U>* var);
 		
 	protected:
-		// GRADIENT STATE
-		// TODO: somehow differentiate gradient order (0 = non-gradient node, 1st order, etc.)
-
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) = 0;
 
-		void copy (const ivariable<T>& other, std::string name = "");
-		ivariable (const ivariable<T>& other, std::string name);
-
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
+		ivariable (const ivariable<T>& other); // copy constructor required to prevent id_ copyover
 
 		ivariable (std::string name);
 
@@ -61,15 +62,15 @@ class ivariable : public ccoms::subject_owner
 		friend class ioptimizer<T>;
 		friend class iconnector<T>;
 		friend class buffer<T>;
-		friend class graph<T>;
+		friend class functor<T>;
 
 	public:
 		virtual ~ivariable (void);
 		
 		// COPY
-		// call abstract cloner
-		ivariable<T>* clone (std::string name = "");
-		virtual ivariable<T>& operator = (const ivariable<T>& other);
+		// abstract clone
+		// avoid copying id_
+		ivariable<T>& operator = (const ivariable<T>& other);
 		
 		// MOVE
 		// TODO Implement
@@ -87,7 +88,7 @@ class ivariable : public ccoms::subject_owner
 template <typename T>
 ccoms::subject* var_to_sub (ivariable<T>* var)
 {
-	return var->caller_;
+	return var->caller_.get();
 }
 
 template <typename T>

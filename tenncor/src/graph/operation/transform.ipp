@@ -24,19 +24,8 @@ void transform<T>::setup_gradient (void)
 			args.push_back(arg);
 		}
 	}
-	this->grad_ = dynamic_cast<ioperation<T>*>(der_(args));
+	this->grad_ = std::unique_ptr<iconnector<T> >(dynamic_cast<iconnector<T>*>(der_(args)));
 }
-
-template <typename T>
-ivariable<T>* transform<T>::clone_impl (std::string name)
-{
-	return new transform<T>(*this, name);
-}
-
-template <typename T>
-transform<T>::transform (const transform<T>& other, std::string name) :
-	der_(other.der_),
-	ioperation<T>(other, name) {}
 
 template <typename T>
 transform<T>::transform (std::vector<ivariable<T>*> args,
@@ -55,20 +44,9 @@ transform<T>::transform (std::vector<ivariable<T>*> args,
 }
 
 template <typename T>
-transform<T>* transform<T>::clone (std::string name)
+transform<T>* transform<T>::clone (void)
 {
-	return static_cast<transform<T>*>(clone_impl(name));
-}
-
-template <typename T>
-transform<T>& transform<T>::operator = (const transform<T>& other)
-{
-	if (this != &other)
-	{
-		der_ = other.der_;
-		this->copy(other);
-	}
-	return *this;
+	return new transform<T>(*this);
 }
 
 template <typename T>

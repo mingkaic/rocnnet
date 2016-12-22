@@ -14,7 +14,7 @@ namespace nnet
 // OPERATION INTERFACE UTILITY FUNCTIONS
 
 template <typename T>
-void ioperation<T>::copy (const ioperation<T>& other, std::string name)
+void ioperation<T>::copy (const ioperation<T>& other)
 {
 	// if grad is not being observed, then and only then delete
 	if (nullptr != grad_ && grad_->no_audience())
@@ -27,57 +27,26 @@ void ioperation<T>::copy (const ioperation<T>& other, std::string name)
 		grad_jacobi_->safe_destroy();
 	}
 	// shallow copy
-	grad_ = other.grad_;
-	grad_jacobi_ = other.grad_jacobi_;
 	tens_buffer_ = other.tens_buffer_;
-	iconnector<T>::copy(other, name);
+	
+	// gradient data reset
+	grad_ = nullptr;
+	grad_jacobi_ = other.grad_jacobi_->clone();
 }
 
 template <typename T>
-ioperation<T>::ioperation (const ioperation<T>& other, std::string name) :
-	iconnector<T>(other, name),
-	valid_tensor_(other.valid_tensor_),
-	grad_(other.grad_),
-	grad_jacobi_(other.grad_jacobi_),
-	tens_buffer_(other.tens_buffer_) {}
-	
-template <typename T>
-bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
+ioperation<T>::ioperation (const ioperation<T>& other) : iconnector<T>(other)
 {
-	// propagate channel
-	// did not implement jacobian conflicts resolution (when 2 jacobian nodes meeting at the same junction...)
-	// as such, this is undefined behavior for now and should throw error
-	size_t jacobi_count = 0;
-	for (ccoms::subject* sub : this->dependencies_)
-	{
-		if (ivariable<T>* v = sub_to_var<T>(sub))
-		{
-			if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(v)) {
-				if (o->channel(jacobi)) {
-					jacobi_count++;
-				}
-			}
-		}
-	}
-	if (jacobi_count > 1)
-	{
-		throw std::logic_error("jacobian branch conflict occurred at " + this->get_name());
-	}
-	return jacobi_count != 0;
+	this->copy(other);
 }
 
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-	iconnector<T>(dependencies, name)
-{}
+	iconnector<T>(dependencies, name) {}
 
 template <typename T>
 ioperation<T>::~ioperation (void)
 {
-	if (nullptr != grad_)
-	{
-		delete grad_;
-	}
 	if (nullptr != grad_jacobi_)
 	{
 		delete grad_jacobi_;
@@ -85,16 +54,11 @@ ioperation<T>::~ioperation (void)
 }
 
 template <typename T>
-ioperation<T>* ioperation<T>::clone (std::string name)
-{
-	return static_cast<ioperation<T>*>(clone_impl(name));
-}
-
-template <typename T>
 ioperation<T>& ioperation<T>::operator = (const ioperation<T>& other)
 {
 	if (this != &other)
 	{
+		iconnector<T>::operator = (other);
 		this->copy(other);
 	}
 	return *this;
@@ -119,7 +83,7 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 		// set grad_ to null on safe_destroy
 		grad_->set_death((void**) &grad_);
 	}
-	return grad_;
+	return grad_.get();
 }
 
 template <typename T>

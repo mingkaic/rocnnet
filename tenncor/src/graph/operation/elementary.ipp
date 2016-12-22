@@ -24,18 +24,7 @@ void elementary<T>::setup_gradient (void)
 			args.push_back(arg);
 		}
 	}
-	this->grad_ = dynamic_cast<ioperation<T>*>(der_(args));
-}
-
-template <typename T>
-elementary<T>::elementary (const elementary<T>& other, std::string name) :
-	der_(other.der_),
-	ioperation<T>(other, name) {}
-
-template <typename T>
-ivariable<T>* elementary<T>::clone_impl (std::string name)
-{
-	return new elementary<T>(*this, name);
+	this->grad_ = std::unique_ptr<iconnector<T> >(dynamic_cast<iconnector<T>*>(der_(args)));
 }
 
 template <typename T>
@@ -72,20 +61,9 @@ elementary<T>::elementary (std::vector<ivariable<T>*> args,
 }
 
 template <typename T>
-elementary<T>* elementary<T>::clone (std::string name)
+elementary<T>* elementary<T>::clone (void)
 {
-	return static_cast<elementary<T>*>(clone_impl(name));
-}
-
-template <typename T>
-elementary<T>& elementary<T>::operator = (const elementary<T>& other)
-{
-	if (this != &other)
-	{
-		der_ = other.der_;
-		this->copy(other);
-	}
-	return *this;
+	return new elementary<T>(*this);
 }
 
 // ELEMENTARY OPERATIONS

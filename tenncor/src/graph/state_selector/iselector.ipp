@@ -1,12 +1,12 @@
 //
-//  graph.ipp
+//  iselector.ipp
 //  cnnet
 //
-//  Created by Mingkai Chen on 2016-12-06.
+//  Created by Mingkai Chen on 2016-12-07.
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef graph_hpp
+#ifdef iselector_hpp
 
 namespace nnet
 {

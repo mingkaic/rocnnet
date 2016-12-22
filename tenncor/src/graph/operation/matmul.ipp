@@ -34,11 +34,12 @@ void matmul<T>::setup_gradient (void)
 
 	// matmul is special in that its grad_jacobi_ is the default jacobian leaf one
 	// grad_ is the jacobian instead
-	ioperation<T>* fgrad;
-	this->grad_ = fgrad = dynamic_cast<ioperation<T>*>(
+	ioperation<T>* fgrad = dynamic_cast<ioperation<T>*>(
 		fit<double>(constant<T>::build(1), this).get());
+	
+	this->grad_ = std::unique_ptr<iconnector<T> >(fgrad);
 		
-	graph<T>* jacobian = graph<T>::build(fgrad,
+	functor<T>* jacobian = functor<T>::build(fgrad,
 	[this, arga, argb](varptr<T> leaf)
 	{
 		varptr<T> grada = arga->get_gradient();
@@ -56,15 +57,15 @@ void matmul<T>::setup_gradient (void)
 	iconnector<T>* ogb = dynamic_cast<iconnector<T>*>(argb->get_gradient());
 	
 	// check if oga or ogb for jacobi
-	graph<T>* candidate_a = oga ? oga->get_jacobian() : nullptr;
-	graph<T>* candidate_b = ogb ? ogb->get_jacobian() : nullptr;
+	functor<T>* candidate_a = oga ? oga->get_jacobian() : nullptr;
+	functor<T>* candidate_b = ogb ? ogb->get_jacobian() : nullptr;
 	// we can only have one candidate
 	assert(nullptr == candidate_a || nullptr == candidate_b);
-	graph<T>* chief = candidate_a ? candidate_a : candidate_b;
+	functor<T>* chief = candidate_a ? candidate_a : candidate_b;
 	if (chief)
 	{
 		// chief absorb prime's root as this leaf/leaves
-		chief = chief->append_graph(jacobian);
+		chief = chief->append_functor(jacobian);
 	}
 	else
 	{
@@ -73,17 +74,6 @@ void matmul<T>::setup_gradient (void)
 	}
 
 	fgrad->set_jacobian(chief);
-}
-
-template <typename T>
-matmul<T>::matmul (const matmul<T>& other, std::string name) :
-	ioperation<T>(other, name),
-	transposeA_(other.transposeA_),
-	transposeB_(other.transposeB_) {}
-
-template <typename T>
-ivariable<T>* matmul<T>::clone_impl (std::string name) {
-	return new matmul<T>(*this, name);
 }
 
 template <typename T>
@@ -160,24 +150,9 @@ matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 }
 
 template <typename T>
-matmul<T>* matmul<T>::clone (std::string name)
+matmul<T>* matmul<T>::clone (void)
 {
-	return static_cast<matmul<T>*>(clone_impl(name));
-}
-
-template <typename T>
-matmul<T>& matmul<T>::operator = (const matmul<T>& other)
-{
-	if (this != &other)
-	{
-		if (const matmul<T>* mptr = dynamic_cast<const matmul<T>*>(&other))
-		{
-			transposeA_ = mptr->transposeA_;
-			transposeB_ = mptr->transposeB_;
-		}
-		this->copy(other);
-	}
-	return *this;
+	return new matmul(*this);
 }
 
 template <typename T>

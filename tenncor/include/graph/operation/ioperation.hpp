@@ -14,7 +14,7 @@
 #include <memory>
 #include <stack>
 
-#include "graph/tensorless/graph.hpp"
+#include "graph/tensorless/functor.hpp"
 
 #pragma once
 #ifndef ioperation_hpp
@@ -36,6 +36,8 @@ class ioperation : public iconnector<T>
 		// (each argument can return different tensors)
 		// update each tensor by position accordingly
 		std::vector<tensor<T>*> tens_buffer_;
+		
+		void copy (const ioperation<T>& other);
 
 	protected:
 		// WRAPPER CONTENT
@@ -46,8 +48,10 @@ class ioperation : public iconnector<T>
 		SHAPE shaper_;
 
 		// GRADIENT CONTENTS
-		iconnector<T>* grad_ = nullptr; // general gradient node
-		graph<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
+		std::unique_ptr<iconnector<T> > grad_ = nullptr; // general gradient node
+		functor<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
+
+		ioperation (const ioperation<T>& other);
 
 		// to extract shape info
 		// this shape evaluation is for when arguments are not instantiated
@@ -66,12 +70,12 @@ class ioperation : public iconnector<T>
 			return shaper_(shapes);
 		}
 		
-		void setup_jacobian (graph<T>* j)
+		void setup_jacobian (functor<T>* j)
 		{
 			if (nullptr == j) return;
 			if (nullptr == grad_jacobi_)
 			{
-				graph<T>* my_jacobi = j->append_leaf(this);
+				functor<T>* my_jacobi = j->append_leaf(this);
 				// set my_jacobi as grad_jacobi_
 				set_jacobian(my_jacobi);
 			}
@@ -83,10 +87,6 @@ class ioperation : public iconnector<T>
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
 		virtual void setup_gradient (void) = 0; // ioperation specific
-
-		void copy (const ioperation<T>& other, std::string name = "");
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
-		ioperation (const ioperation<T>& other, std::string name);
 
 		// set up tens_buffer
 		void initialize (void)
@@ -119,10 +119,6 @@ class ioperation : public iconnector<T>
 			}
 		}
 
-		// used specifically to pass jacobian tensors up the tree... could make generic use in the future
-		// combine with generalized notify/update
-		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
-
 		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
 
 		friend class gradient<T>;
@@ -131,7 +127,6 @@ class ioperation : public iconnector<T>
 		virtual ~ioperation (void);
 
 		// COPY
-		ioperation<T>* clone (std::string name = "");
 		virtual ioperation<T>& operator = (const ioperation<T>& other);
 		
 		// MOVE
@@ -150,7 +145,7 @@ class ioperation : public iconnector<T>
 
 		virtual ivariable<T>* get_gradient (void); // access general gradient
 
-		void set_jacobian (graph<T>* j)
+		void set_jacobian (functor<T>* j)
 		{
 			if (nullptr == grad_jacobi_)
 			{
@@ -158,7 +153,7 @@ class ioperation : public iconnector<T>
 				grad_jacobi_->set_death((void**) &grad_jacobi_);
 			}
 		}
-		virtual graph<T>* get_jacobian (void) { return grad_jacobi_; }
+		virtual functor<T>* get_jacobian (void) { return grad_jacobi_; }
 		
 		// inherited by elementary and transform, overwritten by matmul and jacobian
 		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
