@@ -14,7 +14,9 @@
 #include <memory>
 #include <stack>
 
+#include "graph/variable/constant.hpp"
 #include "graph/tensorless/functor.hpp"
+#include "graph/state_selector/bindable_toggle.hpp"
 
 #pragma once
 #ifndef ioperation_hpp
@@ -47,8 +49,9 @@ class ioperation : public iconnector<T>
 		// shaper functional must return undefined shape in cases of error
 		SHAPE shaper_;
 
-		// GRADIENT CONTENTS
-		std::unique_ptr<iconnector<T> > grad_ = nullptr; // general gradient node
+		// >>>> GRAD INFO <<<<
+//		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // general gradient node
+		std::unique_ptr<iconnector<T> > grad_ = nullptr;
 		functor<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
 
 		ioperation (const ioperation<T>& other);
@@ -86,7 +89,7 @@ class ioperation : public iconnector<T>
 		}
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
-		virtual void setup_gradient (void) = 0; // ioperation specific
+		virtual ivariable<T>* setup_gradient (void) = 0; // ioperation specific
 
 		// set up tens_buffer
 		void initialize (void)

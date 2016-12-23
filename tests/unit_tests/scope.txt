@@ -102,10 +102,11 @@ F201 - graphs created from append_graph methods will preserve the input graph
 
 F300 - conditional's eval, shape, gradient, and jacobian are obtained from its active dependency (except for jacobian, and gradient; undefined behavior for now)
 F301 - not_zero's active dependency is non-zero (scalar or otherwise) and is initialized (get_eval is non-null)
-NOT TESTED
-F302 - toggle activation will notify its dependencies of activation once, then return to default state
-F303 - toggle activation value will linger until explicitly called to update again
+F302 - push_toggle activation will notify its dependencies of activation once, then return to default state
+F303 - push_toggle activation value will linger until explicitly called to update again
 F304 - when binding bindable_toggle, bound variables will reset and update previously active toggles
+// NOT TESTED
+F305 - binding toggles will return a unique value dictating unique bind relationships; different relationships have different bound vector
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

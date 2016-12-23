@@ -27,8 +27,6 @@ class ioptimizer;
 template <typename T>
 class iconnector;
 template <typename T>
-class buffer;
-template <typename T>
 class functor;
 
 // VARIABLE INTERFACE
@@ -41,9 +39,9 @@ template <typename T>
 class ivariable : public ccoms::subject_owner
 {
 	private:
-		// node identifier per graph
-		const std::string id_;
-		
+		// >>>> NODE IDS <<<<
+		// unique hash
+		const std::string id_ = r_temp::temp_uuid(this);
 		// variable label
 		std::string name_;
 
@@ -51,18 +49,19 @@ class ivariable : public ccoms::subject_owner
 		friend ccoms::subject* var_to_sub (ivariable<U>* var);
 		
 	protected:
+		// >>>> GRAPH INFO <<<<
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) = 0;
 
-		ivariable (const ivariable<T>& other); // copy constructor required to prevent id_ copyover
-
+		// >>>> CONSTRUCTORS <<<<
+		// copy constructor required to prevent id_ copyover
+		ivariable (const ivariable<T>& other);
+		// label constructor
 		ivariable (std::string name);
 
 		// protected members need to be accessed by other operations
-		friend class assign<T>;
-		friend class ioptimizer<T>;
+//		friend class ioptimizer<T>;
 		friend class iconnector<T>;
-		friend class buffer<T>;
-		friend class functor<T>;
+//		friend class functor<T>;
 
 	public:
 		virtual ~ivariable (void);

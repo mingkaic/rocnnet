@@ -15,8 +15,7 @@ namespace nnet
 
 template <typename T>
 ivariable<T>::ivariable (const ivariable<T>& other) :
-	subject_owner(other),
-	id_(r_temp::temp_uuid(this))
+	subject_owner(other)
 {
 	name_ = other.name_;
 }
@@ -24,7 +23,6 @@ ivariable<T>::ivariable (const ivariable<T>& other) :
 template <typename T>
 ivariable<T>::ivariable (std::string name) :
 	ccoms::subject_owner(),
-	id_(r_temp::temp_uuid(this)),
 	name_(name)
 {
 	session& sess = session::get_instance();

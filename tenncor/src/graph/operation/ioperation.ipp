@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/variable/variable.hpp"
+
 #ifdef ioperation_hpp
 
 namespace nnet
@@ -79,7 +81,9 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 {
 	if (nullptr == grad_)
 	{
-		setup_gradient();
+//		grad_ = std::unique_ptr<bindable_toggle<T> >(
+//			bindable_toggle<T>::build(setup_gradient(), constant<T>::build(1)));
+		grad_ = std::unique_ptr<iconnector<T> >(dynamic_cast<iconnector<T>*>(setup_gradient()));
 		// set grad_ to null on safe_destroy
 		grad_->set_death((void**) &grad_);
 	}

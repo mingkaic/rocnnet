@@ -1,5 +1,5 @@
 //
-//  toggle.hpp
+//  push_toggle.hpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-12-19.
@@ -9,35 +9,32 @@
 #include "iselector.hpp"
 
 #pragma once
-#ifndef toggle_hpp
-#define toggle_hpp
+#ifndef push_toggle_hpp
+#define push_toggle_hpp
 
 namespace nnet
 {
 
-// unlike selector, toggle between 2 states
+// unlike selector, push_toggle between 2 states
 // changes state via swap accessor method
 // active variable is used when activation method is called
 // otherwise dependencies will always default variable
 
 template <typename T>
-class toggle : public iselector<T>
+class push_toggle : public iselector<T>
 {
-	private:
-		void reset (void) { this->active_ = 0; }
-		
 	protected:
-		toggle (ivariable<T>* def, ivariable<T>* active, std::string name) :
+		push_toggle (ivariable<T>* def, ivariable<T>* active, std::string name) :
 			iselector<T>(std::vector<ivariable<T>*>{def, active}, name) {}
 			
 	public:
-		static toggle<T>* build (ivariable<T>* def, ivariable<T>* active, std::string name = "")
+		static push_toggle<T>* build (ivariable<T>* def, ivariable<T>* active, std::string name = "")
 		{
-			return new toggle(def, active, name);
+			return new push_toggle(def, active, name);
 		}
 		
 		// COPY
-		virtual toggle<T>* clone (void) { return new toggle<T>(*this); }
+		virtual push_toggle<T>* clone (void) { return new push_toggle<T>(*this); }
 	
 		virtual void activate (void)
 		{
@@ -51,10 +48,10 @@ class toggle : public iselector<T>
 				nnutils::to_vec<ccoms::subject*, ivariable<T>*>(this->dependencies_, sub_to_var<T>);
 			msg.grad_ = nullptr;
 			this->notify(msg);
-			reset();
+			this->active_ = 0;
 		}
 };
 
 }
 
-#endif /* toggle_hpp */
+#endif /* push_toggle_hpp */

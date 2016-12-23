@@ -6,7 +6,6 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/variable/variable.hpp"
 #include "graph/ccoms/iobserver.hpp"
 #include "executor/varptr.hpp"
 

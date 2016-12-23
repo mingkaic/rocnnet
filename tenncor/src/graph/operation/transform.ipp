@@ -14,7 +14,7 @@ namespace nnet
 // Collect Operations
 
 template <typename T>
-void transform<T>::setup_gradient (void)
+ivariable<T>* transform<T>::setup_gradient (void)
 {
 	std::vector<ivariable<T>*> args;
 	for (ccoms::subject* child : this->dependencies_)
@@ -24,7 +24,7 @@ void transform<T>::setup_gradient (void)
 			args.push_back(arg);
 		}
 	}
-	this->grad_ = std::unique_ptr<iconnector<T> >(dynamic_cast<iconnector<T>*>(der_(args)));
+	return der_(args);
 }
 
 template <typename T>

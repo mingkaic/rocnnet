@@ -35,7 +35,7 @@ class matmul : public ioperation<T>
 
 	protected:
 		// backward chaining for AD
-		virtual void setup_gradient (void);
+		virtual ivariable<T>* setup_gradient (void);
 
 		// protect matrix constructor to ensure heap allocation
 		matmul (ivariable<T>* a, ivariable<T>* b,

@@ -36,7 +36,7 @@ class transform : public ioperation<T>
 		BUILD_DERIVE<T> der_; // shallow
 
 	protected:
-		virtual void setup_gradient (void);
+		virtual ivariable<T>* setup_gradient (void);
 
 		// protect transform constructor to ensure heap allocation
 		transform (std::vector<ivariable<T>*> args, TEN_OP<T> op, SHAPE trans,

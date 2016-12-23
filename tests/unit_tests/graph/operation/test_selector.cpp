@@ -4,7 +4,8 @@
 
 #include "gtest/gtest.h"
 #include "graph/state_selector/conditional.hpp"
-#include "graph/state_selector/toggle.hpp"
+#include "graph/state_selector/push_toggle.hpp"
+#include "graph/state_selector/bindable_toggle.hpp"
 #include "graph/operation/elementary.hpp"
 
 
@@ -66,9 +67,93 @@ TEST(SELECTOR, not_zero_F301)
 
 
 // behavior F302
-TEST(SELECTOR, toggle_active_F302)
+TEST(SELECTOR, push_toggle_active_F302)
 {
-	std::constant<double>* state_default(1);
-	std::placeholder<double> active(std::vector<size_t>{1});
-	nnet::toggle<double>* flip = nnet::toggle::build();
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> dis(0, 1);
+
+	double scalar = dis(gen);
+	nnet::constant<double>* state_default = nnet::constant<double>::build(scalar);
+	nnet::placeholder<double> active(std::vector<size_t>{1});
+	nnet::push_toggle<double>* flip = nnet::push_toggle<double>::build(state_default, &active);
+	active = { scalar + 1 };
+	// by default flip should always be the default
+	EXPECT_EQ(state_default->get_eval(), flip->get_eval());
+
+	// inorder to expose active through flip, we need a node with flip as a dependency
+	nnet::varptr<double> buffer = nnet::varptr<double>(flip) + 0.0;
+	flip->activate(); // active state is propagated to buffer
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar + 1);
+
+	// flip's always exposed as default
+	EXPECT_EQ(nnet::expose<double>(flip)[0], scalar);
+}
+
+
+// behavior F303
+TEST(SELECTOR, push_toggle_deactivate_F303)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> dis(0, 1);
+
+	double scalar = dis(gen);
+	nnet::constant<double>* state_default = nnet::constant<double>::build(scalar);
+	nnet::placeholder<double> active(std::vector<size_t>{1});
+	nnet::push_toggle<double>* flip = nnet::push_toggle<double>::build(state_default, &active);
+	active = { scalar + 1 };
+
+	// inorder to expose active through flip, we need a node with flip as a dependency
+	nnet::varptr<double> buffer = nnet::varptr<double>(flip) + 0.0;
+	flip->activate(); // active state is propagated to buffer
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar + 1);
+
+	// deactivate
+	flip->notify();
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar);
+}
+
+
+// behavior F304
+TEST(SELECTOR, bindable_toggle_activation)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> dis(0, 1);
+
+	double scalar = dis(gen);
+	double scalar2 = dis(gen);
+	nnet::constant<double>* state_default = nnet::constant<double>::build(scalar);
+	nnet::constant<double>* state_active = nnet::constant<double>::build(scalar+1);
+	nnet::bindable_toggle<double>* flip =
+		nnet::bindable_toggle<double>::build(state_default, state_active);
+	nnet::varptr<double> buffer = nnet::varptr<double>(flip) + 0.0;
+
+	nnet::constant<double>* state_default2 = nnet::constant<double>::build(scalar2);
+	nnet::constant<double>* state_active2 = nnet::constant<double>::build(scalar2+1);
+	nnet::bindable_toggle<double>* flip2 =
+		nnet::bindable_toggle<double>::build(state_default2, state_active2);
+	nnet::varptr<double> buffer2 = nnet::varptr<double>(flip2) + 0.0;
+
+	std::string fake_id = "fake";
+	// bind the toggles
+	flip->bind(fake_id, flip2);
+
+	// default state
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar);
+	EXPECT_EQ(nnet::expose<double>(buffer2)[0], scalar2);
+
+	// active
+	flip->activate();
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar+1); // buffer is active
+	EXPECT_EQ(nnet::expose<double>(buffer2)[0], scalar2);
+
+	// deactivate flip, activate flip2
+	flip2->activate();
+	EXPECT_EQ(nnet::expose<double>(buffer)[0], scalar); // buffer is deactive
+	EXPECT_EQ(nnet::expose<double>(buffer2)[0], scalar2+1); // buffer2 is active
+
+	delete flip;
+	delete flip2;
 }

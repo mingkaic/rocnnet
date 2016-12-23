@@ -25,7 +25,7 @@ size_t matmul<T>::common_dim (void)
 }
 
 template <typename T>
-void matmul<T>::setup_gradient (void)
+ivariable<T>* matmul<T>::setup_gradient (void)
 {
 	// matmul'(f, g) = jacobian(f, g)
 	ivariable<T>* arga = sub_to_var<T>(this->dependencies_[0]);
@@ -36,8 +36,6 @@ void matmul<T>::setup_gradient (void)
 	// grad_ is the jacobian instead
 	ioperation<T>* fgrad = dynamic_cast<ioperation<T>*>(
 		fit<double>(constant<T>::build(1), this).get());
-	
-	this->grad_ = std::unique_ptr<iconnector<T> >(fgrad);
 		
 	functor<T>* jacobian = functor<T>::build(fgrad,
 	[this, arga, argb](varptr<T> leaf)
@@ -74,6 +72,8 @@ void matmul<T>::setup_gradient (void)
 	}
 
 	fgrad->set_jacobian(chief);
+
+	return fgrad;
 }
 
 template <typename T>

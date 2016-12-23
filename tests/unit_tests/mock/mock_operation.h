@@ -57,7 +57,7 @@ class MockOperation : public DummyOp
 		MOCK_METHOD2(mock_update, void (ccoms::caller_info, ccoms::update_message));
 		MOCK_METHOD1(clone_impl, ivariable<double>*(std::string));
 		MOCK_METHOD0(shape_eval, nnet::tensorshape(void));
-		MOCK_METHOD0(setup_gradient, void(void));
+		MOCK_METHOD0(setup_gradient, ivariable<double>*(void));
 };
 
 

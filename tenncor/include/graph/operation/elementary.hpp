@@ -22,7 +22,7 @@ class elementary : public ioperation<T> {
 		BUILD_DERIVE<T> der_; // shallow copy (move to operation once matmul adopts the transform)
 		
 	protected:
-		virtual void setup_gradient (void);
+		virtual ivariable<T>* setup_gradient (void);
 
 		// protect elementary constructor to ensure heap allocation
 		elementary (std::vector<ivariable<T>*> args,

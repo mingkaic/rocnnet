@@ -11,7 +11,9 @@
 #include <random>
 #include <new>
 #include <memory>
+
 #include "ileaf.hpp"
+#include "graph/state_selector/bindable_toggle.hpp"
 
 #pragma once
 #ifndef variable_hpp
@@ -57,6 +59,7 @@ class variable : public ileaf<T>
 			if (nullptr == this->grad_)
 			{
 				this->grad_ = std::make_unique<variable<T> >(1, "grad<" + this->get_name() + ">");
+//				this->grad_ = std::unique<ivariable<T> >(bindable_toggle<T>::build(constant::build(0), constant::build(1)));
 			}
 			return this->grad_.get();
 		}

@@ -25,14 +25,14 @@ class ileaf : public ivariable<T>
 		void copy (const ileaf<T>& other);
 	
 	protected:
-		// WRAPPER CONTENT
+		// >>>> TENSOR CONTENT <<<<
 		std::unique_ptr<tensor<T> > out_ = nullptr;
+
+		// >>>> GRAD INFO <<<<
+		std::unique_ptr<ivariable<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
 
 		// used by assignment operators to dynamically initialize tensors
 		struct dyn_init;
-
-		// TODO make suicide an option for constants
-		std::unique_ptr<variable<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
 		
 		// we own our initializer
 		initializer<T>* init_ = nullptr;
@@ -44,6 +44,8 @@ class ileaf : public ivariable<T>
 		ileaf (const ileaf<T>& other); // copy constructor required for out_, grad_, and init_ deep copy
 
 		ileaf (const tensorshape& shape, initializer<T>* init, std::string name);
+
+		friend class assign<T>;
 
 	public:
 		virtual ~ileaf (void);

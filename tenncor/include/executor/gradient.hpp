@@ -25,9 +25,14 @@ template <typename T>
 class gradient : public iexecutor<T>
 {
 	private:
-		// gradient owns values in leaf_map_
-		ivariable<T>* g_root_;
+		// id to bind leaf_map_
+		const std::string gid_ = r_temp::temp_uuid(this);
+
+		// predefine leaf of gradient operation
 		std::vector<ivariable<T>*> potential_srcs_;
+
+		// graph data (root, and leaf)
+		ivariable<T>* g_root_;
 		GRAD_MAP<T> leaf_map_;
 
 	protected:
@@ -47,8 +52,10 @@ class gradient : public iexecutor<T>
 
 		// MOVE
 
-		// inherited from iexecutor
+		// >>>> IEXECUTOR METHOD <<<<
+		// bind the toggle here
 		virtual void freeze (void);
+		// leaf_map_ value update
 		virtual void execute (void);
 
 		varptr<T> get_root (void) { return g_root_; }

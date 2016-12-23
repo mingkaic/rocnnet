@@ -76,6 +76,8 @@ bool subject::safe_destroy (void)
 {
 	if (nullptr != var_)
 	{
+		// safe_destroy is meant as a means of suicide
+		// killing owner will in turn kill this
 		delete var_;
 		return true;
 	}
