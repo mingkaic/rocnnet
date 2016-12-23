@@ -50,8 +50,7 @@ class ioperation : public iconnector<T>
 		SHAPE shaper_;
 
 		// >>>> GRAD INFO <<<<
-//		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // general gradient node
-		std::unique_ptr<iconnector<T> > grad_ = nullptr;
+		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // general gradient node
 		functor<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
 
 		ioperation (const ioperation<T>& other);
@@ -146,7 +145,7 @@ class ioperation : public iconnector<T>
 
 		virtual tensor<T>* get_eval (void);
 
-		virtual ivariable<T>* get_gradient (void); // access general gradient
+		virtual bindable_toggle<T>* get_gradient (void); // access general gradient
 
 		void set_jacobian (functor<T>* j)
 		{

@@ -116,8 +116,9 @@ TEST(SELECTOR, push_toggle_deactivate_F303)
 
 
 // behavior F304
-TEST(SELECTOR, bindable_toggle_activation)
+TEST(SELECTOR, bindable_toggle_activation_F304)
 {
+	std::string fake_id = "fake";
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<double> dis(0, 1);
@@ -136,7 +137,6 @@ TEST(SELECTOR, bindable_toggle_activation)
 		nnet::bindable_toggle<double>::build(state_default2, state_active2);
 	nnet::varptr<double> buffer2 = nnet::varptr<double>(flip2) + 0.0;
 
-	std::string fake_id = "fake";
 	// bind the toggles
 	flip->bind(fake_id, flip2);
 
@@ -156,4 +156,64 @@ TEST(SELECTOR, bindable_toggle_activation)
 
 	delete flip;
 	delete flip2;
+}
+
+
+// behavior F305
+TEST(SELECTOR, bindable_toggle_relationship_F305)
+{
+	std::string fake_id1 = "fake1";
+	std::string fake_id2 = "fake2";
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<double> dis(0, 1);
+
+	std::vector<double> scalars;
+	std::vector<nnet::bindable_toggle<double>*> bts;
+	std::vector<nnet::varptr<double> > buffers;
+
+	for (size_t i = 0; i < 3; i++)
+	{
+		double scalar = dis(gen);
+		nnet::constant<double>* state_default = nnet::constant<double>::build(scalar);
+		nnet::constant<double>* state_active = nnet::constant<double>::build(scalar+1);
+		nnet::bindable_toggle<double>* flip =
+				nnet::bindable_toggle<double>::build(state_default, state_active);
+
+		scalars.push_back(scalar);
+		bts.push_back(flip);
+		buffers.push_back(nnet::varptr<double>(flip) + 0.0);
+	}
+
+	// relationship 0-1
+	bts[1]->bind(fake_id1, bts[0]);
+	// relationship 1-2
+	bts[1]->bind(fake_id2, bts[2]);
+
+	bts[0]->activate();
+	EXPECT_EQ(nnet::expose<double>(buffers[0])[0], scalars[0]+1); // buffer is active
+	EXPECT_EQ(nnet::expose<double>(buffers[1])[0], scalars[1]);
+	EXPECT_EQ(nnet::expose<double>(buffers[2])[0], scalars[2]);
+
+	// default toggle activate activates the last relationship
+	bts[1]->activate();
+	EXPECT_EQ(nnet::expose<double>(buffers[0])[0], scalars[0]+1); // buffer 0 is active
+	EXPECT_EQ(nnet::expose<double>(buffers[1])[0], scalars[1]+1); // last bound with relationship 1-2, so 0-1's 0 is still active
+	EXPECT_EQ(nnet::expose<double>(buffers[2])[0], scalars[2]);
+
+	bts[2]->activate();
+	EXPECT_EQ(nnet::expose<double>(buffers[0])[0], scalars[0]+1); // buffer 0 is STILL active
+	EXPECT_EQ(nnet::expose<double>(buffers[1])[0], scalars[1]);
+	EXPECT_EQ(nnet::expose<double>(buffers[2])[0], scalars[2]+1); // only relationship 1-2, so 0 is still active, but 1 is disabled
+
+	// directed activation
+	bts[1]->activate(fake_id1);
+	EXPECT_EQ(nnet::expose<double>(buffers[0])[0], scalars[0]); // buffer 0 is now disabled
+	EXPECT_EQ(nnet::expose<double>(buffers[1])[0], scalars[1]+1);
+	EXPECT_EQ(nnet::expose<double>(buffers[2])[0], scalars[2]+1); // 2 is still active because relationship 1-2 is never touched
+
+	for (nnet::bindable_toggle<double>* btoggles : bts)
+	{
+		delete btoggles;
+	}
 }

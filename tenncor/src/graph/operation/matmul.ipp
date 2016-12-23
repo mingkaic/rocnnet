@@ -33,19 +33,14 @@ ivariable<T>* matmul<T>::setup_gradient (void)
 	assert(arga && argb);
 
 	// matmul is special in that its grad_jacobi_ is the default jacobian leaf one
-	// grad_ is the jacobian instead
-	ioperation<T>* fgrad = dynamic_cast<ioperation<T>*>(
-		fit<double>(constant<T>::build(1), this).get());
-		
-	functor<T>* jacobian = functor<T>::build(fgrad,
+	functor<T>* jacobian = functor<T>::build(ones.get(),
 	[this, arga, argb](varptr<T> leaf)
 	{
 		varptr<T> grada = arga->get_gradient();
 		varptr<T> gradb = argb->get_gradient();
-	
+
 		varptr<T> mA = matmul<T>::build(leaf, argb, transposeA_, !transposeB_);
 		varptr<T> mB = matmul<T>::build(arga, leaf, !transposeA_, transposeB_);
-
 		varptr<T> res = not_zero(mA * grada, mB * gradb);
 		
 		return res;
@@ -71,9 +66,9 @@ ivariable<T>* matmul<T>::setup_gradient (void)
 		chief = jacobian;
 	}
 
-	fgrad->set_jacobian(chief);
+	ones->set_jacobian(chief);
 
-	return fgrad;
+	return ones.get();
 }
 
 template <typename T>

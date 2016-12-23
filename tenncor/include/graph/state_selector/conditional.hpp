@@ -52,6 +52,10 @@ class conditional : public iselector<T>
 			msg.grad_ = nullptr;
 			this->notify(msg);
 		}
+
+		// gradient and jacobians can't be dynamically update as of yet
+		virtual bindable_toggle<T>* get_gradient (void) { return nullptr; }
+		virtual functor<T>* get_jacobian (void) { return nullptr; }
 };
 
 // select the variable that's not zero
@@ -60,6 +64,8 @@ template <typename T>
 varptr<T> not_zero (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == a) return b;
+	else if (nullptr == b) return a;
+
 	ivariable<T>* op = conditional<T>::build(std::vector<ivariable<T>*>{a, b},
 	[](std::vector<ivariable<T>*> args)
 	{

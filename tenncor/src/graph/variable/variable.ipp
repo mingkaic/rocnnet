@@ -13,16 +13,6 @@ namespace nnet
 
 // VARIABLE IMPLEMENTATION
 
-// template <typename T>
-// variable<T>::variable (const variable<T>& other, std::string name) :
-// 	ileaf<T>(other, name) {}
-
-// template <typename T>
-// ivariable<T>* variable<T>::clone_impl (std::string name)
-// {
-// 	return new variable(*this, name);
-// }
-
 template <typename T>
 variable<T>::variable (T scalar, std::string name) :
 	ileaf<T>(std::vector<size_t>{1},

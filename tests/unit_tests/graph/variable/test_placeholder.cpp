@@ -62,6 +62,5 @@ TEST(PLACEHOLDER, ZeroConstGrad_D302) {
 	invar = std::vector<double>{1};
 	nnet::ivariable<double>* gradient = invar.get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);
-	ASSERT_EQ(res.size(), 1);
-	EXPECT_EQ(0, res[0]);
+	ASSERT_EQ(0, res.size());
 }

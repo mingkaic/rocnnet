@@ -98,5 +98,5 @@ TEST(VARIABLE, OneVarGradient_D201)
 	cvar.initialize();
 	std::vector<double> res = nnet::expose<double>(grad);
 	ASSERT_EQ(res.size(), 1);
-	EXPECT_EQ(1, res[0]);
+	EXPECT_EQ(0, res[0]);
 }

@@ -28,15 +28,12 @@ class ileaf : public ivariable<T>
 		// >>>> TENSOR CONTENT <<<<
 		std::unique_ptr<tensor<T> > out_ = nullptr;
 
-		// >>>> GRAD INFO <<<<
-		std::unique_ptr<ivariable<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
+		// >>>> INITIALIZER DATA <<<<
+		initializer<T>* init_ = nullptr;
+		bool is_init_ = false;
 
 		// used by assignment operators to dynamically initialize tensors
 		struct dyn_init;
-		
-		// we own our initializer
-		initializer<T>* init_ = nullptr;
-		bool is_init_ = false;
 		
 		// only add to source if this is a ivariable
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) {}
@@ -75,6 +72,9 @@ class ileaf : public ivariable<T>
 			}
 			return out_.get();
 		}
+
+		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		virtual bindable_toggle<T>* get_gradient (void) { return nullptr; }
 
 		// GET INFO
 		bool can_init (void) const;

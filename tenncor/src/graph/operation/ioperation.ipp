@@ -77,13 +77,12 @@ tensor<T>* ioperation<T>::get_eval (void)
 }
 
 template <typename T>
-ivariable<T>* ioperation<T>::get_gradient (void)
+bindable_toggle<T>* ioperation<T>::get_gradient (void)
 {
 	if (nullptr == grad_)
 	{
-//		grad_ = std::unique_ptr<bindable_toggle<T> >(
-//			bindable_toggle<T>::build(setup_gradient(), constant<T>::build(1)));
-		grad_ = std::unique_ptr<iconnector<T> >(dynamic_cast<iconnector<T>*>(setup_gradient()));
+		grad_ = std::unique_ptr<bindable_toggle<T> >(
+			bindable_toggle<T>::build(setup_gradient(), constant<T>::build(1)));
 		// set grad_ to null on safe_destroy
 		grad_->set_death((void**) &grad_);
 	}
@@ -93,8 +92,6 @@ ivariable<T>* ioperation<T>::get_gradient (void)
 template <typename T>
 void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 {
-	static tensor<T> ones(1);
-
 	// UPDATING TENS_BUFFER
 	// cast caller dependency as ivariable
 	ivariable<T>* caller = info.caller_ ? sub_to_var<T>(info.caller_) : nullptr;
@@ -116,13 +113,9 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 			this->valid_tensor_ = false;
 		}
 	}
-	else if (ileaf<T>* leaf = dynamic_cast<ileaf<T>*>(grad)) // eval if caller is grad, null otherwise
+	else // eval if caller is grad, null otherwise
 	{
-		storage = leaf == caller ? leaf->get_eval() : nullptr;
-	}
-	else
-	{
-		storage = grad == caller ? &ones : nullptr;
+		storage = grad == caller ? grad->get_eval() : nullptr;
 	}
 	// update caller tensor only
 	tens_buffer_[callerid] = storage;

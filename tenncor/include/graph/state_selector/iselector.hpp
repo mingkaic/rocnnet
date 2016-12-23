@@ -37,9 +37,18 @@ class iselector : public iconnector<T>
 		virtual tensorshape get_shape (void) { return get(active_)->get_shape(); }
 		virtual tensor<T>* get_eval (void) { return get(active_)->get_eval(); }
 
-		// gradient and jacobians can't be dynamically update as of yet
-		virtual ivariable<T>* get_gradient (void) { return nullptr; }
-		virtual functor<T>* get_jacobian (void) { return nullptr; }
+		// by default, we should grab the active state's gradient, and jacobian
+		// but know that gradient and jacobian nodes will NEVER be reassigned as of the current implementation
+		// TODO: enable gradient and jacoabian node update when selectors change states (too much work?)
+		virtual bindable_toggle<T>* get_gradient (void) { return get(active_)->get_gradient(); }
+		virtual functor<T>* get_jacobian (void)
+		{
+			if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(get(active_)))
+			{
+				return c->get_jacobian();
+			}
+			return nullptr;
+		}
 
         // update remains abstract
 };

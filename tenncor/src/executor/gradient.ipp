@@ -107,42 +107,39 @@ void gradient<T>::freeze (void)
 		leaves = potential_srcs_;
 	}
 	// populate leaf_map_
+	bindable_toggle<T>* togg_last = nullptr;
 	for (ivariable<T>* var : leaves)
 	{
 		// expect gradients to be the same shape as leaves
 		leaf_map_[var] = new placeholder<T>(std::vector<size_t>{}, "grad_in:" + var->get_name());
+
+		// bind all the bindable_toggle
+		if (bindable_toggle<T>* togg = dynamic_cast<bindable_toggle<T>*>(var->get_gradient()))
+		{
+			if (nullptr != togg_last)
+			{
+				togg->bind(gid_, togg_last);
+			}
+			else
+			{
+				togg_last = togg;
+			}
+		}
 	}
 }
 
 template <typename T>
 void gradient<T>::execute (void)
 {
-	// notify leaves and extract gradient to leaf_map
-	auto it = leaf_map_.begin();
-	ivariable<T>* it_leaf = it->first;
-	ivariable<T>* it_grad = it_leaf->get_gradient();
 	for (auto leaf_pair : leaf_map_)
 	{
-		ivariable<T>* leaf_grad = leaf_pair.first->get_gradient();
-		leaf_grad->notify(it_grad); // special notify to nullify all leaf nodes except *it
-	}
-	// assign g_root's tensor to leaf_map's placeholder
-	tensor<T>* root_res = g_root_->get_eval();
-	*(leaf_map_[it_leaf]) = *root_res;
-
-	// now that every leaf except it_grad is nulled
-	// we only need to notify the previous leaf and the current leaf
-	// nullifying previous and un-nullifying current
-	ivariable<T>* previous = it_leaf;
-	for (it++; leaf_map_.end() != it; it++)
-	{
-		it_leaf = it->first;
-		it_grad = it_leaf->get_gradient();
-		previous->get_gradient()->notify(it_grad);
-		it_grad->notify(it_grad);
-		root_res = g_root_->get_eval();
-		*(leaf_map_[it_leaf]) = *root_res;
-		previous = it_leaf;
+		ivariable<T>* gleaf = leaf_pair.first->get_gradient();
+		if (bindable_toggle<T>* togg = dynamic_cast<bindable_toggle<T>*>(gleaf))
+		{
+			togg->activate(gid_);
+		}
+		tensor<T>* root_res = g_root_->get_eval();
+		*(leaf_pair.second) = *root_res;
 	}
 }
 

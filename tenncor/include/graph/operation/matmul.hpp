@@ -31,12 +31,19 @@ class matmul : public ioperation<T>
 		bool transposeA_;
 		bool transposeB_;
 
+		std::unique_ptr<ioperation<T> > ones = std::unique_ptr<ioperation<T> >(
+			dynamic_cast<ioperation<T>*>(fit<double>(constant<T>::build(1), this).get()));
 		size_t common_dim (void);
 
 	protected:
 		// backward chaining for AD
 		virtual ivariable<T>* setup_gradient (void);
 
+		// stop ones from being copied over
+		matmul (const matmul<T>& other) :
+			transposeA_(other.transposeA_),
+			transposeB_(other.transposeB_),
+			ioperation<T>(other) {}
 		// protect matrix constructor to ensure heap allocation
 		matmul (ivariable<T>* a, ivariable<T>* b,
 			bool transposeA = false, bool transposeB = false);

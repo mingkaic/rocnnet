@@ -40,7 +40,7 @@ class functor : public iconnector<T>
 		
 				virtual tensorshape get_shape (void) { return get()->get_shape(); }
 				virtual tensor<T>* get_eval (void) { return get()->get_eval(); }
-				virtual ivariable<T>* get_gradient (void) { return get()->get_gradient(); }
+				virtual bindable_toggle<T>* get_gradient (void) { return get()->get_gradient(); }
 				virtual functor<T>* get_jacobian (void)
 				{
 					if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(get()))
@@ -151,7 +151,7 @@ class functor : public iconnector<T>
 
 		virtual tensorshape get_shape (void) { return init()->get_shape(); }
 		virtual tensor<T>* get_eval (void) { return init()->get_eval(); }
-		virtual ivariable<T>* get_gradient (void) { return init()->get_gradient(); }
+		virtual bindable_toggle<T>* get_gradient (void) { return init()->get_gradient(); }
 		virtual functor<T>* get_jacobian (void) {
 			if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(init()))
 			{

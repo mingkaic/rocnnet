@@ -28,6 +28,8 @@ template <typename T>
 class iconnector;
 template <typename T>
 class functor;
+template <typename T>
+class bindable_toggle;
 
 // VARIABLE INTERFACE
 
@@ -81,7 +83,7 @@ class ivariable : public ccoms::subject_owner
 		// get eval simply returns the node's tensor
 		// the node will not check if tensor is valid for evaluation...
 		virtual tensor<T>* get_eval (void) = 0;
-		virtual ivariable<T>* get_gradient (void) = 0;
+		virtual bindable_toggle<T>* get_gradient (void) = 0;
 };
 
 template <typename T>
@@ -99,6 +101,7 @@ ivariable<T>* sub_to_var (ccoms::subject* sub)
 template <typename T>
 std::vector<T> expose (ivariable<T>* var)
 {
+	if (nullptr == var) return std::vector<T>{};
 	tensor<T>* ten = var->get_eval();
 	return expose(ten);
 }

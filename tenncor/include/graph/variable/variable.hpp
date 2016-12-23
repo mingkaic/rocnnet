@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "ileaf.hpp"
+#include "constant.hpp"
 #include "graph/state_selector/bindable_toggle.hpp"
 
 #pragma once
@@ -31,7 +32,14 @@ namespace nnet
 template <typename T>
 class variable : public ileaf<T>
 {
+	private:
+		// >>>> GRAD INFO <<<<
+		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
+
 	protected:
+		// avoid copying grad_
+		variable (const variable<T>& other) : ileaf<T>(other) {}
+
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
 		{
 			src.emplace(this);
@@ -44,6 +52,15 @@ class variable : public ileaf<T>
 
 		// COPY
 		virtual variable<T>* clone (void);
+		variable<T>& operator = (const variable<T>& other)
+		{
+			if (this != &other)
+			{
+				grad_.reset(nullptr);
+				ileaf<T>::operator = (other);
+			}
+			return *this;
+		}
 
 		// INITIALIZE VALUE
 		void set_initializer (initializer<T>& init);
@@ -54,14 +71,14 @@ class variable : public ileaf<T>
 		virtual tensor<T>& initialize (tensorshape alloc_shape);
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual ivariable<T>* get_gradient (void)
+		virtual bindable_toggle<T>* get_gradient (void)
 		{
 			if (nullptr == this->grad_)
 			{
-				this->grad_ = std::make_unique<variable<T> >(1, "grad<" + this->get_name() + ">");
-//				this->grad_ = std::unique<ivariable<T> >(bindable_toggle<T>::build(constant::build(0), constant::build(1)));
+				grad_ = std::unique_ptr<bindable_toggle<T> >(bindable_toggle<T>::build(
+					constant<T>::build(0), constant<T>::build(1)));
 			}
-			return this->grad_.get();
+			return grad_.get();
 		}
 };
 
