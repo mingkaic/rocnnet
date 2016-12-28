@@ -19,11 +19,13 @@ class subject_owner
 {
 	protected:
 		// we own this
-		std::unique_ptr<subject> caller_ = nullptr;
+		std::unique_ptr<subject> caller_;
 
 		subject_owner (const subject_owner& other);
 		
 		subject_owner (void);
+
+		friend class iobserver;
 
 	public:
 		virtual ~subject_owner (void) {}

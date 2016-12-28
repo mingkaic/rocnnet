@@ -47,10 +47,7 @@ iobserver::iobserver (std::vector<subject*> dependencies)
 
 iobserver::~iobserver (void)
 {
-	for (subject* dep : dependencies_)
-	{
-		dep->detach(this);
-	}
+	kill_dependencies();
 }
 
 }

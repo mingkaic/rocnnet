@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <functional>
-#include "subject.hpp"
+#include "subject_owner.hpp"
 
 #pragma once
 #ifndef observer_hpp
@@ -26,6 +26,18 @@ class iobserver : public ireactive_node
 		std::vector<subject*> dependencies_;
 		
 		void add_dependency (subject* dep); // add in order
+		void add_dependency (subject_owner* dep_owner)
+		{
+			add_dependency(dep_owner->caller_.get());
+		}
+		void kill_dependencies (void)
+		{
+			for (subject* dep : dependencies_)
+			{
+				dep->detach(this);
+			}
+			dependencies_.clear();
+		}
 		void copy (const iobserver& other); // for assignment ops
 		
 		// attach dependencies
