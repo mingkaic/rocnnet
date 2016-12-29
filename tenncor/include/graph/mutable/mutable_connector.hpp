@@ -32,133 +32,41 @@ class mutable_connector : public iconnector<T>
 		std::vector<varptr<T> > arg_buffers_;
 		std::unique_ptr<iconnector<T> > ic_ = nullptr;
 
-		void connect (void) {
-			for (varptr<T> arg : arg_buffers_)
-			{
-				if (arg.get() == nullptr)
-				{
-					return;
-				}
-			}
-			if (nullptr == ic_)
-			{
-				iconnector<T>* con = dynamic_cast<iconnector<T>*>(op_maker_(arg_buffers_));
-				ic_ = std::unique_ptr<iconnector<T> >(con);
-				this->add_dependency(con);
-			}
-		}
-
-		void disconnect (void)
-		{
-			if (nullptr != ic_)
-			{
-				this->kill_dependencies();
-				ic_ = nullptr;
-			}
-		}
+		void connect (void);
+		void disconnect (void);
 
 	protected:
-		mutable_connector (MAKE_CONNECT<T> maker, size_t nargs) :
-			iconnector<T>(std::vector<ivariable<T>*>{}, ""),
-			op_maker_(maker), arg_buffers_(nargs, nullptr) {}
-
+		mutable_connector (MAKE_CONNECT<T> maker, size_t nargs);
 		// ic_ uniqueness forces explicit copy constructor
-		mutable_connector (const mutable_connector<T>& other) :
-			iconnector<T>(other), op_maker_(other.op_maker_),
-			arg_buffers_(other.arg_buffers_) {}
+		mutable_connector (const mutable_connector<T>& other);
 
 	public:
-		static mutable_connector<T>* build (MAKE_CONNECT<T> maker, size_t nargs)
-		{
-			return new mutable_connector<T>(maker, nargs);
-		}
+		static mutable_connector<T>* build (MAKE_CONNECT<T> maker, size_t nargs);
 
 		// COPY
-		virtual mutable_connector<T>* clone (void)
-		{
-			return new mutable_connector<T>(*this);
-		}
-		mutable_connector<T>& operator = (const mutable_connector<T>& other)
-		{
-			if (&other != this)
-			{
-				iconnector<T>::operator = (other);
-				op_maker_ = other.op_maker_;
-				arg_buffers_ = other.arg_buffers_;
-			}
-			return *this;
-		}
+		virtual mutable_connector<T>* clone (void);
+		mutable_connector<T>& operator = (const mutable_connector<T>& other);
 
+		// IVARIABLE METHODS
+		virtual tensorshape get_shape(void);
+		virtual tensor<T>* get_eval(void);
+		virtual bindable_toggle<T>* get_gradient(void);
+		virtual functor<T>* get_jacobian (void);
+
+		// ICONNECTOR METHODS
+		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
+
+		// MUTABLE METHODS
 		// return true if replacing
 		// replacing will destroy then remake ic_
-		bool add_arg (ivariable<T>* var, size_t idx)
-		{
-			bool replace = nullptr != arg_buffers_[idx];
-			arg_buffers_[idx] = var;
-			if (replace)
-			{
-				disconnect();
-			}
-			connect();
-			return replace;
-		}
-
+		bool add_arg (ivariable<T>* var, size_t idx);
 		// return true if removing existing var at index idx
-		bool remove_arg (size_t idx)
-		{
-			if (nullptr != arg_buffers_[idx])
-			{
-				disconnect();
-				arg_buffers_[idx] = nullptr;
-				return true;
-			}
-			return false;
-		}
-
-		// FROM IVARIABLE
-		virtual tensorshape get_shape(void)
-		{
-			if (nullptr == ic_)
-			{
-				return tensorshape();
-			}
-			return ic_->get_shape();
-		}
-
-		virtual tensor<T>* get_eval(void)
-		{
-			if (nullptr == ic_)
-			{
-				return nullptr;
-			}
-			return ic_->get_eval();
-		}
-
-		virtual bindable_toggle<T>* get_gradient(void)
-		{
-			if (nullptr == ic_)
-			{
-				return nullptr;
-			}
-			return ic_->get_gradient();
-		}
-
-		virtual functor<T>* get_jacobian (void)
-		{
-			if (nullptr == ic_)
-			{
-				return nullptr;
-			}
-			return ic_->get_jacobian();
-		}
-
-		// FROM ICONNECTOR
-		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message())
-		{
-			this->notify(msg);
-		}
+		bool remove_arg (size_t idx);
+		bool valid_args (void);
 };
 
 }
+
+#include "../../../src/graph/mutable/mutable_connector.ipp"
 
 #endif /* mutable_connect_hpp */

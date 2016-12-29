@@ -49,7 +49,7 @@ class conditional : public iselector<T>
 			std::vector<ivariable<T>*> args =
 				nnutils::to_vec<ccoms::subject*, ivariable<T>*>(this->dependencies_, sub_to_var<T>);
 			this->active_ = picker_(args);
-			msg.grad_ = nullptr;
+//			msg.grad_ = nullptr;
 			this->notify(msg);
 		}
 

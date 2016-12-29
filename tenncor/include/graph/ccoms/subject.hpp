@@ -6,6 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <experimental/optional>
 #include "ireactive_node.hpp"
 
 #pragma once
@@ -21,16 +22,23 @@ class subject_owner;
 
 struct update_message
 {
-	// preferrably we should move this to caller_info, but since caller_info isn't accessible from gradient, 
-	// we must resort to using update_message. TODO: change this to "reverse_mode_" 
-	subject* grad_ = nullptr; // this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
+	// preferrably we should move REVERSE_MODE to caller_info,
+	// since REVERSE_MODE is deactivated once the gradient node is grabbed
+	// but caller_info isn't accessible from gradient,
+	// this should be reset to null after every update to prevent propogating up the graph (TODO: consider moving to caller)
+
+	enum COMMAND
+	{
+		REVERSE_MODE, // todo use reverse mode instead of grad_
+		REMOVE_ARG
+	};
+	std::experimental::optional<COMMAND> cmd_; // no cmd_ means forward mode
 };
 
 struct caller_info
 {
 	subject* caller_;
 	size_t caller_idx_ = 0;
-
 	caller_info (subject* caller = nullptr) : caller_(caller) {}
 };
 

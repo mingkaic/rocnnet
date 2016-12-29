@@ -34,7 +34,8 @@ void subject_owner::notify (subject_owner* grad)
 	ccoms::update_message msg;
 	if (grad)
 	{
-		msg.grad_ = grad->caller_.get();
+		msg.cmd_ = ccoms::update_message::REVERSE_MODE;
+//		msg.grad_ = grad->caller_.get();
 	}
 	caller_->notify(msg);
 }

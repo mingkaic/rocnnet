@@ -128,6 +128,19 @@ add_library(${ROCNNET_DLL} STATIC ${ROCNNET_SRC})
 target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
+set(TENN_IO_INCLUDE ${IO_DIR}/include)
+FILE(GLOB_RECURSE TENN_IO_SRC
+        ${IO_DIR}/src/*.cpp)
+
+include_directories(${TENN_IO_INCLUDE})
+
+set(TENN_IO_DLL tenncor_io)
+add_library(${TENN_IO_DLL} SHARED ${TENN_IO_SRC})
+target_link_libraries (${TENN_IO_DLL} ${TENNCOR_LIB})
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 set(DEMO_DIR ${PROJECT_SOURCE_DIR}/demo1)
 

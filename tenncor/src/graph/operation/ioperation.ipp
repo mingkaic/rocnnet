@@ -95,7 +95,7 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 	// UPDATING TENS_BUFFER
 	// cast caller dependency as ivariable
 	ivariable<T>* caller = info.caller_ ? sub_to_var<T>(info.caller_) : nullptr;
-	ivariable<T>* grad = msg.grad_ ? sub_to_var<T>(msg.grad_) : nullptr;
+	ivariable<T>* grad = msg.cmd_ == ccoms::update_message::REVERSE_MODE ? caller : nullptr;
 	size_t callerid = info.caller_idx_;
 	tensor<T>* storage = nullptr;
 	this->valid_tensor_ = true;
@@ -126,7 +126,8 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 		// null is treated as erroneous zero
 		(*out_)(tens_buffer_);
 	}
-	msg.grad_ = nullptr;
+//	msg.grad_ = nullptr;
+	msg.cmd_ = std::experimental::optional<ccoms::update_message::COMMAND>(); // forward mode
 	this->notify(msg);
 }
 

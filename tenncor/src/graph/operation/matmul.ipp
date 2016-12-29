@@ -166,7 +166,7 @@ void matmul<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 		(*this->out_)(std::vector<tensor<T>*>{at, bt});
 	}
 
-	msg.grad_ = nullptr;
+//	msg.grad_ = nullptr;
 	this->notify(msg);
 }
 
