@@ -144,8 +144,9 @@ target_link_libraries (${TENN_IO_DLL} ${TENNCOR_LIB})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 set(DEMO_DIR ${PROJECT_SOURCE_DIR}/demo1)
 
-include_directories(${TENNCOR_INCLUDE})
-include_directories(${ROCNNET_INCLUDE})
+include_directories(
+    ${TENNCOR_INCLUDE}
+    ${ROCNNET_INCLUDE})
 
 add_executable (Demo ${DEMO_DIR}/agent.cpp)
 target_link_libraries (Demo ${TENNCOR_LIB} ${ROCNNET_DLL})

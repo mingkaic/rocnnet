@@ -30,7 +30,8 @@ class mutable_connector : public iconnector<T>
 		// we don't listen to ivariable when it's incomplete
 		MAKE_CONNECT<T> op_maker_;
 		std::vector<varptr<T> > arg_buffers_;
-		std::unique_ptr<iconnector<T> > ic_ = nullptr;
+		// ic_ is a potential dependency
+		iconnector<T>* ic_ = nullptr;
 
 		void connect (void);
 		void disconnect (void);
@@ -42,6 +43,13 @@ class mutable_connector : public iconnector<T>
 
 	public:
 		static mutable_connector<T>* build (MAKE_CONNECT<T> maker, size_t nargs);
+		virtual ~mutable_connector (void)
+		{
+			if (nullptr != ic_)
+			{
+				delete ic_;
+			}
+		}
 
 		// COPY
 		virtual mutable_connector<T>* clone (void);

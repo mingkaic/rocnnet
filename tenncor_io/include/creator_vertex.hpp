@@ -2,6 +2,10 @@
 // Created by Mingkai Chen on 2016-12-27.
 //
 
+#include <vector>
+#include <string>
+#include <experimental/optional>
+
 #pragma once
 #ifndef creator_vertex_hpp
 #define creator_vertex_hpp
@@ -12,7 +16,7 @@ namespace tensorio
 {
 
 // connector types
-enum CONNECTOR_MAP
+enum CONNECTOR_TYPE
 {
 	// unaries
 	ABS,
@@ -45,27 +49,32 @@ enum LEAF_MAP
 	RAND
 };
 
+union var_param
+{
+	double val_;
+	std::pair<double,double> min2max_;
+};
+
 // encapsulate leaf building options
 // defaults to random initialization between -1 and 1
 struct var_opt
 {
-	std::vector<size_t> shape = {1};
-	LEAF_MAP get_type (void) = 0;
+	LEAF_MAP type = PLACE;
+	std::vector<size_t> shape_ = {1};
+	std::experimental::optional<var_param> parameter_;
 };
-struct place_opt : public var_opt
+
+// from are children, to are parents
+struct connection
 {
-	LEAF_MAP get_type (void) { return PLACE; }
+	std::string from_id;
+	std::string to_id;
 };
-struct const_opt : public var_opt
+
+struct metainfo
 {
-	double val_ = 0;
-	LEAF_MAP get_type (void) { return CONST; }
-};
-struct rand_opt : public var_opt
-{
-	double min_ = -1;
-	double max_ = 1;
-	LEAF_MAP get_type (void) { return RAND; }
+	// no value means it's a leaf
+	std::experimental::optional<CONNECTOR_TYPE> op_type_;
 };
 
 // store and retrieve graph information
@@ -73,25 +82,36 @@ struct rand_opt : public var_opt
 class vertex_manager
 {
 	private:
-		enum NODE_TYPE;
 		struct node_registry;
 
-		node_registry inst;
+		node_registry* inst;
 
 	public:
+		vertex_manager (void);
+		~vertex_manager (void);
+
 		// MODIFIERS
 		// register nodes
-		std::string register_op (CONNECTOR_MAP cm);
-		std::string register_leaf (std::string label, var_opt opt = rand_opt());
+		std::string register_op (CONNECTOR_TYPE cm);
+		std::string register_leaf (std::string label, var_opt opt);
 		// delete nodes
 		bool delete_node (std::string id);
-		// link id1 to id2 if id2 points to a connector
-		void link_nodes (std::string id1, std::string id2, size_t index = 0);
-		// delete links between id1 and id2 (directionality does not matter)
-		bool delete_link (std::string id1, std::string id2);
-		// FORWARD MODE ACCESSORS
+		// link id1 to id2 if id2 points to a connector.
+		// index denotes link's index to id2
+		void link (std::string id1, std::string id2, size_t index = 0);
+		// delete indexed link to id node
+		bool delete_link (std::string id, size_t index);
 
+		// COMMON ACCESSORS
+		// return no value if id is not found
+		std::experimental::optional<metainfo> node_info (std::string id);
+		void get_connections (
+				std::vector<connection>& conns,
+				std::string root_id);
+		// FORWARD MODE ACCESSORS
+		void get_forwards (std::vector<std::string>& ids);
 		// BACKWARD MODE ACCESSORS
+		void get_backwards (std::vector<std::string>& ids);
 };
 
 }

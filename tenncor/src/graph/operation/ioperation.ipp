@@ -127,7 +127,7 @@ void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 		(*out_)(tens_buffer_);
 	}
 //	msg.grad_ = nullptr;
-	msg.cmd_ = std::experimental::optional<ccoms::update_message::COMMAND>(); // forward mode
+//	msg.cmd_ = std::experimental::optional<ccoms::update_message::COMMAND>(); // forward mode
 	this->notify(msg);
 }
 

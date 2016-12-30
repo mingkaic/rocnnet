@@ -17,8 +17,10 @@ void mutable_connector<T>::connect (void)
 	if (valid_args() && nullptr == ic_)
 	{
 		iconnector<T>* con = dynamic_cast<iconnector<T>*>(op_maker_(arg_buffers_));
-		ic_ = std::unique_ptr<iconnector<T> >(con);
+		delete ic_;
+		ic_ = con;
 		this->add_dependency(con);
+		ic_->set_death((void**) &ic_); // ic_ resets to nullptr when deleted
 	}
 }
 
@@ -27,8 +29,10 @@ void mutable_connector<T>::disconnect (void)
 {
 	if (nullptr != ic_)
 	{
+		// severe our dependency on ic_
+		// to prevent this from getting destroyed
 		this->kill_dependencies();
-		ic_ = nullptr;
+		delete ic_;
 	}
 }
 

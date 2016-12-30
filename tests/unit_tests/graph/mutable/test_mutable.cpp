@@ -12,11 +12,11 @@ TEST(MUTABLE, connector)
 	// mutables avoid killing constants by killing dependencies
 	// instead of safely destroying its permanent connector node
 	nnet::mutable_connector<double>* temp =
-	nnet::mutable_connector<double>::build(
-	[](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
-	{
-		return args[0] + args[1];
-	}, 2);
+		nnet::mutable_connector<double>::build(
+		[](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+		{
+			return args[0] + args[1];
+		}, 2);
 
 	nnet::constant<double>* s1 = nnet::constant<double>::build(10);
 	nnet::constant<double>* s2 = nnet::constant<double>::build(20);
@@ -38,4 +38,23 @@ TEST(MUTABLE, connector)
 	delete s1;
 	delete s2;
 	delete temp;
+}
+
+
+TEST(MUTABLE, deletion)
+{
+	nnet::mutable_connector<double>* temp =
+		nnet::mutable_connector<double>::build(
+		[](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+		{
+			return args[0] + args[1];
+		}, 2);
+
+	nnet::variable<double>* s1 = new nnet::variable<double>(10);
+	nnet::variable<double>* s2 = new nnet::variable<double>(20);
+	temp->add_arg(s1, 1);
+	temp->add_arg(s1, 0);
+
+	delete s1;
+	delete s2;
 }

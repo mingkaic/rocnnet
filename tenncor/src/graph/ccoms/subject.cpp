@@ -56,13 +56,26 @@ void subject::notify (update_message msg)
 {
 	caller_info info(this);
 	// everyone get the same message
-	for (auto it : audience_)
+	auto it = audience_.begin();
+	while (audience_.end() != it)
 	{
-		for (size_t idx : it.second)
+		// we're asking our audience to unsubscribe.
+		// we only need to ask once
+		if (msg.cmd_ == update_message::REMOVE_ARG)
 		{
-			info.caller_idx_ = idx;
-			iobserver *viewer = it.first;
-			viewer->update(info, msg);
+			iobserver* aud = it->first;
+			// subscribing detaches it from audience_, so we increment before
+			it++;
+			aud->update(info, msg);
+		}
+		else
+		{
+			for (size_t idx : it->second) {
+				info.caller_idx_ = idx;
+				iobserver *viewer = it->first;
+				viewer->update(info, msg);
+			}
+			it++;
 		}
 	}
 }
