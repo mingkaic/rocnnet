@@ -2,12 +2,11 @@
 // Created by Mingkai Chen on 2016-12-27.
 //
 
+#include <queue>
 #include "graph/mutable/mutable_connector.hpp"
 #include "graph/operation/elementary.hpp"
 #include "graph/operation/transform.hpp"
 #include "graph/operation/matmul.hpp"
-#include "graph/variable/placeholder.hpp"
-#include "graph/variable/variable.hpp"
 #include "creator_vertex.hpp"
 
 #ifdef creator_vertex_hpp
@@ -183,16 +182,61 @@ struct vertex_manager::node_registry
 	// check if id exists, extract the node, then return its type
 	bool grab_node (info_wrapper& out, std::string id)
 	{
-		auto it = nodes_.find(id);
+		auto fit = nodes_.find(id);
 		// return if id doesn't exist in repository
-		if (nodes_.end() == it)
+		if (nodes_.end() == fit)
 		{
 			return false;
 		}
-		out = it->second;
+		out = fit->second;
 		return true;
 	}
 };
+
+// grab all connections under sub-network flow connected to root,
+// as long as it's in unvisited,
+// remove visited nodes from unvisited (BFS)
+static void extract_connections (CONNECTION_SET& conns,
+	nnet::iconnector<double>* root,
+	std::function<bool(std::string)> unique_checking)  // check and update id
+{
+	// queue for breadth wise search
+	std::queue<nnet::iconnector<double>*> mcq;
+	// argument vector
+	std::vector<nnet::ivariable<double>*> args;
+
+	nnet::iconnector<double>* conn = root;
+	std::string conn_id;
+	mcq.push(conn);
+	while (false == mcq.empty())
+	{
+		conn = mcq.front();
+		mcq.pop();
+		conn_id = conn->get_uid();
+		if (unique_checking(conn_id))
+		{
+			conn->get_args(args);
+			for (size_t i = 0; i < args.size(); i++)
+			{
+				// only bother with connectors
+				if (nnet::iconnector<double>* ac =
+					dynamic_cast<nnet::iconnector<double>*>(args[i]))
+				{
+					mcq.push(ac);
+				}
+
+				if (nullptr != args[i])
+				{
+					connection c;
+					c.from_id = args[i]->get_uid();
+					c.to_id = conn_id;
+					c.idx = i;
+					conns.emplace(c);
+				}
+			}
+		}
+	}
+}
 
 vertex_manager::vertex_manager (void) : inst(new node_registry()) {}
 
@@ -298,7 +342,7 @@ bool vertex_manager::delete_link (std::string id, size_t index)
 	return true;
 }
 
-std::experimental::optional<metainfo> vertex_manager::node_info (std::string id)
+std::experimental::optional<metainfo> vertex_manager::node_info (std::string id) const
 {
 	std::experimental::optional<metainfo> info;
 	node_registry::info_wrapper wrap;
@@ -309,16 +353,79 @@ std::experimental::optional<metainfo> vertex_manager::node_info (std::string id)
 	return info;
 }
 
-void vertex_manager::get_connections (std::vector<connection>& conns, std::string root_id)
+void vertex_manager::get_connections (CONNECTION_SET& conns, std::string root_id) const
 {
+	conns.clear();
+	// uniquely store to nodes to prevent from copying duplicates
+	std::unordered_set<std::string> uniqueness;
+	node_registry::info_wrapper wrap;
+	if (inst->grab_node(wrap, root_id))
+	{
+		if (nnet::iconnector<double>* con = dynamic_cast<nnet::iconnector<double>*>(wrap.ptr_))
+		{
+			extract_connections(conns, con, [&uniqueness](std::string id)
+			{
+				if (uniqueness.end() == uniqueness.find(id))
+				{
+					uniqueness.emplace(id);
+					return true;
+				}
+				return false;
+			});
+		}
+	}
 }
 
-void vertex_manager::get_forwards (std::vector<std::string>& ids)
+void vertex_manager::get_forwards (std::unordered_set<std::string>& ids, CONNECTION_SET& conns) const
 {
+	ids.clear();
+	conns.clear();
+	for (auto ns : inst->nodes_)
+	{
+		ids.emplace(ns.first);
+	}
+
+	// grab connections...
+	// by traversing down a selected root, marking all visited nodes, and avoid visited nodes
+	// keep selecting roots (that are not visited) until all nodes are visited
+	std::unordered_set<std::string> unvisited = ids; // copy
+	std::string cid;
+	while (false == unvisited.empty())
+	{
+		cid = *(unvisited.begin());
+		node_registry::info_wrapper wrap;
+		if (inst->grab_node(wrap, cid))
+		{
+			if (nnet::iconnector<double>* con = dynamic_cast<nnet::iconnector<double>*>(wrap.ptr_))
+			{
+				extract_connections(conns, con, [&unvisited](std::string id)
+				{
+					if (unvisited.end() != unvisited.find(id))
+					{
+						unvisited.erase(id);
+						return true;
+					}
+					return false;
+				});
+			}
+		}
+		unvisited.erase(cid); // remove cid
+	}
 }
 
-void vertex_manager::get_backwards (std::vector<std::string>& ids)
+void vertex_manager::get_backwards (std::unordered_set<std::string>& ids, CONNECTION_SET& conns) const
 {
+	ids.clear();
+	conns.clear();
+	for (auto ns : inst->nodes_)
+	{
+		ids.emplace(ns.second.ptr_->get_gradient()->get_uid());
+	}
+	// ids only contain gradient subroots
+	// (remember that each gradient node obtained from get_gradient()
+	// is the root of a subtree of gradient subroots and regular leaf nodes)
+	// so we should also extract forward-mode nodes in between gradient subroots
+
 }
 
 }

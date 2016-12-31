@@ -71,6 +71,17 @@ class mutable_connector : public iconnector<T>
 		// return true if removing existing var at index idx
 		bool remove_arg (size_t idx);
 		bool valid_args (void);
+
+		// ACCESSORS
+		// get arguments
+		virtual void get_args (std::vector<ivariable<T>*>& args) const
+		{
+			args.clear();
+			for (varptr<T> a : arg_buffers_)
+			{
+				args.push_back(a.get());
+			}
+		}
 };
 
 }

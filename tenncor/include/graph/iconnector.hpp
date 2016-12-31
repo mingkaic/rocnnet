@@ -52,6 +52,15 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 		// get_gradient remains abstract
 		virtual functor<T>* get_jacobian (void) = 0;
 		// update remains abstract
+
+		virtual void get_args (std::vector<ivariable<T>*>& args) const
+		{
+			args.clear();
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				args.push_back(sub_to_var<T>(sub));
+			}
+		}
 };
 
 }

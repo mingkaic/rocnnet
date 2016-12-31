@@ -4,6 +4,8 @@
 
 #include <vector>
 #include <string>
+#include <unordered_set>
+#include <utility>
 #include <experimental/optional>
 
 #pragma once
@@ -42,7 +44,7 @@ enum CONNECTOR_TYPE
 };
 
 // leaf types
-enum LEAF_MAP
+enum LEAF_TYPE
 {
 	PLACE,
 	CONST, // still uses a variable (sets an initial value)
@@ -59,7 +61,7 @@ union var_param
 // defaults to random initialization between -1 and 1
 struct var_opt
 {
-	LEAF_MAP type = PLACE;
+	LEAF_TYPE type = PLACE;
 	std::vector<size_t> shape_ = {1};
 	std::experimental::optional<var_param> parameter_;
 };
@@ -69,7 +71,25 @@ struct connection
 {
 	std::string from_id;
 	std::string to_id;
+	size_t idx;
 };
+
+struct connection_hash
+{
+	size_t operator() (const connection& conn) const
+	{
+		std::hash<std::string> hash_fn;
+		return hash_fn(conn.from_id) * hash_fn(conn.to_id) * (conn.idx + 1);
+	}
+};
+
+inline bool operator == (const connection& lhs, const connection& rhs)
+{
+	connection_hash hash_fn;
+	return hash_fn(lhs) == hash_fn(rhs);
+}
+
+using CONNECTION_SET = std::unordered_set<connection, connection_hash>;
 
 struct metainfo
 {
@@ -88,7 +108,7 @@ class vertex_manager
 
 	public:
 		vertex_manager (void);
-		~vertex_manager (void);
+		virtual ~vertex_manager (void);
 
 		// MODIFIERS
 		// register nodes
@@ -102,16 +122,15 @@ class vertex_manager
 		// delete indexed link to id node
 		bool delete_link (std::string id, size_t index);
 
-		// COMMON ACCESSORS
+		// ACCESSORS
 		// return no value if id is not found
-		std::experimental::optional<metainfo> node_info (std::string id);
-		void get_connections (
-				std::vector<connection>& conns,
-				std::string root_id);
-		// FORWARD MODE ACCESSORS
-		void get_forwards (std::vector<std::string>& ids);
-		// BACKWARD MODE ACCESSORS
-		void get_backwards (std::vector<std::string>& ids);
+		std::experimental::optional<metainfo> node_info (std::string id) const;
+		// grab all connections under sub-network flow connected to root (breadth first search)
+		void get_connections (CONNECTION_SET& conns, std::string root_id) const;
+		// get forward graph vertices (ids) and edges (conns)
+		void get_forwards (std::unordered_set<std::string>& ids, CONNECTION_SET& conns) const;
+		// get backward (gradient) graph vertices (ids) and edges (conns)
+		void get_backwards (std::unordered_set<std::string>& ids, CONNECTION_SET& conns) const;
 };
 
 }
