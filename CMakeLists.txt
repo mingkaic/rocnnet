@@ -216,7 +216,7 @@ set(PERFORM_TEST_PATH ${PROJECT_SOURCE_DIR}/tests/performance_tests)
 add_definitions(${MSVC_COMPILER_DEFS})
 enable_testing()
 
-include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE})
+include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE} ${MOCK_INCLUDE})
 
 file(GLOB_RECURSE PERFORM_TEST_SRC
         ${PERFORM_TEST_PATH}/*.cpp)

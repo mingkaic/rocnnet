@@ -424,8 +424,11 @@ void vertex_manager::get_backwards (std::unordered_set<std::string>& ids, CONNEC
 	for (auto ns : inst->nodes_)
 	{
 		grad = ns.second.ptr_->get_gradient();
-		ids.emplace(grad->get_uid());
-		sub_roots.emplace(grad);
+		if (nullptr != grad)
+		{
+			ids.emplace(grad->get_uid());
+			sub_roots.emplace(grad);
+		}
 	}
 	// similar to get_forward, we grab connections of selected roots of sub-trees
 	// but since grads are roots mini operation trees it can have
