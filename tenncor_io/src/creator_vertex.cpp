@@ -363,7 +363,8 @@ void vertex_manager::get_connections (CONNECTION_SET& conns, std::string root_id
 	{
 		if (nnet::iconnector<double>* con = dynamic_cast<nnet::iconnector<double>*>(wrap.ptr_))
 		{
-			extract_connections(conns, con, [&uniqueness](std::string id)
+			extract_connections(conns, con,
+			[&uniqueness](std::string id)
 			{
 				if (uniqueness.end() == uniqueness.find(id))
 				{
@@ -398,7 +399,8 @@ void vertex_manager::get_forwards (std::unordered_set<std::string>& ids, CONNECT
 		{
 			if (nnet::iconnector<double>* con = dynamic_cast<nnet::iconnector<double>*>(wrap.ptr_))
 			{
-				extract_connections(conns, con, [&unvisited](std::string id)
+				extract_connections(conns, con,
+				[&unvisited](std::string id)
 				{
 					if (unvisited.end() != unvisited.find(id))
 					{
@@ -409,7 +411,7 @@ void vertex_manager::get_forwards (std::unordered_set<std::string>& ids, CONNECT
 				});
 			}
 		}
-		unvisited.erase(cid); // remove cid
+		unvisited.erase(cid); // remove cid no matter what
 	}
 }
 
@@ -417,15 +419,49 @@ void vertex_manager::get_backwards (std::unordered_set<std::string>& ids, CONNEC
 {
 	ids.clear();
 	conns.clear();
+	std::unordered_set<nnet::iconnector<double>*> sub_roots;
+	nnet::iconnector<double>* grad;
 	for (auto ns : inst->nodes_)
 	{
-		ids.emplace(ns.second.ptr_->get_gradient()->get_uid());
+		grad = ns.second.ptr_->get_gradient();
+		ids.emplace(grad->get_uid());
+		sub_roots.emplace(grad);
 	}
-	// ids only contain gradient subroots
-	// (remember that each gradient node obtained from get_gradient()
-	// is the root of a subtree of gradient subroots and regular leaf nodes)
-	// so we should also extract forward-mode nodes in between gradient subroots
-
+	// similar to get_forward, we grab connections of selected roots of sub-trees
+	// but since grads are roots mini operation trees it can have
+	// multiple non-subroot nodes that we should include;
+	// we include any node that is not a sub_root (in sr_ids)
+	std::unordered_set<std::string> unvisited = ids;
+	std::unordered_set<std::string> nonsr_id; // store non-subroots
+	std::string cid;
+	while (false == unvisited.empty())
+	{
+		cid = *(unvisited.begin());
+		node_registry::info_wrapper wrap;
+		if (inst->grab_node(wrap, cid))
+		{
+			if (nnet::iconnector<double>* con = dynamic_cast<nnet::iconnector<double>*>(wrap.ptr_))
+			{
+				extract_connections(conns, con,
+				[ids, &unvisited, &nonsr_id](std::string id)
+				{
+					if (unvisited.end() != unvisited.find(id))
+					{
+						unvisited.erase(id);
+						return true;
+					}
+					// id is not a gradient sub root
+					else if (ids.end() == ids.find(id))
+					{
+						nonsr_id.emplace(id);
+						return true; // continue down the tree if possible
+					}
+					return false;
+				});
+			}
+		}
+		unvisited.erase(cid); // remove cid no matter what
+	}
 }
 
 }
