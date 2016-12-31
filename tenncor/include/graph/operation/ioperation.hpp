@@ -14,13 +14,13 @@
 #include <memory>
 #include <stack>
 
-#include "graph/variable/variable.hpp"
-#include "graph/ccoms/iobserver.hpp"
-#include "executor/varptr.hpp"
+#include "graph/variable/constant.hpp"
+#include "graph/tensorless/functor.hpp"
+#include "graph/state_selector/bindable_toggle.hpp"
 
 #pragma once
-#ifndef operation_hpp
-#define operation_hpp
+#ifndef ioperation_hpp
+#define ioperation_hpp
 
 namespace nnet
 {
@@ -28,73 +28,141 @@ namespace nnet
 template <typename T>
 using BUILD_DERIVE = std::function<ivariable<T>*(std::vector<ivariable<T>*>)>;
 
-template <typename T>
-class gradient;
-
-template <typename T>
-class jacobian;
-
 // INTERFACE OPERATION
 
 template <typename T>
-class ioperation : public ivariable<T>, public ccoms::iobserver
+class ioperation : public iconnector<T>
 {
 	private:
-		// remember that once leaf subjects are destroyed,
-		// everyone in this graph including this is destroyed
-		// so we don't need to bother with cleaning leaves_
-		std::unordered_set<ivariable<T>*> leaves_;
+		// buffer argument tensors 
+		// (each argument can return different tensors)
+		// update each tensor by position accordingly
+		std::vector<tensor<T>*> tens_buffer_;
+		
+		void copy (const ioperation<T>& other);
 
 	protected:
+		// WRAPPER CONTENT
+		std::unique_ptr<tensor_op<T> > out_ = nullptr;
+
 		bool valid_tensor_ = false;
-		ioperation<T>* grad_ = nullptr;
+		// shaper functional must return undefined shape in cases of error
+		SHAPE shaper_;
 
-		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
-		{
-			src.insert(this->leaves_.begin(), this->leaves_.end());
-		}
+		// >>>> GRAD INFO <<<<
+		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // general gradient node
+		functor<T>* grad_jacobi_ = nullptr; // specific gradient node used for jacobians
 
-		// implement unique method of consuming input variables
+		ioperation (const ioperation<T>& other);
+
 		// to extract shape info
-		virtual tensorshape shape_eval (void) = 0;
+		// this shape evaluation is for when arguments are not instantiated
+		// uninstantiated arguments evade the shape_eval phase
+		// naturally, shaper_ is passed into tensor_op which would evaluate shape at update time
+		virtual tensorshape shape_eval (void)
+		{
+			std::vector<tensorshape> shapes;
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				if (ivariable<T>* v = sub_to_var<T>(sub))
+				{
+					shapes.push_back(v->get_shape());
+				}
+			}
+			return shaper_(shapes);
+		}
+		
+		void setup_jacobian (functor<T>* j)
+		{
+			if (nullptr == j) return;
+			if (nullptr == grad_jacobi_)
+			{
+				functor<T>* my_jacobi = j->append_leaf(this);
+				// set my_jacobi as grad_jacobi_
+				set_jacobian(my_jacobi);
+			}
+			else
+			{
+				throw std::exception(); // we can only successfully setup once
+			}
+		}
 		
 		// CONSTRUCTS THE GRADIENT TREE AND STORE ROOT IN MEMBER GRAD
-		virtual void setup_gradient (void) = 0; // ioperation specific
+		virtual ivariable<T>* setup_gradient (void) = 0; // ioperation specific
 
-		void copy (const ioperation<T>& other, std::string name = "");
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
-		ioperation (const ioperation<T>& other, std::string name);
-
-		// used specifically to pass jacobian tensors up the tree... could make generic use in the future
-		// combine with generalized notify/update
-		virtual bool channel (std::stack<ivariable<T>*>& jacobi);
+		// set up tens_buffer
+		void initialize (void)
+		{
+			this->valid_tensor_ = true;
+			tens_buffer_.clear();
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				if (ivariable<T>* var = sub_to_var<T>(sub))
+				{
+					// grab jacobian
+					if (iconnector<T>* c = dynamic_cast<iconnector<T>*>(var))
+					{
+						// if we get arguments with jacobians, we are most likely in reverse mode graph
+						setup_jacobian(c->get_jacobian());
+					}
+					// tensor buffer initialize
+					tensor<T>* temp = var->get_eval();
+					tens_buffer_.push_back(temp);
+					if (nullptr == temp || false == temp->get_shape().is_fully_defined())
+					{
+						this->valid_tensor_ = false;
+					}
+				}
+			}
+			if (this->valid_tensor_)
+			{
+				// null is treated as erroneous zero
+				(*out_)(tens_buffer_);
+			}
+		}
 
 		ioperation (std::vector<ivariable<T>*> dependencies, std::string name);
 
 		friend class gradient<T>;
-		friend class jacobian<T>;
 
 	public:
 		virtual ~ioperation (void);
 
 		// COPY
-		ioperation<T>* clone (std::string name = "");
 		virtual ioperation<T>& operator = (const ioperation<T>& other);
 		
 		// MOVE
-		
-		// inherited from ioperation
-		virtual tensor<T>* get_eval (void); // override
-		
-		// non-inherited
-		virtual ivariable<T>* get_gradient (void);
 
-		// operations only
-		void leaves_collect (std::function<void(ivariable<T>*)> collector);
+		// implement from ivariable
+		virtual tensorshape get_shape (void)
+		{
+			if (false == valid_tensor_)
+			{
+				return tensorshape();
+			}
+			return this->out_->get_shape();
+		}
+
+		virtual tensor<T>* get_eval (void);
+
+		virtual bindable_toggle<T>* get_gradient (void); // access general gradient
+
+		void set_jacobian (functor<T>* j)
+		{
+			if (nullptr == grad_jacobi_)
+			{
+				grad_jacobi_ = j;
+				grad_jacobi_->set_death((void**) &grad_jacobi_);
+			}
+		}
+		virtual functor<T>* get_jacobian (void) { return grad_jacobi_; }
+		
+		// inherited by elementary and transform, overwritten by matmul and jacobian
+		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
 };
 
 }
 
 #include "../../../src/graph/operation/ioperation.ipp"
 
-#endif /* operation_hpp */
+#endif /* ioperation_hpp */

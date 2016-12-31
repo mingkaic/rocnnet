@@ -10,7 +10,9 @@
 #include <sstream>
 #include <unordered_set>
 #include <unordered_map>
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #pragma once
 #ifndef utils_hpp
@@ -67,6 +69,33 @@ std::vector<U> to_vec (std::vector<T> vec, std::function<U(T)> convert)
 		res.push_back(convert(v));
 	}
 	return res;
+}
+
+// in place intersection
+template <typename T>
+void uset_intersect (std::unordered_set<T>& A, 
+					const std::unordered_set<T>& B)
+{
+	auto itA = A.begin();
+	auto itB = B.begin();
+	auto endA = A.end();
+	auto endB = B.end();
+
+	while (itA != endA)
+	{
+		if (std::find(itB, endB, *itA) == endB)
+		{
+			// found something in A but not B
+			// remove it from A
+			auto buffer = itA;
+			itA++;
+			A.erase(buffer);
+		}
+		else
+		{
+			itA++;
+		}
+	}
 }
 
 }

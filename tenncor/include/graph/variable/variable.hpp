@@ -11,7 +11,10 @@
 #include <random>
 #include <new>
 #include <memory>
+
 #include "ileaf.hpp"
+#include "constant.hpp"
+#include "graph/state_selector/bindable_toggle.hpp"
 
 #pragma once
 #ifndef variable_hpp
@@ -21,18 +24,26 @@ namespace nnet
 {
 
 // extend tensors by composition
-// also holds initializer (in operation)f
+// also holds initializer (in operation)
+
+// TODO: merge variable and placeholder, add assignment node as a tensorless
+// then move initializers as a updating delegate object (as oppose to the current variable delegate)
+// variable may take assignments as an exclusive (non-reactive) dependency
 template <typename T>
 class variable : public ileaf<T>
 {
+	private:
+		// >>>> GRAD INFO <<<<
+		std::unique_ptr<bindable_toggle<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
+
 	protected:
+		// avoid copying grad_
+		variable (const variable<T>& other) : ileaf<T>(other) {}
+
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src)
 		{
 			src.emplace(this);
 		}
-		
-		variable (const variable<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name);
 
 	public:
 		variable (T scalar, std::string name = "scalar");
@@ -40,7 +51,16 @@ class variable : public ileaf<T>
 		variable (const tensorshape& shape, initializer<T>& init, std::string name = "");
 
 		// COPY
-		variable<T>* clone (std::string name = "");
+		virtual variable<T>* clone (void);
+		variable<T>& operator = (const variable<T>& other)
+		{
+			if (this != &other)
+			{
+				grad_.reset(nullptr);
+				ileaf<T>::operator = (other);
+			}
+			return *this;
+		}
 
 		// INITIALIZE VALUE
 		void set_initializer (initializer<T>& init);
@@ -51,13 +71,14 @@ class variable : public ileaf<T>
 		virtual tensor<T>& initialize (tensorshape alloc_shape);
 
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
-		virtual ivariable<T>* get_gradient (void)
+		virtual bindable_toggle<T>* get_gradient (void)
 		{
 			if (nullptr == this->grad_)
 			{
-				this->grad_ = std::make_unique<variable<T> >(1, "grad<" + this->get_name() + ">");
+				grad_ = std::unique_ptr<bindable_toggle<T> >(bindable_toggle<T>::build(
+					constant<T>::build(0), constant<T>::build(1)));
 			}
-			return this->grad_.get();
+			return grad_.get();
 		}
 };
 

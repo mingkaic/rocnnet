@@ -53,31 +53,20 @@ gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
 		{
 			potential_srcs_.push_back(src);
 		});
-		
-		// collect jacobians from the gradient root
-		ioperation<T>* op = dynamic_cast<ioperation<T>*>(g_root_);
-		assert(op);
-		// collect all the jacobians (change/remove once channel-notify merge concludes)
-		// >>
-		std::stack<ivariable<T>*> jacobs;
-		op->channel(jacobs); // expensive operation (traverses entire tree)
-		// connect jacobians
-		ivariable<T>* top = op; // start at the root
-		while (false == jacobs.empty())
+
+		// take jacobian instead if available
+		if (iconnector<T>* gconnect = dynamic_cast<iconnector<T>*>(g_root_))
 		{
-			ivariable<T>* jac = jacobs.top(); // these jacs are hidden jacobian nodes
-			jacobs.pop();
-			// grab tensor_jacobi
-			tensor_jacobi<T>* ten_jac = 
-				static_cast<tensor_jacobi<T>*>(jac->get_eval());
-			// connect lowest jacobians to higher jacobians
-			ten_jac->set_root(top);
-			top = jac;
+			if (functor<T>* j = gconnect->get_jacobian())
+			{
+				// by default grad_jacobi most likely has its root hidden
+				// do away with the graph behavior by exposing its root
+				g_root_ = j;
+				j->init(); // force initialization to make things easier
+			}
 		}
-		g_root_ = top; // make resulting jacobian node the true gradient root
-		// << collection concludes here
 	}
-	else
+	else // either leaf, graph, or buffer
 	{
 		potential_srcs_.push_back(root);
 	}
@@ -118,41 +107,39 @@ void gradient<T>::freeze (void)
 		leaves = potential_srcs_;
 	}
 	// populate leaf_map_
+	bindable_toggle<T>* togg_last = nullptr;
 	for (ivariable<T>* var : leaves)
 	{
 		// expect gradients to be the same shape as leaves
 		leaf_map_[var] = new placeholder<T>(std::vector<size_t>{}, "grad_in:" + var->get_name());
+
+		// bind all the bindable_toggle
+		if (bindable_toggle<T>* togg = dynamic_cast<bindable_toggle<T>*>(var->get_gradient()))
+		{
+			if (nullptr != togg_last)
+			{
+				togg->bind(gid_, togg_last);
+			}
+			else
+			{
+				togg_last = togg;
+			}
+		}
 	}
 }
 
 template <typename T>
 void gradient<T>::execute (void)
 {
-	// notify leaves and extract gradient to leaf_map
-	auto it = leaf_map_.begin();
-	ivariable<T>* it_leaf = it->first;
-	ivariable<T>* it_grad = it_leaf->get_gradient();
 	for (auto leaf_pair : leaf_map_)
 	{
-		ivariable<T>* leaf_grad = leaf_pair.first->get_gradient();
-		leaf_grad->notify(it_grad); // special notify to nullify all leaf nodes except *it
-	}
-	// assign g_root's tensor to leaf_map's placeholder
-	tensor<T>* root_res = g_root_->get_eval();
-	*(leaf_map_[it_leaf]) = *root_res;
-
-	// now that every leaf except it_grad is nulled
-	// we only need to notify the previous leaf and the current leaf
-	// nullifying previous and un-nullifying current
-	ivariable<T>* previous = it_leaf;
-	for (it++; leaf_map_.end() != it; it++)
-	{
-		it_leaf = it->first;
-		it_grad = it_leaf->get_gradient();
-		previous->get_gradient()->notify(it_grad);
-		it_grad->notify(it_grad);
-		*(leaf_map_[it_leaf]) = *root_res;
-		previous = it_leaf;
+		ivariable<T>* gleaf = leaf_pair.first->get_gradient();
+		if (bindable_toggle<T>* togg = dynamic_cast<bindable_toggle<T>*>(gleaf))
+		{
+			togg->activate(gid_);
+		}
+		tensor<T>* root_res = g_root_->get_eval();
+		*(leaf_pair.second) = *root_res;
 	}
 }
 

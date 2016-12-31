@@ -19,9 +19,9 @@
 
 #include "executor/varptr.hpp"
 #include "graph/variable/variable.hpp"
-#include "graph/operation/special/matmul.hpp"
-#include "graph/operation/general/transform.hpp"
-#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/matmul.hpp"
+#include "graph/operation/transform.hpp"
+#include "graph/operation/elementary.hpp"
 
 namespace nnet
 {

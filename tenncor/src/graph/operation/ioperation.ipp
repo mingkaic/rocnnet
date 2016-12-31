@@ -6,7 +6,9 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef operation_hpp
+#include "graph/variable/variable.hpp"
+
+#ifdef ioperation_hpp
 
 namespace nnet
 {
@@ -14,74 +16,43 @@ namespace nnet
 // OPERATION INTERFACE UTILITY FUNCTIONS
 
 template <typename T>
-void ioperation<T>::copy (const ioperation<T>& other, std::string name)
+void ioperation<T>::copy (const ioperation<T>& other)
 {
 	// if grad is not being observed, then and only then delete
 	if (nullptr != grad_ && grad_->no_audience())
 	{
 		grad_->safe_destroy();
 	}
+	// treat grad_jacobi_ exactly like grads
+	if (nullptr != grad_jacobi_ && grad_jacobi_->no_audience())
+	{
+		grad_jacobi_->safe_destroy();
+	}
 	// shallow copy
-	grad_ = other.grad_;
-	ivariable<T>::copy(other, name);
+	tens_buffer_ = other.tens_buffer_;
+	
+	// gradient data reset
+	grad_ = nullptr;
+	grad_jacobi_ = other.grad_jacobi_->clone();
 }
 
 template <typename T>
-ioperation<T>::ioperation (const ioperation<T>& other, std::string name) :
-	ccoms::iobserver(other),
-	ivariable<T>(other, name),
-	valid_tensor_(other.valid_tensor_),
-	grad_(other.grad_) {}
-	
-template <typename T>
-bool ioperation<T>::channel (std::stack<ivariable<T>*>& jacobi)
+ioperation<T>::ioperation (const ioperation<T>& other) : iconnector<T>(other)
 {
-	// propagate channel
-	// did not implement jacobian conflicts resolution (when 2 jacobian nodes meeting at the same junction...)
-	// as such, this is undefined behavior for now and should throw error
-	size_t jacobi_count = 0;
-	for (ccoms::subject* sub : this->dependencies_)
-	{
-		if (ivariable<T>* v = sub->to_type<ivariable<T> >())
-		{
-			if (ioperation<T>* o = dynamic_cast<ioperation<T>*>(v)) {
-				if (o->channel(jacobi)) {
-					jacobi_count++;
-				}
-			}
-		}
-	}
-	if (jacobi_count > 1)
-	{
-		throw std::logic_error("jacobian branch conflict occurred at " + this->get_name());
-	}
-	return jacobi_count != 0;
+	this->copy(other);
 }
 
 template <typename T>
 ioperation<T>::ioperation (std::vector<ivariable<T>*> dependencies, std::string name) :
-	ccoms::iobserver(nnutils::to_vec<ivariable<T>*, ccoms::subject*>(dependencies, var_to_sub<T>)),
-	ivariable<T>(std::vector<size_t>{}, name)
-{
-	for (ivariable<T>* dep : dependencies)
-	{
-		dep->merge_leaves(leaves_);
-	}
-}
+	iconnector<T>(dependencies, name) {}
 
 template <typename T>
 ioperation<T>::~ioperation (void)
 {
-	if (nullptr != grad_)
+	if (nullptr != grad_jacobi_)
 	{
-		delete grad_;
+		delete grad_jacobi_;
 	}
-}
-
-template <typename T>
-ioperation<T>* ioperation<T>::clone (std::string name)
-{
-	return static_cast<ioperation<T>*>(clone_impl(name));
 }
 
 template <typename T>
@@ -89,6 +60,7 @@ ioperation<T>& ioperation<T>::operator = (const ioperation<T>& other)
 {
 	if (this != &other)
 	{
+		iconnector<T>::operator = (other);
 		this->copy(other);
 	}
 	return *this;
@@ -101,28 +73,62 @@ tensor<T>* ioperation<T>::get_eval (void)
 	{
 		return nullptr;
 	}
-	return ivariable<T>::get_eval();
+	return out_.get();
 }
 
 template <typename T>
-ivariable<T>* ioperation<T>::get_gradient (void)
+bindable_toggle<T>* ioperation<T>::get_gradient (void)
 {
 	if (nullptr == grad_)
 	{
-		setup_gradient();
+		grad_ = std::unique_ptr<bindable_toggle<T> >(
+			bindable_toggle<T>::build(setup_gradient(), constant<T>::build(1)));
 		// set grad_ to null on safe_destroy
 		grad_->set_death((void**) &grad_);
 	}
-	return grad_;
+	return grad_.get();
 }
 
 template <typename T>
-void ioperation<T>::leaves_collect (std::function<void(ivariable<T>*)> collector)
+void ioperation<T>::update (ccoms::caller_info info, ccoms::update_message msg)
 {
-	for (ivariable<T>* leaf : leaves_)
+	// UPDATING TENS_BUFFER
+	// cast caller dependency as ivariable
+	ivariable<T>* caller = info.caller_ ? sub_to_var<T>(info.caller_) : nullptr;
+	ivariable<T>* grad = msg.cmd_ == ccoms::update_message::REVERSE_MODE ? caller : nullptr;
+	size_t callerid = info.caller_idx_;
+	tensor<T>* storage = nullptr;
+	this->valid_tensor_ = true;
+
+	if (0 == tens_buffer_.size()) return;
+	assert(callerid < this->dependencies_.size()); // same as caller is in dependencies
+	// grab caller_id from message
+	if (nullptr == grad) // don't care about grad, get best evaluation
 	{
-		collector(leaf);
+		// tensor buffer update
+		storage = caller->get_eval();
+		if (nullptr == storage ||
+			false == storage->get_shape().is_fully_defined())
+		{
+			this->valid_tensor_ = false;
+		}
 	}
+	else // eval if caller is grad, null otherwise
+	{
+		storage = grad == caller ? grad->get_eval() : nullptr;
+	}
+	// update caller tensor only
+	tens_buffer_[callerid] = storage;
+
+	// tensor update when ready
+	if (this->valid_tensor_)
+	{
+		// null is treated as erroneous zero
+		(*out_)(tens_buffer_);
+	}
+//	msg.grad_ = nullptr;
+//	msg.cmd_ = std::experimental::optional<ccoms::update_message::COMMAND>(); // forward mode
+	this->notify(msg);
 }
 
 }

@@ -21,36 +21,47 @@ namespace nnet
 template <typename T>
 class ileaf : public ivariable<T>
 {
+	private:
+		void copy (const ileaf<T>& other);
+	
 	protected:
-		// used by assignment operators to dynamically initialize tensors
-		struct dyn_init;
+		// >>>> TENSOR CONTENT <<<<
+		std::unique_ptr<tensor<T> > out_ = nullptr;
 
-		// TODO make suicide an option for constants
-		std::unique_ptr<variable<T> > grad_ = nullptr; // make it variable to prevent self destruction when disconnecting
-		
-		// we own our initializer
+		// >>>> INITIALIZER DATA <<<<
 		initializer<T>* init_ = nullptr;
 		bool is_init_ = false;
+
+		// used by assignment operators to dynamically initialize tensors
+		struct dyn_init;
 		
 		// only add to source if this is a ivariable
 		virtual void merge_leaves (std::unordered_set<ivariable<T>*>& src) {}
 
-		void copy (const ileaf<T>& other, std::string name = "");
-		ileaf (const ileaf<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name) = 0;
+		ileaf (const ileaf<T>& other); // copy constructor required for out_, grad_, and init_ deep copy
 
 		ileaf (const tensorshape& shape, initializer<T>* init, std::string name);
+
+		friend class assign<T>;
 
 	public:
 		virtual ~ileaf (void);
 		
 		// COPY
-		// call abstract cloner
-		ileaf<T>* clone (std::string name = "");
-		virtual ileaf<T>& operator = (const ileaf<T>& other);
+		// abstract clone
+		ileaf<T>& operator = (const ileaf<T>& other);
 
 		// MOVES
 		// todo: implement move clone
+
+		virtual tensorshape get_shape (void)
+		{
+			if (nullptr != out_)
+			{
+				return out_->get_shape();
+			}
+			return std::vector<size_t>{};
+		}
 
 		// inherited from ivariable
 		virtual tensor<T>* get_eval (void)
@@ -59,8 +70,11 @@ class ileaf : public ivariable<T>
 			{
 				return nullptr;
 			}
-			return ivariable<T>::get_eval();
+			return out_.get();
 		}
+
+		// DATA EXPOSURE TO PARENT/DEPENDENT NODES
+		virtual bindable_toggle<T>* get_gradient (void) { return nullptr; }
 
 		// GET INFO
 		bool can_init (void) const;

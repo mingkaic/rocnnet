@@ -17,31 +17,32 @@ namespace nnet
 
 // tensor variable pointer wrapper
 // TODO: override delete to destroy ptr directly
+// TODO: ivariable conversion unboxing would be helpful
 template <typename T>
 class varptr
 {
-	private:
+	protected:
 		ivariable<T>* ptr_ = nullptr;
 
 	public:
 		varptr (void) {}
 		varptr (ivariable<T>* ptr);
+		virtual ~varptr (void) {}
 		varptr<T>& operator = (ivariable<T>* other);
 		varptr<T>& operator = (const varptr<T>& other);
+		
+		// TODO overload move
 
 		operator ivariable<T>* () const;
 		ivariable<T>& operator * (void) const;
 		ivariable<T>* operator -> (void) const;
-		
+
 		ivariable<T>* get (void) const;
 };
 
 template <typename T>
-class placeptr
+class placeptr : public varptr<T>
 {
-	private:
-		placeholder<T>* ptr_ = nullptr;
-
 	public:
 		placeptr (void) {}
 		placeptr (placeholder<T>* ptr);
@@ -49,12 +50,12 @@ class placeptr
 		placeptr<T>& operator = (const placeptr<T>& other);
 
 		placeptr<T>& operator = (std::vector<T> vec);
-		placeptr<T>& operator = (const tensor<T>& ten);
+		placeptr<T>& operator = (tensor<T>& ten);
 
 		operator placeholder<T>* () const;
 		placeholder<T>& operator * (void);
 		placeholder<T>* operator -> (void);
-		
+
 		placeholder<T>* get (void) const;
 };
 

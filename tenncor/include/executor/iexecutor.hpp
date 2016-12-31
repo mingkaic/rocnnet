@@ -36,8 +36,7 @@ class iexecutor
 		// MOVE
 		
 		virtual void add (ivariable<T>* node);
-		
-		virtual void update (ccoms::update_message msg) {}
+
 		// stage 2: perform primary objective
 		virtual void execute (void) = 0;
 		

@@ -6,7 +6,11 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/operation/ioperation.hpp"
+#include "graph/operation/elementary.hpp"
+#include "graph/operation/transform.hpp"
+#include "graph/variable/constant.hpp"
+#include "graph/tensorless/functor.hpp"
+#include "graph/state_selector/conditional.hpp"
 
 #pragma once
 #ifndef matop_hpp
@@ -27,16 +31,19 @@ class matmul : public ioperation<T>
 		bool transposeA_;
 		bool transposeB_;
 
-		size_t common_dim (void) const;
+		std::unique_ptr<ioperation<T> > ones = std::unique_ptr<ioperation<T> >(
+			dynamic_cast<ioperation<T>*>(fit<double>(constant<T>::build(1), this).get()));
+		size_t common_dim (void);
 
 	protected:
 		// backward chaining for AD
-		virtual void setup_gradient (void);
-		virtual tensorshape shape_eval (void);
-		
-		matmul (const matmul<T>& other, std::string name);
-		virtual ivariable<T>* clone_impl (std::string name);
+		virtual ivariable<T>* setup_gradient (void);
 
+		// stop ones from being copied over
+		matmul (const matmul<T>& other) :
+			transposeA_(other.transposeA_),
+			transposeB_(other.transposeB_),
+			ioperation<T>(other) {}
 		// protect matrix constructor to ensure heap allocation
 		matmul (ivariable<T>* a, ivariable<T>* b,
 			bool transposeA = false, bool transposeB = false);
@@ -49,17 +56,17 @@ class matmul : public ioperation<T>
 		}
 
 		// COPY
-		matmul<T>* clone (std::string name = "");
-		virtual matmul<T>& operator = (const matmul<T>& other);
+		matmul<T>* clone (void);
 		
 		// MOVES
 		// TODO: implement
 
-		virtual void update (ccoms::update_message msg);
+		// override ioperation
+		virtual void update (ccoms::caller_info info, ccoms::update_message msg = ccoms::update_message());
 };
 
 }
 
-#include "../../../../src/graph/operation/special/matmul.ipp"
+#include "../../../src/graph/operation/matmul.ipp"
 
 #endif /* matop_hpp */

@@ -7,22 +7,12 @@
 //
 
 #include "graph/ccoms/iobserver.hpp"
+#include <iostream>
 
 #ifdef subject_hpp
 
 namespace ccoms
 {
-
-bool reactive_node::safe_destroy (void)
-{
-	if (suicidal())
-	{
-		// deletion logic, change here if we allow stack allocation in the future
-		delete this;
-		return true;
-	}
-	return false;
-}
 
 void subject::attach (iobserver* viewer, size_t idx)
 {
@@ -36,6 +26,11 @@ void subject::detach (iobserver* viewer)
 	{
 		safe_destroy();
 	}
+}
+
+subject::subject (subject_owner* owner)
+{
+	var_ = owner;
 }
 
 subject::~subject (void)
@@ -52,18 +47,35 @@ subject::~subject (void)
 	}
 }
 
-void subject::notify (subject* grad)
+subject::subject (const subject& other, subject_owner* owner)
 {
-	update_message msg(this);
-	msg.grad_ = grad;
+	var_ = owner;
+}
+
+void subject::notify (update_message msg)
+{
+	caller_info info(this);
 	// everyone get the same message
-	for (auto it : audience_)
+	auto it = audience_.begin();
+	while (audience_.end() != it)
 	{
-		for (size_t idx : it.second)
+		// we're asking our audience to unsubscribe.
+		// we only need to ask once
+		if (msg.cmd_ == update_message::REMOVE_ARG)
 		{
-			msg.caller_idx_ = idx;
-			iobserver *viewer = it.first;
-			viewer->update(msg);
+			iobserver* aud = it->first;
+			// subscribing detaches it from audience_, so we increment before
+			it++;
+			aud->update(info, msg);
+		}
+		else
+		{
+			for (size_t idx : it->second) {
+				info.caller_idx_ = idx;
+				iobserver *viewer = it->first;
+				viewer->update(info, msg);
+			}
+			it++;
 		}
 	}
 }
@@ -71,6 +83,22 @@ void subject::notify (subject* grad)
 bool subject::no_audience (void) const
 {
 	return audience_.empty();
+}
+
+bool subject::safe_destroy (void)
+{
+	if (nullptr != var_)
+	{
+		// safe_destroy is meant as a means of suicide
+		// killing owner will in turn kill this
+		delete var_;
+		return true;
+	}
+	return ireactive_node::safe_destroy();
+}
+
+subject_owner*& subject::get_owner (void) {
+	return var_;
 }
 
 }

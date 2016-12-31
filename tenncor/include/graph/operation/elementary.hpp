@@ -19,19 +19,10 @@ namespace nnet
 template <typename T>
 class elementary : public ioperation<T> {
 	private:
-		BUILD_DERIVE<T> der_;
-		// buffer argument tensors 
-		// (each argument can return different tensors)
-		// update each tensor by position accordingly
-		std::vector<tensor<T>*> tens_buffer_;
+		BUILD_DERIVE<T> der_; // shallow copy (move to operation once matmul adopts the transform)
 		
 	protected:
-		virtual void setup_gradient (void);
-		virtual tensorshape shape_eval (void);
-
-		elementary (const elementary<T>& other, std::string name);
-			
-		virtual ivariable<T>* clone_impl (std::string name);
+		virtual ivariable<T>* setup_gradient (void);
 
 		// protect elementary constructor to ensure heap allocation
 		elementary (std::vector<ivariable<T>*> args,
@@ -40,7 +31,7 @@ class elementary : public ioperation<T> {
 			std::string name);
 
 	public:
-		static ivariable<T>* build (std::vector<ivariable<T>*> args,
+		static elementary<T>* build (std::vector<ivariable<T>*> args,
 			TEN_OP<T> op,
 			BUILD_DERIVE<T> der,
 			std::string name = "")
@@ -49,13 +40,10 @@ class elementary : public ioperation<T> {
 		}
 	
 		// COPY
-		elementary<T>* clone (std::string name = "");
-		virtual elementary<T>& operator = (const elementary<T>& other);
+		virtual elementary<T>* clone (void);
 		
 		// MOVES
 		// TODO: implement
-
-		virtual void update (ccoms::update_message msg);
 };
 
 // operators that will replace elementary operation objects
@@ -136,6 +124,6 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b);
 
 }
 
-#include "../../../../src/graph/operation/general/elementary.ipp"
+#include "../../../src/graph/operation/elementary.ipp"
 
 #endif /* elementary_hpp */

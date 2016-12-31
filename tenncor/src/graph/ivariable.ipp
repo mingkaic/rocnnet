@@ -14,33 +14,17 @@ namespace nnet
 // VARIABLE INTERFACE
 
 template <typename T>
-void ivariable<T>::copy (const ivariable<T>& other, std::string name)
+ivariable<T>::ivariable (const ivariable<T>& other) :
+	subject_owner(other)
 {
-	caller_ = new ccoms::subject();
-	caller_->store_var(this);
-	out_ = std::unique_ptr<tensor<T> >(other.out_->clone());
-	if (0 == name.size())
-	{
-		name_ = other.name_+"_cpy";
-	}
-	else
-	{
-		name_ = name;
-	}
+	name_ = other.name_;
 }
 
 template <typename T>
-ivariable<T>::ivariable (const ivariable<T>& other, std::string name)
+ivariable<T>::ivariable (std::string name) :
+	ccoms::subject_owner(),
+	name_(name)
 {
-	copy(other, name);
-}
-
-template <typename T>
-ivariable<T>::ivariable (const tensorshape& shape, std::string name) : name_(name)
-{
-	caller_ = new ccoms::subject();
-	caller_->store_var(this);
-	out_ = std::make_unique<tensor<T> >(shape);
 	session& sess = session::get_instance();
 	sess.register_obj(*this);
 }
@@ -48,15 +32,8 @@ ivariable<T>::ivariable (const tensorshape& shape, std::string name) : name_(nam
 template <typename T>
 ivariable<T>::~ivariable (void)
 {
-	delete caller_;
 	session& sess = session::get_instance();
 	sess.unregister_obj(*this);
-}
-
-template <typename T>
-ivariable<T>* ivariable<T>::clone (std::string name)
-{
-	return clone_impl(name);
 }
 
 template <typename T>
@@ -64,7 +41,8 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other)
 {
 	if (this != &other)
 	{
-		copy(other);
+		subject_owner::operator = (other);
+		name_ = other.name_;
 	}
 	return *this;
 }

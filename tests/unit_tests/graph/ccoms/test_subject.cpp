@@ -34,9 +34,9 @@ TEST(CCOMS, ObserverUpdate_E501)
 	MockObserver* o3 = MockObserver::build(&subject);
 	// subject is now observed 3 times
 	// triggering subject notify will call each update 3 times
-	EXPECT_CALL(*o1, update(_)).Times(1);
-	EXPECT_CALL(*o2, update(_)).Times(1);
-	EXPECT_CALL(*o3, update(_)).Times(1);
+	EXPECT_CALL(*o1, update(_, _)).Times(1);
+	EXPECT_CALL(*o2, update(_, _)).Times(1);
+	EXPECT_CALL(*o3, update(_, _)).Times(1);
 
 	subject.notify();
 }

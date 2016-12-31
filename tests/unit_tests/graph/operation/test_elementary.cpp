@@ -4,9 +4,9 @@
 
 #include <limits>
 #include "gtest/gtest.h"
-#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/elementary.hpp"
 
-
+// TODO: separate test according to expected behaviors (see scope.txt)
 #define UNARY std::function<nnet::varptr<double>(nnet::varptr<double>)>
 #define BINARY_BOTH std::function<nnet::varptr<double>(nnet::varptr<double>, nnet::varptr<double>)>
 #define BINARY_FIRST std::function<nnet::varptr<double>(nnet::varptr<double>, double)>
@@ -70,8 +70,8 @@ void binaryElemTest (
 	nnet::placeholder<double> bad((std::vector<size_t>{edge, edge}), "bad");
 
 	// shape doesn't match
-	EXPECT_THROW({ func(nnet::varptr<double>(&p1), nnet::varptr<double>(&bad)); }, std::invalid_argument);
-	EXPECT_THROW({ func(nnet::varptr<double>(&bad), nnet::varptr<double>(&p1)); }, std::invalid_argument);
+	EXPECT_DEATH({ func(nnet::varptr<double>(&p1), nnet::varptr<double>(&bad)); }, ".*");
+	EXPECT_DEATH({ func(nnet::varptr<double>(&bad), nnet::varptr<double>(&p1)); }, ".*");
 
 	nnet::varptr<double> res = func(nnet::varptr<double>(&p1), nnet::varptr<double>(&p2));
 	nnet::varptr<double> res1 = func1(nnet::varptr<double>(&p1), 2);

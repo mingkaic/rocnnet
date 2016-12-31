@@ -14,16 +14,6 @@ namespace nnet
 // VARIABLE IMPLEMENTATION
 
 template <typename T>
-variable<T>::variable (const variable<T>& other, std::string name) :
-	ileaf<T>(other, name) {}
-
-template <typename T>
-ivariable<T>* variable<T>::clone_impl (std::string name)
-{
-	return new variable(*this, name);
-}
-
-template <typename T>
 variable<T>::variable (T scalar, std::string name) :
 	ileaf<T>(std::vector<size_t>{1},
 	new const_init<T>(scalar), name)
@@ -40,9 +30,9 @@ variable<T>::variable (const tensorshape& shape, initializer<T>& init, std::stri
 	ileaf<T>(shape, init.clone(), name) {}
 
 template <typename T>
-variable<T>* variable<T>::clone (std::string name)
+variable<T>* variable<T>::clone (void)
 {
-	return static_cast<variable<T>*>(clone_impl(name));
+	return new variable<T>(*this);
 }
 
 template <typename T>

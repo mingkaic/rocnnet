@@ -10,7 +10,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <vector>
-#include "utils.hpp"
+#include "utils/utils.hpp"
 
 #pragma once
 #ifndef tensorshape_hpp

@@ -13,15 +13,15 @@ namespace nnet
 
 // PLACEHOLDER IMPLEMENTATION
 
-template <typename T>
-placeholder<T>::placeholder (const placeholder<T>& other, std::string name) :
-	ileaf<T>(other, name) {}
+// template <typename T>
+// placeholder<T>::placeholder (const placeholder<T>& other, std::string name) :
+// 	ileaf<T>(other, name) {}
 
-template <typename T>
-ivariable<T>* placeholder<T>::clone_impl (std::string name)
-{
-	return new placeholder(*this, name);
-}
+// template <typename T>
+// ivariable<T>* placeholder<T>::clone_impl (std::string name)
+// {
+// 	return new placeholder(*this, name);
+// }
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
@@ -44,9 +44,10 @@ placeholder<T>::placeholder (const tensorshape& shape, initializer<T>& init, std
 }
 
 template <typename T>
-placeholder<T>* placeholder<T>::clone (std::string name)
+placeholder<T>* placeholder<T>::clone (void)
 {
-	return static_cast<placeholder<T>*>(clone_impl(name));
+	return new placeholder<T>(*this);
+	//return static_cast<placeholder<T>*>(clone_impl(name));
 }
 
 // maintains shape

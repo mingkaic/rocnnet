@@ -49,16 +49,7 @@ class tensor_op : public tensor<T,A>
 		tensor_op (const tensor_op<T,A>& other);
 		virtual tensor<T,A>* clone_impl (void);
 
-		virtual void raw_update (void)
-		{
-			if (false == this->is_alloc())
-			{
-				this->allocate();
-			}
-			T* dest = tensor<T,A>::get_raw();
-			assert(false == raws_.empty());
-			op_(info_, dest, raws_);
-		}
+		virtual void raw_update (void);
 
 		// inherited and override. evaluates before returning raw. 
 		// told you it's not overengineered
@@ -67,7 +58,6 @@ class tensor_op : public tensor<T,A>
 	public:
 		tensor_op (TEN_OP<T> op, SHAPE shaper);
 		tensor_op (TEN_OP<T> op, SHAPE shaper, const alloc_attrib& attrib);
-		// we don't own any of the raws so we don't need destructor
 
 		tensor_op<T,A>* clone (void);
 		virtual tensor_op<T,A>& operator = (tensor_op<T,A>& other);

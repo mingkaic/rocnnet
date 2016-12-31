@@ -37,6 +37,18 @@ T* tensor_op<T,A>::get_raw (void) {
 }
 
 template <typename T, typename A>
+void tensor_op<T,A>::raw_update (void)
+{
+	if (false == this->is_alloc())
+	{
+		this->allocate();
+	}
+	T* dest = tensor<T,A>::get_raw();
+	assert(false == raws_.empty());
+	op_(info_, dest, raws_);
+}
+
+template <typename T, typename A>
 tensor_op<T,A>::tensor_op (TEN_OP<T> op, SHAPE shaper) : op_(op), shape_(shaper) {}
 
 template <typename T, typename A>
@@ -62,13 +74,16 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 {
 	raws_.clear();
 	std::vector<tensorshape> shapes;
+	bool nullify = false;
+	tensorshape scalar_shape = std::vector<size_t>{1};
 	for (tensor<T,A>* t : args)
 	{
 		if (nullptr == t)
 		{
 			// null are treated as 0
 			raws_.push_back(&zero);
-			shapes.push_back(std::vector<size_t>{1});
+			shapes.push_back(scalar_shape);
+			nullify = true;
 		}
 		else
 		{
@@ -78,10 +93,23 @@ const tensor_op<T,A>& tensor_op<T,A>::operator () (std::vector<tensor<T,A>*> arg
 	}
 	// change shape?
 	tensorshape og_shape = this->get_shape();
-	tensorshape res_shape = shape_(shapes);
+	tensorshape res_shape;
+	if (false == nullify)
+	{
+		try
+		{
+			res_shape = shape_(shapes);
+		}
+		catch (std::invalid_argument &e) {}
+	}
+	else
+	{
+		res_shape = scalar_shape;
+	}
 	info_.arg_shape_ = shapes;
-	if (false == og_shape.is_fully_defined() ||
-		false == og_shape.is_compatible_with(res_shape))
+	if (res_shape.is_fully_defined() &&
+		(false == og_shape.is_fully_defined() ||
+		false == og_shape.is_compatible_with(res_shape)))
 	{
 		this->change_shape(res_shape);
 		info_.res_shape_ = res_shape;

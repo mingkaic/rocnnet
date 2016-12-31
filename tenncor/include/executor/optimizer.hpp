@@ -11,7 +11,7 @@
 #include "assign.hpp"
 #include "graph/variable/variable.hpp"
 #include "group.hpp"
-#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/elementary.hpp"
 #include "gradient.hpp"
 
 #pragma once

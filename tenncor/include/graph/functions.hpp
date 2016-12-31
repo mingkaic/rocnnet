@@ -7,7 +7,7 @@
 //
 
 #include <queue>
-#include "graph/operation/general/elementary.hpp"
+#include "graph/operation/elementary.hpp"
 #include "executor/varptr.hpp"
 
 #pragma once

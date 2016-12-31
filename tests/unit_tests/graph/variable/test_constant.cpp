@@ -33,7 +33,6 @@ TEST(CONSTANT, ZeroConstGrad_D402) {
 	nnet::constant<double>* c = nnet::constant<double>::build(1);
 	nnet::ivariable<double>* gradient = c->get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);
-	ASSERT_EQ(res.size(), 1);
-	EXPECT_EQ(0, res[0]);
+	ASSERT_EQ(0, res.size());
 	delete c;
 }

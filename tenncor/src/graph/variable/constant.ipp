@@ -13,15 +13,15 @@ namespace nnet
 
 // CONSTANT IMPLEMENTATION
 
-template <typename T>
-constant<T>::constant (const constant<T>& other, std::string name) :
-	ileaf<T>(other, name) {}
+// template <typename T>
+// constant<T>::constant (const constant<T>& other, std::string name) :
+// 	ileaf<T>(other, name) {}
 
-template <typename T>
-ivariable<T>* constant<T>::clone_impl (std::string name)
-{
-	return new constant(*this, name);
-}
+// template <typename T>
+// ivariable<T>* constant<T>::clone_impl (std::string name)
+// {
+// 	return new constant(*this, name);
+// }
 
 template <typename T>
 constant<T>::constant (T scalar) :
@@ -46,9 +46,10 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 }
 
 template <typename T>
-constant<T>* constant<T>::clone (std::string name)
+constant<T>* constant<T>::clone (void)
 {
-	return static_cast<constant<T>*>(clone_impl(name));
+	return new constant<T>(*this);
+	// return static_cast<constant<T>*>(clone_impl(name));
 }
 
 }

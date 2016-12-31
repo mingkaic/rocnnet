@@ -240,14 +240,21 @@ void tensorshape::assert_same_rank (const tensorshape& other) const
 
 void tensorshape::assert_is_fully_defined (void) const { assert(is_fully_defined()); }
 
-void print_shape(tensorshape ts)
+void print_shape (tensorshape ts)
 {
 	std::vector<size_t> shape = ts.as_list();
-	for (size_t dim : shape)
+	if (shape.empty())
 	{
-		std::cout << dim << " ";
+		std::cout << "undefined\n";
 	}
-	std::cout << std::endl;
+	else
+	{
+		for (size_t dim : shape)
+		{
+			std::cout << dim << " ";
+		}
+		std::cout << std::endl;
+	}
 }
 
 }

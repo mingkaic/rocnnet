@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <functional>
-#include "subject.hpp"
+#include "subject_owner.hpp"
 
 #pragma once
 #ifndef observer_hpp
@@ -19,13 +19,26 @@ namespace ccoms
 
 // AKA root / intermediate node
 
-class iobserver : public reactive_node
+class iobserver : public ireactive_node
 {
 	protected:
 		//dependencies exposed to inherited to facilitate moving around the graph
 		std::vector<subject*> dependencies_;
 		
-		void add_dependency (subject* dep);
+		void add_dependency (subject* dep); // add in order
+		void add_dependency (subject_owner* dep_owner)
+		{
+			add_dependency(dep_owner->caller_.get());
+		}
+		void kill_dependencies (void)
+		{
+			for (subject* dep : dependencies_)
+			{
+				dep->detach(this);
+			}
+			dependencies_.clear();
+		}
+		void copy (const iobserver& other); // for assignment ops
 		
 		// attach dependencies
 		iobserver (const iobserver& other); // copy over dependencies and leaves
@@ -36,7 +49,7 @@ class iobserver : public reactive_node
 	public:
 		virtual ~iobserver (void);
 
-		virtual void update (update_message msg) = 0;
+		virtual void update (caller_info info, update_message msg = ccoms::update_message()) = 0;
 };
 
 }
