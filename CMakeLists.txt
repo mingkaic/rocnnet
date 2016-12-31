@@ -124,7 +124,8 @@ FILE(GLOB_RECURSE ROCNNET_SRC
 include_directories(${ROCNNET_INCLUDE})
 
 set(ROCNNET_DLL rocnnet)
-add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC})
+#add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC}) #update perceptrons first
+add_library(${ROCNNET_DLL} STATIC ${ROCNNET_SRC})
 target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -219,7 +220,7 @@ enable_testing()
 include_directories(${GTEST_INCLUDE_DIRS} ${ROCNNET_INCLUDE} ${MOCK_INCLUDE})
 
 file(GLOB_RECURSE PERFORM_TEST_SRC
-        ${PERFORM_TEST_PATH}/*.cpp)
+    ${PERFORM_TEST_PATH}/*.cpp)
 
 add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC} ${PERFORM_MAIN})
 
@@ -227,24 +228,24 @@ add_executable(${PERFORM_TEST_NAME} ${PERFORM_TEST_SRC} ${PERFORM_MAIN})
 # Test dependencies
 #-------------------
 add_dependencies(${PERFORMANCE_TEST_NAME}
-        googletest
-        tenncor
-        rocnnet)
+    googletest
+    tenncor
+    rocnnet)
 
 #-------------------
 # link googletest depending on available libraries
 #-------------------
 if(NOT WIN32 OR MINGW)
-    target_link_libraries(${UNIT_TEST_NAME}
+    target_link_libraries(${PERFORM_TEST_NAME}
             ${GTEST_LIBS_DIR}/libgtest.a
             ${GTEST_LIBS_DIR}/libgtest_main.a
             )
 else()
-    target_link_libraries(${UNIT_TEST_NAME}
+    target_link_libraries(${PERFORM_TEST_NAME}
             debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
             optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
             )
-    target_link_libraries(${UNIT_TEST_NAME}
+    target_link_libraries(${PERFORM_TEST_NAME}
             debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
             optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
             )
