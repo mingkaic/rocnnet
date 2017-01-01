@@ -150,34 +150,38 @@ struct vertex_manager::node_registry
 
 	std::unordered_map<std::string,info_wrapper> nodes_;
 
-	// delete all ptr_s in node_ registry
-	~node_registry (void)
-	{
-		std::unordered_set<nnet::ivariable<double>*> indeps;
-		for (auto ns : nodes_)
-		{
-			// only mark independent nodes and leaves for deletion
-			if (ns.second.info_.op_type_)
-			{
-				nnet::mutable_connector<double>* mc = dynamic_cast<nnet::mutable_connector<double>*>(ns.second.ptr_);
-				// invalid arguments means mutable connector is not dependent (mark to destroy)
-				if (false == mc->valid_args())
-				{
-					indeps.emplace(ns.second.ptr_);
-				}
-			}
-			// ns.second.ptr_ is a leaf (mark to destroy)
-			else
-			{
-				indeps.emplace(ns.second.ptr_);
-			}
-		}
-		// destroy
-		for (nnet::ivariable<double>* v : indeps)
-		{
-			delete v;
-		}
-	}
+	// we rely on session to destroy the allocated variables, we don't have to destroy here as well.
+//	~node_registry (void)
+//	{
+//		std::unordered_set<nnet::ivariable<double>*> indeps;
+//		for (auto ns : nodes_)
+//		{
+//			// only mark independent nodes and leaves for deletion
+//			if (ns.second.info_.op_type_)
+//			{
+//				nnet::mutable_connector<double>* mc = dynamic_cast<nnet::mutable_connector<double>*>(ns.second.ptr_);
+//				// invalid arguments means mutable connector is not dependent (mark to destroy)
+//				if (false == mc->valid_args())
+//				{
+//					indeps.emplace(ns.second.ptr_);
+//				}
+//			}
+//			// ns.second.ptr_ is a leaf (mark to destroy)
+//			else if (nullptr != ns.second.ptr_)
+//			{
+//				indeps.emplace(ns.second.ptr_);
+//			}
+//			else
+//			{
+//				throw std::bad_alloc();
+//			}
+//		}
+//		// destroy
+//		for (nnet::ivariable<double>* v : indeps)
+//		{
+//			delete v;
+//		}
+//	}
 
 	// check if id exists, extract the node, then return its type
 	bool grab_node (info_wrapper& out, std::string id)

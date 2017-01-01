@@ -11,6 +11,7 @@
 #include <random>
 #include <ctime>
 #include "memory/safe_ptr.hpp"
+#include "graph/ccoms/subject_owner.hpp"
 
 #pragma once
 #ifndef session_hpp
@@ -31,13 +32,21 @@ class session
 {
 	private:
 		// std::unordered_set<std::any> registry;
-		std::unordered_set<void*> registry;
+		std::unordered_set<ccoms::subject_owner*> registry;
 		std::default_random_engine generator_;
 
 	protected:
 		bool shape_eval = false;
 		session (void) : generator_(std::time(NULL)) {}
-		~session (void) {}
+		~session (void)
+		{
+			// kill everything in registry in case session is killed early
+			for (ccoms::subject_owner* so : registry)
+			{
+				delete so;
+			}
+			registry.clear();
+		}
 
 	public:
 		static session& get_instance (void);
@@ -64,10 +73,7 @@ class session
 		template <typename T>
 		void unregister_obj (ivariable<T>& obj) { registry.erase(&obj); }
 		
-		bool ptr_registered (void* ptr)
-		{ 
-			return registry.end() != registry.find(ptr);
-		}
+		bool ptr_registered (ccoms::subject_owner* ptr) { return registry.end() != registry.find(ptr); }
 
 		template <typename T>
 		void initialize_all (void)
@@ -92,11 +98,9 @@ class session
 		void enable_shape_eval (void);
 		void disable_shape_eval (void);
 
-		// input is resultant operator required to deep copy the graph
+		// TODO implement: input is resultant operator required to deep copy the graph
 		template <typename T>
-		ivariable<T>* copy (ivariable<T>* src_res) {
-			return nullptr;
-		}
+		ivariable<T>* copy (ivariable<T>* src_res) { return nullptr; }
 };
 
 }

@@ -10,7 +10,6 @@
 #include "initializer.hpp"
 #include "tensor/tensor_op.hpp"
 #include "tensor/tensor.hpp"
-#include "graph/ccoms/subject_owner.hpp"
 #include "utils/temp_utils.hpp"
 
 #pragma once
