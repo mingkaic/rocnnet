@@ -116,9 +116,9 @@ class vertex_manager
 		std::string register_leaf (std::string label, var_opt opt);
 		// delete nodes
 		bool delete_node (std::string id);
-		// link id1 to id2 if id2 points to a connector.
-		// index denotes link's index to id2
-		void link (std::string id1, std::string id2, size_t index = 0);
+		// link from_id to to_id if to_id points to a connector.
+		// index denotes link's index to to_id
+		void link (std::string from_id, std::string to_id, size_t index = 0);
 		// delete indexed link to id node
 		bool delete_link (std::string id, size_t index);
 

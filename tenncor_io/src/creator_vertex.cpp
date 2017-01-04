@@ -308,29 +308,29 @@ bool vertex_manager::delete_node (std::string id)
 	return false;
 }
 
-void vertex_manager::link (std::string id1, std::string id2, size_t index)
+void vertex_manager::link (std::string from_id, std::string to_id, size_t index)
 {
-	node_registry::info_wrapper w1;
-	node_registry::info_wrapper w2;
+	node_registry::info_wrapper from_wrap;
+	node_registry::info_wrapper to_wrap;
 
-	bool g1 = inst->grab_node(w1, id1);
+	bool grabbed_from = inst->grab_node(from_wrap, from_id);
 	// error: one non-existent node
-	if (false == g1 ||
-		false == inst->grab_node(w2, id2))
+	if (false == grabbed_from ||
+		false == inst->grab_node(to_wrap, to_id))
 	{
-		std::string invalid_id = g1 ? id1 : id2;
+		std::string invalid_id = grabbed_from ? from_id : to_id;
 		throw std::invalid_argument("invalid id: (" + invalid_id + ") node not found");
 	}
 
 	// error: can't connect to a leaf
-	if (!w2.info_.op_type_)
+	if (!to_wrap.info_.op_type_)
 	{
-		throw std::invalid_argument("can't connect to leaf " + w2.ptr_->get_name());
+		throw std::invalid_argument("can't connect to leaf " + to_wrap.ptr_->get_name());
 	}
 
 	nnet::mutable_connector<double>* mc =
-			static_cast<nnet::mutable_connector<double>*>(w2.ptr_);
-	mc->add_arg(w1.ptr_, index);
+			static_cast<nnet::mutable_connector<double>*>(to_wrap.ptr_);
+	mc->add_arg(from_wrap.ptr_, index);
 }
 
 bool vertex_manager::delete_link (std::string id, size_t index)
