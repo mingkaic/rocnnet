@@ -74,14 +74,8 @@ class mutable_connector : public iconnector<T>
 
 		// ACCESSORS
 		// get arguments
-		virtual void get_args (std::vector<ivariable<T>*>& args) const
-		{
-			args.clear();
-			for (varptr<T> a : arg_buffers_)
-			{
-				args.push_back(a.get());
-			}
-		}
+		size_t nargs (void) const;
+		virtual void get_args (std::vector<ivariable<T>*>& args) const;
 };
 
 }

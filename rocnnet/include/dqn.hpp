@@ -102,6 +102,11 @@ class dq_net {
 			delete action_mask;
 		}
 
+		virtual dq_net* clone (std::string scope = "")
+		{
+			return new dq_net(*this);
+		}
+
 		std::vector<double> operator () (std::vector<double>& input);
 
 		// memory replay

@@ -95,6 +95,8 @@ struct metainfo
 {
 	// no value means it's a leaf
 	std::experimental::optional<CONNECTOR_TYPE> op_type_;
+	// no argument also means leaf
+	std::experimental::optional<size_t> nargs_;
 };
 
 // store and retrieve graph information
@@ -112,7 +114,7 @@ class vertex_manager
 
 		// MODIFIERS
 		// register nodes
-		std::string register_op (CONNECTOR_TYPE cm);
+		std::string register_op (CONNECTOR_TYPE cm, size_t& nargs);
 		std::string register_leaf (std::string label, var_opt opt);
 		// delete nodes
 		bool delete_node (std::string id);

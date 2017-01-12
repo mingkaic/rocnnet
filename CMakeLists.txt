@@ -109,7 +109,7 @@ set(TENNCOR_LIB tenncor)
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 #>>>>>>>>>>>>>>>>>>>>>>>> DONE BUILDING TENNCOR <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET DLL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET SHARED <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 #-------------------
 # set rocnnet paths
 #-------------------
@@ -127,9 +127,9 @@ set(ROCNNET_DLL rocnnet)
 #add_library(${ROCNNET_DLL} SHARED ${ROCNNET_SRC}) #update perceptrons first
 add_library(${ROCNNET_DLL} STATIC ${ROCNNET_SRC})
 target_link_libraries (${ROCNNET_DLL} ${TENNCOR_LIB})
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET APP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE ROCNNET SHARED <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 set(TENN_IO_INCLUDE ${IO_DIR}/include)
 FILE(GLOB_RECURSE TENN_IO_SRC
@@ -140,7 +140,7 @@ include_directories(${TENN_IO_INCLUDE})
 set(TENN_IO_DLL tenncor_io)
 add_library(${TENN_IO_DLL} SHARED ${TENN_IO_SRC})
 target_link_libraries (${TENN_IO_DLL} ${TENNCOR_LIB})
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE TENNCOR_IO LIBRARY <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 set(DEMO_DIR ${PROJECT_SOURCE_DIR}/demo1)

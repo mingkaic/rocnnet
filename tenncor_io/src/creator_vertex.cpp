@@ -246,14 +246,15 @@ vertex_manager::vertex_manager (void) : inst(new node_registry()) {}
 
 vertex_manager::~vertex_manager (void) { delete inst; }
 
-std::string vertex_manager::register_op (CONNECTOR_TYPE cm)
+std::string vertex_manager::register_op (CONNECTOR_TYPE cm, size_t& nargs)
 {
 	node_registry::info_wrapper wrap;
 	nnet::mutable_connector<double>* con = mutable_build(cm);
 	std::string id = con->get_uid(); // get uid
-	wrap.ptr_ = con;
-	wrap.info_.op_type_ = cm; // store connector type
-	inst->nodes_[id] = wrap;
+	inst->nodes_[id].ptr_ = con;
+	inst->nodes_[id].info_.op_type_ = cm; // store connector type
+	nargs = con->nargs();
+	inst->nodes_[id].info_.nargs_ = nargs;
 	return id;
 }
 

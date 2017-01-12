@@ -12,6 +12,7 @@
 
 #include "graph/functions.hpp"
 #include "layer.hpp"
+#include "innet.hpp"
 
 namespace nnet
 {
@@ -19,11 +20,8 @@ namespace nnet
 #define IN_PAIR std::pair<size_t, nnet::VAR_FUNC<double> >
 #define HID_PAIR std::pair<layer_perceptron*, nnet::VAR_FUNC<double> >
 
-class ml_perceptron
+class ml_perceptron : public innet
 {
-    private:
-		std::string scope;
-        
 	protected:
 		std::vector<HID_PAIR> layers;
 		
@@ -41,7 +39,7 @@ class ml_perceptron
 		virtual ~ml_perceptron (void);
 		
 		// COPY
-        ml_perceptron* clone (std::string scope = "");
+        virtual ml_perceptron* clone (std::string scope = "");
 		ml_perceptron& operator = (const ml_perceptron& other);
 
         // MOVE

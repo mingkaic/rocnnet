@@ -161,6 +161,22 @@ bool mutable_connector<T>::valid_args (void)
 	return true;
 }
 
+template <typename T>
+size_t mutable_connector<T>::nargs (void) const
+{
+	return arg_buffers_.size();
+}
+
+template <typename T>
+void mutable_connector<T>::get_args (std::vector<ivariable<T>*>& args) const
+{
+	args.clear();
+	for (varptr<T> a : arg_buffers_)
+	{
+		args.push_back(a.get());
+	}
+}
+
 }
 
 #endif
