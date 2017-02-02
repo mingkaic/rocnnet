@@ -59,6 +59,8 @@ class ivariable : public ccoms::subject_owner
 		// label constructor
 		ivariable (std::string name);
 
+		std::string get_label (void) const { return name_; }
+
 		// protected members need to be accessed by other operations
 //		friend class ioptimizer<T>;
 		friend class iconnector<T>;
@@ -76,7 +78,7 @@ class ivariable : public ccoms::subject_owner
 		// TODO Implement
 
 		std::string get_uid (void) const { return id_; }
-		virtual std::string get_name (void) const { return name_; }
+		virtual std::string get_name (void) const { return "<"+name_+":"+id_+">"; }
 		virtual tensorshape get_shape (void) = 0;
 		
 		// DATA EXPOSURE TO PARENT/DEPENDENT NODES

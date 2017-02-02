@@ -25,7 +25,7 @@ class push_toggle : public iselector<T>
 {
 	protected:
 		push_toggle (ivariable<T>* def, ivariable<T>* active, std::string name) :
-			iselector<T>(std::vector<ivariable<T>*>{def, active}, name) {}
+			iselector<T>(std::vector<ivariable<T>*>{def, active}, "push_toggle:"+name) {}
 			
 	public:
 		static push_toggle<T>* build (ivariable<T>* def, ivariable<T>* active, std::string name = "")

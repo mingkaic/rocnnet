@@ -35,7 +35,7 @@ class functor : public iconnector<T>
 		
 			public:
 				buffer (ivariable<T>* var) : 
-					iconnector<T>(std::vector<ivariable<T>*>{var}, var->get_name()) {}
+					iconnector<T>(std::vector<ivariable<T>*>{var}, "buffer") {}
 				virtual buffer* clone (void) { return new buffer(*this); }
 		
 				virtual tensorshape get_shape (void) { return get()->get_shape(); }
@@ -84,7 +84,7 @@ class functor : public iconnector<T>
 		
 		functor (ivariable<T>* leaf,  BUILD_FUNCT<T> build) :
 			builder_(build),
-			iconnector<T>(std::vector<ivariable<T>*>{leaf}, "") { remake_leaf(); }
+			iconnector<T>(std::vector<ivariable<T>*>{leaf}, "functor") { remake_leaf(); }
 
 	public:
 		static functor* build (ivariable<T>* leaf, 
@@ -117,11 +117,6 @@ class functor : public iconnector<T>
 			return *this;
 		}
 
-		virtual std::string get_name (void) const
-		{
-			if (nullptr == root_) return "";
-			return root_->get_name();
-		}
 		ivariable<T>* init (void)
 		{
 			if (nullptr == root_)

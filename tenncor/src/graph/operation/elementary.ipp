@@ -86,8 +86,7 @@ varptr<T> operator + (const varptr<T> a)
 	[](std::vector<ivariable<T>*> args) {
 		varptr<T> grad = args.front()->get_gradient(); // wrap
 		return +grad;
-	},
-	"abs(" + a->get_name() + ")");
+	}, "abs");
 }
 
 template <typename T>
@@ -108,8 +107,7 @@ varptr<T> operator - (const varptr<T> a)
 	{
 		varptr<T> grad = args.front()->get_gradient(); // wrap
 		return -grad;
-	},
-	"neg(" + a->get_name() + ")");
+	}, "neg");
 }
 
 template <typename T>
@@ -132,8 +130,7 @@ varptr<T> sin (const varptr<T> a)
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_gradient(); // wrap
 		return grad * cos(a);
-	},
-	"sin(" + a->get_name() + ")");
+	}, "sin");
 	return op;
 }
 
@@ -157,8 +154,7 @@ varptr<T> cos (const varptr<T> a)
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_gradient(); // wrap
 		return -grad * sin(a);
-	},
-	"cos(" + a->get_name() + ")");
+	}, "cos");
 	return op;
 }
 
@@ -184,8 +180,7 @@ varptr<T> tan (const varptr<T> a)
 		varptr<T> denom = cos(a);
 		varptr<T> grad = a->get_gradient(); // wrap
 		return grad / (denom * denom);
-	},
-	"tan(" + a->get_name() + ")");
+	}, "tan");
 	return op;
 }
 
@@ -210,8 +205,7 @@ varptr<T> csc (const varptr<T> a)
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_gradient(); // wrap
 		return -grad / (sin(a) * tan(a));
-	},
-	"csc(" + a->get_name() + ")");
+	}, "csc");
 	return op;
 }
 
@@ -236,8 +230,7 @@ varptr<T> sec (const varptr<T> a)
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_gradient(); // wrap
 		return grad * tan(a) / cos(a);
-	},
-	"sec(" + a->get_name() + ")");
+	}, "sec");
 	return op;
 }
 
@@ -262,8 +255,7 @@ varptr<T> cot (const varptr<T> a)
 		varptr<T> b = csc(a);
 		varptr<T> grad = a->get_gradient(); // wrap
 		return -grad * b * b;
-	},
-	"cot(" + a->get_name() + ")");
+	}, "cot");
 	return op;
 }
 
@@ -287,8 +279,7 @@ varptr<T> exp (const varptr<T> a)
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_gradient(); // wrap
 		return grad * exp(a);
-	},
-	"exp(" + a->get_name() + ")");
+	}, "exp");
 	return op;
 }
 
@@ -313,8 +304,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	{
 		varptr<T> a = args.front();
 		return clip_val(varptr<T>(a->get_gradient()), min, max);
-	},
-	"clip_val(" + a->get_name() + ")");
+	}, "clip_val");
 	return op;
 }
 
@@ -345,8 +335,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	{
 	   ivariable<T>* a = args.front();
 	   return clip_norm(varptr<T>(a->get_gradient()), cap);
-	},
-	"clip_norm(" + a->get_name() + ")");
+	}, "clip_norm");
 	return op;
 }
 
@@ -371,8 +360,7 @@ varptr<T> operator + (T a, const varptr<T> b)
 		// h'(c, g(x)) = g'(x)
 		ivariable<T>* b = args[0];
 		return b->get_gradient();
-	},
-	nnutils::formatter() << "(" << a << "+" << b->get_name() << ")");
+	}, "add");
 	return op;
 }
 
@@ -395,8 +383,7 @@ varptr<T> operator + (const varptr<T> a, T b)
 		// h'(f(x), c) = f'(x)
 		ivariable<T>* a = args[0];
 		return a->get_gradient();
-	},
-	nnutils::formatter() << "(" << a->get_name() << "+" << b << ")");
+	}, "add");
 	return op;
 }
 
@@ -430,8 +417,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		varptr<T> ag = a->get_gradient();
 		varptr<T> bg = b->get_gradient();
 		return ag + bg;
-	},
-	"(" + a->get_name() + "+" + b->get_name() + ")");
+	}, "add");
 	return op;
 }
 
@@ -456,8 +442,7 @@ varptr<T> operator - (T a, const varptr<T> b)
 		// h'(c, g(x)) = -g'(x)
 		ivariable<T>* b = args[0];
 		return -varptr<T>(b->get_gradient());
-	},
-	nnutils::formatter() << "(" << a << "-" << b->get_name() << ")");
+	}, "sub");
 	return op;
 }
 
@@ -480,8 +465,7 @@ varptr<T> operator - (const varptr<T> a, T b)
 		// h'(f(x), c) = f'(x)
 		ivariable<T>* a = args[0];
 		return a->get_gradient();
-	},
-	nnutils::formatter() << "(" << a->get_name() << "-" << b << ")");
+	}, "sub");
 	return op;
 }
 
@@ -515,8 +499,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		varptr<T> ag = a->get_gradient();
 		varptr<T> bg = b->get_gradient();
 		return ag - bg;
-	},
-	"(" + a->get_name() + "-" + b->get_name() + ")");
+	}, "sub");
 	return op;
 }
 
@@ -541,8 +524,7 @@ varptr<T> operator * (T a, const varptr<T> b)
 		// h'(c, g(x)) = c*g'(x)
 		varptr<T> bg = args[0]->get_gradient();
 		return a * bg;
-	},
-	nnutils::formatter() << "(" << a << "*" << b->get_name() << ")");
+	}, "mul");
 	return op;
 }
 
@@ -565,8 +547,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 		// h'(f(x), c) = c*f'(x)
 		varptr<T> ag = args[0]->get_gradient();
 		return b * ag;
-	},
-	nnutils::formatter() << "(" << a->get_name() << "*" << b << ")");
+	}, "mul");
 	return op;
 }
 
@@ -598,8 +579,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		varptr<T> ag = a->get_gradient();
 		varptr<T> bg = b->get_gradient();
 		return ag * b + bg * a;
-	},
-	"(" + a->get_name() + "*" + b->get_name() + ")");
+	}, "mul");
 	return op;
 }
 
@@ -625,8 +605,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 		varptr<T> b = args[0];
 		varptr<T> bg = b->get_gradient();
 		return -a * bg / (b * b);
-	},
-	nnutils::formatter() << "(" << a << "/" << b->get_name() << ")");
+	}, "div");
 	return op;
 }
 
@@ -649,8 +628,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 		// h'(f(x), c) = f'(x)/c
 		varptr<T> ag = args[0]->get_gradient();
 		return ag / b;
-	},
-	nnutils::formatter() << "(" << a->get_name() << "/" << b << ")");
+	}, "div");
 	return op;
 }
 
@@ -684,8 +662,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		varptr<T> ag = a->get_gradient();
 		varptr<T> bg = b->get_gradient();
 		return (ag * b - bg * a) / (b * b);
-	},
-	"(" + a->get_name() + "/" + b->get_name() + ")");
+	}, "div");
 	return op;
 }
 

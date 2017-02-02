@@ -38,7 +38,7 @@ void mutable_connector<T>::disconnect (void)
 
 template <typename T>
 mutable_connector<T>::mutable_connector (MAKE_CONNECT<T> maker, size_t nargs) :
-	iconnector<T>(std::vector<ivariable<T>*>{}, ""),
+	iconnector<T>(std::vector<ivariable<T>*>{}, "mutable_connector"),
 	op_maker_(maker), arg_buffers_(nargs, nullptr) {}
 
 template <typename T>

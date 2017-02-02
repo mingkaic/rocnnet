@@ -74,8 +74,7 @@ ivariable<T>* matmul<T>::setup_gradient (void)
 template <typename T>
 matmul<T>::matmul (ivariable<T>* a, ivariable<T>* b,
 	bool transposeA, bool transposeB) :
-	ioperation<T>((std::vector<ivariable<T>*>{a, b}),
-	"(" + a->get_name() + "•" + b->get_name() + ")"),
+	ioperation<T>((std::vector<ivariable<T>*>{a, b}), "matmul"),
 	transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->shaper_ = [this](std::vector<tensorshape> shapes) -> tensorshape

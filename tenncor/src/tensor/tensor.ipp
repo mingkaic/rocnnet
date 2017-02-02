@@ -282,8 +282,8 @@ T tensor<T,A>::get (std::vector<size_t> indices)
 	size_t rank = alloc_shape_.n_dims();
 	if (indices.size() > rank)
 	{
-		throw std::logic_error(
-			nnutils::formatter() << "eliciting extraneous dimensions from a tensor of rank " << rank);
+		throw std::logic_error(nnutils::formatter() <<
+			"eliciting extraneous dimensions from a tensor of rank " << rank);
 	}
 	std::vector<size_t> dims = alloc_shape_.as_list();
 	size_t accum = 1;

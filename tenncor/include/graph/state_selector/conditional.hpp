@@ -29,7 +29,8 @@ class conditional : public iselector<T>
 	protected:
 		conditional (std::vector<ivariable<T>*> dependencies,
 			PICK<T> picker, std::string name) :
-			iselector<T>(dependencies, name), picker_(picker) {}
+			iselector<T>(dependencies, "conditional:"+name),
+			picker_(picker) {}
 
 	public:
 		static conditional<T>* build (std::vector<ivariable<T>*> args,

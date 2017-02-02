@@ -47,10 +47,14 @@ class edge_record
 					nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector <T> *>(e.obs_);
 				 	nnet::ivariable<T>* sb = dynamic_cast<nnet::ivariable <T> *>(e.sub_);
 
-					ofile << ob->get_name() << ","
-						  << edge_record::prec_.get_hash(e.obs_) << ","
-						  << sb->get_name() << ","
-						  << edge_record::prec_.get_hash(e.sub_) << ","
+					std::string obname = ob->get_name();
+					std::string sbname = sb->get_name();
+
+					std::replace(obname.begin(), obname.end(), ',', '|');
+					std::replace(sbname.begin(), sbname.end(), ',', '|');
+
+					ofile << obname << ","
+						  << sbname << ","
 						  << e.sid_ << "\n";
 				}
 			}

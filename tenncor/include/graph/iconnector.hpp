@@ -46,6 +46,22 @@ class iconnector : public ivariable<T>, public ccoms::iobserver
 		// connectors only
 		void leaves_collect (std::function<void(ivariable<T>*)> collector);
 
+		// add argument names to name
+		virtual std::string get_name (void) const
+		{
+			std::string args;
+			access_dependencies(
+			[&args](const ccoms::subject_owner* subs)
+			{
+				if (const ivariable<T>* arg = dynamic_cast<const ivariable<T>*>(subs))
+				{
+					args += arg->get_label() + ",";
+				}
+			});
+			if (!args.empty()) args.pop_back();
+			return ivariable<T>::get_name() + "(" + args + ")";
+		}
+
 		// abstracts from ivariable
 		// get_shape remains abstract
 		// get_eval remains abstract

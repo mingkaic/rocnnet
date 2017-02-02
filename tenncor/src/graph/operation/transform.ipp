@@ -90,8 +90,7 @@ varptr<T> transpose (const varptr<T> a)
 	{
 		ivariable<T>* a = args.front();
 		return transpose(varptr<T>(a->get_gradient()));
-	},
-	"transpose(" + a->get_name() + ")");
+	}, "transpose");
 	return op;
 }
 
@@ -201,8 +200,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	{
 		ivariable<T>* a = args.front();
 		return fit(varptr<T>(a->get_gradient()), watch);
-	},
-	nnutils::formatter() << "fit[" << watch->get_name() <<  "](" << a->get_name() + ")");
+	}, "fit");
 	return op;
 }
 
@@ -276,9 +274,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	{
 		ivariable<T>* a = args.front();
 		return extend(varptr<T>(a->get_gradient()), index, multiplier);
-	},
-	nnutils::formatter() << "extend[" << index << "," <<
-		multiplier << "](" << a->get_name() + ")");
+	}, "extend");
 	return op;
 }
 
@@ -373,8 +369,7 @@ varptr<T> compress (const varptr<T> a, int index,
 		{
 			ivariable<T>* a = args.front();
 			return compress(varptr<T>(a->get_gradient()), index, collector);
-		},
-	nnutils::formatter() << "compress[" << index << "](" << a->get_name() + ")");
+		}, "compress");
 	return op;
 }
 

@@ -40,6 +40,14 @@ class iobserver : public ireactive_node
 			dependencies_.clear();
 		}
 		void copy (const iobserver& other); // for assignment ops
+
+		void access_dependencies (std::function<void(const subject_owner*)> peek) const
+		{
+			for (ccoms::subject* sub : this->dependencies_)
+			{
+				peek(sub->get_owner());
+			}
+		}
 		
 		// attach dependencies
 		iobserver (const iobserver& other); // copy over dependencies and leaves
