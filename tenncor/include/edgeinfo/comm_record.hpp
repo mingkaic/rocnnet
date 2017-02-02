@@ -47,12 +47,10 @@ class edge_record
 					nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector <T> *>(e.obs_);
 				 	nnet::ivariable<T>* sb = dynamic_cast<nnet::ivariable <T> *>(e.sub_);
 
-				 	// TODO: check ob and sb has_value
-
 					ofile << ob->get_name() << ","
-						  << *(edge_record::prec_.get_hash(e.obs_)) << ","
+						  << edge_record::prec_.get_hash(e.obs_) << ","
 						  << sb->get_name() << ","
-						  << *(edge_record::prec_.get_hash(e.sub_)) << ","
+						  << edge_record::prec_.get_hash(e.sub_) << ","
 						  << e.sid_ << "\n";
 				}
 			}
@@ -79,13 +77,13 @@ class edge_record
 		struct subinfo_hash {
 			size_t operator () (const subinfo& info) const
 			{
-				std::experimental::optional<size_t> oid = edge_record::prec_.get_hash(info.obs_);
-				std::experimental::optional<size_t> sid = edge_record::prec_.get_hash(info.sub_);
+				size_t oid = edge_record::prec_.get_hash(info.obs_);
+				size_t sid = edge_record::prec_.get_hash(info.sub_);
 
 				// TODO: check if ids has_value for non-experimental optional
 
 				size_t ptrmax = edge_record::prec_.get_max_id();
-				return info.sid_ * ptrmax * ptrmax + *oid * ptrmax + *sid;
+				return info.sid_ * ptrmax * ptrmax + oid * ptrmax + sid;
 			}
 		};
 

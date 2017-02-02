@@ -35,9 +35,12 @@ void edge_record::edge_release (
 		ccoms::subject_owner* subject,
 		size_t idx)
 {
-	edge_record::prec_.remove(observer);
-	edge_record::prec_.remove(subject);
-	edges_.erase(subinfo(observer, subject, idx));
+	auto it = edges_.find(subinfo(observer, subject, idx));
+	if (edges_.end() != it)
+	{
+		edge_record::prec_.remove(observer);
+		edge_record::prec_.remove(subject);
+	}
 }
 
 }

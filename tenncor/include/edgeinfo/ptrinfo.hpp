@@ -2,7 +2,6 @@
 // Created by Mingkai Chen on 2017-01-30.
 //
 
-#include <experimental/optional>
 #include <unordered_map>
 #include <stack>
 
@@ -22,7 +21,7 @@ class ptr_record
 		// returns id
 		PUUID add (void* ptr);
 
-		std::experimental::optional<PUUID> get_hash (void* ptr);
+		PUUID get_hash (void* ptr);
 
 		bool remove (void* ptr);
 

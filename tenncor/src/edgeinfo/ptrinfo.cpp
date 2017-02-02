@@ -27,22 +27,14 @@ PUUID ptr_record::add (void* ptr)
 	return id;
 }
 
-std::experimental::optional<PUUID> ptr_record::get_hash (void* ptr)
+PUUID ptr_record::get_hash (void* ptr)
 {
 	auto pit = ptrs_.find(ptr);
-	std::experimental::optional<PUUID> id;
-	if (ptrs_.end() != pit)
+	if (ptrs_.end() == pit)
 	{
-		id = pit->second.id_;
+		throw std::exception(); // TODO: make better exception
 	}
-	else {
-		for (auto ppairs : ptrs_) {
-			std::cout << ppairs.first << " ";
-		}
-		std::cout << " >>" << ptr << "<<\n";
-		std::cout << "hash not found\n";
-	}
-	return id;
+	return pit->second.id_;
 }
 
 bool ptr_record::remove (void* ptr)
