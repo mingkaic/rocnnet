@@ -40,8 +40,9 @@ class session
 		session (void) : generator_(std::time(NULL)) {}
 		~session (void)
 		{
+			std::unordered_set<ccoms::subject_owner*> vars = registry;
 			// kill everything in registry in case session is killed early
-			for (ccoms::subject_owner* so : registry)
+			for (ccoms::subject_owner* so : vars)
 			{
 				delete so;
 			}

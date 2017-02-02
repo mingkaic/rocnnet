@@ -507,7 +507,7 @@ TEST(DERIVE, DISABLED_MatmulComplex)
 	}
 	IN = inraw;
 
-	// make sure jacobians at each node are mutually exclusive
+	// make sure jacobians have independent states at each node
 	nnet::gradient<double> it(layer1);
 	it.freeze();
 	it.execute();

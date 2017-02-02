@@ -22,9 +22,10 @@ namespace ccoms
 class iobserver : public ireactive_node
 {
 	protected:
-		//dependencies exposed to inherited to facilitate moving around the graph
-		std::vector<subject*> dependencies_;
-		
+		// dependencies exposed to inherited to facilitate moving around the graph
+		// order of subject matters; observer-subject relation is non-unique
+		std::vector<subject*> dependencies_; // TODO: move to private
+
 		void add_dependency (subject* dep); // add in order
 		void add_dependency (subject_owner* dep_owner)
 		{

@@ -7,7 +7,10 @@
 //
 
 #include "graph/ccoms/iobserver.hpp"
-#include <iostream>
+
+#ifdef EDGE_RCD
+#include "edgeinfo/comm_record.hpp"
+#endif /* EDGE_RCD */
 
 #ifdef subject_hpp
 
@@ -16,11 +19,22 @@ namespace ccoms
 
 void subject::attach (iobserver* viewer, size_t idx)
 {
+#ifdef EDGE_RCD
+// record subject-object edge
+rocnnet_record::erec::rec.edge_capture(viewer, var_, idx);
+#endif /* EDGE_RCD */
 	audience_[viewer].push_back(idx);
 }
 
 void subject::detach (iobserver* viewer)
 {
+#ifdef EDGE_RCD
+// record subject-object edge
+for (size_t idx : audience_[viewer])
+{
+	rocnnet_record::erec::rec.edge_release(viewer, var_, idx);
+}
+#endif /* EDGE_RCD */
 	audience_.erase(viewer);
 	if (suicidal() && audience_.empty())
 	{

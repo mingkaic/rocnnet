@@ -19,6 +19,9 @@ set(PERFORM_MAIN "" CACHE STRING "path to performance-test main")
 OPTION (OFFLINE "Building from offline?" OFF)
 OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 
+# TODO: make option
+ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
+
 #-------------------
 # Other flags
 #-------------------
@@ -75,8 +78,8 @@ endif(OFFLINE)
 if(BUILD_DOC)
     if(DOXYGEN_FOUND)
         # set input and output files
-        set(DOXYGEN_IN ${PROJECT_SOURCE_DIR}/docs/Doxyfile.in)
-        set(DOXYGEN_OUT ${PROJECT_SOURCE_DIR}/src/Doxyfile)
+        set(DOXYGEN_IN Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
 
         message("Doxygen build started")
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
@@ -252,7 +255,7 @@ else()
 endif()
 
 # Link
-target_link_libraries(${PERFORM_TEST_NAME} 
+target_link_libraries(${PERFORM_TEST_NAME}
     pthread
     gtest
     ${CMAKE_THREAD_LIBS_INIT}
@@ -260,3 +263,12 @@ target_link_libraries(${PERFORM_TEST_NAME}
     ${TENNCOR_LIB})
 add_test(perform ${PERFORM_TEST_NAME})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE PERFORMANCE TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BUILD VISUALIZER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+set(VISUALIZE_PATH ${PROJECT_SOURCE_DIR}/tests/visualize)
+
+include_directories(${TENNCOR_INCLUDE})
+
+add_executable (Visualize ${VISUALIZE_PATH}/main.cpp)
+target_link_libraries (Visualize ${TENNCOR_LIB})
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE VISUALIZER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

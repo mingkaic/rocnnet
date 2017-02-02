@@ -19,8 +19,7 @@ There are two libraries:
     #include "executor/varptr.hpp"
     #include "executor/gradient.hpp"
     #include "graph/variable/variable.hpp"
-    #include "graph/operation/special/matmul.hpp"
-    #include "graph/operation/function.hpp"
+    #include "graph/operation/matmul.hpp"
     
     using namespace nnet;
     
@@ -39,7 +38,7 @@ There are two libraries:
         sess.initialize_all<double>();
         B = std::vector<double>{...};
         
-        gradient<double>* grad(D);
+        gradient<double> grad(D);
         // prevent changes to B from cascading to gradient value
         grad.freeze();
         grad.execute();
