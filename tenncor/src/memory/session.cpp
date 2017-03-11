@@ -44,7 +44,7 @@ void session::enable_shape_eval (void) { shape_eval = true; }
 
 void session::disable_shape_eval (void) { shape_eval = false; }
 
-// void register_obj (ivariable<std::any>& obj)
+// void register_obj (inode<std::any>& obj)
 // {
 //	 registry.emplace(&obj);
 // }

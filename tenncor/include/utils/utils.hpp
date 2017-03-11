@@ -15,89 +15,50 @@
 #include <vector>
 
 #pragma once
-#ifndef utils_hpp
-#define utils_hpp
+#ifndef TENNCOR_UTILS_HPP
+#define TENNCOR_UTILS_HPP
 
 namespace nnutils
 {
 
 class formatter
 {
-	private:
-		std::stringstream stream_;
+public:
+	enum convert_to_string
+	{
+		to_str
+	};
 
-		formatter(const formatter&);
-		formatter& operator = (formatter&);
-	public:
-		enum convert_to_string
-		{
-			to_str
-		};
+	formatter (void);
 
-		formatter() {}
-		~formatter() {}
+	~formatter (void);
 
-		template <typename T>
-		formatter& operator << (const T& value)
-		{
-			stream_ << value;
-			return *this;
-		}
+	// no copying
+	formatter (const formatter&) = delete;
+	formatter (formatter&&) = delete;
+	formatter& operator = (const formatter&) = delete;
+	formatter& operator = (formatter&&) = delete;
 
-		std::string str() const
-		{
-			return stream_.str();
-		}
+	template <typename T>
+	formatter& operator << (const T& value)
+	{
+		stream_ << value;
+		return *this;
+	}
 
-		operator std::string () const
-		{
-			return stream_.str();
-		}
+	std::string str(void) const;
 
-		std::string operator >> (convert_to_string)
-		{
-			return stream_.str();
-		}
+	operator std::string () const;
+
+	std::string operator >> (convert_to_string);
+
+private:
+	std::stringstream stream_;
 };
 
-template <typename T, typename U>
-std::vector<U> to_vec (std::vector<T> vec, std::function<U(T)> convert)
-{
-	std::vector<U> res;
-	for (T v : vec)
-	{
-		res.push_back(convert(v));
-	}
-	return res;
-}
-
-// in place intersection
-template <typename T>
-void uset_intersect (std::unordered_set<T>& A, 
-					const std::unordered_set<T>& B)
-{
-	auto itA = A.begin();
-	auto itB = B.begin();
-	auto endA = A.end();
-	auto endB = B.end();
-
-	while (itA != endA)
-	{
-		if (std::find(itB, endB, *itA) == endB)
-		{
-			// found something in A but not B
-			// remove it from A
-			auto buffer = itA;
-			itA++;
-			A.erase(buffer);
-		}
-		else
-		{
-			itA++;
-		}
-	}
-}
+// generates a "unique" string based on pointer and current time
+std::string uuid (const void* addr);
 
 }
 
-#endif /* utils_hpp */
+#endif /* TENNCOR_UTILS_HPP */

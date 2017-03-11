@@ -1,0 +1,5 @@
+B000 - allocation of undefined or partially defined tensors will fail
+B001 - reallocation of tensors will succeed (and clear already allocated raw data)
+B100 - tensors should allocate raw data on construction if tensorshape is fully defined
+B101 - tensor allocation requires a fully defined tensorshape either provided in construction or provided in allocation call
+B102 - tensorshape provided in allocation call must be compatible with the tensorshape provided in construction

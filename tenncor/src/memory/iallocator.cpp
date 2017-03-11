@@ -1,5 +1,5 @@
 //
-//  allocator.cpp
+//  iallocator.cpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-08-29.
@@ -8,19 +8,39 @@
 
 #include "memory/iallocator.hpp"
 
-#ifdef allocator_hpp
+#ifdef TENNCOR_ALLOCATOR_HPP
 
 namespace nnet
 {
 	
-iallocator* iallocator::clone (void) {
+iallocator* iallocator::clone (void) const {
 	return clone_impl();
 }
 
-void* iallocator::get_raw (size_t alignment, size_t num_bytes) const
+template <typename T>
+T* iallocator::allocate (size_t num_elements) const
 {
-	return get_raw(alignment, num_bytes, alloc_attrib());
+	static_assert(is_allowed<T>::value, "T is not an allowed type.");
+
+	if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T)))
+	{
+		return nullptr;
+	}
+
+	void* p = get_raw(alloc_alignment, sizeof(T) * num_elements);
+	T* typedptr = reinterpret_cast<T*>(p);
+	return typedptr;
 }
+
+template <typename T>
+void iallocator::dealloc(T* ptr, size_t num_elements) const
+{
+	if (nullptr != ptr)
+	{
+		del_raw(ptr, sizeof(T) * num_elements);
+	}
+}
+
 
 }
 

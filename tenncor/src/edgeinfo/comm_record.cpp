@@ -21,8 +21,8 @@ bool operator == (edge_record::subinfo const& lhs, edge_record::subinfo const& r
 }
 
 void edge_record::edge_capture (
-		ccoms::iobserver* observer,
-		ccoms::subject_owner* subject,
+		react::iobserver* observer,
+		react::subject_owner* subject,
 		size_t idx)
 {
 	edge_record::prec_.add(observer);
@@ -31,8 +31,8 @@ void edge_record::edge_capture (
 }
 
 void edge_record::edge_release (
-		ccoms::iobserver* observer,
-		ccoms::subject_owner* subject,
+		react::iobserver* observer,
+		react::subject_owner* subject,
 		size_t idx)
 {
 	auto it = edges_.find(subinfo(observer, subject, idx));

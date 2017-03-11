@@ -54,3 +54,4 @@ docs/
 build/
 .idea/
 cmake-build-debug/
+scripts

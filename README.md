@@ -18,7 +18,7 @@ There are two libraries:
 
     #include "executor/varptr.hpp"
     #include "executor/gradient.hpp"
-    #include "graph/variable/variable.hpp"
+    #include "graph/leaf/variable.hpp"
     #include "graph/operation/matmul.hpp"
     
     using namespace nnet;
@@ -48,7 +48,7 @@ There are two libraries:
         // reverse accumulation
         tensor<double>* grad_result;
         grad.collect_grad(
-        [&grad_result](ivariable<double>* key, 
+        [&grad_result](inode<double>* key, 
                        placeholder<double>* value)
         {
             grad_result = value->get_eval();

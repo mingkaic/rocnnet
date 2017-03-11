@@ -9,11 +9,13 @@
 #include <unordered_set>
 #include <fstream>
 #include "edgeinfo/ptrinfo.hpp"
-#include "graph/ccoms/subject.hpp"
-#include "graph/ivariable.hpp"
-#include "graph/iconnector.hpp"
+#include "graph/react/subject.hpp"
+#include "graph/inode.hpp"
+#include "graph/operation/iconnector.hpp"
 
 #pragma once
+#ifdef EDGE_RCD
+
 #ifndef comm_record_hpp
 #define comm_record_hpp
 
@@ -26,13 +28,13 @@ class edge_record
 		edge_record (std::string fname) : outname_(fname) {}
 
 		void edge_capture (
-				ccoms::iobserver* observer,
-				ccoms::subject_owner* subject,
+				react::iobserver* observer,
+				react::subject_owner* subject,
 				size_t idx);
 
 		void edge_release (
-				ccoms::iobserver* observer,
-				ccoms::subject_owner* subject,
+				react::iobserver* observer,
+				react::subject_owner* subject,
 				size_t idx);
 
 		template <typename T>
@@ -45,7 +47,7 @@ class edge_record
 				for (subinfo e : edges_)
 				{
 					nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector <T> *>(e.obs_);
-				 	nnet::ivariable<T>* sb = dynamic_cast<nnet::ivariable <T> *>(e.sub_);
+				 	nnet::inode<T>* sb = dynamic_cast<nnet::inode <T> *>(e.sub_);
 
 					std::string obname = ob->get_name();
 					std::string sbname = sb->get_name();
@@ -66,15 +68,15 @@ class edge_record
 
 		struct subinfo
 		{
-			subinfo (ccoms::iobserver* obs,
-					 ccoms::subject_owner* sub,
+			subinfo (react::iobserver* obs,
+					 react::subject_owner* sub,
 					 size_t sid) : obs_(obs), sub_(sub), sid_(sid) {}
 
 			// we want to ensure:
 			// 1. pair<obs_, sid_> uniquely maps to sub_
 			// 2. sub_ uniquely maps to pair<obs_, sid_>
-			ccoms::iobserver* obs_;
-			ccoms::subject_owner* sub_;
+			react::iobserver* obs_;
+			react::subject_owner* sub_;
 			size_t sid_;
 		};
 
@@ -97,13 +99,13 @@ class edge_record
 		std::unordered_set<subinfo, subinfo_hash> edges_;
 };
 
-#ifdef EDGE_RCD
 struct erec
 {
 	static edge_record rec;
 };
-#endif
 
 }
 
 #endif /* comm_record_hpp */
+
+#endif /* EDGE_RCD */

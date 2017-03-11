@@ -9,160 +9,77 @@
 #include <cstring>
 #include <functional> // for std::bad_function_call();
 
-#ifdef tensor_hpp
+#include "memory/alloc_builder.hpp"
+
+#ifdef TENNCOR_TENSOR_HPP
 
 namespace nnet
 {
 
-template <typename T, typename A>
-void tensor<T,A>::copy (const tensor<T,A>& other)
+template <typename T>
+tensor<T>::tensor (size_t alloc_id) :
+	tensor<T>(std::vector<size_t>{})
 {
-	T* other_raw = other.raw_data_;
-	if (1 != other.n_elems()) // not a scalar
-	{
-		// allocate if other is allocated
-		if (nullptr != other_raw)
-		{
-			assert(this->is_compatible_with(other));
-			if (is_alloc())
-			{
-				alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
-			}
-			size_t nelem = other.n_elems();
-			// modify depending on raw_data_ implementation
-			raw_data_ = alloc_.template allocate<T>(nelem, alloc_attrib());
-			std::memcpy(raw_data_, other_raw, sizeof(T) * nelem);
-		}
-		// shape info copies over regardless
-		allowed_shape_ = other.allowed_shape_;
-		alloc_shape_ = other.alloc_shape_;
-	}
-	else // fill current tensor with scalar value
-	{
-		assert(other_raw); // other must be allocated
-		T scalar = other_raw[0];
-		
-		if (false == is_alloc()) // this must be allocated
-		{
-			if (get_shape().is_fully_defined()) allocate();
-			else allocate(other.get_shape());
-		}
-		
-		size_t ns = n_elems();
-		std::fill(raw_data_, raw_data_+ns, scalar);
-	}
+	init_alloc(alloc_id);
 }
 
-template <typename T, typename A>
-tensor<T,A>::tensor (const tensor<T,A>& other) : alloc_()
+template <typename T>
+tensor<T>::tensor (T scalar, size_t alloc_id) :
+	tensor<T>(std::vector<size_t>{1})
 {
-	this->copy(other);
+	init_alloc(alloc_id);
 }
 
-template <typename T, typename A>
-void tensor<T,A>::change_shape (tensorshape res_shape)
+template <typename T>
+tensor<T>::tensor (tensorshape shape, size_t alloc_id) :
+	allowed_shape_(shape)
 {
-	// deallocate if raw_data_ is not null (allocator checks for raw nulls)
-	alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
-	raw_data_ = nullptr;
-	// reshape allowed_shape_
-	set_shape(res_shape);
-	alloc_shape_.undefine(); // make undefine since we're no longer allocated
-}
-
-template <typename T, typename A>
-tensor<T,A>::tensor (void) : tensor<T,A>(std::vector<size_t>{}) {}
-
-template <typename T, typename A>
-tensor<T,A>::tensor (tensorshape shape) :
-	allowed_shape_(shape), alloc_()
-{
+	init_alloc(alloc_id);
 	if (allowed_shape_.is_fully_defined())
 	{
 		alloc_shape_ = shape;
-		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), default_attr);
+		this->raw_data_ = alloc_.template allocate<T>(
+			this->alloc_shape_.n_elems());
 	}
 }
 
-template <typename T, typename A>
-tensor<T,A>::tensor (tensorshape shape, const alloc_attrib& attrib) :
-	allowed_shape_(shape), alloc_()
-{
-	if (allowed_shape_.is_fully_defined())
-	{
-		alloc_shape_ = shape;
-		this->raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), attrib);
-	}
-}
-
-template <typename T, typename A>
-tensor<T,A>::tensor (T scalar) :
-	tensor<T,A>(std::vector<size_t>{1})
-{
-	this->raw_data_[0] = scalar;
-}
-
-template <typename T, typename A>
-tensor<T,A>::~tensor (void)
+template <typename T>
+tensor<T>::~tensor (void)
 {
 	alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
 }
 
-template <typename T, typename A>
-tensor<T,A>& tensor<T,A>::operator = (tensor<T,A>& other)
+template <typename T>
+tensor<T>* tensor<T>::clone (void) const { return static_cast<tensor<T>*>(clone_impl()); }
+
+template <typename T>
+tensor<T>::tensor (tensor<T>&& other)
+{
+	move(other);
+}
+
+template <typename T>
+tensor<T>& tensor<T>::operator = (const tensor<T>& other)
 {
 	if (this != &other)
 	{
-		other.raw_update();
-		this->copy(other);
+		copy(other);
 	}
-	return *this;
+	return &this;
 }
 
-template <typename T, typename A>
-void tensor<T,A>::allocate (void)
+template <typename T>
+tensor<T>& tensor<T>::operator = (tensor<T>&& other)
 {
-	// alloc_shape_ can be undefined
-	if (false == alloc_shape_.is_fully_defined())
+	if (this != &other)
 	{
-		allocate(allowed_shape_, default_attr);
+		move(other);
 	}
-	else
-	{
-		allocate(alloc_shape_, default_attr);
-	}
+	return &this;
 }
 
-template <typename T, typename A>
-void tensor<T,A>::allocate (const alloc_attrib& attrib)
-{
-	allocate(allowed_shape_, attrib);
-}
-
-template <typename T, typename A>
-void tensor<T,A>::allocate (const tensorshape shape)
-{
-	allocate(shape, default_attr);
-}
-
-template <typename T, typename A>
-void tensor<T,A>::allocate (const tensorshape shape, const alloc_attrib& attrib)
-{
-	assert(shape.is_compatible_with(allowed_shape_));
-	shape.assert_is_fully_defined();
-
-	// dealloc before reallocation
-	if (true == is_alloc())
-	{
-		alloc_.dealloc(raw_data_, this->alloc_shape_.n_elems());
-	}
-
-	alloc_shape_ = shape;
-	raw_data_ = alloc_.template allocate<T>(this->alloc_shape_.n_elems(), attrib);
-}
-
-template <typename T, typename A>
-tensorshape tensor<T,A>::get_shape (void) const
+template <typename T>
+tensorshape tensor<T>::get_shape (void) const
 {
 	if (is_alloc())
 	{
@@ -171,21 +88,8 @@ tensorshape tensor<T,A>::get_shape (void) const
 	return allowed_shape_;
 }
 
-template <typename T, typename A>
-std::vector<size_t> tensor<T,A>::dims (void) const
-{
-	if (is_alloc())
-	{
-		return alloc_shape_.as_list();
-	}
-	return allowed_shape_.as_list();
-}
-
-template <typename T, typename A>
-size_t tensor<T,A>::n_dims (void) const { return allowed_shape_.n_dims(); }
-
-template <typename T, typename A>
-size_t tensor<T,A>::n_elems (void) const
+template <typename T>
+size_t tensor<T>::n_elems (void) const
 {
 	if (nullptr == raw_data_)
 	{
@@ -194,141 +98,396 @@ size_t tensor<T,A>::n_elems (void) const
 	return this->alloc_shape_.n_elems();
 }
 
-// always aligned... until I add unaligned tensorshape
-// extend tensorshape which is always aligned
-template <typename T, typename A>
-bool tensor<T,A>::is_aligned (void) const
+template <typename T>
+size_t tensor<T>::rank (void) const
 {
-	return true;
+	return get_shape().rank();
 }
 
-template <typename T, typename A>
-tensorshape tensor<T,A>::guess_shape (std::vector<T> data) const
+template <typename T>
+std::vector<size_t> tensor<T>::dims (void) const
 {
-	if (allowed_shape_.is_fully_defined())
-	{
-		return allowed_shape_;
-	}
-	std::vector<size_t> my_shape = allowed_shape_.as_list();
-	size_t first_undef = my_shape.size();
-	size_t fixed = 1;
-	for (size_t i = 0; i < my_shape.size(); i++)
-	{
-		if (0 == my_shape[i])
-		{
-			if (first_undef > i) first_undef = i;
-			my_shape[i] = 1;
-		}
-		else
-		{
-			fixed *= my_shape[i];
-		}
-	}
-	my_shape[first_undef] = data.size() / fixed;
-	return my_shape;
+	return get_shape().as_list();
 }
 
-template <typename T, typename A>
-bool tensor<T,A>::is_compatible_with (std::vector<T> data) const
+template <typename T>
+bool tensor<T>::is_same_size (const tensor<T>& other) const
 {
-	std::vector<size_t> my_shape = allowed_shape_.as_list();
-	if (is_alloc())
+	if (is_alloc() && other.is_alloc())
 	{
-		my_shape = alloc_shape_.as_list();
+		tensorshape simp_shape = alloc_shape_.trim();
+		tensorshape other_simp = other.alloc_shape_.trim();
+		return simp_shape.is_compatible_with(other_simp);
 	}
-	size_t fixed = 1;
-	for (size_t s : my_shape)
-	{
-		if (s) fixed *= s;
-	}
-	// not part defined means fully undefined, undefined is compatible with any data type
-	return !allowed_shape_.is_part_defined() || 0 == data.size() % fixed;
+
+	return allowed_shape_.is_compatible_with(other.allowed_shape_);
 }
 
-template <typename T, typename A>
-bool tensor<T,A>::is_compatible_with (const tensor<T,A>& other) const
+template <typename T>
+bool tensor<T>::is_compatible_with (const tensor<T>& other) const
 {
 	return get_shape().is_compatible_with(other.get_shape());
 }
 
-template <typename T, typename A>
-bool tensor<T,A>::is_same_size (const tensor<T,A>& other) const
+template <typename T>
+bool tensor<T>::is_compatible_with (std::vector<T> data) const
 {
-	tensorshape simp_shape = alloc_shape_.trim();
-	tensorshape other_simp = other.alloc_shape_.trim();
+	size_t ndata = data.size();
+	tensorshape& my_shape = is_alloc() ? alloc_shape_ : allowed_shape_;
 
-	return (this->is_alloc() && other.is_alloc() &&
-			simp_shape.is_compatible_with(other_simp)) ||
-		   (this->allowed_shape_.is_compatible_with(other.allowed_shape_));
+	bool compatible = true;
+	// perfect fit
+	if (my_shape.is_fully_defined())
+	{
+		compatible = ndata == my_shape.n_elems();
+	}
+	else
+	{
+		compatible = 0 == ndata % my_shape.n_known();
+	}
+
+	return compatible;
 }
 
-template <typename T, typename A>
-bool tensor<T,A>::is_alloc (void) const
+template <typename T>
+bool tensor<T>::is_loosely_compatible_with (std::vector<T> data) const
+{
+	size_t ndata = data.size();
+	tensorshape& my_shape = is_alloc() ? alloc_shape_ : allowed_shape_;
+
+	bool compatible = true;
+	if (my_shape.is_fully_defined())
+	{
+		compatible = ndata <= my_shape.n_elems();
+	}
+	// partially defined shapes are always compatible,
+	// since unknown dimension can expand infinitely to fit data
+	return compatible;
+}
+
+template <typename T>
+optional<tensorshape> tensor<T>::guess_shape (std::vector<T> data) const
+{
+	size_t ndata = data.size();
+	optional<tensorshape> bestshape;
+	if (allowed_shape_.is_fully_defined())
+	{
+		if (allowed_shape_.n_elems() == ndata)
+		{
+			bestshape = allowed_shape_;
+		}
+		return bestshape;
+	}
+	std::vector<size_t> my_shape = allowed_shape_.as_list();
+	size_t rank = my_shape.size();
+	size_t first_undef = my_shape.size();
+	size_t known = 1;
+	for (size_t i = 0; i < rank; i++)
+	{
+		if (0 == my_shape[i])
+		{
+			if (first_undef > i)
+			{
+				first_undef = i;
+			}
+			my_shape[i] = 1;
+		}
+		else
+		{
+			known *= my_shape[i];
+		}
+	}
+	if (0 == ndata % known)
+	{
+		my_shape[first_undef] = ndata / known;
+		bestshape = tensorshape(my_shape);
+	}
+	return bestshape;
+}
+
+template <typename T>
+optional<tensorshape> tensor<T>::loosely_guess_shape(std::vector<T> data) const
+{
+	size_t ndata = data.size();
+	if (allowed_shape_.is_fully_defined())
+	{
+		optional<tensorshape> bestshape;
+		if (allowed_shape_.n_elems() >= ndata)
+		{
+			bestshape = allowed_shape_;
+		}
+		return bestshape;
+	}
+	std::vector<size_t> my_shape = allowed_shape_.as_list();
+	size_t first_undef = my_shape.size();
+	size_t known = 1;
+	for (size_t i = 0; i < my_shape.size(); i++)
+	{
+		if (0 == my_shape[i])
+		{
+			if (first_undef > i)
+			{
+				first_undef = i;
+			}
+			my_shape[i] = 1;
+		}
+		else
+		{
+			known *= my_shape[i];
+		}
+	}
+	my_shape[first_undef] = ndata / known;
+	if (size_t mod = ndata % known)
+	{
+		// int division above will floor
+		// (if we cast to double, we may lose precision)
+		my_shape[first_undef]++;
+	}
+	return tensorshape(my_shape);
+}
+
+template <typename T>
+bool tensor<T>::is_alloc (void) const
 {
 	return alloc_shape_.is_fully_defined() && raw_data_ != nullptr;
 }
 
-template <typename T, typename A>
-size_t tensor<T,A>::total_bytes (void) const
+template <typename T>
+size_t tensor<T>::total_bytes (void) const
 {
 	return n_elems() * sizeof(T);
 }
 
 // extension of matrix index representation idx = x+y*col
-template <typename T, typename A>
-T tensor<T,A>::get (std::vector<size_t> indices)
+template <typename T>
+T tensor<T>::get (std::vector<size_t> coord) const
 {
-	T* raw = this->get_raw();
-	size_t rank = alloc_shape_.n_dims();
-	if (indices.size() > rank)
+	size_t rank = alloc_shape_.rank();
+	if (coord.size() > rank)
 	{
 		throw std::logic_error(nnutils::formatter() <<
-			"eliciting extraneous dimensions from a tensor of rank " << rank);
+		"eliciting extraneous dimensions from a tensor of rank " << rank);
 	}
 	std::vector<size_t> dims = alloc_shape_.as_list();
 	size_t accum = 1;
 	size_t raw_idx = 0;
-	for (size_t i = 0; i < indices.size(); i++)
+	for (size_t i = 0; i < coord.size(); i++)
 	{
-		raw_idx += indices[i] * accum;
+		raw_idx += coord[i] * accum;
 		accum *= dims[i];
 	}
-	return raw[raw_idx];
+	return raw_data_[raw_idx];
 }
 
-template <typename T, typename A>
-void tensor<T,A>::set_shape (tensorshape shape)
+template <typename T>
+std::vector<T> tensor<T>::expose (void) const
 {
-	assert(false == is_alloc()); // impacts allocated raw data
-	this->allowed_shape_ = shape;
+	assert(is_alloc());
+	return std::vector<T>(raw_data_, raw_data_ + n_elems());
 }
 
-// how to handle shape expansion / compression?
-template <typename T, typename A>
-bool tensor<T,A>::copy_from (const tensor<T,A>& other, const tensorshape shape)
+template <typename T>
+void tensor<T>::set_shape (tensorshape shape)
 {
-	throw std::bad_function_call(); // NOT IMPLEMENTED
-	return false;
+	if (!allowed_shape_.is_compatible_with(shape))
+	{
+		allowed_shape_ = shape;
+	}
+
+	// if shape is compatible with alloc then we don't need to change raw data
+	// otherwise we need to modify raw data to match new shape
+	if (false == shape.is_compatible_with(alloc_shape_) &&
+		is_alloc())
+	{
+		if (false == shape.is_fully_defined())
+		{
+			// make alloc_shape compatible with shape
+			shape = shape.with_rank(alloc_shape_.rank());
+			shape = shape.merge_with(alloc_shape_);
+		}
+		// shape now represent the desired alloc_shape_
+		allocate(shape);
+
+	}
+}
+
+template <typename T>
+bool tensor<T>::allocate (void)
+{
+	bool successful = false;
+	// alloc_shape_ can be undefined
+	if (alloc_shape_.is_fully_defined())
+	{
+		successful = allocate(alloc_shape_);
+	}
+	else
+	{
+		successful = allocate(allowed_shape_);
+	}
+	return successful;
+}
+
+template <typename T>
+bool tensor<T>::deallocate (void)
+{
+	bool success = is_alloc();
+	if (success)
+	{
+		alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+		raw_data_ = nullptr;
+		alloc_shape_.undefine();
+	}
+	return success;
+}
+
+template <typename T>
+bool tensor<T>::allocate (const tensorshape shape)
+{
+	bool success = false;
+	if (shape.is_compatible_with(allowed_shape_) &&
+		shape.is_fully_defined())
+	{
+		success = true;
+		// dealloc before reallocation
+		if (is_alloc())
+		{
+			T* temp = alloc_.template allocate<T>(shape.n_elems());
+			// move raw_data to temp matching new shape
+			// we want to only copy over the minimum data to lower cost
+			raw_copy(temp, shape, raw_data_, alloc_shape_);
+			alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+			raw_data_ = temp;
+		}
+		else
+		{
+			raw_data_ = alloc_.template allocate<T>(shape.n_elems());
+		}
+		alloc_shape_ = shape;
+	}
+	return success;
+}
+
+template <typename T>
+bool tensor<T>::copy_from (const tensor<T>& other, const tensorshape shape)
+{
+	bool success = false;
+	tensorshape olds = other.get_shape();
+	if (other.is_alloc() &&
+		shape.is_fully_defined())
+	{
+		success = true;
+		if (is_alloc())
+		{
+			alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+		}
+		raw_data_ = alloc_.template allocate<T>(shape.n_elems());
+		raw_copy(raw_data_, shape, other.raw_data_, olds);
+	}
+	return success;
 }
 
 // slice along the first dimension
-template <typename T, typename A>
-tensor<T,A> tensor<T,A>::slice (size_t dim_start, size_t limit)
+template <typename T>
+tensor<T> tensor<T>::slice (size_t dim_start, size_t limit)
 {
 	throw std::bad_function_call(); // NOT IMPLEMENTED
-	return tensor<T,A>();
+	return tensor<T>();
 }
 
-// bool shares_buffer_with (const tensor<T,A>& other) const;
+//template <typename T>
+// bool shares_buffer_with (const tensor<T>& other) const;
 
-//template <typename T, typename A>
-// size_t tensor<T,A>::buffer_hash (void) const {
+//template <typename T>
+// size_t tensor<T>::buffer_hash (void) const {
 //	 return 0;
 // }
 
+//template <typename T>
 // bool from_proto (const tensorproto& other);
 
+//template <typename T>
 // bool from_proto (const tensorproto& other);
+
+template <typename T>
+tensor<T>::tensor (const tensor<T>& other)
+{
+	copy(other);
+}
+
+template <typename T>
+itensor<T>* tensor<T>::clone_impl (void) const
+{
+	return new tensor<T>(*this);
+}
+
+template <typename T>
+void tensor<T>::init_alloc (size_t alloc_id)
+{
+	if (const iallocator* alloc =
+			alloc_builder::get_instance().get(alloc_id))
+	{
+		alloc_ = *alloc;
+	}
+	else
+	{
+		throw std::exception(); // todo: better exception
+	}
+}
+
+template <typename T>
+void tensor<T>::raw_copy (T* out, tensorshape& outs,
+   const T* in, const tensorshape& ins) const
+{
+	size_t resnelem = outs.n_elems();
+	size_t oldnelem = ins.n_elems();
+	size_t resrow = outs.as_list()[0];
+	size_t oldrow = ins.as_list()[0];
+	size_t n = std::min(resnelem / resrow, oldnelem/ oldrow);
+	size_t nrow = std::min(resrow, oldrow);
+
+	for (size_t i = 0; i < n; i++)
+	{
+		std::memcpy(out + i * resrow, in + i * oldrow, sizeof(T) * nrow);
+	}
+}
+
+template <typename T>
+void tensor<T>::copy (const tensor<T>& other)
+{
+	if (raw_data_)
+	{
+		alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+		raw_data_ = nullptr;
+	}
+	alloc_ = other.alloc_;
+	alloc_shape_ = other.alloc_shape_;
+	allowed_shape_ = other.allowed_shape_;
+	if (other.is_alloc())
+	{
+		size_t ns = alloc_shape_.n_elems();
+		raw_data_ = alloc_.template allocate<T>(ns);
+		std::memcpy(raw_data_, other.raw_data_, sizeof(T) * ns);
+	}
+}
+
+template <typename T>
+void tensor<T>::move (tensor<T>&& other)
+{
+	if (raw_data_)
+	{
+		alloc_.dealloc(raw_data_, alloc_shape_.n_elems());
+		raw_data_ = nullptr;
+	}
+	alloc_ = std::move(other.alloc_);
+	alloc_shape_ = std::move(other.alloc_shape_);
+	allowed_shape_ = std::move(other.allowed_shape_);
+	if (other.is_alloc())
+	{
+		size_t ns = alloc_shape_.n_elems();
+		raw_data_ = alloc_.template allocate<T>(ns);
+		std::memcpy(raw_data_, other.raw_data_, sizeof(T) * ns);
+	}
+}
 
 }
 

@@ -20,7 +20,7 @@ OPTION (OFFLINE "Building from offline?" OFF)
 OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 
 # TODO: make option
-ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
+#ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 
 #-------------------
 # Other flags
@@ -37,6 +37,8 @@ endif()
 #-------------------
 # set compilation flag
 #-------------------
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+#set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set (CMAKE_CXX_STANDARD 14)
 

@@ -10,8 +10,8 @@
 #include <unordered_set>
 #include <random>
 #include <ctime>
-#include "memory/safe_ptr.hpp"
-#include "graph/ccoms/subject_owner.hpp"
+
+#include "graph/react/subject.hpp"
 
 #pragma once
 #ifndef session_hpp
@@ -19,9 +19,9 @@
 
 namespace nnet
 {
-
+//TODO: >>>>> UPDATE <<<<<
 template <typename T>
-class ivariable;
+class inode;
 
 template <typename T>
 class variable;
@@ -30,25 +30,6 @@ class variable;
 // manage graph info
 class session
 {
-	private:
-		// std::unordered_set<std::any> registry;
-		std::unordered_set<ccoms::subject_owner*> registry;
-		std::default_random_engine generator_;
-
-	protected:
-		bool shape_eval = false;
-		session (void) : generator_(std::time(NULL)) {}
-		~session (void)
-		{
-			std::unordered_set<ccoms::subject_owner*> vars = registry;
-			// kill everything in registry in case session is killed early
-			for (ccoms::subject_owner* so : vars)
-			{
-				delete so;
-			}
-			registry.clear();
-		}
-
 	public:
 		static session& get_instance (void);
 		static std::default_random_engine& get_generator (void);
@@ -66,23 +47,23 @@ class session
 		std::default_random_engine& get_rand_generator (void);
 
 		// object management
-		// void register_obj (ivariable<std::any>& obj);
+		// void register_obj (inode<std::any>& obj);
 
 		template <typename T>
-		void register_obj (ivariable<T>& obj) { registry.emplace(&obj); }
+		void register_obj (inode<T>& obj) { registry_.emplace(&obj); }
 
 		template <typename T>
-		void unregister_obj (ivariable<T>& obj) { registry.erase(&obj); }
+		void unregister_obj (inode<T>& obj) { registry_.erase(&obj); }
 		
-		bool ptr_registered (ccoms::subject_owner* ptr) { return registry.end() != registry.find(ptr); }
+		bool ptr_registered (react::subject* ptr) { return registry_.end() != registry_.find(ptr); }
 
 		template <typename T>
 		void initialize_all (void)
 		{
-			for (void* ivar : registry)
+			for (void* ivar : registry_)
 			{
-				// cast void* to ivariable<T>*
-				variable<T>* var = dynamic_cast<variable<T>*>((ivariable<T>*) ivar);
+				// cast void* to inode<T>*
+				variable<T>* var = dynamic_cast<variable<T>*>((inode<T>*) ivar);
 				if (nullptr != var && var->can_init())
 				{
 					var->initialize();
@@ -101,7 +82,25 @@ class session
 
 		// TODO implement: input is resultant operator required to deep copy the graph
 		template <typename T>
-		ivariable<T>* copy (ivariable<T>* src_res) { return nullptr; }
+		inode<T>* copy (inode<T>* src_res) { return nullptr; }
+
+	protected:
+		bool shape_eval = false;
+		session (void) : generator_(std::time(NULL)) {}
+		~session (void)
+		{
+			// kill everything in registry_ in case session is killed early
+			for (react::subject* so : registry_)
+			{
+				delete so;
+			}
+			registry_.clear();
+		}
+
+	private:
+		// std::unordered_set<std::any> registry_;
+		std::unordered_set<react::subject*> registry_;
+		std::default_random_engine generator_;
 };
 
 }

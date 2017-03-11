@@ -1,148 +1,197 @@
-//
-//  tensor.hpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-08-29.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
-//
+/*!
+ *
+ *  tensor.hpp
+ *  cnnet
+ *
+ *  Purpose:
+ *  tensor object manages shape and raw data
+ *
+ *  Created by Mingkai Chen on 2016-08-29.
+ *  Copyright © 2016 Mingkai Chen. All rights reserved.
+ *
+ */
 
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <type_traits>
-#include "tensorshape.hpp"
-#include "memory/iallocator.hpp"
-#include "memory/ram_alloc.hpp"
+
+#include "tensor/itensor.hpp"
+#include "tensor/tensorshape.hpp"
+#include "memory/default_alloc.hpp"
 
 #pragma once
-#ifndef tensor_hpp
-#define tensor_hpp
+#ifndef TENNCOR_TENSOR_HPP
+#define TENNCOR_TENSOR_HPP
 
 namespace nnet
 {
 
 template <typename T>
-class assign;
-template <typename T>
-class gradient;
-template <typename T>
-class initializer;
-template <typename T>
-class ivariable;
-template <typename T, typename A>
-class tensor_op;
+class tensor_handler;
 
-static alloc_attrib default_attr; // TODO consider removing to make thread safe
-
-template <typename T, typename A=ram_alloc>
-class tensor
+template <typename T>
+class tensor : public itensor<T>
 {
-	static_assert(std::is_base_of<iallocator, A>(), "allocator must inherit from iallocator");
-	private:
-		// meta data (not as template)
-		tensorshape allowed_shape_;
-		tensorshape alloc_shape_;
-		const A alloc_;
-		T* raw_data_ = nullptr;
+public:
+	//! create a rank 0 tensor and specific allocator
+	tensor (size_t alloc_id = default_alloc::alloc_id);
 
-	protected:
-		void copy (const tensor<T,A>& other);
-		tensor (const tensor<T,A>& other);
+	//! Create a scalar tensor and specific allocator
+	tensor (T scalar, size_t alloc_id = default_alloc::alloc_id);
 
-		virtual tensor<T,A>* clone_impl (void) { return new tensor<T,A>(*this); }
+	//! create a tensor of a specified shape and allocator
+	//! if the shape is fully defined, then raw data is allocated
+	//! otherwise, tensor will wait for a defined shape
+	tensor (tensorshape shape, size_t alloc_id = default_alloc::alloc_id);
 
-		// protected accessor... this isn't overengineering! I swear.
-		virtual T* get_raw (void) { return raw_data_; }
+	//! deallocate tensor
+	virtual ~tensor (void);
 
-		// forcefully deallocates raw_data (reserved for children only... hopefully)
-		void change_shape (tensorshape res_shape);
-		virtual void raw_update (void) {}
+	// >>>> CLONE, MOVE, && COPY ASSIGNMENT <<<<
+	//! clone function
+	tensor<T>* clone (void) const;
 
-		friend class assign<T>;
-		friend class gradient<T>;
-		friend class initializer<T>;
-		friend class tensor_op<T,A>;
+	//! move constructor
+	tensor (tensor<T>&& other);
 
-		template <typename U>
-		friend std::vector<U> expose (ivariable<U>* var);
-		
-		template <typename U>
-		friend std::vector<U> expose (tensor<U>* ten);
+	//! copy assignment
+	virtual tensor<T>& operator = (const tensor<T>& other);
 
-	public:
-		// creates a rank 0 tensor
-		tensor (void);
-		// allocate on construction if shape is fully defined
-		tensor (tensorshape shape);
-		tensor (tensorshape shape, const alloc_attrib& attrib);
-		// makes a scalar and auto allocates to memory
-		tensor (T scalar);
-		// rule of three
-		virtual ~tensor (void);
-		tensor<T,A>* clone (void) { return clone_impl(); }
-		virtual tensor<T,A>& operator = (tensor<T,A>& other);
+	//! move assignment
+	virtual tensor<T>& operator = (tensor<T>&& other);
 
-		// allocate
-		// reallocation clear raw data
-		void allocate (void);
-		void allocate (const alloc_attrib& attrib);
-		void allocate (const tensorshape shape);
-		void allocate (const tensorshape shape, const alloc_attrib& attrib);
+	// >>>> ACCESSORS <<<<
+	// >>> SHAPE INFORMATION <<<
+	//! get tensor shape (allocated if so, allowed shape otherwise)
+	tensorshape get_shape (void) const;
 
-		// shape info getters
-		// get tensor shape
-		tensorshape get_shape (void) const;
-		// get vector of each dimension
-		std::vector<size_t> dims (void) const;
-		// get the tensor rank, dims().size()
-		size_t n_dims (void) const;
-		// get the amount of T elements allocated, 0 if uninitialized
-		size_t n_elems (void) const;
-		bool is_compatible_with (std::vector<T> data) const;
-		bool is_compatible_with (const tensor<T,A>& other) const;
-		// checks if input tensor has a compatible allowed tensorshape
-		bool is_same_size (const tensor<T,A>& other) const;
-		// guess shape from the data based on the current shape (allowed if unallocated, allocated otherwise)
-		tensorshape guess_shape (std::vector<T> data) const;
-		// checks if tensorshape is aligned
-		// (e.g.: same number of column for each row)
-		bool is_aligned (void) const;
+	// >> SHAPE UTILITY <<
+	//! get the amount of T elements allocated
+	//! if uninitialized, return 0
+	virtual size_t n_elems (void) const;
 
-		// memory info getter
-		// check if memory is allocated
-		bool is_alloc (void) const;
-		// get bytes allocated
-		size_t total_bytes (void) const;
-		// get data at indices
-		virtual T get (std::vector<size_t> indices);
+	//! get the tensor rank, number of dimensions
+	virtual size_t rank (void) const;
 
-		// setter
-		// set shape if not allocated
-		void set_shape (tensorshape shape);
+	//! get vector dimension values
+	std::vector<size_t> dims (void) const;
 
-		// TODO: unimplemented
-		bool copy_from (const tensor& other, const tensorshape shape);
-		// slice along the first dimension
-		tensor<T,A> slice (size_t dim_start, size_t limit);
+	// >> SHAPE COMPATIBILITY <<
+	//! checks if input tensor has a compatible allowed tensorshape
+	//! or if both this and other are allocated and the trimmed shapes are compatible
+	bool is_same_size (const tensor<T>& other) const;
 
-		// TODO: read protocol buffers
-		// bool shares_buffer_with (const tensor& other) const;
-		// size_t buffer_hash (void) const;
-		// bool from_proto (const tensorproto& other);
-		// bool from_proto (iallocator* a, const tensorproto& other);
+	//! check if other tensor's data is compatible with this shape
+	bool is_compatible_with (const tensor<T>& other) const;
+
+	//! check if input is compatible with tensor shape
+	//! data is compatible if data.size() == (innate or external) shape size
+	bool is_compatible_with (std::vector<T> data) const;
+
+	//! data is loosely compatible if data.size() < (innate or external) shape size
+	bool is_loosely_compatible_with (std::vector<T> data) const;
+
+	//! return compatible shape with n_elems == data.size()
+	//! or undefined if compatibility is impossible
+	// implementation detail:
+	// this algorithm attempts to cover up the first unknown with data.size() / n_known
+	// iff data.size() % n_known == 0
+	// todo: attempt to parameterize some lambda function to distribute data.size() / n_known amongst all unknown (same for loosely guess)
+	optional<tensorshape> guess_shape (std::vector<T> data) const;
+
+	//! return loosely compatible shape with n_elems < data.size()
+	//! or undefined if compatibility is impossible
+	optional<tensorshape> loosely_guess_shape (std::vector<T> data) const;
+
+	//! checks if tensorshape is aligned
+	//! same number of column for each row
+	virtual bool is_aligned (void) const { return true; }
+
+	// >>> DATA INFORMATION <<<
+	//! checks if memory is allocated
+	virtual bool is_alloc (void) const;
+
+	//! get bytes allocated
+	virtual size_t total_bytes (void) const;
+
+	//! get data at coordinate specified
+	virtual T get (std::vector<size_t> coord) const;
+
+	std::vector<T> expose (void) const;
+
+	// >>>> MUTATOR <<<<
+	//! set a new shape
+	//! chop raw data outside of new shape
+	//! worst case runtime: O(min(N, M))
+	//! where N is the original shape size
+	//! and M is the resulting shape size
+	void set_shape (tensorshape shape);
+
+	//! allocate raw data using allowed (innate) shape
+	//! return true if successful
+	virtual bool allocate (void);
+
+	//! forcefully deallocate raw_data,
+	//! invalidates allocated (external) shape
+	//! could be useful when we want to preserve allowed shape
+	//! since get_shape when allocated gives allocated shape
+	virtual bool deallocate (void);
+
+	//! allocate raw data using input shape
+	//! if shape is compatible with allowed
+	//! else return false
+	virtual bool allocate (const tensorshape shape);
+
+	//! copy raw_data from other expanded/compressed to input shape
+	bool copy_from (const tensor& other, const tensorshape shape);
+
+	// TODO: unimplemented
+	// slice along the first dimension
+	tensor<T> slice (size_t dim_start, size_t limit);
+
+	// TODO: read protocol buffers
+	// bool shares_buffer_with (const tensor& other) const;
+	// size_t buffer_hash (void) const;
+	// bool from_proto (const tensorproto& other);
+	// bool from_proto (iallocator* a, const tensorproto& other);
+
+protected:
+	// >>>> COPY && CLONE <<<<
+	//! copy constructor
+	tensor (const tensor<T>& other);
+
+	//! clone implementation
+	virtual itensor<T>* clone_impl (void) const;
+
+	// >>>> PROTECTED MEMBERS <<<<
+	T* raw_data_ = nullptr; //! raw data is available to tensor manipulators
+
+	tensorshape alloc_shape_; //! allocated shape (must be defined)
+
+	friend class tensor_handler<T>;
+
+private:
+	void init_alloc (size_t alloc_id);
+
+	//! tensor reshape utility
+	void raw_copy (T* out, tensorshape& outs,
+		const T* in, const tensorshape& ins) const;
+
+	//! copy utility helper
+	void copy (const tensor<T>& other);
+
+	//! move utility helper
+	void move (tensor<T>&& other);
+
+	// >>>> PRIVATE MEMBERS <<<<
+	//! allocator
+	const iallocator& alloc_;
+
+	tensorshape allowed_shape_; //! not necessarily defined shape
 };
-
-template <typename T>
-std::vector<T> expose (tensor<T>* ten)
-{
-	assert(nullptr != ten);
-	T* raw = ten->get_raw();
-	assert(ten->is_alloc()); // assert after get_raw to allow tensor a chance
-	return std::vector<T>(raw, raw + ten->n_elems());
-}
 
 }
 
 #include "../../src/tensor/tensor.ipp"
 
-#endif /* tensor_hpp */
+#endif /* TENNCOR_TENSOR_HPP */

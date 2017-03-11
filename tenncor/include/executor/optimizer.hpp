@@ -9,11 +9,11 @@
 #include <vector>
 #include <map>
 #include "assign.hpp"
-#include "graph/variable/variable.hpp"
+#include "graph/leaf/variable.hpp"
 #include "group.hpp"
-#include "graph/operation/elementary.hpp"
+#include "graph/operation/immutable/elementary.hpp"
 #include "gradient.hpp"
-
+#define optimizer_hpp
 #pragma once
 #ifndef optimizer_hpp
 #define optimizer_hpp
@@ -22,7 +22,7 @@ namespace nnet
 {
 
 template <typename T>
-using MANIPULATE_LEAF = std::function<bool(ivariable<T>*,ivariable<T>*&)>;
+using MANIPULATE_LEAF = std::function<bool(inode<T>*,inode<T>*&)>;
 
 // optimizers compute and update the variables (weights and biases) 
 // by first computing the gradients then updating them 
@@ -46,10 +46,10 @@ class ioptimizer : public iexecutor<T>
 	private:
 		group<T>* updater_ = nullptr;
 		gradient<T>* grader_ = nullptr;
-		std::unordered_set<ivariable<T>*> ignore_set_; // does not own ownership
+		std::unordered_set<inode<T>*> ignore_set_; // does not own ownership
 	
 	protected:
-		std::unordered_map<ivariable<T>*, ivariable<T>*> grad_top_;
+		std::unordered_map<inode<T>*, inode<T>*> grad_top_;
 
 		virtual iexecutor<T>* clone_impl (void) = 0;
 
@@ -65,7 +65,7 @@ class ioptimizer : public iexecutor<T>
 
 	public:
 		ioptimizer (void) {}
-		ioptimizer (ivariable<T>* fanout)
+		ioptimizer (inode<T>* fanout)
 		{
 			grader_ = new gradient<T>(fanout);
 		}
@@ -84,7 +84,7 @@ class ioptimizer : public iexecutor<T>
 		}
 
 		// build time setup-methods
-		bool set_root (ivariable<T>* root)
+		bool set_root (inode<T>* root)
 		{
 			if (root)
 			{
@@ -106,16 +106,16 @@ class ioptimizer : public iexecutor<T>
 		
 		// preferred setup method.
 		// calls set_up and freeze
-		void set_manipulate (ivariable<T>* root, MANIPULATE_LEAF<T> manipulate)
+		void set_manipulate (inode<T>* root, MANIPULATE_LEAF<T> manipulate)
 		{
 			if (set_root (root))
 			{
 				this->freeze();
-				grader_->collect_grad([this, &manipulate](ivariable<T>* key, placeholder<T>* value)
+				grader_->collect_grad([this, &manipulate](inode<T>* key, placeholder<T>* value)
 				{
 					if (ignore_set_.end() == ignore_set_.find(key))
 					{ // key not in ignore set
-						ivariable<T>* top_value = value;
+						inode<T>* top_value = value;
 						// top_value is passed as a reference
 						// it can change when manipulating
 						manipulate(key, top_value);
@@ -141,15 +141,15 @@ class ioptimizer : public iexecutor<T>
 		}
 
 		// ignore/unignore which leaves to use
-		void ignore (ivariable<T>* ig_var) { ignore_set_.insert(ig_var); }
-		void unignore (ivariable<T>* ig_var) { ignore_set_.erase(ig_var); }
+		void ignore (inode<T>* ig_var) { ignore_set_.insert(ig_var); }
+		void unignore (inode<T>* ig_var) { ignore_set_.erase(ig_var); }
 };
 
 // Gradient Descent Update Algorithm
 
 // updates position on error manifold
 // assume that input operation is some cost function J
-// input gradient of J gives derivative J'[v] (wrt v) for each variable v
+// input gradient of J gives derivative J'[v] (wrt v) for each leaf v
 // update by gradient descent algorithm:
 // var_t = var_(t-1) - delta(var)
 // where delta(var) = learning * J'[var_(t-1)]
@@ -197,7 +197,7 @@ class gd_optimizer : public ioptimizer<double>
 // 2. velocity_t = discount * velocity_(t-1) - learning * J'[v]
 
 // Separate adaptive learning rates
-// introduce variable local_gain linked to weight/bias variables
+// introduce leaf local_gain linked to weight/bias variables
 // delta(var) = -epsilon * local_gain[v] * J'[v]
 // if J'[v]_t * J'[v]_(t-1) > 0:
 // then local_gain[v] += 0.05
