@@ -31,7 +31,7 @@ varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -53,7 +53,7 @@ varptr<T> operator - (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -75,7 +75,7 @@ varptr<T> sin (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -98,7 +98,7 @@ varptr<T> cos (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -121,7 +121,7 @@ varptr<T> tan (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -146,7 +146,7 @@ varptr<T> csc (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -170,7 +170,7 @@ varptr<T> sec (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -194,7 +194,7 @@ varptr<T> cot (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -218,7 +218,7 @@ varptr<T> exp (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -241,7 +241,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[min, max](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[min, max](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* in = args[0];
@@ -266,7 +266,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 {
 	if (nullptr == a) return nullptr;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[cap](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[cap](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		const T* in = args[0];
 
@@ -299,7 +299,7 @@ varptr<T> operator + (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (*b == 0 || nullptr == (inode<T>*)b) return new constant<T>(a);
 	return new operation<T>(std::vector<inode<T>*>{b}, elementary_shaper,
-	[a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* bd = args[0];
@@ -321,7 +321,7 @@ varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (*a == 0 || nullptr == (inode<T>*)a) return new constant<T>(b);
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[b](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -344,7 +344,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	if (*a == 0 || nullptr == (inode<T>*)a) return b;
 	else if (*b == 0 || nullptr == (inode<T>*)b) return a;
 	return new operation<T>(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -372,7 +372,7 @@ varptr<T> operator - (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (*b == 0 || nullptr == (inode<T>*)b) return new constant<T>(a);
 	return new operation<T>(std::vector<inode<T>*>{b}, elementary_shaper,
-	[a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* bd = args[0];
@@ -394,7 +394,7 @@ varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (*a == 0 || nullptr == (inode<T>*)a) return new constant<T>(-b);
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[b](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -417,7 +417,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	if (*a == 0 || nullptr == (inode<T>*)a) return b;
 	else if (*b == 0 || nullptr == (inode<T>*)b) return a;
 	return new operation<T>(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -446,7 +446,7 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if (*b == 0 || nullptr == (inode<T>*)b || 0 == a) return new constant<T>(0);
 	if (*b == 1) return new constant<T>(a);
 	return new operation<T>(std::vector<inode<T>*>{b}, elementary_shaper,
-	[a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* bd = args[0];
@@ -469,7 +469,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 	if (*a == 0 || nullptr == (inode<T>*)a || 0 == b) return new constant<T>(0);
 	if (*a == 1) return new constant<T>(b);
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[b](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -493,7 +493,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	if (*a == 1) return b;
 	if (*b == 1) return a;
 	return new operation<T>(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -523,7 +523,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 	if (a == 0) return new constant<T>(0);
 	if (*b == 1) return new constant<T>(a);
 	return new operation<T>(std::vector<inode<T>*>{b}, elementary_shaper,
-	[a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* bd = args[0];
@@ -548,7 +548,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 	if (*a == 0 || nullptr == (inode<T>*)a) return new constant<T>(0);
 	if (b == 1) return a;
 	return new operation<T>(std::vector<inode<T>*>{a}, elementary_shaper,
-	[b](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];
@@ -572,7 +572,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	if (*a == 0 || nullptr == (inode<T>*)a) return new constant<T>(0);
 	if (*b == 1) return a;
 	return new operation<T>(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args[0];

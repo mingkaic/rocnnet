@@ -98,7 +98,7 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 	}
 	// traverse towards target by looking at leaf sets
 	std::vector<tensor<T>*> allocated;
-	std::vector<const tensor<T>&> tens;
+	std::vector<const tensor<T>*> tens;
 	this->access_dependency(
 	[&tens, &allocated, target](const subject* s)
 	{
@@ -110,7 +110,7 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 			con->temporary_eval(target, *t);
 
 			allocated.push_back(t);
-			tens.push_back(*t);
+			tens.push_back(t);
 		}
 		else
 		{
@@ -131,14 +131,14 @@ template <typename T>
 void operation<T>::update (react::subject* arg)
 {
 	bool badstate = false;
-	std::vector<const tensor<T>&> tens;
+	std::vector<const tensor<T>*> tens;
 	std::vector<tensorshape> ts;
 	this->access_dependency(
 	[&badstate, &tens, &ts](const subject* sub)
 	{
 		if (inode<T>* a = dynamic_cast<inode<T>*>(sub))
 		{
-			tens.push_back(*(a->get_eval()));
+			tens.push_back(a->get_eval());
 			ts.push_back(a->get_shape());
 		}
 		else

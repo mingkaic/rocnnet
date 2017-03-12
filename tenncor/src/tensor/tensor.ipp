@@ -17,24 +17,24 @@ namespace nnet
 {
 
 template <typename T>
-tensor<T>::tensor (size_t alloc_id) :
+tensor<T>::tensor (void) :
 	tensor<T>(std::vector<size_t>{})
 {
-	init_alloc(alloc_id);
+	set_allocator(default_alloc::alloc_id);
 }
 
 template <typename T>
 tensor<T>::tensor (T scalar, size_t alloc_id) :
 	tensor<T>(std::vector<size_t>{1})
 {
-	init_alloc(alloc_id);
+	set_allocator(alloc_id);
 }
 
 template <typename T>
 tensor<T>::tensor (tensorshape shape, size_t alloc_id) :
 	allowed_shape_(shape)
 {
-	init_alloc(alloc_id);
+	set_allocator(alloc_id);
 	if (allowed_shape_.is_fully_defined())
 	{
 		alloc_shape_ = shape;
@@ -304,6 +304,20 @@ std::vector<T> tensor<T>::expose (void) const
 }
 
 template <typename T>
+void tensor<T>::set_allocator (size_t alloc_id)
+{
+	if (const iallocator* alloc =
+		alloc_builder::get_instance().get(alloc_id))
+	{
+		alloc_ = alloc;
+	}
+	else
+	{
+		throw std::exception(); // todo: better exception
+	}
+}
+
+template <typename T>
 void tensor<T>::set_shape (tensorshape shape)
 {
 	// allowed shape update
@@ -454,20 +468,6 @@ template <typename T>
 itensor<T>* tensor<T>::clone_impl (void) const
 {
 	return new tensor<T>(*this);
-}
-
-template <typename T>
-void tensor<T>::init_alloc (size_t alloc_id)
-{
-	if (const iallocator* alloc =
-		alloc_builder::get_instance().get(alloc_id))
-	{
-		alloc_ = alloc;
-	}
-	else
-	{
-		throw std::exception(); // todo: better exception
-	}
 }
 
 template <typename T>

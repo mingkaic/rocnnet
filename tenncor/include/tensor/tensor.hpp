@@ -27,14 +27,14 @@ namespace nnet
 {
 
 template <typename T>
-class tensor_handler;
+class itensor_handler;
 
 template <typename T>
 class tensor : public itensor<T>
 {
 public:
 	//! create a rank 0 tensor and specific allocator
-	tensor (size_t alloc_id = default_alloc::alloc_id);
+	tensor (void);
 
 	//! Create a scalar tensor and specific allocator
 	tensor (T scalar, size_t alloc_id = default_alloc::alloc_id);
@@ -124,6 +124,9 @@ public:
 	std::vector<T> expose (void) const;
 
 	// >>>> MUTATOR <<<<
+	//! get allocator from factory and set it as alloc_
+	void set_allocator (size_t alloc_id);
+
 	//! set a new allowed shape
 	//! chop raw data outside of new shape
 	//! worst case runtime: O(min(N, M))
@@ -174,11 +177,9 @@ protected:
 
 	tensorshape alloc_shape_; //! allocated shape (must be defined)
 
-	friend class tensor_handler<T>;
+	friend class itensor_handler<T>;
 
 private:
-	void init_alloc (size_t alloc_id);
-
 	//! tensor reshape utility
 	void raw_copy (T* out, const tensorshape& outs,
 		const T* in, const tensorshape& ins) const;

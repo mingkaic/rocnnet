@@ -38,3 +38,6 @@ tensorshape padd(std::vector<size_t> shapelist, size_t nfront, size_t nback);
 
 
 std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<size_t> dimensions);
+
+
+tensorshape random_shape (void);

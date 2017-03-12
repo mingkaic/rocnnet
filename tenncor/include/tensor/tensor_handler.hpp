@@ -25,7 +25,7 @@ using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
 //! Maps argument data to this data according to shape
 template <typename T>
-using FORWARD_OP = std::function<void(T*,tensorshape&,std::vector<const T*>&)>;
+using FORWARD_OP = std::function<void(T*,const tensorshape&,std::vector<const T*>&,std::vector<tensorshape>&)>;
 
 //! Generic Tensor Handler
 template <typename T>
@@ -38,10 +38,10 @@ protected:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
 	itensor_handler (SHAPER shaper, FORWARD_OP<T> forward);
 
-private:
 	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>& out, std::vector<const tensor<T>&> args);
+	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args);
 
+private:
 	FORWARD_OP<T> forward_; //! raw data transformation function
 };
 
@@ -54,7 +54,7 @@ public:
 	transfer_func (SHAPER shaper, FORWARD_OP<T> forward);
 
 	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>& out, std::vector<const tensor<T>&> args);
+	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args);
 };
 
 //! Constant Initializer

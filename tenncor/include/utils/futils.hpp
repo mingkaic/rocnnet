@@ -21,17 +21,17 @@
 namespace nnet
 {
 
+//! sigmoid function: f(x) = 1/(1+e^-x)
 template <typename T>
 varptr<T> sigmoid (varptr<T> x)
 {
-	// f(x) = 1/(1+e^-x)
 	return (T)1 / ((T)1 + exp(-x));
 }
 
+//! tanh function: f(x) = (e^(2*x)+1)/(e^(2*x)-1)
 template <typename T>
 varptr<T> tanh (varptr<T> x)
 {
-	// f(x) = (e^(2*x)+1)/(e^(2*x)-1)
 	varptr<T> etx = exp((T)2 * x);
 	return (etx + (T)1) / (etx - (T)1);
 }

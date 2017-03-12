@@ -10,7 +10,7 @@
 #include "mocks/mock_tensor.h"
 
 
-//#define DISABLE_TENSOR_TEST
+#define DISABLE_TENSOR_TEST
 #ifndef DISABLE_TENSOR_TEST
 
 
@@ -24,14 +24,6 @@ static tensorshape random_partialshape ()
 		size_t zidx = FUZZ<size_t>::get(1, {0, shape.size()})[0];
 		shape.insert(shape.begin()+zidx, 0);
 	}
-	return tensorshape(shape);
-}
-
-
-static tensorshape random_shape ()
-{
-	size_t rank = FUZZ<size_t>::get(1, {2, 10})[0];
-	std::vector<size_t> shape = FUZZ<size_t>::get(rank, {2, 21});
 	return tensorshape(shape);
 }
 

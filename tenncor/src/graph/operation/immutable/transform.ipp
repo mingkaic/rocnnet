@@ -44,7 +44,7 @@ varptr<T> transpose (const varptr<T> a)
 			}
 			return std::vector<size_t>{};
 		},
-		[](T* dest, tensorshape& shape, std::vector<const T*>& args)
+		[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
 			// we have the new shape
@@ -86,7 +86,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 			}
 			return watchshape;
 		},
-		[a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+		[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
 			tensorshape oshape = a->get_shape();
@@ -204,7 +204,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 			}
 			return tv;
 		},
-		[index, multiplier](T* dest, tensorshape& shape, std::vector<const T*>& args)
+		[index, multiplier](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
@@ -259,7 +259,7 @@ varptr<T> compress (const varptr<T> a, int index,
 	if (index >= 0)
 	{
 		gatherer = TEN_OP<T>(
-		[a, index, collector](T* dest, tensorshape& shape, std::vector<const T*>& args)
+		[a, index, collector](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
@@ -322,7 +322,7 @@ varptr<T> compress (const varptr<T> a, int index,
 	else
 	{
 		gatherer = TEN_OP<T>(
-		[collector, a](T* dest, tensorshape& shape, std::vector<const T*>& args)
+		[collector, a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			std::vector<size_t> tv = shape.as_list();
 			size_t total = shape.n_elems();

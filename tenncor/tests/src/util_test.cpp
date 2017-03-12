@@ -92,3 +92,10 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 	}
 	return mat;
 }
+
+tensorshape random_shape (void)
+{
+	size_t rank = FUZZ<size_t>::get(1, {2, 10})[0];
+	std::vector<size_t> shape = FUZZ<size_t>::get(rank, {2, 21});
+	return tensorshape(shape);
+}
