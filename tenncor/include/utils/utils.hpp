@@ -46,6 +46,20 @@ public:
 		return *this;
 	}
 
+	template <typename T>
+	formatter& operator << (const std::vector<T>& values)
+	{
+		auto it = values.begin();
+		stream_ << *it;
+		it++;
+		while (it != values.end())
+		{
+			stream_ << "," << *it;
+			it++;
+		}
+		return *this;
+	}
+
 	std::string str(void) const;
 
 	operator std::string () const;

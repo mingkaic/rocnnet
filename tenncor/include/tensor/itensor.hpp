@@ -32,10 +32,10 @@ public:
 	// >>>> FUNDAMENTAL SHAPE INFO <<<<
 	//! get the amount of T elements allocated
 	//! if uninitialized, return 0
-	virtual size_t n_elems (void) const;
+	virtual size_t n_elems (void) const = 0;
 
 	//! get the tensor rank, number of dimensions
-	virtual size_t rank (void) const;
+	virtual size_t rank (void) const = 0;
 
 	//! checks if tensorshape is aligned
 	//! same number of column for each row

@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef varptr_hpp
+#ifdef TENNCOR_VARPTR_HPP
 
 namespace nnet {
 

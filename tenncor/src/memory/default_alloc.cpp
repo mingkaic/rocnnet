@@ -13,6 +13,8 @@
 namespace nnet
 {
 
+const size_t default_alloc::alloc_id = 0;
+
 default_alloc* default_alloc::clone (void) const
 {
 	return static_cast<default_alloc*>(clone_impl());

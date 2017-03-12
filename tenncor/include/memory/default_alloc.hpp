@@ -24,7 +24,7 @@ class default_alloc : public iallocator
 {
 public:
 	//! identifier for builder
-	static const size_t alloc_id = 0;
+	static const size_t alloc_id;
 
 	//! clone function
 	default_alloc* clone (void) const;

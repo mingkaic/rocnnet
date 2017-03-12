@@ -48,29 +48,43 @@ public:
 	// >>>> ACCESSORS <<<<
 	//! allocate the specified number of elements
 	template <typename T>
-	T* allocate (size_t num_elements) const;
+	T* allocate (size_t num_elements) const
+	{
+		static_assert(is_allowed<T>::value, "T is not an allowed type.");
+
+		if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T)))
+		{
+			return nullptr;
+		}
+
+		void* p = get_raw(alloc_alignment, sizeof(T) * num_elements);
+		T* typedptr = reinterpret_cast<T*>(p);
+		return typedptr;
+	}
 
 	//! deallocate some number of elements from pointer
 	//! (vary depending on allocator)
 	template <typename T>
-	void dealloc(T* ptr, size_t num_elements) const;
+	void dealloc(T* ptr, size_t num_elements) const
+	{
+		if (nullptr != ptr)
+		{
+			del_raw(ptr, sizeof(T) * num_elements);
+		}
+	}
 
 	//! whether the implementation of allocator track the allocated size
-	virtual bool tracks_size (void) const { return false; }
+	virtual bool tracks_size (void) const;
 
 	//! get allocated size if tracking is enabled
 	//! not tracked by default
-	virtual size_t requested_size (void* ptr) const
-	{
-		throw std::bad_function_call();
-		return 0;
-	}
+	virtual size_t requested_size (void* ptr) const;
 
 	//! get allocation id if tracking enabled
-	virtual optional<size_t> alloc_id (void* ptr) const { return optional<size_t>(); }
+	virtual optional<size_t> alloc_id (void* ptr) const;
 
 	 //! Fills in stat gatherer with statistics collected by this allocator.
-	 virtual void gather_stat (alloc_stat& stats) const { stats.clear(); }
+	 virtual void gather_stat (alloc_stat& stats) const;
 
 protected:
 	//! allocation implementation

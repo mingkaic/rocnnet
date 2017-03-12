@@ -60,7 +60,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 	{
 		if (optional<tensorshape> cand_shape = this->data_->guess_shape(data))
 		{
-			this->data_->allocate(cand_shape.value());
+			this->data_->allocate(*cand_shape);
 		}
 		else
 		{

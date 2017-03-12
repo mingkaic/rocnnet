@@ -17,29 +17,17 @@ iallocator* iallocator::clone (void) const {
 	return clone_impl();
 }
 
-template <typename T>
-T* iallocator::allocate (size_t num_elements) const
+bool iallocator::tracks_size (void) const { return false; }
+
+size_t iallocator::requested_size (void* ptr) const
 {
-	static_assert(is_allowed<T>::value, "T is not an allowed type.");
-
-	if (num_elements > (std::numeric_limits<size_t>::max() / sizeof(T)))
-	{
-		return nullptr;
-	}
-
-	void* p = get_raw(alloc_alignment, sizeof(T) * num_elements);
-	T* typedptr = reinterpret_cast<T*>(p);
-	return typedptr;
+	throw std::bad_function_call();
+	return 0;
 }
 
-template <typename T>
-void iallocator::dealloc(T* ptr, size_t num_elements) const
-{
-	if (nullptr != ptr)
-	{
-		del_raw(ptr, sizeof(T) * num_elements);
-	}
-}
+optional<size_t> iallocator::alloc_id (void* ptr) const { return optional<size_t>(); }
+
+void iallocator::gather_stat (alloc_stat& stats) const { stats.clear(); }
 
 
 }

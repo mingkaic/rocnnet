@@ -15,8 +15,8 @@
 #include "graph/leaf/placeholder.hpp"
 
 #pragma once
-#ifndef varptr_hpp
-#define varptr_hpp
+#ifndef TENNCOR_VARPTR_HPP
+#define TENNCOR_VARPTR_HPP
 
 namespace nnet
 {
@@ -95,4 +95,4 @@ class placeptr : public varptr<T>
 
 #include "../../src/graph/varptr.ipp"
 
-#endif /* varptr_hpp */
+#endif /* TENNCOR_VARPTR_HPP */

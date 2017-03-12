@@ -15,7 +15,32 @@
 template <typename T>
 struct FUZZ
 {
-	static std::vector<T> get (size_t len, std::pair<T,T> range={0,0}, std::unordered_set<T> ignore = {})
+	static std::vector<T> get (size_t len, std::pair<T,T> range={0,0})
+	{
+		T min, max;
+		if (range.first == range.second)
+		{
+			min = std::numeric_limits<T>::min();
+			max = std::numeric_limits<T>::max();
+		}
+		else
+		{
+			min = range.first;
+			max = range.second;
+		}
+		std::default_random_engine generator;
+		std::uniform_real_distribution<double> dis(min, max);
+
+		std::vector<T> vec;
+		for (size_t i = 0; i < len; i++)
+		{
+			vec.push_back((T) dis(generator));
+		}
+
+		return vec;
+	}
+
+	static std::vector<T> get (size_t len, std::pair<T,T> range, std::unordered_set<T> ignore)
 	{
 		T min, max;
 		if (range.first == range.second)

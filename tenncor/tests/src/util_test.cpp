@@ -56,10 +56,39 @@ tensorshape make_incompatible (std::vector<size_t> shapelist)
 	return tensorshape(shapelist);
 }
 
+// make partial full, but incompatible to comp
+tensorshape make_full_incomp (std::vector<size_t> partial, std::vector<size_t> complete)
+{
+	assert(partial.size() == complete.size());
+	for (size_t i = 0, n = partial.size(); i < n; i++)
+	{
+		if (partial[i] == 0)
+		{
+			partial[i] = complete[i]+1;
+		}
+	}
+	return partial;
+}
+
 tensorshape padd(std::vector<size_t> shapelist, size_t nfront, size_t nback)
 {
-	std::vector<size_t> out(nfront, 0);
+	std::vector<size_t> out(nfront, 1);
 	out.insert(out.end(), shapelist.begin(), shapelist.end());
-	out.insert(out.end(), nback, 0);;
+	out.insert(out.end(), nback, 1);
 	return tensorshape(out);
+}
+
+std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<size_t> dimensions)
+{
+	assert(dimensions.size() == 2);
+	size_t cols = dimensions[0];
+	size_t rows = dimensions[1];
+	std::vector<std::vector<double> > mat(rows);
+	auto it = v.begin(), et = v.end();
+	for (size_t i = 0; i < rows; i++)
+	{
+		mat[i].insert(mat[i].end(), it, it+cols);
+		it+=cols;
+	}
+	return mat;
 }

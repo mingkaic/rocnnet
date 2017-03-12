@@ -115,16 +115,21 @@ public:
 	virtual size_t total_bytes (void) const;
 
 	//! get data at coordinate specified
+	//! getting out of bound will throw out_of_range error
+	//! coordinate values not specified are implied as 0
 	virtual T get (std::vector<size_t> coord) const;
 
+	//! exposing unallocated shape will cause assertion death
+	//! otherwise return data array copy
 	std::vector<T> expose (void) const;
 
 	// >>>> MUTATOR <<<<
-	//! set a new shape
+	//! set a new allowed shape
 	//! chop raw data outside of new shape
 	//! worst case runtime: O(min(N, M))
 	//! where N is the original shape size
 	//! and M is the resulting shape size
+	//! result is shape is compatible with allowed shape
 	void set_shape (tensorshape shape);
 
 	//! allocate raw data using allowed (innate) shape
@@ -143,6 +148,7 @@ public:
 	virtual bool allocate (const tensorshape shape);
 
 	//! copy raw_data from other expanded/compressed to input shape
+	//! allowed shape will be adjusted similar to set_shape
 	bool copy_from (const tensor& other, const tensorshape shape);
 
 	// TODO: unimplemented
@@ -174,7 +180,7 @@ private:
 	void init_alloc (size_t alloc_id);
 
 	//! tensor reshape utility
-	void raw_copy (T* out, tensorshape& outs,
+	void raw_copy (T* out, const tensorshape& outs,
 		const T* in, const tensorshape& ins) const;
 
 	//! copy utility helper
@@ -185,7 +191,7 @@ private:
 
 	// >>>> PRIVATE MEMBERS <<<<
 	//! allocator
-	const iallocator& alloc_;
+	const iallocator* alloc_;
 
 	tensorshape allowed_shape_; //! not necessarily defined shape
 };
