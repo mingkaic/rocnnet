@@ -55,6 +55,9 @@ public:
 	bool no_audience (void) const;
 
 protected:
+	//! explicit default constructor to allow copy and move constructors
+	subject (void) {}
+
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! smart destruction: default to not die
 	virtual void commit_sudoku (void) {}

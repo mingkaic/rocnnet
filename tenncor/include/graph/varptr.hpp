@@ -12,6 +12,7 @@
  *
  */
 
+#include "graph/inode.hpp"
 #include "graph/leaf/placeholder.hpp"
 
 #pragma once

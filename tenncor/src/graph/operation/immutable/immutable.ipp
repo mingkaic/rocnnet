@@ -14,13 +14,16 @@ namespace nnet
 template <typename T>
 immutable<T>* immutable<T>::clone (void) const
 {
-	return static_cast<immutable<T>*>(clone_impl());
+	return static_cast<immutable<T>*>(this->clone_impl());
 }
 
 template <typename T>
 immutable<T>::immutable (immutable<T>&& other) :
 	iconnector<T>(other),
-	ginit_(std::move(other.ginit_)) {}
+	ginit_(std::move(other.ginit_))
+{
+	common();
+}
 
 template <typename T>
 immutable<T>& immutable<T>::operator = (const immutable<T>& other)
@@ -53,9 +56,9 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt) const
 	// check self
 	if (wrt == this)
 	{
-		out = &this->one;
+		out = one.get();
 	}
-		// check cache
+	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
 		auto it = gcache_.find(leaf);
@@ -64,31 +67,33 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt) const
 			throw std::exception();
 		}
 		out = it->second;
+		// modify res with jacobian
+		for (JTRANSFER<T> js : jacobians_)
+		{
+			out = js(out, leaf);
+		}
 	}
-		// check graph
-	else if (conn && is_same_graph(conn))
+	// check graph
+	else if (conn && this->is_same_graph(conn))
 	{
 		// WARNING: this is one of the more expensive operations
 		// evoke temporary call
 		outtemp = true;
 
 		tensor<T>* res;
-		this->temporary_eval(conn, *res);
+		this->temporary_eval(conn, res);
 
-		out = new placeholder<T>(this->get_shape());
-		*out = *res; // move tensor value to placeholder temporary
+		placeholder<T>* pl = new placeholder<T>(this->get_shape());
+		*pl = *res; // move tensor value to placeholder temporary
+		out = pl;
 		delete res;
 	}
-		// is zero
+	// is zero
 	else
 	{
-		out = &this->zero;
+		out = zero.get();
 	}
-	// modify res with jacobian
-	for (JTRANSFER<T> js : jacobians_)
-	{
-		out = js(out, wrt);
-	}
+
 	const tensor<T>* res = out->get_eval();
 	if (outtemp)
 	{
@@ -105,34 +110,24 @@ bool immutable<T>::good_status (void) const
 }
 
 template <typename T>
-immutable<T>::immutable (std::vector<inode<T>*> args,
-	BACK_MAP<T> F, std::string name) :
-iconnector<T>(args, name),
-ginit_(F)
+inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 {
-	for (inode<T>* arg : this->dependencies_)
+	auto it = gcache_.find(leaf);
+	if (gcache_.end() == it)
 	{
-		if (immutable<T>* a = static_cast<immutable<T>*>(arg))
-		{
-			if (false == a->jacobians_.empty())
-			{
-				assert(jacobians_.empty()); // jacobian conflict across branches
-				jacobians_ = a->jacobians_; // copy over
-			}
-		}
-		arg->get_leaves(gcache_);
+		return zero.get();
 	}
-}
-
-template <typename T>
-immutable<T>::immutable (const immutable<T>& other) :
-	iconnector<T>(other),
-	ginit_(other.ginit_) {}
-
-template <typename T>
-inode<T>* immutable<T>::clone_impl (void) const
-{
-	return new immutable(*this);
+	if (nullptr == it->second)
+	{
+		// initiate grad_
+		std::vector<inode<T>*> deps;
+		for (react::subject* sub : this->dependencies_)
+		{
+			deps.push_back(static_cast<inode<T>*>(sub));
+		};
+		gcache_[leaf] = ginit_(deps, leaf);
+	}
+	return it->second;
 }
 
 template <typename T>
@@ -141,25 +136,49 @@ void immutable<T>::get_leaves (
 {
 	for (auto leaf : gcache_)
 	{
-		leaves.emplace({leaf->first(), nullptr});
+		leaves[leaf.first] = nullptr;
 	}
 }
 
 template <typename T>
-inode<T>* immutable<T>::get_leaf (variable<T>* leaf) const
+immutable<T>::immutable (std::vector<inode<T>*> args,
+	BACK_MAP<T> F, std::string name) :
+iconnector<T>(args, name),
+ginit_(F)
 {
-	if (nullptr == gcache_[leaf])
+	for (react::subject* sub : this->dependencies_)
 	{
-		// initiate grad_
-		std::vector<inode<T>*> deps;
-		this->access_dependency(
-		[&deps](const react::subject* sub)
+		if (inode<T>* arg = dynamic_cast<inode<T>*>(sub))
 		{
-			deps.push_back(static_cast<const inode<T>*>(sub));
-		});
-		gcache_[leaf] = ginit_(deps);
+			if (immutable<T>* a = static_cast<immutable<T>*>(arg))
+			{
+				if (false == a->jacobians_.empty())
+				{
+					assert(jacobians_.empty()); // jacobian conflict across branches
+					jacobians_ = a->jacobians_; // copy over
+				}
+			}
+			arg->get_leaves(gcache_);
+		}
 	}
-	return gcache_[leaf];
+	common();
+}
+
+template <typename T>
+immutable<T>::immutable (const immutable<T>& other) :
+	iconnector<T>(other),
+	ginit_(other.ginit_)
+{
+	common();
+}
+
+template <typename T>
+void immutable<T>::common (void)
+{
+	zero = std::unique_ptr<constant<T> >(constant<T>::get(0));
+	one = std::unique_ptr<constant<T> >(constant<T>::get(1));
+	zero->is_managed_ = true;
+	one->is_managed_ = true;
 }
 
 }

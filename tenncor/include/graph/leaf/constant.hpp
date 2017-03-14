@@ -30,26 +30,21 @@ template <typename T>
 class constant final : public ileaf<T>
 {
 public:
-	//! override new scalar constructor
-	//! in record to determine heap information
-	static void* operator new (size_t size, T scalar);
+	//! builder for scalar
+	static constant<T>* get (T scalar);
 
-	//! override new raw, shape constructor
-	//! in record to determine heap information
-	static void* operator new (size_t size, std::vector<T> raw, tensorshape shape);
+	//! builder for data and shape
+	static constant<T>* get (std::vector<T> raw, tensorshape shape);
 
-	//! scalar constructor
-	constant (T scalar);
+	//! builder for move
+	static constant<T>* get (constant<T>&& other);
 
-	//! raw and shape constructor
-	constant (std::vector<T> raw, tensorshape shape);
+	//! destructor to kill zero
+	~constant (void);
 
 	// >>>> CLONE, COPY, & MOVE <<<<
 	//! clone function
 	virtual constant<T>* clone (void) const;
-
-	//! declare move constructor to prevent onheap from being moved over
-	constant (constant<T>&& other);
 
 	//! declare copy assignment to prevent onheap from being copied over
 	virtual constant<T>& operator = (const constant<T>& other);
@@ -61,8 +56,24 @@ public:
 	//! get gradient wrt some node
 	virtual const tensor<T>* get_gradient (inode<T>* wrt) const;
 
+	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* leaf) ;
+
+	//! merge/update the gradient/leaf info
+	virtual void get_leaves (
+		typename inode<T>::GRAD_CACHE& leaves) const;
+
+	bool is_managed_ = false; //! if constant is managed, it will not suicide if it lacks audiences
+
 protected:
-	const constant<T> zero; //! commonly used constant zero
+	constant<T>* zero = nullptr; //! commonly used constant zero
+
+	//! scalar constructor
+	constant (T scalar);
+
+	//! raw and shape constructor
+	constant (std::vector<T> raw, tensorshape shape);
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! override smart destruction,
@@ -70,23 +81,15 @@ protected:
 	//! (after it obtains an audience of course)
 	virtual void commit_sudoku (void);
 
-	// >>>> COPY && CLONE <<<<
+	// >>>> COPY, MOVE && CLONE <<<<
 	//! declare copy constructor to prevent onheap from being copied over
 	constant (const constant<T>& other);
 
+	//! declare move constructor to prevent onheap from being moved over
+	constant (constant<T>&& other);
+
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
-
-	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
-	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf) const;
-
-private:
-	bool onheap_ = false; //! store heap information
 };
 
 }

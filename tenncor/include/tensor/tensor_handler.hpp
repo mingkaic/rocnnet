@@ -11,6 +11,8 @@
  *
  */
 
+#include <random>
+
 #include "tensor/tensor.hpp"
 
 #pragma once
@@ -32,11 +34,33 @@ template <typename T>
 class itensor_handler
 {
 public:
+	//! virtual handler interface destructor
+	virtual ~itensor_handler (void) {}
+
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function
+	itensor_handler<T>* clone (void) const;
+
+	//! explicitly declare move constructor since copy is declared
+	itensor_handler (itensor_handler<T>&& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual itensor_handler<T>& operator = (const itensor_handler<T>& other);
+
+	//! move assignment, since copy and move constructors are explicitly declared
+	virtual itensor_handler<T>& operator = (itensor_handler<T>&& other);
+
 	SHAPER shaper_; //! publicly expose shaper, due its frequent usage
 
 protected:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
 	itensor_handler (SHAPER shaper, FORWARD_OP<T> forward);
+
+	//! explicitly declare copy constructor to move from public
+	itensor_handler (const itensor_handler<T>& other);
+
+	//! clone implementation
+	virtual itensor_handler<T>* clone_impl (void) const = 0;
 
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args);
@@ -53,32 +77,114 @@ public:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
 	transfer_func (SHAPER shaper, FORWARD_OP<T> forward);
 
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function
+	transfer_func<T>* clone (void) const;
+
+	//! explicitly declare move constructor since copy is declared
+	transfer_func (transfer_func<T>&& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual transfer_func<T>& operator = (const transfer_func<T>& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual transfer_func<T>& operator = (transfer_func<T>&& other);
+
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args);
+
+protected:
+	//! explicitly declare copy constructor to move from public
+	transfer_func (const transfer_func<T>& other);
+
+	//! clone implementation
+	virtual itensor_handler<T>* clone_impl (void) const;
+};
+
+template <typename T>
+class initializer : public itensor_handler<T>
+{
+public:
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function
+	initializer<T>* clone (void) const;
+
+	//! explicitly declare move constructor since copy is declared
+	initializer (initializer<T>&& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual initializer<T>& operator = (const initializer<T>& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual initializer<T>& operator = (initializer<T>&& other);
+
+	//! perform initialization
+	void operator () (tensor<T>& out);
+
+protected:
+	//! initializer forwards functions to itensor_handler
+	initializer (SHAPER shaper, FORWARD_OP<T> forward);
+
+	//! explicitly declare copy constructor to move from public
+	initializer (const initializer<T>& other);
 };
 
 //! Constant Initializer
 template <typename T>
-class const_init : public itensor_handler<T>
+class const_init : public initializer<T>
 {
 public:
 	//! initialize tensors with a constant scalar value
 	const_init (T value);
 
-	//! perform initialization
-	void operator () (tensor<T>& out);
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function
+	const_init<T>* clone (void) const;
+
+	//! explicitly declare move constructor since copy is declared
+	const_init (const_init<T>&& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual const_init<T>& operator = (const const_init<T>& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual const_init<T>& operator = (const_init<T>&& other);
+
+protected:
+	//! explicitly declare copy constructor to move from public
+	const_init (const const_init<T>& other);
+
+	//! clone implementation
+	virtual itensor_handler<T>* clone_impl (void) const;
 };
 
 //! Uniformly Random Initializer
 template <typename T>
-class rand_uniform : public itensor_handler<T>
+class rand_uniform : public initializer<T>
 {
 public:
 	//! initialize tensors with a random value between min and max
 	rand_uniform (T min, T max);
 
-	//! perform initialization
-	void operator () (tensor<T>& out);
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function
+	rand_uniform<T>* clone (void) const;
+
+	//! explicitly declare move constructor since copy is declared
+	rand_uniform (rand_uniform<T>&& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual rand_uniform<T>& operator = (const rand_uniform<T>& other);
+
+	//! copy assignment, since copy and move constructors are explicitly declared
+	virtual rand_uniform<T>& operator = (rand_uniform<T>&& other);
+
+protected:
+	//! explicitly declare copy constructor to move from public
+	rand_uniform (const rand_uniform<T>& other);
+
+	//! clone implementation
+	virtual itensor_handler<T>* clone_impl (void) const;
 
 private:
 	std::uniform_real_distribution<T>  distribution_;

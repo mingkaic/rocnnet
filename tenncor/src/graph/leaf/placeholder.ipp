@@ -13,10 +13,7 @@ namespace nnet
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
-	ivariable<T>(shape, nullptr, name)
-{
-	this->init_ = new typename ileaf<T>::assignment();
-}
+	ivariable<T>(shape, new typename ileaf<T>::assignment(), name) {}
 
 template <typename T>
 placeholder<T>* placeholder<T>::clone (void) const
@@ -69,10 +66,10 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 	}
 	typename ileaf<T>::assignment* assigner =
 		dynamic_cast<typename ileaf<T>::assignment*>(this->init_);
-	(*assigner)(this->data, data);
+	(*assigner)(*this->data_, data);
 
 	this->is_init_ = true;
-	this->notify();
+	this->notify(react::UPDATE);
 	return *this;
 }
 
@@ -82,9 +79,19 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 {
 	*this->data_ = std::move(data);
 	this->is_init_ = true;
-	this->notify();
+	this->notify(react::UPDATE);
 	return *this;
 }
+
+template <typename T>
+inode<T>* placeholder<T>::get_leaf (variable<T>* leaf)
+{
+	return this->zero.get();
+}
+
+template <typename T>
+void placeholder<T>::get_leaves (
+	typename inode<T>::GRAD_CACHE& leaves) const {}
 
 template <typename T>
 placeholder<T>::placeholder (const placeholder<T>& other) :
@@ -94,16 +101,6 @@ template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const
 {
 	return new placeholder<T>(*this);
-}
-
-template <typename T>
-void placeholder<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE& leaves) const {}
-
-template <typename T>
-inode<T>* placeholder<T>::get_leaf (variable<T>* leaf) const
-{
-	return &this->zero;
 }
 
 }

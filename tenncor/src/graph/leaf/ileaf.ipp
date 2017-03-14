@@ -12,15 +12,6 @@ namespace nnet
 {
 
 template <typename T>
-ileaf<T>::~ileaf (void)
-{
-	if (nullptr != init_)
-	{
-		delete init_;
-	}
-}
-
-template <typename T>
 ileaf<T>* ileaf<T>::clone (void) const
 {
 	return static_cast<ileaf<T>*>(this->clone_impl());
@@ -33,7 +24,7 @@ ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other)
 	{
 		inode<T>::operator = (other);
 		copy(other);
-		this->notify(); // content changed
+		this->notify(react::UPDATE); // content changed
 	}
 	return *this;
 }
@@ -44,9 +35,10 @@ ileaf<T>& ileaf<T>::operator = (ileaf<T>&& other)
 	if (this != &other)
 	{
 		inode<T>::operator = (other);
-		move(other);
-		this->notify(); // content changed
+		move(std::move(other));
+		this->notify(react::UPDATE); // content changed
 	}
+	return *this;
 }
 
 template <typename T>
@@ -70,24 +62,15 @@ const tensor<T>* ileaf<T>::get_eval (void) const
 }
 
 template <typename T>
-bool ileaf<T>::can_init (void) const
-{
-	return init_ != nullptr;
-}
-
-template <typename T>
 bool ileaf<T>::good_status (void) const
 {
 	return is_init_;
 }
 
 template <typename T>
-ileaf<T>::ileaf (const tensorshape& shape,
-	itensor_handler<T>* init,
-	std::string name) :
-inode<T>(shape, name),
-init_(init),
-data_(new tensor<T>(shape)) {}
+ileaf<T>::ileaf (const tensorshape& shape, std::string name) :
+	inode<T>(name),
+	data_(new tensor<T>(shape)) {}
 
 template <typename T>
 ileaf<T>::ileaf (const ileaf<T>& other) :
@@ -100,48 +83,43 @@ template <typename T>
 ileaf<T>::ileaf (ileaf<T>&& other) :
 	inode<T>(other)
 {
-	move(other);
+	move(std::move(other));
 }
 
 template <typename T>
 void ileaf<T>::copy (const ileaf<T>& other)
 {
-	if (nullptr != init_)
-	{
-		delete init_;
-	}
 	data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
-	init_ = other.init_->clone();
 	is_init_ = other.is_init_;
 }
 
 template <typename T>
 void ileaf<T>::move (ileaf<T>&& other)
 {
-	if (nullptr != init_)
-	{
-		delete init_;
-	}
 	data_ = std::unique_ptr<tensor<T> >(std::move(other.data_));
-	init_ = std::move(other.init_);
 	is_init_ = std::move(other.is_init_);
 }
 
 template <typename T>
-class ileaf<T>::assignment : public itensor_handler<T>
+class ileaf<T>::assignment : public initializer<T>
 {
 public:
 	assignment (void) :
-		itensor_handler<T>(
+		initializer<T>(
 	[](std::vector<tensorshape> ts) -> tensorshape
 	{
 		if (ts.empty()) return {};
 		return ts[0];
 	},
-	[this](T* dest, tensorshape& shape, std::vector<const T*>& orig)
+	[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
 	{
 		std::memcpy(dest, &temp_[0], shape.n_elems());
 	}) {}
+
+	assignment* clone (void) const
+	{
+		return static_cast<assignment*>(clone_impl());
+	}
 
 	// perform assignment
 	void operator () (tensor<T>& out, std::vector<T>& data)
@@ -152,7 +130,14 @@ public:
 	}
 
 protected:
-	std::vector<size_t> temp_;
+	assignment (const assignment& other) : initializer<T>(other) {}
+
+	virtual itensor_handler<T>* clone_impl (void) const
+	{
+		return new assignment(*this);
+	}
+
+	std::vector<T> temp_;
 };
 
 }

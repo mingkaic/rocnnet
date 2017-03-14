@@ -14,14 +14,15 @@
 #include "graph/react/subject.hpp"
 
 #pragma once
-#ifndef session_hpp
+#define session_hpp_S
+#ifndef session_hpp_S
 #define session_hpp
 
 namespace nnet
 {
 //TODO: >>>>> UPDATE <<<<<
-template <typename T>
-class inode;
+//template <typename T>
+//class inode;
 
 template <typename T>
 class variable;

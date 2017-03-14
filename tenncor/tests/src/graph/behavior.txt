@@ -1,62 +1,10 @@
-What is it?
-Rocnnet is an Automated Differentation Library supporting Matrix Operations
+// REACTIVE BEHAVIOR
+E000 - iobserver should detach (unsubscribe) from subject on destruction
+E001 - copying observers will copy over its dependencies (subjects)
 
-Layers:
-- Graph:
-    Purpose:
-    Create a layer of abstraction to manage the distribution of data.
-    In general, data is transfered between graph nodes from source 
-    (or sources) to sinks.
-
-- Tensor
-    Purpose:
-    Performs operations and stores shapes (dimensionality) information.
-
-- Memory management
-    Purpose:
-    Manages the allocation, deallocation, and serialization of raw data
-    based on supporting architecture (none yet)
-
-Design Pattern:
-Graph uses composite pattern between ivariable and ioperation nodes.
-Nodes are made reactive using observer pattern.
-Memory management serves as the factory to tensors' raw data.
-A singleton session is used to manage global options such as shape evaluation when constructing
-and initialize all variables.
-
-Key players:
-- iobserver and subject
-- ivariable and ileaf
-- ioperation
-- iexecutor
-- tensor
-- iallocator
-- initializer
-- session
-- tensorshape
-
-Expected Behaviors:
-
-// Definition
-- tensorshapes are equivalent if:
-    - their defined state are equal
-    - they are compatible
-
-// TENSOR DATA MANAGERS
-A000 - tensorshape is compatible if one of the shapes are undefined, or the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
-A001 - tensorshape merge should return the most defined most defined shape (that is dimension values > 0 are preferred)
-A002 - merging incompatible tensorshapes should result in a logic error
-A003 - two tensorshapes can concatenate to form a tensorshape depending on the order of concatenation assuming both tensors are at least partially defined
-A004 - a tensorshapes is partially defined if it has a rank
-A005 - a tensorshapes is fully defined if it is at least partially defined and all its dimensional values are defined (> 0)
-
-B000 - allocation of undefined or partially defined tensors will fail
-B001 - reallocation of tensors will succeed (and clear already allocated raw data)
-
-B100 - tensors should allocate raw data on construction if tensorshape is fully defined
-B101 - tensor allocation requires a fully defined tensorshape either provided in construction or provided in allocation call
-B102 - tensorshape provided in allocation call must be compatible with the tensorshape provided in construction
-B103 - tensor_op must update its raw values before updating
+E500 - subject should detach and mark all observers for destruction on destruction
+E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
+E503 - copying subjects will not copy over the observers
 
 // VARIABLE DEPENDENT OBJECTS
 C000 - session should register all variable nodes on node construction
@@ -78,17 +26,9 @@ D400 - constants must self destruct when its subject loses all its subscribers
 D401 - constants are always initialized
 D402 - constant's gradient is a zero constant
 
-// REACTIVE BEHAVIOR
-E000 - iobserver should detach (unsubscribe) from subject on destruction
-E001 - copying observers will copy over its dependencies (subjects)
-
-E500 - subject should detach and mark all observers for destruction on destruction
-E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
-E503 - copying subjects will not copy over the observers
-
 // BASE OPERATION NODE
-F000 - ioperation holding poorly defined tensors (null inputs) return null on evaluation
-F001 - ioperation must reuse its gradient object
+F000 - operation holding poorly defined tensors (null inputs) return null on evaluation
+F001 - operation must reuse its gradient object
 F002 - exposing operation nodes with null/invalid tensors will fail
 
 F100 - elementary operations must error on exposure when not all of its leaves are initialized

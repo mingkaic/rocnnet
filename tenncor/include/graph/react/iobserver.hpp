@@ -61,10 +61,6 @@ protected:
 	//! move over dependencies
 	iobserver (iobserver&& other);
 
-	// >>>> DEPENDENCY ACCESS <<<<
-	//! access dependency
-	void access_dependency (std::function<void(const subject*)> access) const;
-
 	// >>>> DEPENDENCY MANIPULATION <<<<
 	//! subscribe: add dependency
 	void add_dependency (subject* dep);
@@ -75,6 +71,10 @@ protected:
 	//! replace dependency
 	void replace_dependency (subject* dep, size_t idx);
 
+	//! order of subject matters;
+	//! observer-subject relation is non-unique
+	std::vector<subject*> dependencies_;
+
 private:
 	//! update observer value with notification
 	void update (size_t dep_idx, notification msg);
@@ -84,10 +84,6 @@ private:
 
 	//! move helper function
 	void move (iobserver& other);
-
-	//! order of subject matters;
-	//! observer-subject relation is non-unique
-	std::vector<subject*> dependencies_;
 
 	friend class subject;
 };

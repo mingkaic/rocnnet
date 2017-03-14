@@ -47,7 +47,7 @@ public:
 	//! deallocate tensor
 	virtual ~tensor (void);
 
-	// >>>> CLONE, MOVE, && COPY ASSIGNMENT <<<<
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
 	//! clone function
 	tensor<T>* clone (void) const;
 

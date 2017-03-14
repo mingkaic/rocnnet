@@ -14,40 +14,22 @@ namespace nnet
 {
 
 template <typename T>
-void* operation<T>::operator new (size_t size,
-	std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> Nf,
-	BACK_MAP F, std::string name)
+operation<T>* operation<T>::get (std::vector<inode<T>*> args,
+	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP F, std::string name)
 {
-	operation<T>* op = static_cast<operation<T>*>(
-		::operator new(size, args, shaper, Nf, F, name));
-	op->onheap_ = true;
-	return op;
+	return new operation<T>(args, shaper, Nf, F, name);
 }
 
 template <typename T>
-operation<T>::operation (
-	std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> forward,
-	BACK_MAP<T> F, std::string name) :
-immutable (args, F, name),
-Nf_(shaper, forward)
+operation<T>* operation<T>::get (operation<T>&& other)
 {
-	update(nullptr); // update data_ initially
+	return new operation<T>(std::move(other));
 }
 
 template <typename T>
 operation<T>* operation<T>::clone (void) const
 {
 	return static_cast<operation<T>*>(clone_impl());
-}
-
-template <typename T>
-operation<T>::operation (operation<T>&& other) :
-	immutable<T>(other)
-{
-	Nf_ = std::move(other.Nf_);
-	data_ = std::move(other.data_);
 }
 
 template <typename T>
@@ -99,10 +81,9 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 	// traverse towards target by looking at leaf sets
 	std::vector<tensor<T>*> allocated;
 	std::vector<const tensor<T>*> tens;
-	this->access_dependency(
-	[&tens, &allocated, target](const subject* s)
+	for (const react::subject* sub : this->dependencies_)
 	{
-		inode<T>* a = static_cast<inode<T>*>(s);
+		inode<T>* a = static_cast<inode<T>*>(sub);
 		if ((iconnector<T>* con = dynamic_cast<iconnector<T>*>(a)) &&
 			(con->potential_descendent(target)))
 		{
@@ -116,7 +97,7 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 		{
 			tens.push_back(*(a->get_eval()));
 		}
-	});
+	};
 
 	out = new tensor<T>(this->get_shape());
 	// out is the shape of the resulting shape
@@ -133,8 +114,7 @@ void operation<T>::update (react::subject* arg)
 	bool badstate = false;
 	std::vector<const tensor<T>*> tens;
 	std::vector<tensorshape> ts;
-	this->access_dependency(
-	[&badstate, &tens, &ts](const subject* sub)
+	for (const subject* sub : this->dependencies_)
 	{
 		if (inode<T>* a = dynamic_cast<inode<T>*>(sub))
 		{
@@ -145,7 +125,7 @@ void operation<T>::update (react::subject* arg)
 		{
 			badstate = true;
 		}
-	});
+	};
 
 	if (badstate)
 	{
@@ -163,15 +143,30 @@ void operation<T>::update (react::subject* arg)
 		Nf_(*data_, tens);
 		this->notify(UPDATE);
 	}
+
+	graph_node* master = nullptr;
+	gid_->get_master(master);
+	if (gid_ != master)
+	{
+		master->replace(gid_); // gid_ = lhs
+	}
+}
+
+template <typename T>
+operation<T>::operation (
+	std::vector<inode<T>*> args,
+	SHAPER shaper, FORWARD_OP<T> forward,
+	BACK_MAP<T> F, std::string name) :
+immutable (args, F, name),
+Nf_(shaper, forward)
+{
+	update(nullptr); // update data_ initially
 }
 
 template <typename T>
 void operation<T>::commit_sudoku (void)
 {
-	if (onheap_)
-	{
-		delete this;
-	}
+	delete this;
 }
 
 template <typename T>
@@ -186,6 +181,14 @@ operation<T>::operation (const operation<T>& other) :
 {
 	Nf_ = other.Nf_;
 	data_ = other.data_->clone();
+}
+
+template <typename T>
+operation<T>::operation (operation<T>&& other) :
+	immutable<T>(other)
+{
+	Nf_ = std::move(other.Nf_);
+	data_ = std::move(other.data_);
 }
 
 }

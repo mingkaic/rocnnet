@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/variable/placeholder.hpp"
+#include "graph/leaf/placeholder.hpp"
 #include "mock_operation.h"
 using ::testing::_;
 
@@ -60,7 +60,7 @@ TEST(PLACEHOLDER, ConstructInit_D301) {
 TEST(PLACEHOLDER, ZeroConstGrad_D302) {
 	nnet::placeholder<double> invar(std::vector<size_t>{1}, "in");
 	invar = std::vector<double>{1};
-	nnet::ivariable<double>* gradient = invar.get_gradient();
+	nnet::inode<double>* gradient = invar.get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);
 	ASSERT_EQ(0, res.size());
 }

@@ -2,6 +2,9 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
+//#define DISABLE_TENSOR_MODULE_TESTS
+#ifndef DISABLE_TENSOR_MODULE_TESTS
+
 #include <algorithm>
 #include <numeric>
 
@@ -10,7 +13,7 @@
 #include "gtest/gtest.h"
 
 
-#define DISABLE_SHAPE_TEST
+//#define DISABLE_SHAPE_TEST
 #ifndef DISABLE_SHAPE_TEST
 
 
@@ -552,3 +555,5 @@ TEST(TENSORSHAPE, Proto) {}
 
 
 #endif /* DISABLE_SHAPE_TEST */
+
+#endif /* DISABLE_TENSOR_MODULE_TESTS */

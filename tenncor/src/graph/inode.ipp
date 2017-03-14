@@ -14,8 +14,8 @@ namespace nnet
 template <typename T>
 inode<T>::~inode (void)
 {
-	session& sess = session::get_instance();
-	sess.unregister_obj(*this);
+//	session& sess = session::get_instance();
+//	sess.unregister_obj(*this);
 }
 
 template <typename T>
@@ -60,10 +60,11 @@ std::string inode<T>::get_name (void) const
 
 template <typename T>
 inode<T>::inode (std::string name) :
+	react::subject(),
 	name_(name)
 {
-	session& sess = session::get_instance();
-	sess.register_obj(*this);
+//	session& sess = session::get_instance();
+//	sess.register_obj(*this);
 }
 
 template <typename T>
@@ -77,7 +78,7 @@ inode<T>::inode (inode<T>&& other) :
 	name_(std::move(other.name_)) {}
 
 template <typename T>
-std::vector<T> expose (inode<T>* var)
+std::vector<T> expose (const inode<T>* var)
 {
 	if (nullptr == var) return std::vector<T>{};
 	const tensor<T>* ten = var->get_eval();
@@ -87,14 +88,14 @@ std::vector<T> expose (inode<T>* var)
 template <typename T>
 bool operator == (const inode<T>& c, T scalar)
 {
-	std::vector<T> res = expose<T>(c);
+	std::vector<T> res = expose<T>(&c);
 	return 1 == res.size() && scalar == res[0];
 }
 
 template <typename T>
 bool operator != (const inode<T>& c, T scalar)
 {
-	std::vector<T> res = expose<T>(c);
+	std::vector<T> res = expose<T>(&c);
 	return 1 == res.size() && scalar != res[0];
 }
 

@@ -12,45 +12,30 @@ namespace nnet
 {
 
 template <typename T>
-void* constant<T>::operator new (size_t size, T scalar)
+constant<T>* constant<T>::get (T scalar)
 {
-	constant<T>* c = static_cast<constant<T>*>(
-		::operator new(size, scalar));
-	c->onheap_ = true;
-	return c;
+	return new constant<T>(scalar);
 }
 
 template <typename T>
-void* constant<T>::operator new (size_t size, std::vector<T> raw, tensorshape shape)
+constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 {
-	constant<T>* c = static_cast<constant<T>*>(
-		::operator new(size, raw, shape));
-	c->onheap_ = true;
-	return c;
+	return new constant<T>(raw, shape);
 }
 
 template <typename T>
-constant<T>::constant (T scalar) :
-	ileaf<T>(std::vector<size_t>{1},
-		 new const_init<T>(scalar),
-		 nnutils::formatter() << scalar),
-	zero(0)
+constant<T>* constant<T>::get (constant<T>&& other)
 {
-	this->data_->allocate();
-	(*this->init_)(*this->data_);
-	this->is_init_ = true;
+	return new constant<T>(std::move(other));
 }
 
 template <typename T>
-constant<T>::constant (std::vector<T> raw, tensorshape shape) :
-	ileaf<T>(shape, new typename ileaf<T>::assignment(),
-		 nnutils::formatter() << raw.front() << ".."
-		 	<< raw.back() << raw.end()),
-	zero(0)
+constant<T>::~constant (void)
 {
-	this->data_->allocate();
-	(*this->init_) = raw;
-	this->is_init_ = true;
+	if (zero != this)
+	{
+		delete zero;
+	}
 }
 
 template <typename T>
@@ -58,10 +43,6 @@ constant<T>* constant<T>::clone (void) const
 {
 	return static_cast<constant<T>*>(clone_impl());
 }
-
-template <typename T>
-constant<T>::constant (constant<T>&& other) :
-	ileaf<T>(other), zero(0)  {}
 
 template <typename T>
 constant<T>& constant<T>::operator = (const constant<T>& other)
@@ -78,7 +59,7 @@ constant<T>& constant<T>::operator = (constant<T>&& other)
 {
 	if (this != &other)
 	{
-		ileaf<T>::operator = (other);
+		ileaf<T>::operator = (std::move(other));
 	}
 	return *this;
 }
@@ -86,26 +67,13 @@ constant<T>& constant<T>::operator = (constant<T>&& other)
 template <typename T>
 const tensor<T>* constant<T>::get_gradient (inode<T>* wrt) const
 {
-	return this->zero->get_eval();
+	return zero->get_eval();
 }
 
 template <typename T>
-void constant<T>::commit_sudoku (void)
+inode<T>* constant<T>::get_leaf (variable<T>* leaf)
 {
-	if (onheap_)
-	{
-		delete this;
-	}
-}
-
-template <typename T>
-constant<T>::constant (const constant<T>& other) :
-	ileaf<T>(other), zero(0) {}
-
-template <typename T>
-inode<T>* constant<T>::clone_impl (void) const
-{
-	return new constant<T>(*this);
+	return zero;
 }
 
 template <typename T>
@@ -113,9 +81,69 @@ void constant<T>::get_leaves (
 	typename inode<T>::GRAD_CACHE& leaves) const {}
 
 template <typename T>
-inode<T>* constant<T>::get_leaf (variable<T>* leaf) const
+constant<T>::constant (T scalar) :
+	ileaf<T>(std::vector<size_t>{1},
+		 nnutils::formatter() << scalar)
 {
-	return &this->zero;
+	if (scalar == 0)
+	{
+		zero = this;
+	}
+	else
+	{
+		zero = new constant<T>(0);
+		zero->is_managed_ = true;
+	}
+
+	const_init<T> init(scalar);
+	this->data_->allocate();
+	init(*this->data_);
+	this->is_init_ = true;
+}
+
+template <typename T>
+constant<T>::constant (std::vector<T> raw, tensorshape shape) :
+	ileaf<T>(shape, nnutils::formatter()
+		<< raw.front() << ".." << raw.back())
+{
+	zero = new constant<T>(0);
+	zero->is_managed_ = true;
+
+	typename ileaf<T>::assignment assigner;
+	this->data_->allocate();
+	assigner(*this->data_, raw);
+	this->is_init_ = true;
+}
+
+template <typename T>
+void constant<T>::commit_sudoku (void)
+{
+	if (false == is_managed_ && this->no_audience())
+	{
+		delete this;
+	}
+}
+
+template <typename T>
+constant<T>::constant (const constant<T>& other) :
+	ileaf<T>(other)
+{
+	zero = new constant<T>(0);
+	zero->is_managed_ = true;
+}
+
+template <typename T>
+constant<T>::constant (constant<T>&& other) :
+	ileaf<T>(std::move(other))
+{
+	zero = new constant<T>(0);
+	zero->is_managed_ = true;
+}
+
+template <typename T>
+inode<T>* constant<T>::clone_impl (void) const
+{
+	return new constant<T>(*this);
 }
 
 }

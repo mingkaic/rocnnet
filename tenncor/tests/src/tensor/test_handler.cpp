@@ -2,6 +2,9 @@
 // Created by Mingkai Chen on 2017-03-10.
 //
 
+//#define DISABLE_TENSOR_MODULE_TESTS
+#ifndef DISABLE_TENSOR_MODULE_TESTS
+
 #include <algorithm>
 
 #include "gtest/gtest.h"
@@ -168,9 +171,9 @@ TEST(HANDLER, Copy_C003)
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
 
-	transfer_func<double> tfcpy(tf);
-	const_init<double> cicpy(ci);
-	rand_uniform<double> ricpy(ri);
+	transfer_func<double>* tfcpy = tf.clone();
+	const_init<double>* cicpy = ci.clone();
+	rand_uniform<double>* ricpy = ri.clone();
 
 	tfassign = tf;
 	ciassign = ci;
@@ -180,15 +183,15 @@ TEST(HANDLER, Copy_C003)
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
-	tfcpy(ttransf, {});
+	(*tfcpy)(ttransf, {});
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
 
-	cicpy(tscalar);
+	(*cicpy)(tscalar);
 	EXPECT_EQ(scalar, tscalar.expose()[0]);
 
-	ricpy(tblock);
+	(*ricpy)(tblock);
 	std::vector<double> v = tblock.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -214,6 +217,25 @@ TEST(HANDLER, Copy_C003)
 		EXPECT_LE(low, v2[i]);
 		EXPECT_GE(high, v2[i]);
 	}
+
+	itensor_handler<double>* interface_ptr = &tf;
+	itensor_handler<double>* resptr = interface_ptr->clone();
+	EXPECT_NE(nullptr, dynamic_cast<transfer_func<double>*>(resptr));
+	delete resptr;
+
+	interface_ptr = &ci;
+	resptr = interface_ptr->clone();
+	EXPECT_NE(nullptr, dynamic_cast<const_init<double>*>(resptr));
+	delete resptr;
+
+	interface_ptr = &ri;
+	resptr = interface_ptr->clone();
+	EXPECT_NE(nullptr, dynamic_cast<rand_uniform<double>*>(resptr));
+	delete resptr;
+
+	delete tfcpy;
+	delete cicpy;
+	delete ricpy;
 }
 
 
@@ -234,23 +256,23 @@ TEST(HANDLER, Move_C003)
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
 
-	transfer_func<double> tfcpy(std::move(tf));
-	const_init<double> cicpy(std::move(ci));
-	rand_uniform<double> ricpy(std::move(ri));
+	transfer_func<double> tfmv(std::move(tf));
+	const_init<double> cimv(std::move(ci));
+	rand_uniform<double> rimv(std::move(ri));
 
 	tensorshape shape = random_shape();
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
-	tfcpy(ttransf, {});
+	tfmv(ttransf, {});
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
 
-	cicpy(tscalar);
+	cimv(tscalar);
 	EXPECT_EQ(scalar, tscalar.expose()[0]);
 
-	ricpy(tblock);
+	rimv(tblock);
 	std::vector<double> v = tblock.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -258,9 +280,9 @@ TEST(HANDLER, Move_C003)
 		EXPECT_GE(high, v[i]);
 	}
 
-	tfassign = std::move(tfcpy);
-	ciassign = std::move(cicpy);
-	riassign = std::move(ricpy);
+	tfassign = std::move(tfmv);
+	ciassign = std::move(cimv);
+	riassign = std::move(rimv);
 
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
@@ -281,7 +303,7 @@ TEST(HANDLER, Move_C003)
 		EXPECT_GE(high, v2[i]);
 	}
 
-	// tf, ci, ri, tfcpy, cicpy, and ricpy should be undefined
+	// tf, ci, ri, tfmv, cimv, and rimv should be undefined
 	tensor<double> tscalar3(0);
 	tensor<double> tblock3(shape);
 	tensor<double> ttransf3(std::vector<size_t>{(size_t) SUPERMARK});
@@ -291,10 +313,12 @@ TEST(HANDLER, Move_C003)
 //	EXPECT_DEATH(tf(ttransf3, {}), ".*");
 //	EXPECT_DEATH(ci(tscalar3), ".*");
 //	EXPECT_DEATH(ri(tblock3), ".*");
-//	EXPECT_DEATH(tfcpy(ttransf3, {}), ".*");
-//	EXPECT_DEATH(cicpy(tscalar3), ".*");
-//	EXPECT_DEATH(ricpy(tblock3), ".*");
+//	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
+//	EXPECT_DEATH(cimv(tscalar3), ".*");
+//	EXPECT_DEATH(rimv(tblock3), ".*");
 }
 
 
 #endif /* DISABLE_HANDLER_TEST */
+
+#endif /* DISABLE_TENSOR_MODULE_TESTS */

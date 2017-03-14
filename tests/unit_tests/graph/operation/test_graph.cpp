@@ -4,14 +4,14 @@
 
 #include "gtest/gtest.h"
 #include "graph/tensorless/functor.hpp"
-#include "graph/operation/elementary.hpp"
+#include "graph/operation/immutable/elementary.hpp"
 
 
 // behavior F200
 TEST(FUNCTOR, deletion_var_F200)
 {
-    nnet::ivariable<double>* leaf = new nnet::variable<double>(1);
-    nnet::ivariable<double>* leaf2 = new nnet::variable<double>(2);
+    nnet::inode<double>* leaf = new nnet::variable<double>(1);
+    nnet::inode<double>* leaf2 = new nnet::variable<double>(2);
     nnet::functor<double>* g1 = nnet::functor<double>::build(leaf, 
     [](nnet::varptr<double> leaf)
     {
@@ -39,8 +39,8 @@ TEST(FUNCTOR, deletion_var_F200)
 
 TEST(FUNCTOR, deletion_graph_F201)
 {
-    nnet::ivariable<double>* leaf = new nnet::variable<double>(1);
-    nnet::ivariable<double>* leaf2 = new nnet::variable<double>(2);
+    nnet::inode<double>* leaf = new nnet::variable<double>(1);
+    nnet::inode<double>* leaf2 = new nnet::variable<double>(2);
     nnet::functor<double>* g1 = nnet::functor<double>::build(leaf, 
     [](nnet::varptr<double> leaf)
     {
@@ -71,7 +71,7 @@ TEST(FUNCTOR, deletion_graph_F201)
 
 TEST(FUNCTOR, var_deletion)
 {
-	nnet::ivariable<double>* leaf = new nnet::variable<double>(2);
+	nnet::inode<double>* leaf = new nnet::variable<double>(2);
 	nnet::functor<double>* g1 = nnet::functor<double>::build(leaf,
 	[](nnet::varptr<double> leaf)
 	{

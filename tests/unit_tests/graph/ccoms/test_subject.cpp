@@ -7,7 +7,7 @@ using ::testing::_;
 
 
 // Behavior E500
-TEST(CCOMS, DetachObserverOnDeath_E500)
+TEST(react, DetachObserverOnDeath_E500)
 {
 	MockSubject* subject = new MockSubject();
 
@@ -26,7 +26,7 @@ TEST(CCOMS, DetachObserverOnDeath_E500)
 
 
 // Behavior E501
-TEST(CCOMS, ObserverUpdate_E501)
+TEST(react, ObserverUpdate_E501)
 {
     MockSubject subject;
 	MockObserver* o1 = MockObserver::build(&subject);
@@ -43,7 +43,7 @@ TEST(CCOMS, ObserverUpdate_E501)
 
 
 // Behavior E502
-TEST(CCOMS, NoCopy_E502)
+TEST(react, NoCopy_E502)
 {
 	MockSubject solo;
 	MockSubject leaf1;

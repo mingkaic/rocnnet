@@ -6,8 +6,8 @@
 #include "gtest/gtest.h"
 #include "executor/gradient.hpp"
 #include "graph/functions.hpp"
-#include "graph/operation/transform.hpp"
-#include "graph/operation/matmul.hpp"
+#include "graph/operation/immutable/transform.hpp"
+#include "graph/operation/immutable/matmul.hpp"
 #include "test_util.h"
 
 static const double epi = std::numeric_limits<double>::epsilon();
@@ -75,7 +75,7 @@ TEST(DERIVE, UnaryElementary)
 		grad->execute();
 		size_t count = 0;
 		std::vector<double> raw;
-		grad->collect_grad([&count, &raw](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		grad->collect_grad([&count, &raw](nnet::inode<double>* key, nnet::placeholder<double>* value)
 		{
 			raw = nnet::expose<double>(value);
 			count++;
@@ -131,7 +131,7 @@ TEST(DERIVE, BinaryElementary)
 		size_t count = 0;
 		std::vector<double> raw1;
 		std::vector<double> raw2;
-		grad->collect_grad([&count, &raw1, &raw2](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		grad->collect_grad([&count, &raw1, &raw2](nnet::inode<double>* key, nnet::placeholder<double>* value)
 		{
 			if (0 == count)
 			{
@@ -145,7 +145,7 @@ TEST(DERIVE, BinaryElementary)
 		});
 		ASSERT_EQ(2, count);
 		count = 0;
-		bad_grad->collect_grad([&count](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		bad_grad->collect_grad([&count](nnet::inode<double>* key, nnet::placeholder<double>* value)
 		{
 			// TODO: what should we do for bad gradients?
 			count++;
@@ -201,7 +201,7 @@ TEST(DERIVE, Transform) {
 		grad->execute();
 		size_t count = 0;
 		std::vector<double> raw;
-		grad->collect_grad([&count, &raw](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+		grad->collect_grad([&count, &raw](nnet::inode<double>* key, nnet::placeholder<double>* value)
 		{
 			raw = nnet::expose<double>(value);
 			count++;
@@ -242,7 +242,7 @@ TEST(DERIVE, ComplexElementary) {
 	size_t count = 0;
 	grad.collect_grad(
 	[&count, &dp1, &dp2, p1, p2](
-		nnet::ivariable<double>* key,
+		nnet::inode<double>* key,
 		nnet::placeholder<double>* value)
 	{
 		if (0 == count)
@@ -279,7 +279,7 @@ TEST(DERIVE, ComplexElementary) {
 }
 
 
-// tests deriving with respect to leaf (variable) nodes using sigmoid
+// tests deriving with respect to leaf (leaf) nodes using sigmoid
 TEST(DERIVE, SigmoidComplex) {
 	const size_t edge = 10;
 	const size_t supersize = edge*edge*edge;
@@ -297,7 +297,7 @@ TEST(DERIVE, SigmoidComplex) {
 	grad.execute();
 	std::vector<double> der;
 	grad.collect_grad(
-	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	[&der](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		der = nnet::expose<double>(value);
 	});
@@ -341,7 +341,7 @@ TEST(DERIVE, OperationDerive) {
 	grad.execute();
 	std::vector<double> der;
 	grad.collect_grad(
-	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	[&der](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		der = nnet::expose<double>(value);
 	});
@@ -387,7 +387,7 @@ TEST(DERIVE, OpDeriveMatmul) {
 	grad.freeze();
 	grad.execute();
 	grad.collect_grad(
-	[&der](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	[&der](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		der = nnet::expose<double>(value);
 	});
@@ -440,7 +440,7 @@ TEST(DERIVE, Matmul) {
 	std::vector<double> rawA;
 	std::vector<double> rawB;
 	size_t count = 0;
-	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	grad.collect_grad([&count, A, B, &rawA, &rawB](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		ASSERT_TRUE(key == A.get() || key == B.get());
 		if (key == A.get())
@@ -521,7 +521,7 @@ TEST(DERIVE, DISABLED_MatmulComplex)
 	
 	std::vector<double> exv = nnet::expose<double>(ex1);
 	it.collect_grad(
-	[W1, &exv](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	[W1, &exv](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		EXPECT_EQ(W1.get(), key);
 		std::vector<double> interv = nnet::expose<double>(value);
@@ -543,7 +543,7 @@ TEST(DERIVE, DISABLED_MatmulComplex)
 	std::vector<double> w1vec;
 	std::vector<double> w2vec;
 	grad.collect_grad(
-	[W1, W2, &w1vec, &w2vec](nnet::ivariable<double>* key, nnet::placeholder<double>* value)
+	[W1, W2, &w1vec, &w2vec](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
 		nnet::print_shape(value->get_shape());
 		EXPECT_TRUE(key == W1 || key == W2);

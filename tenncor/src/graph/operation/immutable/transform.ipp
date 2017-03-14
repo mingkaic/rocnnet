@@ -27,7 +27,7 @@ template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return new operation<T>(std::vector<inode<T>*>{a},
+	return operation<T>::get(std::vector<inode<T>*>{a},
 		[](std::vector<tensorshape> shapes)
 		{
 			tensorshape ts = shapes[0];
@@ -62,8 +62,7 @@ varptr<T> transpose (const varptr<T> a)
 		},
 		[](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
-			inode<T>* a = args.front();
-			return transpose(varptr<T>(a->get_leaf(leaf)));
+			return transpose(varptr<T>(args.front()->get_leaf(leaf)));
 		}, "transpose");
 }
 
@@ -74,7 +73,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
-	return new operation<T>(std::vector<inode<T>*>{a, watch},
+	return operation<T>::get(std::vector<inode<T>*>{a, watch},
 		[](std::vector<tensorshape> shapes)
 		{
 			tensorshape orig = shapes[0];
@@ -171,8 +170,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 		},
 		[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
-			inode<T>* a = args.front();
-			return fit(varptr<T>(a->get_leaf(leaf)), watch);
+			return fit(varptr<T>(args.front()->get_leaf(leaf)), watch);
 		}, "fit");
 }
 
@@ -180,7 +178,7 @@ template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
-	return new operation<T>(std::vector<inode<T>*>{a},
+	return operation<T>::get(std::vector<inode<T>*>{a},
 		[index, multiplier](std::vector<tensorshape> shapes)
 		{
 			tensorshape ts = shapes[0];
@@ -244,8 +242,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 		},
 		[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
-			inode<T>* a = args.front();
-			return extend(varptr<T>(a->get_leaf(leaf)), index, multiplier);
+			return extend(varptr<T>(args.front()->get_leaf(leaf)), index, multiplier);
 		}, "extend");
 }
 
@@ -254,11 +251,11 @@ varptr<T> compress (const varptr<T> a, int index,
 	std::function<T(const std::vector<T>&)> collector)
 {
 	if (nullptr == a) return nullptr;
-	TEN_OP<T> gatherer;
+	FORWARD_OP<T> gatherer;
 	SHAPER shaper;
 	if (index >= 0)
 	{
-		gatherer = TEN_OP<T>(
+		gatherer =
 		[a, index, collector](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
@@ -295,8 +292,8 @@ varptr<T> compress (const varptr<T> a, int index,
 					dest[dest_idx] = collector(gather);
 				}
 			}
-		});
-		shaper = SHAPER(
+		};
+		shaper =
 		[index](std::vector<tensorshape> shapes)
 		{
 			tensorshape ts = shapes[0];
@@ -317,29 +314,28 @@ varptr<T> compress (const varptr<T> a, int index,
 				tv[index] = 1;
 			}
 			return tv;
-		});
+		};
 	}
 	else
 	{
-		gatherer = TEN_OP<T>(
+		gatherer =
 		[collector, a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			std::vector<size_t> tv = shape.as_list();
 			size_t total = shape.n_elems();
 			dest[0] = collector(std::vector<T>(args[0], args[0]+total));
-		});
-		shaper = SHAPER(
+		};
+		shaper =
 		[index](std::vector<tensorshape> shapes)
 		{
 			return std::vector<size_t>{1};
-		});
+		};
 	}
 
-	return new operation<T>(std::vector<inode<T>*>{a}, shaper, gatherer,
+	return operation<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 		[index, collector](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
-			inode<T>* a = args.front();
-			return compress(varptr<T>(a->get_leaf(leaf)), index, collector);
+			return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);
 		}, "compress");
 }
 

@@ -7,7 +7,7 @@ using ::testing::_;
 
 
 // Behavior E000
-TEST(CCOMS, DetachFromSubjectOnDeath_E000)
+TEST(react, DetachFromSubjectOnDeath_E000)
 {
 	MockSubject subject;
 
@@ -31,7 +31,7 @@ TEST(CCOMS, DetachFromSubjectOnDeath_E000)
 
 
 // Behavior E001
-TEST(CCOMS, CopyDep_E001)
+TEST(react, CopyDep_E001)
 {
 	MockSubject solo;
 	MockSubject leaf1;
@@ -48,8 +48,8 @@ TEST(CCOMS, CopyDep_E001)
 	MockObserver* branch2cpy = new MockObserver(*branch2);
 	
 	// expect dependencies to equal
-	std::vector<ccoms::subject*> dep1 = branch1cpy->expose_dependencies();
-	std::vector<ccoms::subject*> dep2 = branch2cpy->expose_dependencies();
+	std::vector<react::subject*> dep1 = branch1cpy->expose_dependencies();
+	std::vector<react::subject*> dep2 = branch2cpy->expose_dependencies();
 	EXPECT_EQ(1, dep1.size());
 	EXPECT_EQ(&solo, dep1[0]);
 	EXPECT_EQ(2, dep2.size());

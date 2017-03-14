@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/variable/constant.hpp"
+#include "graph/leaf/constant.hpp"
 #include "mock_operation.h"
 
 
@@ -31,7 +31,7 @@ TEST(CONSTANT, Initialization_D401) {
 // Behavior D402
 TEST(CONSTANT, ZeroConstGrad_D402) {
 	nnet::constant<double>* c = nnet::constant<double>::build(1);
-	nnet::ivariable<double>* gradient = c->get_gradient();
+	nnet::inode<double>* gradient = c->get_gradient();
 	std::vector<double> res = nnet::expose<double>(gradient);
 	ASSERT_EQ(0, res.size());
 	delete c;

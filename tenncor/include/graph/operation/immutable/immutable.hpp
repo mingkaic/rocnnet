@@ -23,7 +23,7 @@ namespace nnet
 
 //! backward transfer function, get gradient nodes; F: Nf -> Nb
 template <typename T>
-using BACK_MAP = std::function<inode<T>*(std::vector<const inode<T>*>,variable<T>*)>;
+using BACK_MAP = std::function<inode<T>*(std::vector<inode<T>*>,variable<T>*)>;
 
 //! jacobian transfer function
 template <typename T>
@@ -55,6 +55,13 @@ public:
 	//! check if the arguments are good; data is available
 	virtual bool good_status (void) const;
 
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* leaf);
+
+	//! get gradient leaves
+	virtual void get_leaves (
+		typename inode<T>::GRAD_CACHE& leaves) const;
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! mutable constructor defining transfer functions
@@ -71,17 +78,12 @@ protected:
 	//! declare copy constructor to copy over transfer functions
 	immutable (const immutable<T>& other);
 
-	//! implement clone function
-	virtual inode<T>* clone_impl (void) const;
-
-	//! get gradient leaves
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
-	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf) const;
-
 private:
+	void common (void);
+
+	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
+	std::unique_ptr<constant<T> > one; //! commonly used one constant
+
 	// >>>> GRAD_ INITIALIZER <<<<
 	//! backward transfer function to
 	//! lazy instantiate gradient cache values

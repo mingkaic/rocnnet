@@ -4,40 +4,43 @@
 
 #include "edgeinfo/comm_record.hpp"
 
-#include "executor/varptr.hpp"
+#include "graph/varptr.hpp"
 #include "executor/gradient.hpp"
 #include "graph/functions.hpp"
-#include "graph/operation/matmul.hpp"
+#include "graph/operation/immutable/matmul.hpp"
 
 using namespace nnet;
 
 int main (int argc, char* argv[])
 {
-	tensorshape common = std::vector<size_t>{5, 5};
 	random_uniform<double> rinit(-1, 1);
 	session& sess = session::get_instance();
 
-	// initializes a 5 by 5 matrix with uniformly distributed
-	// doubles between -1 and 1
-	varptr<double> A = new variable<double>(common, rinit, "a");
-	placeptr<double> B = new placeholder<double>(common, "b");
-	varptr<double> C = matmul<double>::build(A, B);
-	varptr<double> D = sigmoid<double>(C);
+	placeptr<double> vin = new placeholder<double>(std::vector<size_t>{1, 10}, "vin");
+	varptr<double> W1 = new variable<double>(std::vector<size_t>{10, 9}, rinit, "w1");
+	varptr<double> B1 = new variable<double>(std::vector<size_t>{1, 9}, rinit, "b1");
+	varptr<double> H1 = varptr<double>(matmul<double>::build(vin, W1)) + B1;
+	varptr<double> vin2 = sigmoid<double>(H1);
+
+	varptr<double> W2 = new variable<double>(std::vector<size_t>{9, 8}, rinit, "w2");
+	varptr<double> B2 = new variable<double>(std::vector<size_t>{1, 8}, rinit, "b2");
+	varptr<double> H2 = varptr<double>(matmul<double>::build(vin2, W2)) + B2;
+	varptr<double> vout = sigmoid<double>(H2);
 
 	sess.initialize_all<double>();
-	B = std::vector<double>(25, 2);
+	vin = std::vector<double>(10, 1.2);
 
-	gradient<double> grad(D);
+	gradient<double> grad(vout);
 	// prevent changes to B from cascading to gradient value
 	grad.freeze();
 	grad.execute();
 
 	// forward accumulation
-	tensor<double>* result = D->get_eval();
+	tensor<double>* result = vout->get_eval();
 	// reverse accumulation
 	tensor<double>* grad_result;
 	grad.collect_grad(
-		[&grad_result](ivariable<double>* key,
+		[&grad_result](inode<double>* key,
 					   placeholder<double>* value)
 		{
 			grad_result = value->get_eval();
@@ -47,7 +50,10 @@ int main (int argc, char* argv[])
 rocnnet_record::erec::rec.to_csv<double>();
 #endif
 
-	delete A.get();
-	delete B.get();
+	delete vin.get();
+	delete W1.get();
+	delete B1.get();
+	delete W2.get();
+	delete B2.get();
 	return 0;
 }

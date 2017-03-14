@@ -60,14 +60,6 @@ iobserver::iobserver (iobserver&& other)
 	move(other);
 }
 
-void iobserver::access_dependency (std::function<void(const subject*)> access) const
-{
-	for (subject* sub : dependencies_)
-	{
-		access(sub);
-	}
-}
-
 void iobserver::add_dependency (subject* dep)
 {
 	if (dep)

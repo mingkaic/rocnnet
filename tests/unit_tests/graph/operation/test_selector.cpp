@@ -6,7 +6,7 @@
 #include "graph/state_selector/conditional.hpp"
 #include "graph/state_selector/push_toggle.hpp"
 #include "graph/state_selector/bindable_toggle.hpp"
-#include "graph/operation/elementary.hpp"
+#include "graph/operation/immutable/elementary.hpp"
 
 
 // behavior F300
@@ -43,7 +43,7 @@ TEST(SELECTOR, not_zero_F301)
 	
 	// Scenario 1: both variables are equal
 	// behavior: ideal not_zero should have no preference, 
-	// but implementation specifies that first variable A is the default active
+	// but implementation specifies that first leaf A is the default active
 	*A = {1.0};
 	*B = {1.0};
 	EXPECT_EQ(notZ->get_eval(), A->get_eval());

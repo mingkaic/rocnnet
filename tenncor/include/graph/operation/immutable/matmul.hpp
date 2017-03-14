@@ -29,25 +29,16 @@ template <typename T>
 class matmul final : public operation<T>
 {
 public:
-	//! override new matmul constructor
-	//! in record to determine heap information
-	static void* operator new (size_t size,
-		inode<T>* a, inode<T>* b,
-		bool transposeA = false,
-		bool transposeB = false);
+	//! builder for matmul
+	static matmul<T>* get (inode<T>* a, inode<T>* b,
+		bool transposeA = false, bool transposeB = false);
 
-	// >>>> CONSTRUCTORS <<<<
-	//! matrix multiplication constructor
-	matmul (inode<T>* a, inode<T>* b,
-		bool transposeA = false,
-		bool transposeB = false);
+	//! builder for move
+	static matmul<T>* get (matmul<T>&& other);
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! Clone function
 	matmul<T>* clone (void);
-
-	//! Declare move constructor to move over transfer functions
-	matmul (matmul<T>&& other);
 
 	//! Declare copy assignment to copy over transfer functions
 	virtual matmul<T>& operator = (const matmul<T>& other);
@@ -56,9 +47,17 @@ public:
 	virtual matmul<T>& operator = (matmul<T>&& other);
 
 protected:
-	// >>>> COPY CONSTRUCTOR <<<<
+	// >>>> CONSTRUCTOR <<<<
+	//! matrix multiplication constructor
+	matmul (inode<T>* a, inode<T>* b,
+		bool transposeA, bool transposeB);
+
+	// >>>> COPY && MOVE CONSTRUCTOR <<<<
 	//! Declare copy constructor to copy over transfer functions
 	matmul (const matmul<T>& other);
+
+	//! Declare move constructor to move over transfer functions
+	matmul (matmul<T>&& other);
 
 	//! Implement clone function
 	virtual inode<T>* clone_impl (void) const;

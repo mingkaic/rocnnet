@@ -12,6 +12,18 @@ namespace nnet
 {
 
 template <typename T>
+inline std::vector<react::subject*> to_sub (std::vector<inode<T>*> nodes)
+{
+	std::vector<react::subject*> subs;
+	std::transform(nodes.begin(), nodes.end(), subs.begin(),
+		[](inode<T>* n) -> react::subject*
+		{
+			return n;
+		});
+	return subs;
+}
+
+template <typename T>
 iconnector<T>* iconnector<T>::clone (void) const
 {
 	return static_cast<iconnector<T>*>(this->clone_impl());
@@ -43,14 +55,13 @@ template <typename T>
 std::string iconnector<T>::get_name (void) const
 {
 	std::string args;
-	access_dependencies(
-	[&args](const react::subject* subs)
+	for (const react::subject* subs : this->dependencies_)
 	{
 		if (const inode<T>* arg = dynamic_cast<const inode<T>*>(subs))
 		{
 			args += arg->get_label() + ",";
 		}
-	});
+	};
 	if (!args.empty()) args.pop_back();
 	return inode<T>::get_name() + "(" + args + ")";
 }
@@ -58,7 +69,12 @@ std::string iconnector<T>::get_name (void) const
 template <typename T>
 bool iconnector<T>::is_same_graph (const iconnector<T>* other) const
 {
-	return **gid_ == **other->gid_;
+	graph_node* lhs = nullptr;
+	graph_node* rhs = nullptr;
+	gid_->get_master(lhs);
+	other->gid_->get_master(rhs);
+
+	return lhs == rhs;
 }
 
 template <typename T>
@@ -73,7 +89,7 @@ bool iconnector<T>::potential_descendent (iconnector<T>* n) const
 	if (mine.size() < their.size()) return false;
 	for (auto t : their)
 	{
-		variable<T>* leaf = t->first;
+		variable<T>* leaf = t.first;
 		if (mine.end() == mine.find(leaf))
 		{
 			return false;
@@ -84,34 +100,87 @@ bool iconnector<T>::potential_descendent (iconnector<T>* n) const
 
 template <typename T>
 iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string name) :
-	react::iobserver(dependencies),
-	inode<T>(name), zero(0), one(1)
+	react::iobserver(to_sub<T>(dependencies)),
+	inode<T>(name)
 {
-	update_graph(this->dependencies_);
+	update_graph(dependencies);
 }
 
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
 	react::iobserver(other),
-	inode<T>(other), zero(0), one(1) {} // don't update graph for its new children
+	inode<T>(other) {} // don't update graph for its new children
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
 	react::iobserver(other),
-	inode<T>(other), zero(0), one(1) {}
+	inode<T>(other) {}
 
 template <typename T>
 void iconnector<T>::update_graph (std::vector<inode<T>*> args)
 {
-	gid_ = &(&this->id_);
-	for (inode<T>* arg : args)
+	if (args.size() == 1)
 	{
-		if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(arg))
+		if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(args[0]))
 		{
-			*(iconn->gid_) = *gid_;
+			iconn->gid_->get_master(gid_);
 		}
 	}
+
+	if (nullptr == gid_)
+	{
+		gid_ = new graph_node;
+		for (inode<T>* arg : args)
+		{
+			if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(arg))
+			{
+				iconn->gid_->update(gid_);
+				gid_->replace(iconn->gid_); // iconn->gid_ = gid_
+			}
+		}
+	}
+	gid_->users_++; // add this as a user
 }
+
+template <typename T>
+struct iconnector<T>::graph_node
+{
+	graph_node* top_ = nullptr;
+	size_t users_ = 0;
+
+	// traverse up to single master (worst case: O(n))
+	void get_master (graph_node*& out) const
+	{
+		if (top_ == nullptr)
+		{
+			out = const_cast<graph_node*>(this);
+		}
+		else
+		{
+			top_->get_master(out);
+		}
+	}
+
+	// add candidate to master then return new master
+	void update (graph_node* master)
+	{
+		graph_node* old = nullptr;
+		get_master(old);
+		master->users_ += old->users_;
+		old->top_ = master;
+	}
+
+	// replace old with this
+	void replace (graph_node*& old)
+	{
+		if (0 == --old->users_)
+		{
+			delete old;
+		}
+		old = this;
+		users_++;
+	}
+};
 
 }
 

@@ -52,12 +52,10 @@ public:
 	virtual bool potential_descendent (iconnector<T>* n) const;
 
 	//! Grab a temporary value traversing top-down
-	virtual void temporary_eval (const iconnector<T>* target, placeholder<T>& out) const = 0;
+	virtual void temporary_eval (const iconnector<T>* target,
+		tensor<T>*& out) const = 0;
 
 protected:
-	constant<T> zero; //! commonly used zero constant
-	constant<T> one; //! commonly used one constant
-
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies
 	iconnector (std::vector<inode<T>*> dependencies, std::string name);
@@ -72,9 +70,10 @@ protected:
 	//! Update gid_ by updating all argument variables
 	virtual void update_graph (std::vector<inode<T>*> args);
 
-private:
 	// >>>> GRAPH META DATA <<<<
-	const std::string** gid_; //! graph hash
+	struct graph_node; //! graph info shareable between connectors
+
+	graph_node* gid_ = nullptr; //! graph hash
 };
 
 }

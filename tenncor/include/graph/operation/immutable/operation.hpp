@@ -36,18 +36,12 @@ template <typename T>
 class operation : public immutable<T>
 {
 public:
-	//! override new constructor
-	//! in record to determine heap information
-	static void* operator new (size_t size,
-		std::vector<inode<T>*> args,
-		SHAPER shaper, FORWARD_OP<T> Nf,
-		BACK_MAP<T> F, std::string name);
+	//! builder for operation
+	static operation<T>* get (std::vector<inode<T>*> args,
+		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name);
 
-	// >>>> CONSTRUCTORS <<<<
-	//! constructor defining transfer functions
-	operation (std::vector<inode<T>*> args,
-		SHAPER shaper, FORWARD_OP<T> Nf,
-		BACK_MAP<T> F, std::string name);
+	//! builder for move
+	static operation<T>* get (operation<T>&& other);
 
 	//! destructor
 	virtual ~operation (void) {}
@@ -56,13 +50,10 @@ public:
 	//! Clone function
 	operation<T>* clone (void) const;
 
-	//! Declare move constructor to move over transfer functions
-	operation (operation<T>&& other);
-
 	//! Declare copy assignment to copy over transfer functions
 	virtual operation<T>& operator = (const operation<T>& other);
 
-	//! Declare move assignment to move over transfer functions
+	//! Declare move assignment to move over transfer functionsF
 	virtual operation<T>& operator = (operation<T>&& other);
 
 	// >>>> ACCESSORS <<<<
@@ -83,14 +74,23 @@ public:
 	virtual void update (react::subject* arg);
 
 protected:
+	// >>>> CONSTRUCTOR <<<<
+	//! constructor defining transfer functions
+	operation (std::vector<inode<T>*> args,
+		SHAPER shaper, FORWARD_OP<T> Nf,
+		BACK_MAP<T> F, std::string name);
+
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! ovride smart destruction,
 	//! executed when any dependency is destroyed
 	virtual void commit_sudoku (void);
 
-	// >>>> COPY CONSTRUCTOR <<<<
+	// >>>> COPY && MOVE CONSTRUCTOR <<<<
 	//! declare copy constructor to copy over transfer functions
 	operation (const operation<T>& other);
+
+	//! Declare move constructor to move over transfer functions
+	operation (operation<T>&& other);
 
 	//! implement clone function
 	virtual inode<T>* clone_impl (void) const;

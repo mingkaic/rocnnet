@@ -25,7 +25,7 @@ variable<T>::variable (const tensorshape& shape, std::string name) :
 
 template <typename T>
 variable<T>::variable (const tensorshape& shape,
-	const itensor_handler<T>& init, std::string name) :
+	const initializer<T>& init, std::string name) :
 ivariable<T>(shape, init.clone(), name) {}
 
 template <typename T>
@@ -59,7 +59,7 @@ variable<T>& variable<T>::operator = (variable<T>&& other)
 }
 
 template <typename T>
-void variable<T>::set_initializer (const itensor_handler<T>& init)
+void variable<T>::set_initializer (const initializer<T>& init)
 {
 	if (this->init_)
 	{
@@ -80,7 +80,7 @@ tensor<T>& variable<T>::initialize (void)
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;
-	this->notify();
+	this->notify(react::UPDATE);
 	return *this->data_;
 }
 
@@ -95,8 +95,25 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;
-	this->notify();
+	this->notify(react::UPDATE);
 	return *this->data_;
+}
+
+template <typename T>
+inode<T>* variable<T>::get_leaf (variable<T>* leaf)
+{
+	if (this == leaf)
+	{
+		return this->one.get();
+	}
+	return this->zero.get();
+}
+
+template <typename T>
+void variable<T>::get_leaves (
+	typename inode<T>::GRAD_CACHE& leaves) const
+{
+	leaves.emplace(const_cast<variable<T>*>(this), nullptr);
 }
 
 template <typename T>
@@ -107,23 +124,6 @@ template <typename T>
 inode<T>* variable<T>::clone_impl (void) const
 {
 	return new variable(*this);
-}
-
-template <typename T>
-void variable<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE& leaves) const
-{
-	leaves.emplace({this, nullptr});
-}
-
-template <typename T>
-inode<T>* variable<T>::get_leaf (variable<T>* leaf) const
-{
-	if (this == leaf)
-	{
-		return &this->one;
-	}
-	return &this->zero;
 }
 
 }

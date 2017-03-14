@@ -2,6 +2,9 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
+//#define DISABLE_TENSOR_MODULE_TESTS
+#ifndef DISABLE_TENSOR_MODULE_TESTS
+
 #include <algorithm>
 
 #include "gtest/gtest.h"
@@ -10,7 +13,7 @@
 #include "mocks/mock_tensor.h"
 
 
-#define DISABLE_TENSOR_TEST
+//#define DISABLE_TENSOR_TEST
 #ifndef DISABLE_TENSOR_TEST
 
 
@@ -759,3 +762,5 @@ TEST(TENSOR, CopyWithShape_B012)
 
 
 #endif /* DISABLE_TENSOR_TEST */
+
+#endif /* DISABLE_TENSOR_MODULE_TESTS */

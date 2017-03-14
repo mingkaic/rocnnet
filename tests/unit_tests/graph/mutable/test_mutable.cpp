@@ -3,7 +3,7 @@
 //
 
 #include "gtest/gtest.h"
-#include "graph/operation/elementary.hpp"
+#include "graph/operation/immutable/elementary.hpp"
 #include "graph/mutable/mutable_connector.hpp"
 
 
@@ -13,7 +13,7 @@ TEST(MUTABLE, connector)
 	// instead of safely destroying its permanent connector node
 	nnet::mutable_connector<double>* temp =
 		nnet::mutable_connector<double>::build(
-		[](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+		[](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 		{
 			return args[0] + args[1];
 		}, 2);
@@ -45,7 +45,7 @@ TEST(MUTABLE, deletion)
 {
 	nnet::mutable_connector<double>* temp =
 		nnet::mutable_connector<double>::build(
-		[](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+		[](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 		{
 			return args[0] + args[1];
 		}, 2);

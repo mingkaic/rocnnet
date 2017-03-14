@@ -25,17 +25,17 @@ template <typename T>
 class ileaf : public inode<T>
 {
 public:
-	//! kill handler
-	virtual ~ileaf (void);
+	//! virtual destructor for constant and ivariable
+	virtual ~ileaf (void) {}
 
 	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
 	//! clone function
 	ileaf<T>* clone (void) const;
 
-	//! declare copy assignment to copy over initializer
+	//! declare copy assignment to deep copy over data
 	virtual ileaf<T>& operator = (const ileaf<T>& other);
 
-	//! declare move assignment to move over initializer
+	//! declare move assignment to move over data
 	virtual ileaf<T>& operator = (ileaf<T>&& other);
 
 	// >>>> ACCESSORS <<<<
@@ -46,9 +46,6 @@ public:
 	//! return nullptr if leaf is not init
 	virtual const tensor<T>* get_eval (void) const;
 
-	//! determine whether leaf node can be initiated
-	bool can_init (void) const;
-
 	//! check if data is available
 	//! (if the node is initialized)
 	virtual bool good_status (void) const;
@@ -56,15 +53,13 @@ public:
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! assign initializer
-	ileaf (const tensorshape& shape,
-		itensor_handler<T>* init,
-		std::string name);
+	ileaf (const tensorshape& shape, std::string name);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! declare copy constructor to copy over initializer
+	//! declare copy constructor to deep copy over data
 	ileaf (const ileaf<T>& other);
 
-	//! declare move constructor to move over initializer
+	//! declare move constructor to move over data
 	ileaf (ileaf<T>&& other);
 
 	// >>>> TENSOR CONTENT <<<<
@@ -72,9 +67,6 @@ protected:
 	std::unique_ptr<tensor<T> > data_ = nullptr;
 
 	// >>>> INITIALIZER DATA <<<<
-	//! tensor manipulator, ileaf owns this
-	itensor_handler<T>* init_ = nullptr;
-
 	//! tensor state (good or bad) true = good
 	bool is_init_ = false;
 
@@ -83,11 +75,11 @@ protected:
 	struct assignment;
 
 private:
-	//! move helper
-	void move (ileaf<T>&& other);
-
 	//! copy helper
 	void copy (const ileaf<T>& other);
+
+	//! move helper
+	void move (ileaf<T>&& other);
 };
 
 }

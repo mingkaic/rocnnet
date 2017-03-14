@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "memory/session.hpp"
-#include "graph/variable/variable.hpp"
+#include "graph/leaf/variable.hpp"
 #include "mock_operation.h"
 using ::testing::_;
 
@@ -94,7 +94,7 @@ TEST(VARIABLE, ConstructUninit)
 TEST(VARIABLE, OneVarGradient_D201)
 {
 	nnet::variable<double> cvar(std::vector<size_t>{3, 3}, cinit, "constant_arr");
-	nnet::ivariable<double>* grad = cvar.get_gradient();
+	nnet::inode<double>* grad = cvar.get_gradient();
 	cvar.initialize();
 	std::vector<double> res = nnet::expose<double>(grad);
 	ASSERT_EQ(res.size(), 1);

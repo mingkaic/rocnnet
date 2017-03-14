@@ -14,10 +14,21 @@ template <typename T>
 varptr<T>::varptr (inode<T>* ptr) : ptr_(ptr) {}
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (inode<T>* other) { ptr_ = other; return *this; }
+varptr<T>& varptr<T>::operator = (inode<T>* other)
+{
+	ptr_ = other;
+	return *this;
+}
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (const varptr<T>& other) { ptr_ = other.ptr_; return *this; }
+varptr<T>& varptr<T>::operator = (const varptr<T>& other)
+{
+	if (this != &other)
+	{
+		ptr_ = other.ptr_;
+	}
+	return *this;
+}
 
 template <typename T>
 varptr<T>::operator inode<T>* (void) const { return ptr_; }
@@ -35,10 +46,21 @@ template <typename T>
 placeptr<T>::placeptr (placeholder<T>* ptr) : varptr<T>(ptr) {}
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (placeholder<T>* other) { this->ptr_ = other; }
+placeptr<T>& placeptr<T>::operator = (placeholder<T>* other)
+{
+	this->ptr_ = other;
+	return *this;
+}
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other) { this->ptr_ = other.ptr_; }
+placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other)
+{
+	if (this != &other)
+	{
+		this->ptr_ = other.ptr_;
+	}
+	return *this;
+}
 
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)

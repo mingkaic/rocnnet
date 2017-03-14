@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include "gtest/gtest.h"
-#include "graph/operation/transform.hpp"
+#include "graph/operation/immutable/transform.hpp"
 #include "test_util.h"
 
 

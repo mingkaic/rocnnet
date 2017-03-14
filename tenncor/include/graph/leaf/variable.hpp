@@ -39,7 +39,7 @@ public:
 
 	//! shape constructor with initializer
 	variable (const tensorshape& shape,
-		const itensor_handler<T>& init, std::string name = "");
+		const initializer<T>& init, std::string name = "");
 
 	// >>>> CLONE COPY && MOVE <<<<
 	//! clone function
@@ -56,7 +56,7 @@ public:
 
 	// INITIALIZE VALUE
 	//! copy over initializer, replace current initializer
-	void set_initializer (const itensor_handler<T>& init);
+	void set_initializer (const initializer<T>& init);
 
 	//! initialize data and returns if possible,
 	//! throws error otherwise
@@ -66,6 +66,14 @@ public:
 	//! returns if possible, throws error otherwise
 	virtual tensor<T>& initialize (tensorshape shape);
 
+	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* leaf) ;
+
+	//! merge/update the gradient/leaf info
+	virtual void get_leaves (
+		typename inode<T>::GRAD_CACHE& leaves) const;
+
 protected:
 	// >>>> CLONE && COPY CONSTRUCTOR <<<<
 	//! copy constructor
@@ -73,14 +81,6 @@ protected:
 
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
-
-	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
-	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf) const;
 };
 
 }
