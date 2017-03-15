@@ -1,12 +1,18 @@
 //
-// Created by Mingkai Chen on 2016-08-29.
+// Created by Mingkai Chen on 2017-03-14.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "memory/session.hpp"
-#include "graph/leaf/variable.hpp"
-#include "mock_operation.h"
-using ::testing::_;
+#include "fuzz.h"
+
+
+//#define DISABLE_VARIABLE_TEST
+#ifndef DISABLE_VARIABLE_TEST
 
 
 double constant = rand();
@@ -100,3 +106,9 @@ TEST(VARIABLE, OneVarGradient_D201)
 	ASSERT_EQ(res.size(), 1);
 	EXPECT_EQ(0, res[0]);
 }
+
+
+#endif /* DISABLE_VARIABLE_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

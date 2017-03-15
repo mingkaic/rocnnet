@@ -1,13 +1,18 @@
 //
-// Created by Mingkai Chen on 2016-08-29.
+// Created by Mingkai Chen on 2017-03-14.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "graph/leaf/constant.hpp"
-#include "mock_operation.h"
+#include "fuzz.h"
 
 
-// No point in testing Behavior D100 since constant's initialized at construct
+//#define DISABLE_CONSTANT_TEST
+#ifndef DISABLE_CONSTANT_TEST
 
 
 // Behavior D400
@@ -36,3 +41,9 @@ TEST(CONSTANT, ZeroConstGrad_D402) {
 	ASSERT_EQ(0, res.size());
 	delete c;
 }
+
+
+#endif /* DISABLE_CONSTANT_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

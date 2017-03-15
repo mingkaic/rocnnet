@@ -36,7 +36,7 @@ public:
 
 	// >>>> ACCESSORS <<<<
 	//! get allocator
-	const iallocator* get (size_t identifier) const;
+	iallocator* get (size_t identifier) const;
 
 	//! check if registry has type A at identifier
 	//! this could have constructors attempt to register its class
@@ -46,7 +46,7 @@ public:
 	{
 		auto it = registry_.find(identifier);
 		if (registry_.end() == it) return false;
-		return nullptr != dynamic_cast<A*>(*it);
+		return nullptr != dynamic_cast<A*>(it->second);
 	}
 
 	// >>>> MUTATORS <<<<
@@ -54,10 +54,8 @@ public:
 	template <typename A>
 	bool registertype (size_t identifier)
 	{
-		if (false == std::is_base_of<iallocator, A>())
-		{
-			throw std::exception(); // todo: make better exception
-		}
+		static_assert(std::is_base_of<iallocator, A>(),
+			"alloc_builder only accepts types inheriting from iallocator");
 		bool success = registry_.end() == registry_.find(identifier);
 		if (success)
 		{

@@ -20,13 +20,13 @@ default_alloc* default_alloc::clone (void) const
 	return static_cast<default_alloc*>(clone_impl());
 }
 
-void* default_alloc::get_raw (size_t alignment, size_t num_bytes) const
+void* default_alloc::get_raw (size_t alignment, size_t num_bytes)
 {
 	void* ptr = malloc(num_bytes);
 	return ptr;
 }
 
-void default_alloc::del_raw (void* ptr, size_t num_bytes) const
+void default_alloc::del_raw (void* ptr, size_t num_bytes)
 {
 	free (ptr);
 }

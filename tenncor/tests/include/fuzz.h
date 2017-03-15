@@ -11,6 +11,7 @@
 #ifndef TENNCOR_FUZZ_H
 #define TENNCOR_FUZZ_H
 
+// todo: increase test iteration (not really fuzz testing if we only test with 1 set of inputs)
 // temporary fuzzer interface
 template <typename T>
 struct FUZZ
@@ -29,42 +30,22 @@ struct FUZZ
 			max = range.second;
 		}
 		std::default_random_engine generator;
-		std::uniform_real_distribution<double> dis(min, max);
 
 		std::vector<T> vec;
-		for (size_t i = 0; i < len; i++)
+		if (typeid(T) == typeid(size_t))
 		{
-			vec.push_back((T) dis(generator));
-		}
-
-		return vec;
-	}
-
-	static std::vector<T> get (size_t len, std::pair<T,T> range, std::unordered_set<T> ignore)
-	{
-		T min, max;
-		if (range.first == range.second)
-		{
-			min = std::numeric_limits<T>::min();
-			max = std::numeric_limits<T>::max();
+			std::uniform_int_distribution<T> dis(min, max);
+			for (size_t i = 0; i < len; i++)
+			{
+				vec.push_back(dis(generator));
+			}
 		}
 		else
 		{
-			min = range.first;
-			max = range.second;
-		}
-		std::default_random_engine generator;
-		std::uniform_real_distribution<double> dis(min, max);
-
-		std::vector<T> vec;
-		size_t i = 0;
-		while (i < len)
-		{
-			T v = (T) dis(generator);
-			if (ignore.end() == ignore.find(v))
+			std::uniform_real_distribution<T> dis(min, max);
+			for (size_t i = 0; i < len; i++)
 			{
-				vec.push_back(v);
-				i++;
+				vec.push_back((T) dis(generator));
 			}
 		}
 

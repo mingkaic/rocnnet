@@ -2,10 +2,17 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
 #include <algorithm>
+
 #include "gtest/gtest.h"
-#include "graph/operation/immutable/transform.hpp"
-#include "test_util.h"
+#include "fuzz.h"
+
+
+//#define DISABLE_TRANSFORM_TEST
+#ifndef DISABLE_TRANSFORM_TEST
 
 
 TEST(OPERATION, Transpose)
@@ -345,3 +352,9 @@ TEST(OPERATION, Compress)
 		EXPECT_EQ(exp3[i], raw[i]);
 	}
 }
+
+
+#endif /* DISABLE_TRANSFORM_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

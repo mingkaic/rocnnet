@@ -158,60 +158,6 @@ add_executable (Demo ${DEMO_DIR}/agent.cpp)
 target_link_libraries (Demo ${TENNCOR_LIB} ${ROCNNET_DLL})
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE DEMO1 AGENT <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#>>>>>>>>>>>>>>>>>>>>>>>> UNIT TESTING USING GOOGLETEST <<<<<<<<<<<<<<<<<<<<<<<<<
-set(UNIT_TEST_NAME unit_test)
-set(UNIT_TEST_PATH ${PROJECT_SOURCE_DIR}/tests/unit_tests)
-set(MOCK_INCLUDE ${UNIT_TEST_PATH}/mock)
-
-#-------------------
-# finalize googletest setup
-#-------------------
-add_definitions(${MSVC_COMPILER_DEFS})
-enable_testing()
-
-include_directories(${GTEST_INCLUDE_DIRS} ${TENNCOR_INCLUDE} ${MOCK_INCLUDE})
-
-file(GLOB_RECURSE UNIT_TEST_SRC
-    ${UNIT_TEST_PATH}/*.cpp)
-
-add_executable(${UNIT_TEST_NAME} ${UNIT_TEST_SRC} ${UNIT_MAIN})
-
-#-------------------
-# Test dependencies
-#-------------------
-add_dependencies(${UNIT_TEST_NAME}
-    googletest
-    tenncor)
-
-#-------------------
-# link googletest depending on  available libraries
-#-------------------
-if(NOT WIN32 OR MINGW)
-    target_link_libraries(${UNIT_TEST_NAME}
-            ${GTEST_LIBS_DIR}/libgtest.a
-            ${GTEST_LIBS_DIR}/libgtest_main.a
-            )
-else()
-    target_link_libraries(${UNIT_TEST_NAME}
-            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-            )
-    target_link_libraries(${UNIT_TEST_NAME}
-            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-            )
-endif()
-
-# Link
-target_link_libraries(${UNIT_TEST_NAME}
-    pthread
-    gmock
-    gtest
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${TENNCOR_LIB})
-add_test(unit ${UNIT_TEST_NAME})
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DONE UNIT TESTING <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
 #>>>>>>>>>>>>>>>>>>>>>>>> PERFORMANCE TESTING USING GOOGLETEST <<<<<<<<<<<<<<<<<<<<<<<<<
 set(PERFORM_TEST_NAME performance_test)
 set(PERFORM_TEST_PATH ${PROJECT_SOURCE_DIR}/tests/performance_tests)

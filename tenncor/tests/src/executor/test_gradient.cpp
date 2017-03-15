@@ -2,13 +2,18 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#include <limits>
+#define DISABLE_EXECUTOR_MODULE_TESTS
+#ifndef DISABLE_EXECUTOR_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "executor/gradient.hpp"
-#include "graph/functions.hpp"
-#include "graph/operation/immutable/transform.hpp"
-#include "graph/operation/immutable/matmul.hpp"
-#include "test_util.h"
+#include "fuzz.h"
+
+
+//#define DISABLE_GRAD_TEST
+#ifndef DISABLE_GRAD_TEST
+
 
 static const double epi = std::numeric_limits<double>::epsilon();
 
@@ -567,3 +572,9 @@ TEST(DERIVE, DISABLED_MatmulComplex)
 	delete W2.get();
 	delete one.get();
 }
+
+
+#endif /* DISABLE_GRAD_TEST */
+
+
+#endif /* DISABLE_EXECUTOR_MODULE_TESTS */

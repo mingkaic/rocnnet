@@ -1,11 +1,18 @@
 //
-// Created by Mingkai Chen on 2016-11-20.
+// Created by Mingkai Chen on 2017-03-14.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "graph/leaf/placeholder.hpp"
-#include "mock_operation.h"
-using ::testing::_;
+#include "fuzz.h"
+
+
+//#define DISABLE_PLACEHOLDER_TEST
+#ifndef DISABLE_PLACEHOLDER_TEST
 
 
 // Behavior D100
@@ -64,3 +71,9 @@ TEST(PLACEHOLDER, ZeroConstGrad_D302) {
 	std::vector<double> res = nnet::expose<double>(gradient);
 	ASSERT_EQ(0, res.size());
 }
+
+
+#endif /* DISABLE_PLACEHOLDER_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

@@ -2,9 +2,18 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#include <limits>
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "graph/operation/immutable/elementary.hpp"
+#include "fuzz.h"
+
+
+//#define DISABLE_ELEMENTARY_TEST
+#ifndef DISABLE_ELEMENTARY_TEST
+
 
 // TODO: separate test according to expected behaviors (see design.md)
 #define UNARY std::function<nnet::varptr<double>(nnet::varptr<double>)>
@@ -327,3 +336,9 @@ TEST(OPERATION, Div)
 	[](double a, nnet::varptr<double> b) { return a/b; },
 	[](double a, double b) { return a/b; });
 }
+
+
+#endif /* DISABLE_ELEMENTARY_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

@@ -8,12 +8,11 @@ use File::Basename;
 use Cwd;
 
 my $CLANG = "/Users/cmk/llvm/bin/clang++";
-my $INSTRDIR = "./instr";
-my $OUTLL = "$INSTRDIR/ll";
-my $OUTDIR = "$INSTRDIR/bin";
+my $OUTLL = "./ll";
+my $OUTDIR = "./bin";
 
 my $CP_PATH = "/Users/cmk/Developer/cworkspace/general/coverage-profiler/cmake-build-default/bin/coverageprofiler";
-my $LIBNAME = "libtenncor-profiled";
+my $LIBNAME = "libtenncor-inst";
 
 my $cwd = getcwd();
 
@@ -62,6 +61,7 @@ if ($num_args > 0) {
 if ($DIRECTIVE eq "all") {
     &llvm;
     &bin;
+    print $OUTDIR/$LIBNAME;
 }
 elsif ($DIRECTIVE eq "llvm") {
     &llvm;
@@ -70,10 +70,6 @@ elsif ($DIRECTIVE eq "bin") {
     &bin;
 }
 elsif ($DIRECTIVE eq "clean") {
-    unlink glob "$OUTDIR/*.a";
-}
-elsif ($DIRECTIVE eq "veryclean") {
-    unlink glob "$OUTDIR/*.*";
     unlink glob "$OUTLL/*.*";
 }
 else {

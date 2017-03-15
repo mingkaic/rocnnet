@@ -97,9 +97,9 @@ TEST(HANDLER, Transfer_C000)
 	{
 		EXPECT_EQ(res[n+i], d2[i]);
 	}
-	for (size_t i = 0, n = resshape.n_elems(); i < n; i++)
+	for (size_t i = n+m, n = resshape.n_elems(); i < n; i++)
 	{
-		EXPECT_EQ(0, res[n+m+i]);
+		EXPECT_EQ(0, res[i]);
 	}
 }
 

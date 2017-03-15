@@ -2,9 +2,17 @@
 // Created by Mingkai Chen on 2016-12-27.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "graph/operation/immutable/elementary.hpp"
-#include "graph/mutable/mutable_connector.hpp"
+#include "fuzz.h"
+
+
+//#define DISABLE_MUTABLE_TEST
+#ifndef DISABLE_MUTABLE_TEST
 
 
 TEST(MUTABLE, connector)
@@ -58,3 +66,9 @@ TEST(MUTABLE, deletion)
 	delete s1;
 	delete s2;
 }
+
+
+#endif /* DISABLE_MUTABLE_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

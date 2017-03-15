@@ -19,9 +19,9 @@ alloc_builder& alloc_builder::get_instance (void)
 	return singleton;
 }
 
-const iallocator* alloc_builder::get (size_t identifier) const
+iallocator* alloc_builder::get (size_t identifier) const
 {
-	const iallocator* al = nullptr;
+	iallocator* al = nullptr;
 	auto it = registry_.find(identifier);
 	if (registry_.end() != it)
 	{

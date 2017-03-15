@@ -47,7 +47,7 @@ enum CONNECTOR_TYPE
 enum LEAF_TYPE
 {
 	PLACE,
-	CONST, // still uses a variable (sets an initial value)
+	CONST, // still uses a leaf (sets an initial value)
 	RAND
 };
 

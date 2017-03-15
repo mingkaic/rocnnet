@@ -2,9 +2,17 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
+#define DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_GRAPH_MODULE_TESTS
+
+#include <algorithm>
+
 #include "gtest/gtest.h"
-#include "mock_operation.h"
-#include "graph/functions.hpp"
+#include "fuzz.h"
+
+
+//#define DISABLE_OPERATION_TEST
+#ifndef DISABLE_OPERATION_TEST
 
 
 TEST(OPERATION, dot)
@@ -34,3 +42,9 @@ TEST(OPERATION, univar_func)
 	double err = 0.73105857863 - sigres;
 	EXPECT_LT(err, 0.0001);
 }
+
+
+#endif /* DISABLE_OPERATION_TEST */
+
+
+#endif /* DISABLE_GRAPH_MODULE_TESTS */

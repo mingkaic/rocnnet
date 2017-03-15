@@ -192,7 +192,7 @@ private:
 
 	// >>>> PRIVATE MEMBERS <<<<
 	//! allocator
-	const iallocator* alloc_;
+	iallocator* alloc_;
 
 	tensorshape allowed_shape_; //! not necessarily defined shape
 };

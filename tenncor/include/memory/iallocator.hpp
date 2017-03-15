@@ -48,7 +48,7 @@ public:
 	// >>>> ACCESSORS <<<<
 	//! allocate the specified number of elements
 	template <typename T>
-	T* allocate (size_t num_elements) const
+	T* allocate (size_t num_elements)
 	{
 		static_assert(is_allowed<T>::value, "T is not an allowed type.");
 
@@ -65,7 +65,7 @@ public:
 	//! deallocate some number of elements from pointer
 	//! (vary depending on allocator)
 	template <typename T>
-	void dealloc(T* ptr, size_t num_elements) const
+	void dealloc(T* ptr, size_t num_elements)
 	{
 		if (nullptr != ptr)
 		{
@@ -88,10 +88,10 @@ public:
 
 protected:
 	//! allocation implementation
-	virtual void* get_raw (size_t alignment, size_t num_bytes) const = 0;
+	virtual void* get_raw (size_t alignment, size_t num_bytes) = 0;
 
 	//! deallocation implementation
-	virtual void del_raw (void* ptr, size_t num_bytes) const = 0;
+	virtual void del_raw (void* ptr, size_t num_bytes) = 0;
 
 	//! clone implementation
 	virtual iallocator* clone_impl (void) const = 0;

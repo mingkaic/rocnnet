@@ -306,7 +306,7 @@ std::vector<T> tensor<T>::expose (void) const
 template <typename T>
 void tensor<T>::set_allocator (size_t alloc_id)
 {
-	if (const iallocator* alloc =
+	if (iallocator* alloc =
 		alloc_builder::get_instance().get(alloc_id))
 	{
 		alloc_ = alloc;
@@ -338,6 +338,7 @@ void tensor<T>::set_shape (tensorshape shape)
 			// make alloc_shape compatible with shape
 			shape = shape.with_rank(alloc_shape_.rank());
 			shape = shape.merge_with(alloc_shape_);
+			shape = shape.with_rank(allowed_shape_.rank());
 		}
 		// shape now represent the desired alloc_shape_
 		// reshape by allocate

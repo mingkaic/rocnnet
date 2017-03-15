@@ -3,6 +3,11 @@ project(tenncor C CXX)
 
 find_package(Threads REQUIRED)
 
+set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
 option(RunTest "Test" OFF)
@@ -18,7 +23,6 @@ if (MSVC)
 endif()
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
-# TODO: make option
 if (EdgeVis)
     ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 endif()
@@ -34,10 +38,9 @@ add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (RunTest)
-    # todo: add instrumentation here
     set(TENNCOR_LIB_TEST tenncor-inst)
     add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC}
-                libsrc/graph.cpp libsrc/tensor.cpp)
+        declare/graph.cpp declare/tensor.cpp)
 
     add_subdirectory(ext/gtest)
     add_subdirectory(tests)

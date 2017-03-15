@@ -11,7 +11,7 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_SERIALIZER_TEST
+#define DISABLE_SERIALIZER_TEST
 #ifndef DISABLE_SERIALIZER_TEST
 
 

@@ -31,10 +31,10 @@ public:
 
 protected:
 	//! allocation implementation
-	virtual void* get_raw (size_t alignment, size_t num_bytes) const;
+	virtual void* get_raw (size_t alignment, size_t num_bytes);
 
 	//! deallocation implementation
-	virtual void del_raw (void* ptr, size_t num_bytes) const;
+	virtual void del_raw (void* ptr, size_t num_bytes);
 
 	//! clone implementation
 	virtual iallocator* clone_impl (void) const;

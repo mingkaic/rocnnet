@@ -11,12 +11,13 @@ A003 - allocators that do not track will throw when requested size,
 
 // ALLOCATOR BUILDER
 B000 - alloc_builder is a singleton: only a single instance is accessible across threads
-B001 - getting an allocator that doesn't exist will return nullptr,
+B001 - registering multiple instances of the same type of allocator is allowed
+        registering a pre-existing identifier will return false
+        registering a non-allocator will fail at compile time (untestable?)
+B002 - getting an allocator that doesn't exist will return nullptr,
         otherwise return that alloc's registry instance
-B002 - registering multiple instances of the same type of allocator is allowed
-        registering a pre-existing identifier will throw an error
 B003 - checking for a type of allocator with a particular identifier will fail if the instance
         at identifier isn't of that type or no instance is found at identifier. otherwise succeed
 
 // SERIALIZER
-
+? todo: define

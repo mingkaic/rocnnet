@@ -1,5 +1,5 @@
 //
-// Created by Mingkai Chen on 2017-03-10.
+// Created by Mingkai Chen on 2017-03-14.
 //
 
 #define DISABLE_GRAPH_MODULE_TESTS
@@ -11,11 +11,11 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_NODE_TEST
-#ifndef DISABLE_NODE_TEST
+//#define DISABLE_IMMUTABLE_TEST
+#ifndef DISABLE_IMMUTABLE_TEST
 
 
-#endif /* DISABLE_NODE_TEST */
+#endif /* DISABLE_IMMUTABLE_TEST */
 
 
 #endif /* DISABLE_GRAPH_MODULE_TESTS */
