@@ -38,6 +38,7 @@ add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (RunTest)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TENSOR_MODULE_TESTS -DDISABLE_MEMORY_MODULE_TESTS") #todo: remove to enable tests
     set(TENNCOR_LIB_TEST tenncor-inst)
     add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC}
         declare/graph.cpp declare/tensor.cpp)

@@ -24,7 +24,7 @@ namespace nnet
 {
 
 template <typename T>
-class iconnector : public inode<T>, public react::iobserver
+class iconnector : public inode<T>, public iobserver
 {
 public:
 	//! Virtual destructor for deleting from iconnector

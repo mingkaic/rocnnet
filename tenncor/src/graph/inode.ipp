@@ -60,7 +60,7 @@ std::string inode<T>::get_name (void) const
 
 template <typename T>
 inode<T>::inode (std::string name) :
-	react::subject(),
+	subject(),
 	name_(name)
 {
 //	session& sess = session::get_instance();
@@ -99,6 +99,6 @@ bool operator != (const inode<T>& c, T scalar)
 	return 1 == res.size() && scalar != res[0];
 }
 
-} // namespace nnet
+}
 
 #endif

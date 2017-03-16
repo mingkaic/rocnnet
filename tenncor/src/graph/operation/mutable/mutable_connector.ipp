@@ -111,9 +111,9 @@ functor<T>* mutable_connector<T>::get_jacobian (void)
 }
 
 template <typename T>
-void mutable_connector<T>::update (react::caller_info info, react::update_message msg)
+void mutable_connector<T>::update (caller_info info, update_message msg)
 {
-	if (react::update_message::REMOVE_ARG == msg.cmd_)
+	if (update_message::REMOVE_ARG == msg.cmd_)
 	{
 		disconnect();
 	}

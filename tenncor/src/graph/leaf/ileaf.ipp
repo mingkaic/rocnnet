@@ -24,7 +24,7 @@ ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other)
 	{
 		inode<T>::operator = (other);
 		copy(other);
-		this->notify(react::UPDATE); // content changed
+		this->notify(UPDATE); // content changed
 	}
 	return *this;
 }
@@ -36,7 +36,7 @@ ileaf<T>& ileaf<T>::operator = (ileaf<T>&& other)
 	{
 		inode<T>::operator = (other);
 		move(std::move(other));
-		this->notify(react::UPDATE); // content changed
+		this->notify(UPDATE); // content changed
 	}
 	return *this;
 }

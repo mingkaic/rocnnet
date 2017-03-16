@@ -14,7 +14,7 @@
 
 #ifdef TENNCOR_SUBJECT_HPP
 
-namespace react
+namespace nnet
 {
 
 subject::~subject (void)
@@ -24,7 +24,14 @@ subject::~subject (void)
 
 subject& subject::operator = (const subject& other) { return *this; }
 
-subject& subject::operator = (subject&& other) { return *this; }
+subject& subject::operator = (subject&& other)
+{
+	if (this != &other)
+	{
+		audience_ = std::move(other.audience_);
+	}
+	return *this;
+}
 
 void subject::notify (notification msg) const
 {
@@ -49,7 +56,8 @@ bool subject::no_audience (void) const
 
 subject::subject (const subject& other) {}
 
-subject::subject (subject&& other) {}
+subject::subject (subject&& other) :
+	audience_(std::move(other.audience_)) {}
 
 void subject::attach (iobserver* viewer, size_t idx)
 {

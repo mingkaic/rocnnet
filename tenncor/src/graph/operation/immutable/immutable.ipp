@@ -121,7 +121,7 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 	{
 		// initiate grad_
 		std::vector<inode<T>*> deps;
-		for (react::subject* sub : this->dependencies_)
+		for (subject* sub : this->dependencies_)
 		{
 			deps.push_back(static_cast<inode<T>*>(sub));
 		};
@@ -146,7 +146,7 @@ immutable<T>::immutable (std::vector<inode<T>*> args,
 iconnector<T>(args, name),
 ginit_(F)
 {
-	for (react::subject* sub : this->dependencies_)
+	for (subject* sub : this->dependencies_)
 	{
 		if (inode<T>* arg = dynamic_cast<inode<T>*>(sub))
 		{

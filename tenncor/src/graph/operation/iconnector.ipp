@@ -12,11 +12,11 @@ namespace nnet
 {
 
 template <typename T>
-inline std::vector<react::subject*> to_sub (std::vector<inode<T>*> nodes)
+inline std::vector<subject*> to_sub (std::vector<inode<T>*> nodes)
 {
-	std::vector<react::subject*> subs;
+	std::vector<subject*> subs;
 	std::transform(nodes.begin(), nodes.end(), subs.begin(),
-		[](inode<T>* n) -> react::subject*
+		[](inode<T>* n) -> subject*
 		{
 			return n;
 		});
@@ -34,7 +34,7 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 {
 	if (this != &other)
 	{
-		react::iobserver::operator = (other);
+		iobserver::operator = (other);
 		inode<T>::operator = (other);
 	}
 	return *this;
@@ -45,7 +45,7 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 {
 	if (this != &other)
 	{
-		react::iobserver::operator = (other);
+		iobserver::operator = (other);
 		inode<T>::operator = (other);
 	}
 	return *this;
@@ -55,7 +55,7 @@ template <typename T>
 std::string iconnector<T>::get_name (void) const
 {
 	std::string args;
-	for (const react::subject* subs : this->dependencies_)
+	for (const subject* subs : this->dependencies_)
 	{
 		if (const inode<T>* arg = dynamic_cast<const inode<T>*>(subs))
 		{
@@ -100,7 +100,7 @@ bool iconnector<T>::potential_descendent (iconnector<T>* n) const
 
 template <typename T>
 iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string name) :
-	react::iobserver(to_sub<T>(dependencies)),
+	iobserver(to_sub<T>(dependencies)),
 	inode<T>(name)
 {
 	update_graph(dependencies);
@@ -108,12 +108,12 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string name
 
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
-	react::iobserver(other),
+	iobserver(other),
 	inode<T>(other) {} // don't update graph for its new children
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
-	react::iobserver(other),
+	iobserver(other),
 	inode<T>(other) {}
 
 template <typename T>

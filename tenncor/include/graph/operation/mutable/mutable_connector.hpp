@@ -62,7 +62,7 @@ class mutable_connector : public iconnector<T>
 		virtual functor<T>* get_jacobian (void);
 
 		// ICONNECTOR METHODS
-		virtual void update (react::caller_info info, react::update_message msg = react::update_message());
+		virtual void update (caller_info info, update_message msg = update_message());
 
 		// MUTABLE METHODS
 		// return true if replacing

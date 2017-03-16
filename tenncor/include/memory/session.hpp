@@ -56,7 +56,7 @@ class session
 		template <typename T>
 		void unregister_obj (inode<T>& obj) { registry_.erase(&obj); }
 		
-		bool ptr_registered (react::subject* ptr) { return registry_.end() != registry_.find(ptr); }
+		bool ptr_registered (subject* ptr) { return registry_.end() != registry_.find(ptr); }
 
 		template <typename T>
 		void initialize_all (void)
@@ -91,7 +91,7 @@ class session
 		~session (void)
 		{
 			// kill everything in registry_ in case session is killed early
-			for (react::subject* so : registry_)
+			for (subject* so : registry_)
 			{
 				delete so;
 			}
@@ -100,7 +100,7 @@ class session
 
 	private:
 		// std::unordered_set<std::any> registry_;
-		std::unordered_set<react::subject*> registry_;
+		std::unordered_set<subject*> registry_;
 		std::default_random_engine generator_;
 };
 

@@ -28,13 +28,13 @@ class edge_record
 		edge_record (std::string fname) : outname_(fname) {}
 
 		void edge_capture (
-				react::iobserver* observer,
-				react::subject_owner* subject,
+				iobserver* observer,
+				subject_owner* subject,
 				size_t idx);
 
 		void edge_release (
-				react::iobserver* observer,
-				react::subject_owner* subject,
+				iobserver* observer,
+				subject_owner* subject,
 				size_t idx);
 
 		template <typename T>
@@ -68,15 +68,15 @@ class edge_record
 
 		struct subinfo
 		{
-			subinfo (react::iobserver* obs,
-					 react::subject_owner* sub,
+			subinfo (iobserver* obs,
+					 subject_owner* sub,
 					 size_t sid) : obs_(obs), sub_(sub), sid_(sid) {}
 
 			// we want to ensure:
 			// 1. pair<obs_, sid_> uniquely maps to sub_
 			// 2. sub_ uniquely maps to pair<obs_, sid_>
-			react::iobserver* obs_;
-			react::subject_owner* sub_;
+			iobserver* obs_;
+			subject_owner* sub_;
 			size_t sid_;
 		};
 

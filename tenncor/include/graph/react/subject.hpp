@@ -19,7 +19,7 @@
 #ifndef TENNCOR_SUBJECT_HPP
 #define TENNCOR_SUBJECT_HPP
 
-namespace react
+namespace nnet
 {
 
 class iobserver;
@@ -43,7 +43,7 @@ public:
 	//! declare copy assignment to prevent audience_ copy over
 	virtual subject& operator = (const subject& other);
 
-	//! declare move assignment to prevent audience_ copy over
+	//! declare move assignment since copy is declared
 	virtual subject& operator = (subject&& other);
 
 	// >>>> CALL OBSERVERS <<<<
@@ -66,7 +66,7 @@ protected:
 	//! Declare copy constructor to prevent audience from being copied over
 	subject (const subject& other);
 
-	//! Declare move constructor to prevent audience_ copy over
+	//! Declare move constructor since copy is declared
 	subject (subject&& other);
 
 	// >>>> OBSERVER MANIPULATION <<<<
@@ -88,6 +88,6 @@ private:
 		std::unordered_set<size_t> > audience_;
 };
 
-} // namespace react
+}
 
 #endif /* TENNCOR_SUBJECT_HPP */

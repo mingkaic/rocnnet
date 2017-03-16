@@ -71,7 +71,7 @@ public:
 	// >>>> SOLE MUTATOR <<<<
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
-	virtual void update (react::subject* arg);
+	virtual void update (subject* arg);
 
 protected:
 	// >>>> CONSTRUCTOR <<<<

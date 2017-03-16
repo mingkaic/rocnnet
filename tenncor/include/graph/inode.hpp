@@ -36,7 +36,7 @@ template <typename T>
 class iconnector;
 
 template <typename T>
-class inode : public react::subject
+class inode : public subject
 {
 public:
 	//! unregister from session TODO: deprecate session, find a better way of mass data serialization

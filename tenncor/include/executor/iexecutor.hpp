@@ -26,7 +26,7 @@ namespace nnet
 {
 
 template <typename T>
-class iexecutor : public react::iobserver
+class iexecutor : public iobserver
 {
 public:
 	//! virtual destructor
@@ -45,14 +45,14 @@ public:
 	void unfreeze (void)
 	{
 		listen_ = true;
-		for (react::subject* arg : this->dependencies_)
+		for (subject* arg : this->dependencies_)
 		{
 			executor(static_cast<inode<T>*>(arg));
 		}
 	}
 
 	//! update observer value according to subject
-	virtual void update (react::subject* arg) final
+	virtual void update (subject* arg) final
 	{
 		if (listen_)
 		{

@@ -190,7 +190,7 @@ private:
 	std::uniform_real_distribution<T>  distribution_;
 };
 
-} // namespace nnet
+}
 
 #include "../../src/tensor/tensor_handler.ipp"
 

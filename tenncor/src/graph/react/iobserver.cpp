@@ -10,7 +10,7 @@
 
 #ifdef TENNCOR_IOBSERVER_HPP
 
-namespace react
+namespace nnet
 {
 
 iobserver::~iobserver (void)

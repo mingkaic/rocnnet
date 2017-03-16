@@ -37,7 +37,7 @@ matmul<T>* matmul<T>::clone (void)
 template <typename T>
 matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		transposeA_ = other.transposeA_;
 		transposeB_ = other.transposeB_;
@@ -49,7 +49,7 @@ matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 template <typename T>
 matmul<T>& matmul<T>::operator = (matmul<T>&& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		transposeA_ = std::move(other.transposeA_);
 		transposeB_ = std::move(other.transposeB_);

@@ -1,10 +1,35 @@
 // REACTIVE BEHAVIOR
-E000 - iobserver should detach (unsubscribe) from subject on destruction
-E001 - copying observers will copy over its dependencies (subjects)
+A000 - copying subjects do not copy over audiences
+        moving subjects move over audiences
+        subjects without audience will return false if it has no observers
+A001 - subjects notify all observers
+        if UNSUBSCRIBE is called, then observer will suicide via commit_sudoku
+        if UPDATE is called, then observer will update via
+        public update with subject being its input
+A002 - destroying a subject will destroy their observers via UNSUBSCRIBE update,
+        and via commit_sudoku
+A003 - attaching observer to subject at index means notifying the
+        observer's protected update is triggered with calling subject and the index specified
+        attaching does nothing to update observer's dependency (not tested)
+A004 - detaching observer with index mean the above behavior will not hold for the specific index
+        detaching observer without index will prevent above behavior from holding
+        for any specific index to observer
+        detaching does nothing to update observer's dependency (not tested)
 
-E500 - subject should detach and mark all observers for destruction on destruction
-E501 - subject should notify all observers and pass some metadata (caller, et al.) to some or all observers
-E503 - copying subjects will not copy over the observers
+A005 - constructing observer with dependencies should automatically attach
+        constructed observer to designated subjects
+A006 - copying/moving observers copy/move over dependencies
+A007 - add_dependency with observer attaches observer to subject with index = dependencies_.size()
+        additionally, push subject back to dependencies
+A008 - remove_dependency with observer detaches observer from subject at specified index
+        dependency at index is set to nullptr
+A009 - replace_dependency at index detaches the last subject at index, attaches new subject at index
+        and replace subject in dependencies at index
+A010 - destroying an observer will detach the observer from its subjects via a detach call
+
+// NODE BEHAVIOR
+
+
 
 // VARIABLE DEPENDENT OBJECTS
 C000 - session should register all variable nodes on node construction

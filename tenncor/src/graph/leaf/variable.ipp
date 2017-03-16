@@ -80,7 +80,7 @@ tensor<T>& variable<T>::initialize (void)
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;
-	this->notify(react::UPDATE);
+	this->notify(UPDATE);
 	return *this->data_;
 }
 
@@ -95,7 +95,7 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;
-	this->notify(react::UPDATE);
+	this->notify(UPDATE);
 	return *this->data_;
 }
 

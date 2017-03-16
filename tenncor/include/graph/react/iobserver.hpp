@@ -21,7 +21,7 @@
 #ifndef TENNCOR_IOBSERVER_HPP
 #define TENNCOR_IOBSERVER_HPP
 
-namespace react
+namespace nnet
 {
 
 class iobserver
@@ -40,7 +40,7 @@ public:
 	// >>>> MUTATOR <<<<
 	//! update observer value according to subject
 	//! publicly available to allow explicit updates
-	virtual void update (react::subject* arg) = 0;
+	virtual void update (subject* arg) = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -77,7 +77,7 @@ protected:
 
 private:
 	//! update observer value with notification
-	void update (size_t dep_idx, notification msg);
+	virtual void update (size_t dep_idx, notification msg);
 
 	//! copy helper function
 	void copy (const iobserver& other);

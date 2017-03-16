@@ -28,7 +28,7 @@ placeholder<T>::placeholder (placeholder<T>&& other) :
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		ileaf<T>::operator = (other);
 	}
@@ -38,7 +38,7 @@ placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (placeholder<T>&& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		ileaf<T>::operator = (other);
 	}
@@ -69,7 +69,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 	(*assigner)(*this->data_, data);
 
 	this->is_init_ = true;
-	this->notify(react::UPDATE);
+	this->notify(UPDATE);
 	return *this;
 }
 
@@ -79,7 +79,7 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 {
 	*this->data_ = std::move(data);
 	this->is_init_ = true;
-	this->notify(react::UPDATE);
+	this->notify(UPDATE);
 	return *this;
 }
 

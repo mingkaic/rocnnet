@@ -81,7 +81,7 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 	// traverse towards target by looking at leaf sets
 	std::vector<tensor<T>*> allocated;
 	std::vector<const tensor<T>*> tens;
-	for (const react::subject* sub : this->dependencies_)
+	for (const subject* sub : this->dependencies_)
 	{
 		inode<T>* a = static_cast<inode<T>*>(sub);
 		if ((iconnector<T>* con = dynamic_cast<iconnector<T>*>(a)) &&
@@ -109,7 +109,7 @@ void operation<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 }
 
 template <typename T>
-void operation<T>::update (react::subject* arg)
+void operation<T>::update (subject* arg)
 {
 	bool badstate = false;
 	std::vector<const tensor<T>*> tens;
