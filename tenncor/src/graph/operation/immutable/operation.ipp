@@ -33,6 +33,12 @@ operation<T>* operation<T>::clone (void) const
 }
 
 template <typename T>
+operation<T>* operation<T>::move (void)
+{
+	return static_cast<operation<T>*>(move_impl());
+}
+
+template <typename T>
 operation<T>& operation<T>::operator = (const operation<T>& other)
 {
 	if (this != &other)
@@ -173,6 +179,12 @@ template <typename T>
 inode<T>* operation<T>::clone_impl (void) const
 {
 	return new operation<T>(*this);
+}
+
+template <typename T>
+inode<T>* operation<T>::move_impl (void)
+{
+	return new operation<T>(std::move(*this));
 }
 
 template <typename T>

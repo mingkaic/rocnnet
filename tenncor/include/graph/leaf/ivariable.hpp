@@ -29,7 +29,17 @@ public:
 
 	// >>>> CLONE, COPY, & MOVE ASSIGNMENTS <<<<
 	//! clone function
-	virtual ivariable<T>* clone (void) const;
+	ivariable<T>* clone (void) const;
+
+	//! move function
+	ivariable<T>* move (void);
+
+	// >>>> COPY && MOVE CONSTRUCTORS <<<<
+	//! copy construct to init zero and one
+	ivariable (const ivariable<T>& other);
+
+	//! move construct to init zero and one
+	ivariable (ileaf<T>&& other);
 
 	//! declare copy assignment to copy over initializer
 	virtual ivariable<T>& operator = (const ivariable<T>& other);
@@ -54,23 +64,16 @@ protected:
 		initializer<T>* init,
 		std::string name);
 
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! copy construct to init zero and one
-	ivariable (const ivariable<T>& other);
-
-	//! move construct to init zero and one
-	ivariable (ileaf<T>&& other);
-
 	// >>>> INITIALIZER DATA <<<<
 	//! tensor manipulator, ileaf owns this
 	initializer<T>* init_ = nullptr;
 
 private:
 	//! copy helper
-	void copy (const ivariable<T>& other);
+	void copy_helper (const ivariable<T>& other);
 
 	//! move helper
-	void move (ivariable<T>&& other);
+	void move_helper (ivariable<T>&& other);
 
 	//! common init
 	void common (void);

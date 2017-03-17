@@ -40,15 +40,15 @@ public:
 	static operation<T>* get (std::vector<inode<T>*> args,
 		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name);
 
-	//! builder for move
-	static operation<T>* get (operation<T>&& other);
-
 	//! destructor
 	virtual ~operation (void) {}
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! Clone function
 	operation<T>* clone (void) const;
+
+	//! Move function
+	operation<T>* move (void);
 
 	//! Declare copy assignment to copy over transfer functions
 	virtual operation<T>& operator = (const operation<T>& other);
@@ -94,6 +94,9 @@ protected:
 
 	//! implement clone function
 	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
 
 	//! stores whether operation is allocated on heap
 	bool onheap_ = false;

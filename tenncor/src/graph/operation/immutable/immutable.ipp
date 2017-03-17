@@ -18,11 +18,9 @@ immutable<T>* immutable<T>::clone (void) const
 }
 
 template <typename T>
-immutable<T>::immutable (immutable<T>&& other) :
-	iconnector<T>(other),
-	ginit_(std::move(other.ginit_))
+immutable<T>* immutable<T>::move (void)
 {
-	common();
+	return static_cast<immutable<T>*>(this->move_impl());
 }
 
 template <typename T>
@@ -168,6 +166,14 @@ template <typename T>
 immutable<T>::immutable (const immutable<T>& other) :
 	iconnector<T>(other),
 	ginit_(other.ginit_)
+{
+	common();
+}
+
+template <typename T>
+immutable<T>::immutable (immutable<T>&& other) :
+	iconnector<T>(other),
+	ginit_(std::move(other.ginit_))
 {
 	common();
 }

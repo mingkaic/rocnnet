@@ -40,8 +40,8 @@ public:
 	//! clone function
 	immutable<T>* clone (void) const;
 
-	//! declare move constructor to move over transfer functions
-	immutable (immutable<T>&& other);
+	//! move function
+	immutable<T>* move (void);
 
 	//! declare copy assignment to copy over transfer functions
 	virtual immutable<T>& operator = (const immutable<T>& other);
@@ -77,6 +77,9 @@ protected:
 	// >>>> COPY CONSTRUCTORS <<<<
 	//! declare copy constructor to copy over transfer functions
 	immutable (const immutable<T>& other);
+
+	//! declare move constructor to move over transfer functions
+	immutable (immutable<T>&& other);
 
 private:
 	void common (void);

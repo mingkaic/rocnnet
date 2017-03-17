@@ -41,6 +41,11 @@ public:
 		return *this;
 	}
 
+	void mock_attach(iobserver* viewer, size_t idx)
+	{
+		subject::attach(viewer, idx);
+	}
+
 	void mock_detach(iobserver* obs, signed i = -1)
 	{
 		if (i < 0)
@@ -56,6 +61,9 @@ public:
 	MOCK_METHOD1(detach, void(iobserver*));
 	MOCK_METHOD2(detach, void(iobserver*,size_t));
 };
+
+
+class mock_subject2 : public subject {};
 
 
 #endif //TENNCOR_MOCK_SUBJECT_H

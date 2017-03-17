@@ -35,7 +35,13 @@ public:
 
 	// >>>> CLONE COPY && MOVE <<<<
 	//! clone function
-	virtual placeholder<T>* clone (void) const;
+	placeholder<T>* clone (void) const;
+
+	//! move function
+	placeholder<T>* move (void);
+
+	//! copy constructor
+	placeholder (const placeholder<T>& other);
 
 	//! move constructor
 	placeholder (placeholder<T>&& other);
@@ -67,12 +73,11 @@ public:
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
 protected:
-	// >>>> CLONE && COPY CONSTRUCTOR <<<<
-	//! copy constructor
-	placeholder (const placeholder<T>& other);
-
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
 };
 
 }

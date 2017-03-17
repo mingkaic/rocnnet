@@ -24,8 +24,10 @@ public:
 
 	dummy_observer (dummy_observer&& other) : iobserver(std::move(other)) {}
 
+	// dummy stops us from executing these real actions,
+	// since we test using dummy attach/detach procedures
 	virtual void update (subject*) {}
-	virtual void update (size_t,notification) {}
+	virtual void update (size_t s,notification n) {}
 	virtual void commit_sudoku (void) {}
 
 protected:
@@ -41,19 +43,61 @@ public:
 	mock_observer (subject* a, subject* b) : dummy_observer({a, b})  {}
 	~mock_observer (void) {}
 
-	mock_observer* clone (void) const { return new mock_observer(*this); }
-	mock_observer (mock_observer&& other) : dummy_observer(std::move(other)) {}
+	std::vector<subject*> expose_dependencies (void)
+	{
+		return this->dependencies_;
+	}
+	MOCK_METHOD2(update, void(size_t,notification));
+	MOCK_METHOD1(update, void(subject*));
+	MOCK_METHOD0(commit_sudoku, void());
+
+protected:
+};
+
+
+class mock_observer2 : public iobserver
+{
+public:
+	// trust tester to allocate on stack
+	mock_observer2 (void) : iobserver() {}
+	mock_observer2 (subject* arg) : iobserver({arg})  {}
+	mock_observer2 (subject* a, subject* b) : iobserver({a, b})  {}
+	~mock_observer2 (void) {}
+
+	mock_observer2 (const mock_observer2& other) : iobserver(other) {}
+	mock_observer2 (mock_observer2&& other) : iobserver(std::move(other)) {}
+	mock_observer2& operator = (const mock_observer2& other)
+	{
+		iobserver::operator = (other);
+		return *this;
+	}
+	mock_observer2& operator = (mock_observer2&& other)
+	{
+		iobserver::operator = (std::move(other));
+		return *this;
+	}
+
+	void mock_add_dependency (subject* dep)
+	{
+		this->add_dependency(dep);
+	}
+
+	void mock_remove_dependency (size_t idx)
+	{
+		this->remove_dependency(idx);
+	}
+
+	void mock_replace_dependency (subject* dep, size_t idx)
+	{
+		this->replace_dependency(dep, idx);
+	}
 
 	std::vector<subject*> expose_dependencies (void)
 	{
 		return this->dependencies_;
 	}
 	MOCK_METHOD1(update, void(subject*));
-	MOCK_METHOD2(update, void(size_t,notification));
-	MOCK_METHOD0(commit_sudoku, void(void));
-
-protected:
-	mock_observer (const mock_observer& other) : dummy_observer(other) {}
+	MOCK_METHOD0(commit_sudoku, void());
 };
 
 

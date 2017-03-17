@@ -34,6 +34,9 @@ public:
 	//! clone function
 	iconnector<T>* clone (void) const;
 
+	//! move function
+	iconnector<T>* move (void);
+
 	//! Declare copy assignment to prevent gid_ copy over
 	virtual iconnector<T>& operator = (const iconnector<T>& other);
 

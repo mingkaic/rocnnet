@@ -101,7 +101,10 @@ rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 	{
 		it->second.erase(idx);
 	}
-
+	if (it->second.empty())
+	{
+		audience_.erase(viewer);
+	}
 	if (audience_.empty())
 	{
 		commit_sudoku();

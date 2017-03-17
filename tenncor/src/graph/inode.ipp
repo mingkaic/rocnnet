@@ -25,6 +25,12 @@ inode<T>* inode<T>::clone (void) const
 }
 
 template <typename T>
+inode<T>* inode<T>::move (void)
+{
+	return move_impl();
+}
+
+template <typename T>
 inode<T>& inode<T>::operator = (const inode<T>& other)
 {
 	if (this != &other)

@@ -32,6 +32,9 @@ public:
 	//! clone function
 	ileaf<T>* clone (void) const;
 
+	//! move function
+	ileaf<T>* move (void);
+
 	//! declare copy assignment to deep copy over data
 	virtual ileaf<T>& operator = (const ileaf<T>& other);
 
@@ -76,10 +79,10 @@ protected:
 
 private:
 	//! copy helper
-	void copy (const ileaf<T>& other);
+	void copy_helper (const ileaf<T>& other);
 
 	//! move helper
-	void move (ileaf<T>&& other);
+	void move_helper (ileaf<T>&& other);
 };
 
 }

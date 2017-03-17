@@ -103,26 +103,20 @@ TEST(REACT, Notify_A001)
 	mock_subject s2(&o2, &o1);
 
 	EXPECT_CALL(o1, update(0, UPDATE)).Times(1);
-	EXPECT_CALL(o1, update(&s1)).Times(1);
 	s1.notify(UPDATE); // o1 update gets s1 at idx 0
 
 	EXPECT_CALL(o1, update(1, UPDATE)).Times(1);
 	EXPECT_CALL(o2, update(0, UPDATE)).Times(1);
-	EXPECT_CALL(o1, update(&s2)).Times(1);
-	EXPECT_CALL(o2, update(&s2)).Times(1);
 	s2.notify(UPDATE);
 	// o2 update gets s2 at idx 0,
 	// o1 update gets s2 at idx 1
 
 	// suicide calls
-	EXPECT_CALL(o1, update(0, UNSUBSCRIBE)).Times(2);
-	EXPECT_CALL(o1, commit_sudoku()).Times(2);
+	EXPECT_CALL(o1, update(0, UNSUBSCRIBE)).Times(1);
 	s1.notify(UNSUBSCRIBE);
 
 	EXPECT_CALL(o1, update(1, UNSUBSCRIBE)).Times(1);
 	EXPECT_CALL(o2, update(0, UNSUBSCRIBE)).Times(1);
-	EXPECT_CALL(o1, commit_sudoku()).Times(1);
-	EXPECT_CALL(o2, commit_sudoku()).Times(1);
 	s2.notify(UNSUBSCRIBE);
 
 	// detach to avoid doing anything with o1 and o2
@@ -136,19 +130,18 @@ TEST(REACT, Notify_A001)
 // destructor
 TEST(REACT, SUBDEATH_A002)
 {
-//	MockSubject* subject = new MockSubject();
-//
-//	// dynamically allocate to detect leak when subject dies
-//	MockObserver* o1 = MockObserver::build(subject);
-//	MockObserver* o2 = MockObserver::build(subject);
-//	MockObserver* o3 = MockObserver::build(subject);
-//
-//	// can't expect subject detach, since inherited MockSubject dies
-//	// before base subject class detach is called
-//	// if o1, o2, and o3 memory leaks then error
-//
-//	// death
-//	delete subject;
+	mock_observer o1;
+	mock_observer o2;
+	mock_subject* s1 = new mock_subject(&o1);
+	mock_subject* s2 = new mock_subject(&o2, &o1);
+
+	// suicide calls
+	EXPECT_CALL(o1, update(0, UNSUBSCRIBE)).Times(1);
+	delete s1;
+
+	EXPECT_CALL(o1, update(1, UNSUBSCRIBE)).Times(1);
+	EXPECT_CALL(o2, update(0, UNSUBSCRIBE)).Times(1);
+	delete s2;
 }
 
 
@@ -156,6 +149,32 @@ TEST(REACT, SUBDEATH_A002)
 // attach
 TEST(REACT, Attach_A003)
 {
+	mock_observer o1;
+	mock_observer o2;
+	mock_subject s1;
+	mock_subject s2;
+
+	EXPECT_TRUE(s1.no_audience());
+	EXPECT_TRUE(s2.no_audience());
+
+	size_t i = FUZZ<size_t>::get(1)[0];
+	s1.mock_attach(&o1, i);
+	s2.mock_attach(&o2, i);
+	s2.mock_attach(&o1, i + 1);
+
+	EXPECT_FALSE(s1.no_audience());
+	EXPECT_FALSE(s2.no_audience());
+
+	s1.mock_attach(&o1, i+1);
+	s1.mock_detach(&o1);
+	s2.mock_detach(&o2);
+
+	EXPECT_TRUE(s1.no_audience());
+	EXPECT_FALSE(s2.no_audience());
+
+	s1.mock_detach(&o1);
+	s2.mock_detach(&o1);
+	s2.mock_detach(&o2);
 }
 
 
@@ -163,6 +182,27 @@ TEST(REACT, Attach_A003)
 // detach without index and with index
 TEST(REACT, Detach_A004)
 {
+	mock_observer o1;
+	mock_observer o2;
+	mock_subject s1(&o1, &o2);
+	mock_subject s2(&o2, &o2);
+	mock_subject s3(&o2, &o2);
+
+	EXPECT_FALSE(s1.no_audience());
+	s1.mock_detach(&o1);
+	EXPECT_FALSE(s1.no_audience());
+	s1.mock_detach(&o2);
+	EXPECT_TRUE(s1.no_audience());
+
+	EXPECT_FALSE(s2.no_audience());
+	s2.mock_detach(&o2);
+	EXPECT_TRUE(s2.no_audience());
+
+	EXPECT_FALSE(s3.no_audience());
+	s3.mock_detach(&o2, 1);
+	EXPECT_FALSE(s3.no_audience());
+	s3.mock_detach(&o2, 0);
+	EXPECT_TRUE(s3.no_audience());
 }
 
 
@@ -170,6 +210,29 @@ TEST(REACT, Detach_A004)
 // default and dependency constructors
 TEST(REACT, ObsConstruct_A005)
 {
+	mock_subject* s1 = new mock_subject;
+	mock_subject* s2 = new mock_subject;
+	mock_observer2* o1 = new mock_observer2(s2);
+	mock_observer2* o2 = new mock_observer2(s1, s2);
+
+	std::vector<subject*> subs1 = o1->expose_dependencies();
+	std::vector<subject*> subs2 = o2->expose_dependencies();
+
+	ASSERT_EQ(1, subs1.size());
+	EXPECT_EQ(s2, subs1[0]);
+	ASSERT_EQ(2, subs2.size());
+	EXPECT_EQ(s1, subs2[0]);
+	EXPECT_EQ(s2, subs2[1]);
+
+	EXPECT_CALL(*o1, commit_sudoku()).Times(1);
+	EXPECT_CALL(*o2, commit_sudoku()).Times(2);
+	// called twice since mock observer isn't destroyed when commit_sudoku is called
+	// so deleting s2 will trigger another suicide call
+	delete s1;
+	delete s2;
+	// again observers aren't destroyed
+	delete o1;
+	delete o2;
 }
 
 
@@ -177,42 +240,50 @@ TEST(REACT, ObsConstruct_A005)
 // copy constructor and assignment
 TEST(REACT, CopyObs_A006)
 {
-//	MockSubject solo;
-//	MockSubject leaf1;
-//	MockSubject leaf2;
-//
-//	MockObserver* branch1 = MockObserver::build(&solo);
-//	MockObserver* branch2 = MockObserver::build(&leaf1, &leaf2);
-//
-//	EXPECT_CALL(solo, detach(_)).Times(2);
-//	EXPECT_CALL(leaf1, detach(_)).Times(2);
-//	EXPECT_CALL(leaf2, detach(_)).Times(2);
-//
-//	MockObserver* branch1cpy = new MockObserver(*branch1);
-//	MockObserver* branch2cpy = new MockObserver(*branch2);
-//
-//	// expect dependencies to equal
-//	std::vector<subject*> dep1 = branch1cpy->expose_dependencies();
-//	std::vector<subject*> dep2 = branch2cpy->expose_dependencies();
-//	EXPECT_EQ(1, dep1.size());
-//	EXPECT_EQ(&solo, dep1[0]);
-//	EXPECT_EQ(2, dep2.size());
-//	// order should matter
-//	EXPECT_EQ(&leaf1, dep2[0]);
-//	EXPECT_EQ(&leaf2, dep2[1]);
-//
-//	// actual cleanup
-//	delete branch1;
-//	delete branch2;
-//	delete branch1cpy;
-//	delete branch2cpy;
-//	// real detach
-//	solo.mock_detach(branch1);
-//	solo.mock_detach(branch1cpy);
-//	leaf1.mock_detach(branch2);
-//	leaf1.mock_detach(branch2cpy);
-//	leaf2.mock_detach(branch2);
-//	leaf2.mock_detach(branch2cpy);
+	mock_observer2* sassign1 = new mock_observer2;
+	mock_observer2* sassign2 = new mock_observer2;
+
+	mock_subject* s1 = new mock_subject;
+	mock_subject* s2 = new mock_subject;
+	mock_observer2* o1 = new mock_observer2(s2);
+	mock_observer2* o2 = new mock_observer2(s1, s2);
+
+	mock_observer2* cpy1 = new mock_observer2(*o1);
+	mock_observer2* cpy2 = new mock_observer2(*o2);
+
+	std::vector<subject*> subs1 = cpy1->expose_dependencies();
+	std::vector<subject*> subs2 = cpy2->expose_dependencies();
+	ASSERT_EQ(1, subs1.size());
+	EXPECT_EQ(s2, subs1[0]);
+	ASSERT_EQ(2, subs2.size());
+	EXPECT_EQ(s1, subs2[0]);
+	EXPECT_EQ(s2, subs2[1]);
+
+	*sassign1 = *o1;
+	*sassign2 = *o2;
+
+	std::vector<subject*> subs3 = sassign1->expose_dependencies();
+	std::vector<subject*> subs4 = sassign2->expose_dependencies();
+	ASSERT_EQ(1, subs3.size());
+	EXPECT_EQ(s2, subs3[0]);
+	ASSERT_EQ(2, subs4.size());
+	EXPECT_EQ(s1, subs4[0]);
+	EXPECT_EQ(s2, subs4[1]);
+
+	EXPECT_CALL(*o1, commit_sudoku()).Times(1);
+	EXPECT_CALL(*o2, commit_sudoku()).Times(2);
+	EXPECT_CALL(*cpy1, commit_sudoku()).Times(1);
+	EXPECT_CALL(*cpy2, commit_sudoku()).Times(2);
+	EXPECT_CALL(*sassign1, commit_sudoku()).Times(1);
+	EXPECT_CALL(*sassign2, commit_sudoku()).Times(2);
+	delete s1;
+	delete s2;
+	delete o1;
+	delete o2;
+	delete cpy1;
+	delete cpy2;
+	delete sassign1;
+	delete sassign2;
 }
 
 
@@ -220,6 +291,52 @@ TEST(REACT, CopyObs_A006)
 // move constructor and assignment
 TEST(REACT, MoveObs_A006)
 {
+	mock_observer2* sassign1 = new mock_observer2;
+	mock_observer2* sassign2 = new mock_observer2;
+
+	mock_subject2* s1 = new mock_subject2;
+	mock_subject2* s2 = new mock_subject2;
+	mock_observer2* o1 = new mock_observer2(s2);
+	mock_observer2* o2 = new mock_observer2(s1, s2);
+
+	mock_observer2* mv1 = new mock_observer2(std::move(*o1));
+	mock_observer2* mv2 = new mock_observer2(std::move(*o2));
+
+	std::vector<subject*> subs1 = mv1->expose_dependencies();
+	std::vector<subject*> subs2 = mv2->expose_dependencies();
+	ASSERT_EQ(1, subs1.size());
+	EXPECT_EQ(s2, subs1[0]);
+	ASSERT_EQ(2, subs2.size());
+	EXPECT_EQ(s1, subs2[0]);
+	EXPECT_EQ(s2, subs2[1]);
+
+	EXPECT_TRUE(o1->expose_dependencies().empty());
+	EXPECT_TRUE(o2->expose_dependencies().empty());
+
+	*sassign1 = std::move(*mv1);
+	*sassign2 = std::move(*mv2);
+
+	std::vector<subject*> subs3 = sassign1->expose_dependencies();
+	std::vector<subject*> subs4 = sassign2->expose_dependencies();
+	ASSERT_EQ(1, subs3.size());
+	EXPECT_EQ(s2, subs3[0]);
+	ASSERT_EQ(2, subs4.size());
+	EXPECT_EQ(s1, subs4[0]);
+	EXPECT_EQ(s2, subs4[1]);
+
+	EXPECT_TRUE(mv1->expose_dependencies().empty());
+	EXPECT_TRUE(mv2->expose_dependencies().empty());
+
+	EXPECT_CALL(*sassign1, commit_sudoku()).Times(1);
+	EXPECT_CALL(*sassign2, commit_sudoku()).Times(2);
+	delete s1;
+	delete s2;
+	delete o1;
+	delete o2;
+	delete mv1;
+	delete mv2;
+	delete sassign1;
+	delete sassign2;
 }
 
 
@@ -227,6 +344,38 @@ TEST(REACT, MoveObs_A006)
 // add_dependency
 TEST(REACT, AddDep_A007)
 {
+	mock_subject* s1 = new mock_subject;
+	mock_subject* s2 = new mock_subject;
+	mock_observer2* o1 = new mock_observer2;
+	mock_observer2* o2 = new mock_observer2;
+
+	EXPECT_TRUE(s1->no_audience());
+	EXPECT_TRUE(s2->no_audience());
+	o1->mock_add_dependency(s2);
+	EXPECT_FALSE(s2->no_audience());
+	o1->mock_add_dependency(s1);
+	EXPECT_FALSE(s1->no_audience());
+
+	o2->mock_add_dependency(s1);
+	o2->mock_add_dependency(s2);
+
+	std::vector<subject*> subs1 = o1->expose_dependencies();
+	std::vector<subject*> subs2 = o2->expose_dependencies();
+
+	ASSERT_EQ(2, subs1.size());
+	ASSERT_EQ(2, subs2.size());
+
+	EXPECT_EQ(s2, subs1[0]);
+	EXPECT_EQ(s1, subs1[1]);
+	EXPECT_EQ(s1, subs2[0]);
+	EXPECT_EQ(s2, subs2[1]);
+
+	EXPECT_CALL(*o1, commit_sudoku()).Times(2);
+	EXPECT_CALL(*o2, commit_sudoku()).Times(2);
+	delete s1;
+	delete s2;
+	delete o1;
+	delete o2;
 }
 
 
@@ -234,6 +383,30 @@ TEST(REACT, AddDep_A007)
 // remove_dependency
 TEST(REACT, RemDep_A008)
 {
+	mock_subject2* s1 = new mock_subject2;
+	mock_subject2* s2 = new mock_subject2;
+	mock_observer2* o1 = new mock_observer2(s2);
+	mock_observer2* o2 = new mock_observer2(s1, s2);
+	mock_observer2* o3 = new mock_observer2(s1, s2);
+
+	o1->mock_remove_dependency(0);
+	EXPECT_TRUE(o1->expose_dependencies().empty());
+
+	o2->mock_remove_dependency(1);
+	EXPECT_EQ(1, o2->expose_dependencies().size());
+	o2->mock_remove_dependency(0);
+	EXPECT_TRUE(o2->expose_dependencies().empty());
+
+	o3->mock_remove_dependency(0);
+	EXPECT_EQ(2, o3->expose_dependencies().size());
+	o3->mock_remove_dependency(1);
+	EXPECT_TRUE(o3->expose_dependencies().empty());
+
+	delete s1;
+	delete s2;
+	delete o1;
+	delete o2;
+	delete o3;
 }
 
 
@@ -241,6 +414,27 @@ TEST(REACT, RemDep_A008)
 // replace_dependency
 TEST(REACT, RepDep_A009)
 {
+	mock_subject2* s1 = new mock_subject2;
+	mock_subject2* s2 = new mock_subject2;
+	mock_observer2* o1 = new mock_observer2(s1);
+
+	o1->mock_replace_dependency(nullptr, 1);
+	ASSERT_EQ(2, o1->expose_dependencies().size());
+	o1->mock_replace_dependency(s2, 0);
+	std::vector<subject*> subs1 = o1->expose_dependencies();
+	ASSERT_EQ(2, subs1.size());
+	EXPECT_EQ(s2, subs1[0]);
+	EXPECT_EQ(nullptr, subs1[1]);
+	o1->mock_replace_dependency(s1, 1);
+	subs1 = o1->expose_dependencies();
+	ASSERT_EQ(2, subs1.size());
+	EXPECT_EQ(s2, subs1[0]);
+	EXPECT_EQ(s1, subs1[1]);
+
+	EXPECT_CALL(*o1, commit_sudoku()).Times(2);
+	delete s1;
+	delete s2;
+	delete o1;
 }
 
 
@@ -248,24 +442,16 @@ TEST(REACT, RepDep_A009)
 // destruction, depends on subject detach
 TEST(REACT, ObsDeath_A010)
 {
-//	MockSubject subject;
-//
-//	MockObserver* o1 = MockObserver::build(&subject);
-//	MockObserver* o2 = MockObserver::build(&subject);
-//	MockObserver* o3 = MockObserver::build(&subject);
-//
-//	EXPECT_CALL(subject, detach(o1));
-//	EXPECT_CALL(subject, detach(o2));
-//	EXPECT_CALL(subject, detach(o3));
-//
-//	// these should detach observers from subject
-//	delete o1;
-//	delete o2;
-//	delete o3;
-//	// real detach
-//	subject.mock_detach(o1);
-//	subject.mock_detach(o2);
-//	subject.mock_detach(o3);
+	mock_subject s1;
+	mock_subject2 s2;
+
+	mock_observer2* o1 = new mock_observer2(&s1, &s2);
+	iobserver* tempptr = o1;
+	EXPECT_CALL(s1, detach(o1));
+	delete o1;
+
+	EXPECT_TRUE(s2.no_audience());
+	s1.mock_detach(tempptr);
 }
 
 

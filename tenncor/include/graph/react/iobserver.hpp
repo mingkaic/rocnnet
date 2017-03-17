@@ -80,10 +80,10 @@ private:
 	virtual void update (size_t dep_idx, notification msg);
 
 	//! copy helper function
-	void copy (const iobserver& other);
+	void copy_helper (const iobserver& other);
 
 	//! move helper function
-	void move (iobserver& other);
+	void move_helper (iobserver&& other);
 
 	friend class subject;
 };

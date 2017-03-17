@@ -36,15 +36,15 @@ public:
 	//! builder for data and shape
 	static constant<T>* get (std::vector<T> raw, tensorshape shape);
 
-	//! builder for move
-	static constant<T>* get (constant<T>&& other);
-
 	//! destructor to kill zero
 	~constant (void);
 
 	// >>>> CLONE, COPY, & MOVE <<<<
 	//! clone function
-	virtual constant<T>* clone (void) const;
+	constant<T>* clone (void) const;
+
+	//! copy function
+	constant<T>* move (void);
 
 	//! declare copy assignment to prevent onheap from being copied over
 	virtual constant<T>& operator = (const constant<T>& other);
@@ -90,6 +90,9 @@ protected:
 
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
 };
 
 }

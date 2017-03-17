@@ -26,7 +26,7 @@ iobserver& iobserver::operator = (const iobserver& other)
 {
 	if (this != &other)
 	{
-		copy(other);
+		copy_helper(other);
 	}
 	return *this;
 }
@@ -35,7 +35,7 @@ iobserver& iobserver::operator = (iobserver&& other)
 {
 	if (this != &other)
 	{
-		this->move(other);
+		move_helper(std::move(other));
 	}
 	return *this;
 }
@@ -52,12 +52,12 @@ iobserver::iobserver (std::vector<subject*> dependencies)
 
 iobserver::iobserver (const iobserver& other)
 {
-	copy(other);
+	copy_helper(other);
 }
 
 iobserver::iobserver (iobserver&& other)
 {
-	move(other);
+	move_helper(std::move(other));
 }
 
 void iobserver::add_dependency (subject* dep)
@@ -69,17 +69,16 @@ void iobserver::add_dependency (subject* dep)
 	dependencies_.push_back(dep);
 }
 
-void iobserver::remove_dependency(size_t idx)
+void iobserver::remove_dependency (size_t idx)
 {
+	if (idx > dependencies_.size()) return;
 	if (subject* sub = dependencies_[idx])
 	{
 		sub->detach(this);
 		// update dependencies
-		if (idx < dependencies_.size()-1)
-		{
-			dependencies_[idx] = nullptr;
-		}
-		else
+		dependencies_[idx] = nullptr;
+		while (false == dependencies_.empty() &&
+			nullptr == dependencies_.back())
 		{
 			dependencies_.pop_back();
 		}
@@ -111,7 +110,7 @@ void iobserver::update (size_t dep_idx, notification msg)
 		case UNSUBSCRIBE:
 			remove_dependency(dep_idx);
 			commit_sudoku();
-			// fall through to update
+			break;
 
 		case UPDATE:
 			update(dependencies_[dep_idx]); // value update
@@ -119,7 +118,7 @@ void iobserver::update (size_t dep_idx, notification msg)
 	}
 }
 
-void iobserver::copy (const iobserver& other)
+void iobserver::copy_helper (const iobserver& other)
 {
 	for (subject* sub : dependencies_)
 	{
@@ -132,13 +131,20 @@ void iobserver::copy (const iobserver& other)
 	}
 }
 
-void iobserver::move (iobserver& other)
+void iobserver::move_helper (iobserver&& other)
 {
 	for (subject* sub : dependencies_)
 	{
 		sub->detach(this);
 	}
 	dependencies_ = std::move(other.dependencies_);
+	// replace subs audience from other to this
+	for (size_t i = 0, n = dependencies_.size();
+		i < n; i++)
+	{
+		dependencies_[i]->detach(&other, i);
+		dependencies_[i]->attach(this, i);
+	}
 	size_t ndeps = dependencies_.size();
 	for (size_t i = 0; i < ndeps; i++)
 	{

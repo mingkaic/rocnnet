@@ -30,6 +30,12 @@ iconnector<T>* iconnector<T>::clone (void) const
 }
 
 template <typename T>
+iconnector<T>* iconnector<T>::move (void)
+{
+	return static_cast<iconnector<T>*>(this->move_impl());
+}
+
+template <typename T>
 iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 {
 	if (this != &other)

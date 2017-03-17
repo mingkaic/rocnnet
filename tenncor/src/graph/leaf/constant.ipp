@@ -24,12 +24,6 @@ constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 }
 
 template <typename T>
-constant<T>* constant<T>::get (constant<T>&& other)
-{
-	return new constant<T>(std::move(other));
-}
-
-template <typename T>
 constant<T>::~constant (void)
 {
 	if (zero != this)
@@ -42,6 +36,12 @@ template <typename T>
 constant<T>* constant<T>::clone (void) const
 {
 	return static_cast<constant<T>*>(clone_impl());
+}
+
+template <typename T>
+constant<T>* constant<T>::move (void)
+{
+	return static_cast<constant<T>*>(move_impl());
 }
 
 template <typename T>
@@ -144,6 +144,12 @@ template <typename T>
 inode<T>* constant<T>::clone_impl (void) const
 {
 	return new constant<T>(*this);
+}
+
+template <typename T>
+inode<T>* constant<T>::move_impl (void)
+{
+	return new constant<T>(std::move(*this));
 }
 
 }

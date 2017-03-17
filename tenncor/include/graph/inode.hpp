@@ -46,6 +46,9 @@ public:
 	//! clone function
 	inode<T>* clone (void) const;
 
+	//! move function
+	inode<T>* move (void);
+
 	//! declare copy assignment to prevent id_ copy over
 	virtual inode<T>& operator = (const inode<T>& other);
 
@@ -98,6 +101,9 @@ protected:
 
 	//! clone abstraction function
 	virtual inode<T>* clone_impl (void) const = 0;
+
+	//! move abstraction function
+	virtual inode<T>* move_impl (void) = 0;
 
 	// >>>> NODE META DATA <<<<
 	const std::string id_ = nnutils::uuid(this); //! unique hash

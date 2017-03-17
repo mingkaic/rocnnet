@@ -33,12 +33,12 @@ public:
 	static matmul<T>* get (inode<T>* a, inode<T>* b,
 		bool transposeA = false, bool transposeB = false);
 
-	//! builder for move
-	static matmul<T>* get (matmul<T>&& other);
-
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! Clone function
-	matmul<T>* clone (void);
+	matmul<T>* clone (void) const;
+
+	//! Move function
+	matmul<T>* move (void);
 
 	//! Declare copy assignment to copy over transfer functions
 	virtual matmul<T>& operator = (const matmul<T>& other);
@@ -61,6 +61,9 @@ protected:
 
 	//! Implement clone function
 	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
 
 private:
 	//! whether we transpose argument 1 before multiplication

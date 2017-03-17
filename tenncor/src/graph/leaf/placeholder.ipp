@@ -22,6 +22,16 @@ placeholder<T>* placeholder<T>::clone (void) const
 }
 
 template <typename T>
+placeholder<T>* placeholder<T>::move (void)
+{
+	return static_cast<placeholder<T>*>(move_impl());
+}
+
+template <typename T>
+placeholder<T>::placeholder (const placeholder<T>& other) :
+	ivariable<T>(other) {}
+
+template <typename T>
 placeholder<T>::placeholder (placeholder<T>&& other) :
 	ivariable<T>(other) {}
 
@@ -94,13 +104,15 @@ void placeholder<T>::get_leaves (
 	typename inode<T>::GRAD_CACHE& leaves) const {}
 
 template <typename T>
-placeholder<T>::placeholder (const placeholder<T>& other) :
-	ivariable<T>(other) {}
-
-template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const
 {
 	return new placeholder<T>(*this);
+}
+
+template <typename T>
+inode<T>* placeholder<T>::move_impl (void)
+{
+	return new placeholder<T>(std::move(*this));
 }
 
 }

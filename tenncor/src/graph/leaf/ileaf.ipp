@@ -18,12 +18,18 @@ ileaf<T>* ileaf<T>::clone (void) const
 }
 
 template <typename T>
+ileaf<T>* ileaf<T>::move (void)
+{
+	return static_cast<ileaf<T>*>(this->move_impl());
+}
+
+template <typename T>
 ileaf<T>& ileaf<T>::operator = (const ileaf<T>& other)
 {
 	if (this != &other)
 	{
 		inode<T>::operator = (other);
-		copy(other);
+		copy_helper(other);
 		this->notify(UPDATE); // content changed
 	}
 	return *this;
@@ -35,7 +41,7 @@ ileaf<T>& ileaf<T>::operator = (ileaf<T>&& other)
 	if (this != &other)
 	{
 		inode<T>::operator = (other);
-		move(std::move(other));
+		move_helper(std::move(other));
 		this->notify(UPDATE); // content changed
 	}
 	return *this;
@@ -76,25 +82,25 @@ template <typename T>
 ileaf<T>::ileaf (const ileaf<T>& other) :
 	inode<T>(other)
 {
-	copy(other);
+	copy_helper(other);
 }
 
 template <typename T>
 ileaf<T>::ileaf (ileaf<T>&& other) :
 	inode<T>(other)
 {
-	move(std::move(other));
+	move_helper(std::move(other));
 }
 
 template <typename T>
-void ileaf<T>::copy (const ileaf<T>& other)
+void ileaf<T>::copy_helper (const ileaf<T>& other)
 {
 	data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
 	is_init_ = other.is_init_;
 }
 
 template <typename T>
-void ileaf<T>::move (ileaf<T>&& other)
+void ileaf<T>::move_helper (ileaf<T>&& other)
 {
 	data_ = std::unique_ptr<tensor<T> >(std::move(other.data_));
 	is_init_ = std::move(other.is_init_);

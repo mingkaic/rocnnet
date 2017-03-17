@@ -35,6 +35,16 @@ variable<T>* variable<T>::clone (void) const
 }
 
 template <typename T>
+variable<T>* variable<T>::move (void)
+{
+	return static_cast<variable<T>*>(move_impl());
+}
+
+template <typename T>
+variable<T>::variable (const variable<T>& other) :
+	ivariable<T>(other) {}
+
+template <typename T>
 variable<T>::variable (variable<T>&& other) :
 	ivariable<T>(other) {}
 
@@ -117,13 +127,15 @@ void variable<T>::get_leaves (
 }
 
 template <typename T>
-variable<T>::variable (const variable<T>& other) :
-	ivariable<T>(other) {}
-
-template <typename T>
 inode<T>* variable<T>::clone_impl (void) const
 {
 	return new variable(*this);
+}
+
+template <typename T>
+inode<T>* variable<T>::move_impl (void)
+{
+	return new variable(std::move(*this));
 }
 
 }

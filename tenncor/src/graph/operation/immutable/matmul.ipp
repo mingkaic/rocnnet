@@ -23,15 +23,15 @@ matmul<T>* matmul<T>::get (inode<T>* a, inode<T>* b,
 }
 
 template <typename T>
-matmul<T>* matmul<T>::get (matmul<T>&& other)
+matmul<T>* matmul<T>::clone (void) const
 {
-	return new matmul<T>(std::move(other));
+	return static_cast<matmul<T>*>(clone_impl());
 }
 
 template <typename T>
-matmul<T>* matmul<T>::clone (void)
+matmul<T>* matmul<T>::move (void)
 {
-	return static_cast<matmul<T>*>(clone_impl());
+	return static_cast<matmul<T>*>(move_impl());
 }
 
 template <typename T>
@@ -160,6 +160,12 @@ template <typename T>
 inode<T>* matmul<T>::clone_impl (void) const
 {
 	return new matmul<T>(*this);
+}
+
+template <typename T>
+inode<T>* matmul<T>::move_impl (void)
+{
+	return new matmul<T>(std::move(*this));
 }
 
 }

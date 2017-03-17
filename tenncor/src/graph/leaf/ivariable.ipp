@@ -27,12 +27,18 @@ ivariable<T>* ivariable<T>::clone (void) const
 }
 
 template <typename T>
+ivariable<T>* ivariable<T>::move (void)
+{
+	return static_cast<ivariable<T>*>(this->move_impl());
+}
+
+template <typename T>
 ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other)
 {
 	if (this != &other)
 	{
 		ileaf<T>::operator = (other);
-		copy(other);
+		copy_helper(other);
 	}
 	return *this;
 }
@@ -42,8 +48,8 @@ ivariable<T>& ivariable<T>::operator = (ivariable<T>&& other)
 {
 	if (this != &other)
 	{
-		ileaf<T>::operator = (other);
-		move(std::move(other));
+		ileaf<T>::operator = (std::move(other));
+		move_helper(std::move(other));
 	}
 	return *this;
 }
@@ -78,7 +84,7 @@ ivariable<T>::ivariable (const ivariable<T>& other) :
 	ileaf<T>(other)
 {
 	common();
-	copy(other);
+	copy_helper(other);
 }
 
 template <typename T>
@@ -86,11 +92,11 @@ ivariable<T>::ivariable (ileaf<T>&& other) :
 	ileaf<T>(other)
 {
 	common();
-	move(std::move(other));
+	move_helper(std::move(other));
 }
 
 template <typename T>
-void ivariable<T>::copy (const ivariable<T>& other)
+void ivariable<T>::copy_helper (const ivariable<T>& other)
 {
 	if (nullptr != init_)
 	{
@@ -100,7 +106,7 @@ void ivariable<T>::copy (const ivariable<T>& other)
 }
 
 template <typename T>
-void ivariable<T>::move (ivariable<T>&& other)
+void ivariable<T>::move_helper (ivariable<T>&& other)
 {
 	if (nullptr != init_)
 	{
