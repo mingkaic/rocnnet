@@ -36,7 +36,7 @@ inode<T>& inode<T>::operator = (const inode<T>& other)
 	if (this != &other)
 	{
 		subject::operator = (other);
-		name_ = other.name_;
+		label_ = other.label_;
 	}
 	return *this;
 }
@@ -47,7 +47,7 @@ inode<T>& inode<T>::operator = (inode<T>&& other)
 	if (this != &other)
 	{
 		subject::operator = (other);
-		name_ = std::move(other.name_);
+		label_ = std::move(other.label_);
 	}
 	return *this;
 }
@@ -61,13 +61,13 @@ std::string inode<T>::get_uid (void) const
 template <typename T>
 std::string inode<T>::get_name (void) const
 {
-	return "<"+name_+":"+id_+">";
+	return "<"+label_+":"+id_+">";
 }
 
 template <typename T>
-inode<T>::inode (std::string name) :
+inode<T>::inode (std::string label) :
 	subject(),
-	name_(name)
+	label_(label)
 {
 //	session& sess = session::get_instance();
 //	sess.register_obj(*this);
@@ -76,12 +76,12 @@ inode<T>::inode (std::string name) :
 template <typename T>
 inode<T>::inode (const inode<T>& other) :
 	subject(other),
-	name_(other.name_) {}
+	label_(other.label_) {}
 
 template <typename T>
 inode<T>::inode (inode<T>&& other) :
 	subject(other),
-	name_(std::move(other.name_)) {}
+	label_(std::move(other.label_)) {}
 
 template <typename T>
 std::vector<T> expose (const inode<T>* var)

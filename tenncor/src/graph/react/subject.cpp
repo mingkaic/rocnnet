@@ -84,7 +84,7 @@ for (size_t idx : audience_[viewer])
 	audience_.erase(viewer);
 	if (audience_.empty())
 	{
-		commit_sudoku();
+		commit_sudoku_sub();
 	}
 }
 
@@ -107,7 +107,7 @@ rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 	}
 	if (audience_.empty())
 	{
-		commit_sudoku();
+		commit_sudoku_sub();
 	}
 }
 

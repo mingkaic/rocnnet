@@ -27,7 +27,7 @@ template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a},
+	return immutable<T>::get(std::vector<inode<T>*>{a},
 		[](std::vector<tensorshape> shapes)
 		{
 			tensorshape ts = shapes[0];
@@ -73,7 +73,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (nullptr == a && nullptr == watch) return nullptr;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
-	return operation<T>::get(std::vector<inode<T>*>{a, watch},
+	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
 		[](std::vector<tensorshape> shapes)
 		{
 			tensorshape orig = shapes[0];
@@ -178,7 +178,7 @@ template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
 	if (nullptr == a && 1 >= multiplier) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a},
+	return immutable<T>::get(std::vector<inode<T>*>{a},
 		[index, multiplier](std::vector<tensorshape> shapes)
 		{
 			tensorshape ts = shapes[0];
@@ -332,7 +332,7 @@ varptr<T> compress (const varptr<T> a, int index,
 		};
 	}
 
-	return operation<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 		[index, collector](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
 			return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);

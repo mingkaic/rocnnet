@@ -28,28 +28,51 @@ A009 - replace_dependency at index detaches the last subject at index, attaches 
 A010 - destroying an observer will detach the observer from its subjects via a detach call
 
 // NODE BEHAVIOR
+B000 - cloning inode creates another node of the same label, but different uid,
+        moving prevents coping over uid
+B001 - a uid is unique for every instance of node
+B002 - label is a non-unique string assigned during construction,
+        name is the concatenation of uid and label
+
+// CONNECTOR BEHAVIOR
+C000 - copying connector copies over graph id if the original connector has at least one
+        connector dependency (conform to definition of same graph)
+        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer
+        creating a connector of a connector with null gid_ (possible with moving) will throw
+C001 - connector name is the name of the connecting node in <> braces and
+        its dependencies' labels separated by commas in () brackets
+C002 - connector is the same graph as another connector if they share a common connector
+        along its dependency graph.
+C003 - connector potential descendent calls both this and other connnector get_leaves to get leaf set
+
+// IMMUTABLE BEHAVIOR
+D000 - cloning and moving immutable copies and moves over data, Nf_ and ginit_
+D001 - immutable A is a potential descendent of connector B if A's leaf set is a subset of B's leaf set
+D002 - immutable tensor shape is the result of the shaper function
+D003 - immutable tensor initializes its tensor from the forward transfer functions if all its arguments are good
+        otherwise good status is false
+D004 - immutable dies when any of its dependencies dies
+D005 - temporary_eval evaluates the resulting value from node target (taking target's value as scalar 1)
+        up to calling node. tensor is allocated and is owned in calling scope.
+        (meaning deleting the resulting tensor should have no adverse affect on any object state)
+D006 - immutable get_leaves return a map from leaf to nullptr
+D007 - get_leaf (given an input argument of leaf A) returns the node mapped by A in
+        back_map (provided during construction). leaf A is back_map's second argument.
+D008 - get_gradient applies jacobian transformations regardless of its input leaf node
+        if wrt is this, base result (without jacobian) is scalar 1,
+        else if wrt is not a leaf but is a potential descendent, base result is evaluation from wrt to this
+        else if wrt is not a leaf and isn't a potential descendent, the base result is scalar 0
+        otherwise the base result is the non-null value mapped from gcache
+D009 - update explicitly runs its forward transfer function with current depdendency states as its argument
+
+// ELEMENTARY BEHAVIORS
+
+// TRANSFORM BEHAVIORS
+
+// MATMUL BEHAVIOR
 
 
 
-// VARIABLE DEPENDENT OBJECTS
-C000 - session should register all variable nodes on node construction
-C001 - session should unregister all destroyed variable nodes
-C002 - session should be singleton per thread
-C003 - session should be able to initialize all initialisable variables of a specific type
-
-D000 - initialization of unallocated tensors will fail
-D001 - random initializers must share a distribution engine
-
-// VARIABLE LEAF NODES
-D100 - ileaf inheriteds should auto notify when initialized or reinitialized
-D200 - variables auto initialize scalar on construction
-D201 - variable's gradient is a one variable
-D300 - assigning raw data or tensors to placeholders will initialize it
-D301 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
-D302 - placeholder's gradient is a zero constant
-D400 - constants must self destruct when its subject loses all its subscribers
-D401 - constants are always initialized
-D402 - constant's gradient is a zero constant
 
 // BASE OPERATION NODE
 F000 - operation holding poorly defined tensors (null inputs) return null on evaluation
@@ -71,6 +94,17 @@ F302 - push_toggle activation will notify its dependencies of activation once, t
 F303 - push_toggle activation value will linger until explicitly called to update again
 F304 - when binding bindable_toggle, bound variables will reset and update previously active toggles
 F305 - binding toggles will return a unique value dictating unique bind relationships; different relationships have different bound vector
+
+// VARIABLE LEAF NODES
+D100 - ileaf inheriteds should auto notify when initialized or reinitialized
+D200 - variables auto initialize scalar on construction
+D201 - variable's gradient is a one variable
+D300 - assigning raw data or tensors to placeholders will initialize it
+D301 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
+D302 - placeholder's gradient is a zero constant
+D400 - constants must self destruct when its subject loses all its subscribers
+D401 - constants are always initialized
+D402 - constant's gradient is a zero constant
 
 // VARIABLE NODE EXECUTORS
 G000 - iexecutor should prevent its destination from being updated when its source nodes notify

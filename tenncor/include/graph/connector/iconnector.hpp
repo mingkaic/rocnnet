@@ -37,10 +37,10 @@ public:
 	//! move function
 	iconnector<T>* move (void);
 
-	//! Declare copy assignment to prevent gid_ copy over
+	//! Declare copy assignment to enforce proper gid_ copy over
 	virtual iconnector<T>& operator = (const iconnector<T>& other);
 
-	//! Declare move assignment to prevent gid_ copy over
+	//! Declare move assignment to enforce proper gid_ copy over
 	virtual iconnector<T>& operator = (iconnector<T>&& other);
 
 	// >>>> META DATA ACCESSORS <<<<
@@ -52,7 +52,7 @@ public:
 	bool is_same_graph (const iconnector<T>* other) const;
 
 	//! check if connector n is a potential descendent of this node
-	virtual bool potential_descendent (iconnector<T>* n) const;
+	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	//! Grab a temporary value traversing top-down
 	virtual void temporary_eval (const iconnector<T>* target,
@@ -61,17 +61,17 @@ public:
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies
-	iconnector (std::vector<inode<T>*> dependencies, std::string name);
+	iconnector (std::vector<inode<T>*> dependencies, std::string label);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! Declare copy constructor to prevent gid_ copy over
+	//! Declare copy constructor to enforce proper gid_ copy over
 	iconnector (const iconnector<T>& other);
 
-	//! Declare move constructor to prevent gid_ copy over
+	//! Declare move constructor to enforce proper gid_ copy over
 	iconnector (iconnector<T>&& other);
 
 	//! Update gid_ by updating all argument variables
-	virtual void update_graph (std::vector<inode<T>*> args);
+	virtual void update_graph (std::vector<iconnector<T>*> args);
 
 	// >>>> GRAPH META DATA <<<<
 	struct graph_node; //! graph info shareable between connectors
@@ -81,6 +81,6 @@ protected:
 
 }
 
-#include "../../../src/graph/operation/iconnector.ipp"
+#include "../../../src/graph/connector/iconnector.ipp"
 
 #endif /* TENNCOR_ICONNECTOR_HPP */

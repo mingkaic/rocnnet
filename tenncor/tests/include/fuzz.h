@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <cstdlib>
 #include <limits>
+#include <string>
 
 #ifndef TENNCOR_FUZZ_H
 #define TENNCOR_FUZZ_H
@@ -50,6 +51,24 @@ struct FUZZ
 		}
 
 		return vec;
+	}
+};
+
+struct FUZZ_STRING
+{
+	static std::string get (size_t len, std::string alphanum =
+		"0123456789!@#$%^&*"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz")
+	{
+		std::vector<size_t> indices = FUZZ<size_t>::get(len, {0, alphanum.size()-1});
+		std::string s(len, ' ');
+		std::transform(indices.begin(), indices.end(), s.begin(),
+		[&alphanum](size_t index)
+		{
+			return alphanum[index];
+		});
+		return s;
 	}
 };
 

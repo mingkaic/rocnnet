@@ -2,7 +2,6 @@
 // Created by Mingkai Chen on 2016-11-17.
 //
 
-//#define DISABLE_MEMORY_MODULE_TESTS
 #ifndef DISABLE_MEMORY_MODULE_TESTS
 
 #include <algorithm>

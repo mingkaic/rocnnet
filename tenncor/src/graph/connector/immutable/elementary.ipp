@@ -30,7 +30,7 @@ template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -52,7 +52,7 @@ template <typename T>
 varptr<T> operator - (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -74,7 +74,7 @@ template <typename T>
 varptr<T> sin (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -97,7 +97,7 @@ template <typename T>
 varptr<T> cos (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -120,7 +120,7 @@ template <typename T>
 varptr<T> tan (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -145,7 +145,7 @@ template <typename T>
 varptr<T> csc (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -169,7 +169,7 @@ template <typename T>
 varptr<T> sec (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -193,7 +193,7 @@ template <typename T>
 varptr<T> cot (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -217,7 +217,7 @@ template <typename T>
 varptr<T> exp (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -240,7 +240,7 @@ template <typename T>
 varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[min, max](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -265,7 +265,7 @@ template <typename T>
 varptr<T> clip_norm (const varptr<T> a, T cap)
 {
 	if (nullptr == a) return nullptr;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[cap](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		const T* in = args[0];
@@ -298,7 +298,7 @@ varptr<T> operator + (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (*b == (T) 0 || nullptr == (inode<T>*)b) return constant<T>::get(a);
-	return operation<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -319,7 +319,7 @@ template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return constant<T>::get(b);
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -341,7 +341,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return b;
 	else if (*b == (T) 0 || nullptr == (inode<T>*)b) return a;
-	return operation<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -367,7 +367,7 @@ varptr<T> operator - (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (*b == (T) 0 || nullptr == (inode<T>*)b) return constant<T>::get(a);
-	return operation<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -388,7 +388,7 @@ template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return constant<T>::get(-b);
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -410,7 +410,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return b;
 	else if (*b == (T) 0 || nullptr == (inode<T>*)b) return a;
-	return operation<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -437,7 +437,7 @@ varptr<T> operator * (T a, const varptr<T> b)
 	// (roots will never have an audience, so it will never self-destroy)
 	if (*b == (T) 0 || nullptr == (inode<T>*)b || 0 == a) return constant<T>::get(0);
 	if (*b == (T) 1) return constant<T>::get(a);
-	return operation<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -460,7 +460,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (*a == (T) 0 || nullptr == (inode<T>*)a || 0 == b) return constant<T>::get(0);
 	if (*a == (T) 1) return constant<T>::get(b);
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -484,7 +484,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	if (*a == (T) 0 || *b == (T) 0 || nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (*a == (T) 1) return b;
 	if (*b == (T) 1) return a;
-	return operation<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -514,7 +514,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 	assert(*b != (T) 0 && nullptr != (inode<T>*) b);
 	if (a == (T) 0) return constant<T>::get(0);
 	if (*b == (T) 1) return constant<T>::get(a);
-	return operation<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -539,7 +539,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 	assert(b != 0);
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return constant<T>::get(0);
 	if (b == (T) 1) return a;
-	return operation<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();
@@ -563,7 +563,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	assert (*b != (T) 0 && nullptr != (inode<T>*)b); // don't allow infinity
 	if (*a == (T) 0 || nullptr == (inode<T>*)a) return constant<T>::get(0);
 	if (*b == (T) 1) return a;
-	return operation<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
 		size_t ns = shape.n_elems();

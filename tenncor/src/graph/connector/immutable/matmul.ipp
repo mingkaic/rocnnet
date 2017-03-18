@@ -41,7 +41,7 @@ matmul<T>& matmul<T>::operator = (const matmul<T>& other)
 	{
 		transposeA_ = other.transposeA_;
 		transposeB_ = other.transposeB_;
-		operation<T>::operator = (other);
+		immutable<T>::operator = (other);
 	}
 	return *this;
 }
@@ -53,7 +53,7 @@ matmul<T>& matmul<T>::operator = (matmul<T>&& other)
 	{
 		transposeA_ = std::move(other.transposeA_);
 		transposeB_ = std::move(other.transposeB_);
-		operation<T>::operator = (other);
+		immutable<T>::operator = (other);
 	}
 	return *this;
 }
@@ -61,7 +61,7 @@ matmul<T>& matmul<T>::operator = (matmul<T>&& other)
 template <typename T>
 matmul<T>::matmul (inode<T>* a, inode<T>* b,
 	   bool transposeA, bool transposeB) :
-	operation<T>((std::vector<inode<T>*>{a, b}),
+	immutable<T>((std::vector<inode<T>*>{a, b}),
 [this](std::vector<tensorshape> shapes) -> tensorshape
 {
 	tensorshape t1s = shapes[0];
@@ -148,11 +148,11 @@ template <typename T>
 matmul<T>::matmul (const matmul<T>& other) :
 	transposeA_(other.transposeA_),
 	transposeB_(other.transposeB_),
-	operation<T>(other) {}
+	immutable<T>(other) {}
 
 template <typename T>
 matmul<T>::matmul (matmul<T>&& other) :
-	operation<T>(std::move(other)),
+	immutable<T>(std::move(other)),
 	transposeA_(std::move(other.transposeA_)),
 	transposeB_(std::move(other.transposeB_)) {}
 

@@ -60,7 +60,8 @@ protected:
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! smart destruction: default to not die
-	virtual void commit_sudoku (void) {}
+	//! subject should have a suicide function signature different from observers
+	virtual void commit_sudoku_sub (void) {}
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! Declare copy constructor to prevent audience from being copied over

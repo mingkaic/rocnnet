@@ -127,6 +127,11 @@ public:
 		return static_cast<assignment*>(clone_impl());
 	}
 
+	assignment* move (void)
+	{
+		return static_cast<assignment*>(move_impl());
+	}
+
 	// perform assignment
 	void operator () (tensor<T>& out, std::vector<T>& data)
 	{
@@ -141,6 +146,11 @@ protected:
 	virtual itensor_handler<T>* clone_impl (void) const
 	{
 		return new assignment(*this);
+	}
+
+	virtual itensor_handler<T>* move_impl (void)
+	{
+		return new assignment(std::move(*this));
 	}
 
 	std::vector<T> temp_;

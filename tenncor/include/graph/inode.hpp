@@ -39,6 +39,9 @@ template <typename T>
 class inode : public subject
 {
 public:
+	//! store the gradient operation wrt to a leaf
+	using GRAD_CACHE = std::unordered_map<variable<T>*,inode<T>*>;
+
 	//! unregister from session TODO: deprecate session, find a better way of mass data serialization
 	virtual ~inode (void);
 
@@ -60,7 +63,7 @@ public:
 	std::string get_uid (void) const;
 
 	//! Get the non-unique label
-	std::string get_label (void) const { return name_; }
+	std::string get_label (void) const { return label_; }
 
 	//! get a pretty and unique label
 	virtual std::string get_name (void) const;
@@ -77,15 +80,12 @@ public:
 	//! get top-level gradient value, used by root nodes
 	virtual const tensor<T>* get_gradient (inode<T>* wrt) const = 0;
 
-	//! Grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf)  = 0;
-
-	//! store the gradient operation wrt to a leaf
-	using GRAD_CACHE = std::unordered_map<variable<T>*,inode<T>*>;
-
 	// >>>> META-DATA ACCESSOR <<<<
 	//! Merge/Update the gradient/leaf info
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
+
+	//! Grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -109,7 +109,7 @@ protected:
 	const std::string id_ = nnutils::uuid(this); //! unique hash
 
 private:
-	std::string name_; //! variable label
+	std::string label_; //! variable label
 };
 
 //! add helper function for exposing node's data

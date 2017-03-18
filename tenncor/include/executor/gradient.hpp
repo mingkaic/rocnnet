@@ -94,7 +94,7 @@ private:
 	// id to bind leaf_map_
 	const std::string gid_ = nnutils::uuid(this);
 
-	// predefine leaf of gradient operation
+	// predefine leaf of gradient connector
 	std::vector<inode<T>*> potential_srcs_;
 
 	// graph data (root, and leaf)

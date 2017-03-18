@@ -32,7 +32,7 @@ void unaryElemTest (UNARY func,
 	const size_t supersize = edge * edge * edge;
 	nnet::placeholder<double> pin(std::vector<size_t>{edge, edge, edge}, "unar_in");
 
-	// link in operation tree
+	// link in connector tree
 	nnet::varptr<double> res = func(nnet::varptr<double>(&pin));
 
 	// didn't initialize

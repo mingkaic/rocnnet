@@ -11,7 +11,7 @@
 #include "assign.hpp"
 #include "graph/leaf/variable.hpp"
 #include "group.hpp"
-#include "graph/operation/immutable/elementary.hpp"
+#include "graph/connector/immutable/elementary.hpp"
 #include "gradient.hpp"
 #define optimizer_hpp
 #pragma once
@@ -148,7 +148,7 @@ class ioptimizer : public iexecutor<T>
 // Gradient Descent Update Algorithm
 
 // updates position on error manifold
-// assume that input operation is some cost function J
+// assume that input connector is some cost function J
 // input gradient of J gives derivative J'[v] (wrt v) for each leaf v
 // update by gradient descent algorithm:
 // var_t = var_(t-1) - delta(var)

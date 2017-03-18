@@ -8,12 +8,11 @@
 #include "graph/leaf/constant.hpp"
 #include "graph/leaf/variable.hpp"
 #include "graph/leaf/placeholder.hpp"
-#include "graph/operation/iconnector.hpp"
-#include "graph/operation/immutable/immutable.hpp"
-#include "graph/operation/immutable/operation.hpp"
-#include "graph/operation/immutable/matmul.hpp"
-#include "graph/operation/immutable/elementary.hpp"
-#include "graph/operation/immutable/transform.hpp"
+#include "graph/connector/iconnector.hpp"
+#include "graph/connector/immutable/immutable.hpp"
+#include "graph/connector/immutable/matmul.hpp"
+#include "graph/connector/immutable/elementary.hpp"
+#include "graph/connector/immutable/transform.hpp"
 #include "graph/varptr.hpp"
 
 namespace nnet
@@ -39,8 +38,6 @@ template class placeholder<double>;
 template class iconnector<double>;
 
 template class immutable<double>;
-
-template class operation<double>;
 
 template class matmul<double>;
 

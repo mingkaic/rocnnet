@@ -2,7 +2,6 @@
 // Created by Mingkai Chen on 2017-03-10.
 //
 
-//#define DISABLE_GRAPH_MODULE_TESTS
 #ifndef DISABLE_GRAPH_MODULE_TESTS
 
 #include <algorithm>
@@ -12,7 +11,7 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_REACT_TEST
+#define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
 

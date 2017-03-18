@@ -2,7 +2,6 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-//#define DISABLE_TENSOR_MODULE_TESTS
 #ifndef DISABLE_TENSOR_MODULE_TESTS
 
 #include <algorithm>

@@ -13,6 +13,8 @@
  *
  */
 
+#include "graph/connector/immutable/immutable.hpp"
+
 #ifndef TENNCOR_TRANSFORM_HPP
 #define TENNCOR_TRANSFORM_HPP
 
@@ -42,6 +44,6 @@ varptr<T> compress (const varptr<T> a, int index = -1,
 
 }
 
-#include "../../../../src/graph/operation/immutable/transform.ipp"
+#include "../../../../src/graph/connector/immutable/transform.ipp"
 
 #endif /* TENNCOR_TRANSFORM_HPP */

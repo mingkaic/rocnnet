@@ -11,7 +11,7 @@
 #include "edgeinfo/ptrinfo.hpp"
 #include "graph/react/subject.hpp"
 #include "graph/inode.hpp"
-#include "graph/operation/iconnector.hpp"
+#include "graph/connector/iconnector.hpp"
 
 #pragma once
 #ifdef EDGE_RCD

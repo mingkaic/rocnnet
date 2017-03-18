@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/operation/iconnector.hpp"
+#include "graph/connector/iconnector.hpp"
 #include <functional>
 
 #pragma once

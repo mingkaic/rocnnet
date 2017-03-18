@@ -116,7 +116,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 }
 
 template <typename T>
-void constant<T>::commit_sudoku (void)
+void constant<T>::commit_sudoku_sub (void)
 {
 	if (false == is_managed_ && this->no_audience())
 	{

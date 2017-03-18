@@ -12,7 +12,13 @@ std::string uuid (const void* addr)
     
     std::stringstream ss;
     ss << std::hex << now_c << (size_t) addr;
-    
+
+    for (size_t i = 0; i < 16; i++)
+	{
+		char token = rand() % 256;
+		ss << token;
+	}
+
     return ss.str();
 }
 

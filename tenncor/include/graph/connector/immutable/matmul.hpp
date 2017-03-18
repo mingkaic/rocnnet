@@ -12,7 +12,7 @@
  *
  */
 
-#include "graph/operation/immutable/elementary.hpp"
+#include "graph/connector/immutable/elementary.hpp"
 #include "graph/leaf/constant.hpp"
 
 #pragma once
@@ -26,7 +26,7 @@ namespace nnet
 //! dimension 1 denote number of columns,
 //! dimension 2 denote number of rows
 template <typename T>
-class matmul final : public operation<T>
+class matmul final : public immutable<T>
 {
 public:
 	//! builder for matmul
@@ -74,6 +74,6 @@ private:
 
 }
 
-#include "../../../../src/graph/operation/immutable/matmul.ipp"
+#include "../../../../src/graph/connector/immutable/matmul.ipp"
 
 #endif /* TENNCOR_MATMUL_HPP */

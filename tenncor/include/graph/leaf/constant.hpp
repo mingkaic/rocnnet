@@ -79,7 +79,7 @@ protected:
 	//! override smart destruction,
 	//! executed when constant loses all audiences,
 	//! (after it obtains an audience of course)
-	virtual void commit_sudoku (void);
+	virtual void commit_sudoku_sub (void);
 
 	// >>>> COPY, MOVE && CLONE <<<<
 	//! declare copy constructor to prevent onheap from being copied over

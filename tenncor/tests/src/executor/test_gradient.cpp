@@ -319,7 +319,7 @@ TEST(DERIVE, SigmoidComplex) {
 }
 
 
-// tests deriving with respect to operation nodes
+// tests deriving with respect to connector nodes
 TEST(DERIVE, OperationDerive) {
 	const size_t limit = 11;
 	const size_t edge = 10;

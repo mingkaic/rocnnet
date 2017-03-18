@@ -97,7 +97,7 @@ public:
 		return this->dependencies_;
 	}
 	MOCK_METHOD1(update, void(subject*));
-	MOCK_METHOD0(commit_sudoku, void());
+	MOCK_METHOD0(commit_sudoku, void(void));
 };
 
 

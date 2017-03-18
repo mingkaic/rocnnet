@@ -20,30 +20,9 @@ itensor_handler<T>* itensor_handler<T>::clone (void) const
 }
 
 template <typename T>
-itensor_handler<T>::itensor_handler (itensor_handler<T>&& other) :
-	shaper_(std::move(other.shaper_)),
-	forward_(std::move(other.forward_)) {}
-
-template <typename T>
-itensor_handler<T>& itensor_handler<T>::operator = (const itensor_handler<T>& other)
+itensor_handler<T>* itensor_handler<T>::move (void)
 {
-	if (this != &other)
-	{
-		shaper_ = other.shaper_;
-		forward_ = other.forward_;
-	}
-	return *this;
-}
-
-template <typename T>
-itensor_handler<T>& itensor_handler<T>::operator = (itensor_handler<T>&& other)
-{
-	if (this != &other)
-	{
-		shaper_ = std::move(other.shaper_);
-		forward_ = std::move(other.forward_);
-	}
-	return *this;
+	return move_impl();
 }
 
 template <typename T>
@@ -51,13 +30,9 @@ itensor_handler<T>::itensor_handler (SHAPER shaper, FORWARD_OP<T> forward) :
 	shaper_(shaper), forward_(forward) {}
 
 template <typename T>
-itensor_handler<T>::itensor_handler (const itensor_handler<T>& other) :
-	shaper_(other.shaper_), forward_(other.forward_) {}
-
-template <typename T>
 void itensor_handler<T>::operator () (
 	tensor<T>& out,
-	std::vector<const tensor<T>*> args)
+	std::vector<const tensor<T>*> args) const
 {
 	assert(shaper_ && forward_);
 	std::vector<tensorshape> ts;
@@ -88,43 +63,28 @@ transfer_func<T>* transfer_func<T>::clone (void) const
 }
 
 template <typename T>
-transfer_func<T>::transfer_func (transfer_func<T>&& other) :
-	itensor_handler<T>(std::move(other)) {}
-
-template <typename T>
-transfer_func<T>& transfer_func<T>::operator = (const transfer_func<T>& other)
+transfer_func<T>* transfer_func<T>::move (void)
 {
-	if (this != &other)
-	{
-		itensor_handler<T>::operator=(other);
-	}
-	return *this;
+	return static_cast<transfer_func<T>*>(move_impl());
 }
 
 template <typename T>
-transfer_func<T>& transfer_func<T>::operator = (transfer_func<T>&& other)
-{
-	if (this != &other)
-	{
-		itensor_handler<T>::operator = (std::move(other));
-	}
-	return *this;
-}
-
-template <typename T>
-void transfer_func<T>::operator () (tensor<T>& out, std::vector<const tensor<T>*> args)
+void transfer_func<T>::operator () (
+	tensor<T>& out, std::vector<const tensor<T>*> args) const
 {
 	itensor_handler<T>::operator () (out, args);
 }
 
 template <typename T>
-transfer_func<T>::transfer_func (const transfer_func<T>& other) :
-	itensor_handler<T>(other) {}
-
-template <typename T>
 itensor_handler<T>* transfer_func<T>::clone_impl (void) const
 {
 	return new transfer_func(*this);
+}
+
+template <typename T>
+itensor_handler<T>* transfer_func<T>::move_impl (void)
+{
+	return new transfer_func(std::move(*this));
 }
 
 template <typename T>
@@ -134,31 +94,13 @@ initializer<T>* initializer<T>::clone (void) const
 }
 
 template <typename T>
-initializer<T>::initializer (initializer<T>&& other) :
-	itensor_handler<T>(std::move(other)) {}
-
-template <typename T>
-initializer<T>& initializer<T>::operator = (const initializer<T>& other)
+initializer<T>* initializer<T>::move (void)
 {
-	if (this != &other)
-	{
-		itensor_handler<T>::operator=(other);
-	}
-	return *this;
+	return static_cast<initializer<T>*>(this->move_impl());
 }
 
 template <typename T>
-initializer<T>& initializer<T>::operator = (initializer<T>&& other)
-{
-	if (this != &other)
-	{
-		itensor_handler<T>::operator = (std::move(other));
-	}
-	return *this;
-}
-
-template <typename T>
-void initializer<T>::operator () (tensor<T>& out)
+void initializer<T>::operator () (tensor<T>& out) const
 {
 	itensor_handler<T>::operator ()(out, {});
 }
@@ -166,10 +108,6 @@ void initializer<T>::operator () (tensor<T>& out)
 template <typename T>
 initializer<T>::initializer (SHAPER shaper, FORWARD_OP<T> forward) :
 	itensor_handler<T>(shaper, forward) {}
-
-template <typename T>
-initializer<T>::initializer (const initializer<T>& other) :
-	itensor_handler<T>(other) {}
 
 template <typename T>
 const_init<T>::const_init (T value) :
@@ -189,37 +127,21 @@ const_init<T>* const_init<T>::clone (void) const
 }
 
 template <typename T>
-const_init<T>::const_init (const_init<T>&& other) :
-	initializer<T>(std::move(other)) {}
-
-template <typename T>
-const_init<T>& const_init<T>::operator = (const const_init<T>& other)
+const_init<T>* const_init<T>::move (void)
 {
-	if (this != &other)
-	{
-		initializer<T>::operator=(other);
-	}
-	return *this;
+	return static_cast<const_init<T>*>(move_impl());
 }
-
-template <typename T>
-const_init<T>& const_init<T>::operator = (const_init<T>&& other)
-{
-	if (this != &other)
-	{
-		initializer<T>::operator = (std::move(other));
-	}
-	return *this;
-}
-
-template <typename T>
-const_init<T>::const_init (const const_init<T>& other) :
-	initializer<T>(other) {}
 
 template <typename T>
 itensor_handler<T>* const_init<T>::clone_impl (void) const
 {
 	return new const_init(*this);
+}
+
+template <typename T>
+itensor_handler<T>* const_init<T>::move_impl (void)
+{
+	return new const_init(std::move(*this));
 }
 
 template <typename T>
@@ -244,37 +166,21 @@ rand_uniform<T>* rand_uniform<T>::clone (void) const
 }
 
 template <typename T>
-rand_uniform<T>::rand_uniform (rand_uniform<T>&& other) :
-	initializer<T>(std::move(other)) {}
-
-template <typename T>
-rand_uniform<T>& rand_uniform<T>::operator = (const rand_uniform<T>& other)
+rand_uniform<T>* rand_uniform<T>::move (void)
 {
-	if (this != &other)
-	{
-		initializer<T>::operator=(other);
-	}
-	return *this;
+	return static_cast<rand_uniform<T>*>(move_impl());
 }
-
-template <typename T>
-rand_uniform<T>& rand_uniform<T>::operator = (rand_uniform<T>&& other)
-{
-	if (this != &other)
-	{
-		initializer<T>::operator = (std::move(other));
-	}
-	return *this;
-}
-
-template <typename T>
-rand_uniform<T>::rand_uniform (const rand_uniform<T>& other) :
-	initializer<T>(other) {}
 
 template <typename T>
 itensor_handler<T>* rand_uniform<T>::clone_impl (void) const
 {
 	return new rand_uniform(*this);
+}
+
+template <typename T>
+itensor_handler<T>* rand_uniform<T>::move_impl (void)
+{
+	return new rand_uniform(std::move(*this));
 }
 
 }

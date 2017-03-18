@@ -14,7 +14,7 @@
 
 #include <stack>
 
-#include "graph/operation/immutable/operation.hpp"
+//#include "graph/connector/immutable/operation.hpp"
 
 #define TENNCOR_EXECUTOR_HPP
 

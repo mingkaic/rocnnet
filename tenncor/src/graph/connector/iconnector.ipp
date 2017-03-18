@@ -14,13 +14,27 @@ namespace nnet
 template <typename T>
 inline std::vector<subject*> to_sub (std::vector<inode<T>*> nodes)
 {
-	std::vector<subject*> subs;
+	std::vector<subject*> subs(nodes.size(), nullptr);
 	std::transform(nodes.begin(), nodes.end(), subs.begin(),
 		[](inode<T>* n) -> subject*
 		{
 			return n;
 		});
 	return subs;
+}
+
+template <typename T, typename N>
+inline std::vector<iconnector<T>*> to_con (std::vector<N*> args)
+{
+	std::vector<iconnector<T>*> conns;
+	for (N* a : args)
+	{
+		if (iconnector<T>* con = dynamic_cast<iconnector<T>*>(a))
+		{
+			conns.push_back(con);
+		}
+	}
+	return conns;
 }
 
 template <typename T>
@@ -42,6 +56,16 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 	{
 		iobserver::operator = (other);
 		inode<T>::operator = (other);
+		if (to_con<T, subject>(
+			this->dependencies_).empty())
+		{
+			gid_ = new graph_node;
+		}
+		else
+		{
+			gid_ = other.gid_;
+		}
+		gid_->users_++;
 	}
 	return *this;
 }
@@ -51,8 +75,10 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 {
 	if (this != &other)
 	{
-		iobserver::operator = (other);
-		inode<T>::operator = (other);
+		iobserver::operator = (std::move(other));
+		inode<T>::operator = (std::move(other));
+		gid_ = std::move(other.gid_);
+		other.gid_ = nullptr;
 	}
 	return *this;
 }
@@ -60,15 +86,26 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 template <typename T>
 std::string iconnector<T>::get_name (void) const
 {
-	std::string args;
-	for (const subject* subs : this->dependencies_)
+	std::string args = "";
+	auto it = this->dependencies_.begin();
+	auto et = this->dependencies_.end();
+	const inode <T>* arg = dynamic_cast<const inode<T>*>(*it);
+	while (args.empty() && nullptr == arg)
 	{
-		if (const inode<T>* arg = dynamic_cast<const inode<T>*>(subs))
-		{
-			args += arg->get_label() + ",";
+		arg = dynamic_cast<const inode<T>*>(*++it);
+	}
+	if (arg)
+	{
+		args = arg->get_label();
+		++it;
+	}
+	while (it != et)
+	{
+		if (nullptr != (arg = dynamic_cast<const inode<T>*>(*it))) {
+			args += "," + arg->get_label();
 		}
-	};
-	if (!args.empty()) args.pop_back();
+		it++;
+	}
 	return inode<T>::get_name() + "(" + args + ")";
 }
 
@@ -84,7 +121,7 @@ bool iconnector<T>::is_same_graph (const iconnector<T>* other) const
 }
 
 template <typename T>
-bool iconnector<T>::potential_descendent (iconnector<T>* n) const
+bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 {
 	// is a descendent iff n's leaf set is a subset of this leaf set
 	typename inode<T>::GRAD_CACHE mine;
@@ -105,47 +142,73 @@ bool iconnector<T>::potential_descendent (iconnector<T>* n) const
 }
 
 template <typename T>
-iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string name) :
+iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string label) :
 	iobserver(to_sub<T>(dependencies)),
-	inode<T>(name)
+	inode<T>(label)
 {
-	update_graph(dependencies);
+	update_graph(to_con<T, inode<T> >(dependencies));
 }
 
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
 	iobserver(other),
-	inode<T>(other) {} // don't update graph for its new children
+	inode<T>(other)
+{
+	if (to_con<T, subject>(
+		this->dependencies_).empty())
+	{
+		gid_ = new graph_node;
+	}
+	else
+	{
+		gid_ = other.gid_;
+	}
+	gid_->users_++;
+}
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
-	iobserver(other),
-	inode<T>(other) {}
+	iobserver(std::move(other)),
+	inode<T>(std::move(other)),
+	gid_(std::move(other.gid_))
+{
+	other.gid_ = nullptr;
+}
 
 template <typename T>
-void iconnector<T>::update_graph (std::vector<inode<T>*> args)
+void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 {
-	if (args.size() == 1)
-	{
-		if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(args[0]))
-		{
-			iconn->gid_->get_master(gid_);
-		}
-	}
-
 	if (nullptr == gid_)
 	{
-		gid_ = new graph_node;
-		for (inode<T>* arg : args)
+		if (args.size() == 1)
 		{
-			if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(arg))
+			if (graph_node* gn = args[0]->gid_)
 			{
-				iconn->gid_->update(gid_);
-				gid_->replace(iconn->gid_); // iconn->gid_ = gid_
+				gn->get_master(gid_);
+			}
+			else
+			{
+				throw std::exception(); // todo: better exception, bad iconnector
 			}
 		}
+		else
+		{
+			gid_ = new graph_node;
+			for (iconnector<T>* arg : args)
+			{
+				if (graph_node*& gn = arg->gid_)
+				{
+					gn->update(gid_);
+					gid_->replace(gn); // arg->gid_ = gid_
+				}
+				else
+				{
+					throw std::exception(); // todo: better exception, bad iconnector
+				}
+			}
+		}
+		gid_->users_++; // add this as a user
 	}
-	gid_->users_++; // add this as a user
 }
 
 template <typename T>

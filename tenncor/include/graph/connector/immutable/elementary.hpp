@@ -13,7 +13,7 @@
  *
  */
 
-#include "graph/operation/immutable/operation.hpp"
+#include "graph/connector/immutable/immutable.hpp"
 #include "graph/leaf/constant.hpp"
 
 #pragma once
@@ -125,6 +125,6 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b);
 
 }
 
-#include "../../../../src/graph/operation/immutable/elementary.ipp"
+#include "../../../../src/graph/connector/immutable/elementary.ipp"
 
 #endif /* TENNCOR_ELEMENTARY_HPP */
