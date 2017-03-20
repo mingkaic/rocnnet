@@ -35,9 +35,9 @@ public:
 	MOCK_CONST_METHOD0(get_shape, tensorshape(void));
 	MOCK_CONST_METHOD0(good_status, bool(void));
 	MOCK_CONST_METHOD0(get_eval, const tensor<double>*(void));
-	MOCK_CONST_METHOD1(get_gradient, const tensor<double>*(inode<double>*));
-	MOCK_METHOD1(get_leaf, inode<double>*(variable<double>*));
 	MOCK_CONST_METHOD1(get_leaves, void(GRAD_CACHE&));
+	MOCK_METHOD1(get_gradient, const tensor<double>*(inode<double>*));
+	MOCK_METHOD1(get_leaf, inode<double>*(variable<double>*));
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_node(*this); }

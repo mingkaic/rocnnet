@@ -109,7 +109,7 @@ void immutable<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out)
 template <typename T>
 bool immutable<T>::good_status (void) const
 {
-	return true;
+	return data_ != nullptr;
 }
 
 template <typename T>
@@ -198,28 +198,34 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 template <typename T>
 void immutable<T>::update (subject* arg)
 {
-	bool badstate = false;
+	bool allgood = true;
+	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
 	std::vector<tensorshape> ts;
-	for (subject* sub : this->dependencies_)
+	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
+		it != et && allgood; it++)
 	{
-		if (inode<T>* a = dynamic_cast<inode<T>*>(sub))
+		if (inode<T>* a = dynamic_cast<inode<T>*>(*it))
 		{
-			tens.push_back(a->get_eval());
-			ts.push_back(a->get_shape());
+			allgood = allgood && a->good_status();
+			if (allgood)
+			{
+				tens.push_back(a->get_eval());
+				ts.push_back(a->get_shape());
+			}
 		}
 		else
 		{
-			badstate = true;
+			damaged = true;
 		}
 	};
 
-	if (badstate)
+	if (damaged)
 	{
 		// self destroy
 		this->notify(UNSUBSCRIBE);
 	}
-	else
+	else if (allgood)
 	{
 		// forward pass
 		if (data_ == nullptr)
@@ -231,6 +237,7 @@ void immutable<T>::update (subject* arg)
 		this->notify(UPDATE);
 	}
 
+	// graph id optimization (update master and remove unnecessary graph ids)
 	typename iconnector<T>::graph_node* master = nullptr;
 	this->gid_->get_master(master);
 	if (this->gid_ != master)

@@ -65,7 +65,7 @@ constant<T>& constant<T>::operator = (constant<T>&& other)
 }
 
 template <typename T>
-const tensor<T>* constant<T>::get_gradient (inode<T>* wrt) const
+const tensor<T>* constant<T>::get_gradient (inode<T>* wrt)
 {
 	return zero->get_eval();
 }

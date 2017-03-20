@@ -61,7 +61,7 @@ bool ivariable<T>::can_init (void) const
 }
 
 template <typename T>
-const tensor<T>* ivariable<T>::get_gradient (inode<T>* wrt) const
+const tensor<T>* ivariable<T>::get_gradient (inode<T>* wrt)
 {
 	if (this == wrt)
 	{
