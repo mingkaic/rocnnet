@@ -11,29 +11,29 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(TENNCOR_DIR ${PROJECT_SOURCE_DIR}/tenncor)
 set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
 
-set(IO_DIR      ${PROJECT_SOURCE_DIR}/tenncor_io)
+set(IO_DIR	  ${PROJECT_SOURCE_DIR}/tenncor_io)
 
 #>>>>>>>>>>>>>>>>>>>> DOXYGEN OPTION && SETUP <<<<<<<<<<<<<<<<<<<<
 OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 # adding doxygen
 if(BUILD_DOC)
-    add_subdirectory(${EXT_PROJECTS_DIR}/doxygen)
-    if(DOXYGEN_FOUND)
-        # set input and output files
-        set(DOXYGEN_IN Doxyfile.in)
-        set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
+	add_subdirectory(${EXT_PROJECTS_DIR}/doxygen)
+	if(DOXYGEN_FOUND)
+		# set input and output files
+		set(DOXYGEN_IN Doxyfile.in)
+		set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/Doxyfile)
 
-        message("Doxygen build started")
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        add_customer_target(doc_doxygen ALL
-                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                COMMENT "Generating API Documentation with Doxygen"
-                VERBATIM)
-    else (DOXYGEN_FOUND)
-        message(WARNING "Doxygen need to be installed to generate the doxygen documetation")
-    endif(DOXYGEN_FOUND)
+		message("Doxygen build started")
+		configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+		add_customer_target(doc_doxygen ALL
+				COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+				WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+				COMMENT "Generating API Documentation with Doxygen"
+				VERBATIM)
+	else (DOXYGEN_FOUND)
+		message(WARNING "Doxygen need to be installed to generate the doxygen documetation")
+	endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
