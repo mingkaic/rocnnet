@@ -2,7 +2,16 @@ language: generic
 # minimum linux-trusty needed for c++11 support 
 # (otherwise we'd have to unlink gcc/g++ then reinstall which is a lot of work)
 sudo: required
-dist: trusty
+dist: precise
+addons: 
+  apt: 
+    sources: 
+      - llvm-toolchain-precise 
+      - ubuntu-toolchain-r-test 
+    packages: 
+      - clang-3.7 
+      - g++-5 
+      - gcc-5 
 install:
 - cd ${TRAVIS_BUILD_DIR}
 # install coverage + profiling + googletest
@@ -22,7 +31,7 @@ before_script:
 script:
 # build with test enabled
 - cd ${TRAVIS_BUILD_DIR}/build
-- cmake -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
+- cmake -DCMAKE_CXX_COMPILER=g++-5 -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
 - cmake --build .
 # run tests
 - ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest
