@@ -12,13 +12,6 @@ namespace nnet
 {
 
 template <typename T>
-inode<T>::~inode (void)
-{
-//	session& sess = session::get_instance();
-//	sess.unregister_obj(*this);
-}
-
-template <typename T>
 inode<T>* inode<T>::clone (void) const
 {
 	return clone_impl();
@@ -67,11 +60,7 @@ std::string inode<T>::get_name (void) const
 template <typename T>
 inode<T>::inode (std::string label) :
 	subject(),
-	label_(label)
-{
-//	session& sess = session::get_instance();
-//	sess.register_obj(*this);
-}
+	label_(label) {}
 
 template <typename T>
 inode<T>::inode (const inode<T>& other) :

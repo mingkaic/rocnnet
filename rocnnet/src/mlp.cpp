@@ -87,10 +87,10 @@ varptr<double> ml_perceptron::operator () (placeholder<double>* input)
 {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
-	ivariable<double>* output = input;
+	inode<double>* output = input;
 	for (HID_PAIR hp : layers)
 	{
-		ivariable<double>* hypothesis = (*hp.first)(output);
+		inode<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 	}
 	return output;

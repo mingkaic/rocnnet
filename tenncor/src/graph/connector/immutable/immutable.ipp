@@ -57,12 +57,20 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 template <typename T>
 tensorshape immutable<T>::get_shape (void) const
 {
+	if (nullptr == data_)
+	{
+		return tensorshape();
+	}
 	return data_->get_shape();
 }
 
 template <typename T>
 const tensor<T>* immutable<T>::get_eval (void) const
 {
+	if (nullptr == data_)
+	{
+		return nullptr;
+	}
 	return data_.get();
 }
 

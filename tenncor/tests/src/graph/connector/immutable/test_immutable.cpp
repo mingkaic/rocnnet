@@ -64,6 +64,24 @@ TEST(IMMUTABLE, Descendent_D001)
 }
 
 
+TEST(IMMUTABLE, Shape_D002)
+{
+
+}
+
+
+TEST(IMMUTABLE, TensorAndStatus_D003)
+{
+
+}
+
+
+TEST(IMMUTABLE, ImmutableDeath_D004)
+{
+
+}
+
+
 #endif /* DISABLE_IMMUTABLE_TEST */
 
 

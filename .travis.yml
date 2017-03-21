@@ -1,0 +1,52 @@
+language: generic
+# minimum linux-trusty needed for c++11 support 
+# (otherwise we'd have to unlink gcc/g++ then reinstall which is a lot of work)
+sudo: required
+dist: trusty
+install:
+- cd ${TRAVIS_BUILD_DIR}
+# install coverage + profiling + googletest
+- bash install_test.sh
+
+before_script:
+# log our dependencies
+- which valgrind
+- which lcov
+- g++ --version
+
+# coverage then make build dir
+- cd ${TRAVIS_BUILD_DIR}
+- lcov --directory . --zerocounters
+- mkdir build
+
+script:
+# build with test enabled
+- cd ${TRAVIS_BUILD_DIR}/build
+- cmake -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
+- cmake --build .
+# run tests
+- ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest
+
+after_success:
+# coverage log
+- cd ${TRAVIS_BUILD_DIR}
+- lcov --directory . --capture --output-file coverage.info # capture coverage info
+- lcov --remove coverage.info 'tests/*' '/usr/*' --output-file coverage.info # filter out system and test code
+- lcov --list coverage.info # debug < see coverage here
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always
+
+# blocklist
+branches:
+  except:
+  - legacy
+  - experimental
+
+# safelist
+branches:
+  only:
+  - master
+  - stable

@@ -11,7 +11,6 @@
  *
  */
 
-#include "memory/session.hpp"
 #include "tensor/tensor_handler.hpp"
 #include "tensor/tensor.hpp"
 #include "utils/utils.hpp"
@@ -42,8 +41,8 @@ public:
 	//! store the gradient operation wrt to a leaf
 	using GRAD_CACHE = std::unordered_map<variable<T>*,inode<T>*>;
 
-	//! unregister from session TODO: deprecate session, find a better way of mass data serialization
-	virtual ~inode (void);
+	//! destructor
+	virtual ~inode (void) {}
 
 	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
 	//! clone function
@@ -81,22 +80,22 @@ public:
 	virtual const tensor<T>* get_gradient (inode<T>* wrt) = 0;
 
 	// >>>> META-DATA ACCESSOR <<<<
-	//! Merge/Update the gradient/leaf info
+	//! merge/Update the gradient/leaf info
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
 
-	//! Grab operational gradient node, used by other nodes
+	//! grab operational gradient node, used by other nodes
 	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
-	//! Default constructor
+	//! default constructor
 	inode (std::string name);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! Declare copy constructor to prevent id_ copy over
+	//! declare copy constructor to prevent id_ copy over
 	inode (const inode<T>& other);
 
-	//! Declare move constructor to prevent id_ copy over
+	//! declare move constructor to prevent id_ copy over
 	inode (inode<T>&& other);
 
 	//! clone abstraction function

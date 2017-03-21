@@ -10,7 +10,7 @@
 #include "fuzz.h"
 
 
-#define DISABLE_NODE_TEST
+//#define DISABLE_NODE_TEST
 #ifndef DISABLE_NODE_TEST
 
 
@@ -58,7 +58,7 @@ TEST(NODE, Move_B000)
 
 	std::string ouid3 = assign.get_uid();
 	EXPECT_TRUE(mv.get_label().empty());
-	EXPECT_EQ(label1, mv.get_label());
+	EXPECT_EQ(label1, assign.get_label());
 	EXPECT_NE(ouid, ouid3);
 	EXPECT_NE(ouid2, ouid3);
 }

@@ -45,12 +45,13 @@ C002 - connector is the same graph as another connector if they share a common c
         along its dependency graph.
 C003 - connector potential descendent calls both this and other connnector get_leaves to get leaf set
 
-// IMMUTABLE BEHAVIOR
+// IMMUTABLE BEHAVIOR (Not tested)
 D000 - cloning and moving immutable copies and moves over data, Nf_ and ginit_
 D001 - immutable A is a potential descendent of connector B if A's leaf set is a subset of B's leaf set
-D002 - immutable tensor shape is the result of the shaper function
+D002 - immutable tensor shape is the result of the shaper function.
+        bad status returns an undefined tensor
 D003 - immutable tensor initializes its tensor from the forward transfer functions if all its arguments are good
-        otherwise good status is false
+        otherwise good status is false, bad status returns nullptr on get_eval
 D004 - immutable dies when any of its dependencies dies
 D005 - temporary_eval evaluates the resulting value from node target (taking target's value as scalar 1)
         up to calling node. tensor is allocated and is owned in calling scope.
@@ -75,7 +76,6 @@ D009 - update explicitly runs its forward transfer function with current depdend
 
 
 // BASE OPERATION NODE
-F000 - operation holding poorly defined tensors (null inputs) return null on evaluation
 F001 - operation must reuse its gradient object
 F002 - exposing operation nodes with null/invalid tensors will fail
 

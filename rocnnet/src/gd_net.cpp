@@ -14,7 +14,7 @@ namespace nnet
 {
 
 group<double>* ad_hoc_gd_setup (double learning_rate,
-		ivariable<double>* train_in,
+		inode<double>* train_in,
 		varptr<double> diff_func,
 		varptr<double> batch_size,
 		std::vector<HID_PAIR>& layers,
@@ -35,7 +35,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 	{
 		HID_PAIR hp = *rit;
 		// err_i = matmul(err_i+1, transpose(weight_i))*f'(z_i)
-		ivariable<double>* weight_i = hp.first->get_variables().first;
+		inode<double>* weight_i = hp.first->get_variables().first;
 		// weight is input by output, err is output by batch size, so we expect mres to be input by batch size
 		varptr<double> mres = matmul<double>::build(err, weight_i, false ,true);
 		err = mres * prime_out.top()->get_root();
@@ -45,7 +45,7 @@ group<double>* ad_hoc_gd_setup (double learning_rate,
 
 	varptr<double> learn_batch = learning_rate / batch_size;
 	group<double>* updates = new group<double>();
-	ivariable<double>* output = train_in;
+	inode<double>* output = train_in;
 	for (HID_PAIR hp : layers)
 	{
 		err = errs.top();

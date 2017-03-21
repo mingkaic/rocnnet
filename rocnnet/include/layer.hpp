@@ -17,11 +17,11 @@
 #include <list>
 #include <stack>
 
-#include "executor/varptr.hpp"
-#include "graph/variable/variable.hpp"
-#include "graph/operation/matmul.hpp"
-#include "graph/operation/transform.hpp"
-#include "graph/operation/elementary.hpp"
+#include "graph/varptr.hpp"
+#include "graph/leaf/variable.hpp"
+#include "graph/operation/immutable/matmul.hpp"
+#include "graph/operation/immutable/transform.hpp"
+#include "graph/operation/immutable/elementary.hpp"
 
 namespace nnet
 {
@@ -61,7 +61,7 @@ class layer_perceptron
 
 		// input are expected to have shape n_input by batch_size
 		// outputs are expected to have shape output by batch_size
-		nnet::varptr<double> operator () (ivariable<double>* input);
+		nnet::varptr<double> operator () (inode<double>* input);
 
 		size_t get_n_input (void) const { return n_input; }
 		size_t get_n_output (void) const { return n_output; }

@@ -14,7 +14,7 @@
 using namespace testing;
 
 
-#define DISABLE_CONNECTOR_TEST
+//#define DISABLE_CONNECTOR_TEST
 #ifndef DISABLE_CONNECTOR_TEST
 
 
