@@ -53,4 +53,5 @@ bin/
 docs/
 build/
 .idea/
-cmake-build-debug/
+cmake-build*/
+scripts

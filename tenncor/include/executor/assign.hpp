@@ -7,7 +7,7 @@
 //
 
 #include "iexecutor.hpp"
-
+#define assign_hpp
 #pragma once
 #ifndef assign_hpp
 #define assign_hpp
@@ -41,7 +41,7 @@ class assign : public iexecutor<T>
 
 	public:
 		assign (variable<T>* dest, 
-			ivariable<T>* src, 
+			inode<T>* src,
 			ASSIGN_OP<T> trans = direct);
 		
 		// COPY
@@ -63,7 +63,7 @@ class assign_sub : public assign<T>
 		virtual assign<T>* clone_impl (void);
 
 	public:
-		assign_sub (variable<T>* dest, ivariable<T>* src);
+		assign_sub (variable<T>* dest, inode<T>* src);
 
 		// COPY
 		assign_sub<T>* clone (void);

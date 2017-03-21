@@ -33,7 +33,7 @@ void dq_net::variable_setup (void) {
 
 	// PREDICT FUTURE REWARDS
 	// ===============================
-	nnet::ivariable<double>* next_action_scores = (*target_net)(next_observation);
+	nnet::inode<double>* next_action_scores = (*target_net)(next_observation);
 	// reduce max
 	nnet::varptr<double> target_values = compress<double>(next_action_scores, 1,
 	[](const std::vector<double>& v) {
@@ -68,7 +68,7 @@ void dq_net::variable_setup (void) {
 	// sets root, freeze, then manipulate.
 	// evaluate gradient of prediction_error (minimize it)
 	train_op_->set_manipulate(prediction_error,
-	[](ivariable<double>* key,ivariable<double>*& value)
+	[](inode<double>* key,inode<double>*& value)
 	{
 		// manipulate gradient by clipping to reduce outliers
 		if (nullptr != value) {

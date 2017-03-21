@@ -1,14 +1,21 @@
-//
-//  gradient.hpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-11-12.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
-//
+/*!
+ *
+ *  gradient.hpp
+ *  cnnet
+ *
+ *  Purpose:
+ *  computes the gradient of a root node
+ *  depends on the root node
+ *
+ *  Created by Mingkai Chen on 2016-11-12.
+ *  Copyright © 2016 Mingkai Chen. All rights reserved.
+ *
+ */
 
 #include "iexecutor.hpp"
-#include "graph/variable/constant.hpp"
+#include "graph/leaf/constant.hpp"
 
+#define gradient_hpp
 #pragma once
 #ifndef gradient_hpp
 #define gradient_hpp
@@ -17,49 +24,82 @@ namespace nnet
 {
 	
 template <typename T>
-using GRAD_GATHER = std::function<void(ivariable<T>*,placeholder<T>*)>;
-template <typename T>
-using GRAD_MAP = std::unordered_map<ivariable<T>*, placeholder<T>*>;
+using GRAD_GATHER = std::function<void(inode<T>*,placeholder<T>*)>;
 
 template <typename T>
 class gradient : public iexecutor<T>
 {
-	private:
-		// id to bind leaf_map_
-		const std::string gid_ = r_temp::temp_uuid(this);
+public:
+	//! calculate the first derivative value of root
+	//! if leaf is nullptr, derive wrt all leaves
+	//! otherwise, derive wrt leaf
+	//! freeze by default
+	gradient (inode<T>* root,
+		inode<T>* leaf = nullptr)
+	{
+		this->add_dependency(root);
+		this->freeze();
+	}
 
-		// predefine leaf of gradient operation
-		std::vector<ivariable<T>*> potential_srcs_;
+	//! calculate the first derivative wrt all leaves
+	//! except for the variables specified in ignore
+	gradient (inode<T>* root,
+		std::unordered_set<variable<T>*> ignore) :
+	gradient<T>(root)
+	{
+		// remove all ignore that are not leaves of root
 
-		// graph data (root, and leaf)
-		ivariable<T>* g_root_;
-		GRAD_MAP<T> leaf_map_;
+		ignore_ = ignore;
+	}
 
-	protected:
-		void clear_map (void);
+	// >>>> CLONE, COPY && MOVE ASSIGNMENT <<<<
+	//! clone function
+	gradient<T>* clone (void) const
+	{
+		return static_cast<gradient<T>*>(clone_impl());
+	}
 
-		void copy (const gradient<T>& other);
-		gradient (const gradient<T>& other);
-		virtual iexecutor<T>* clone_impl (void);
+	//! move constructor to move ignore set
 
-	public:
-		gradient (ivariable<T>* root, ivariable<T>* leaf = nullptr);
-		virtual ~gradient (void);
+	//! copy assignment to copy ignore set
+	gradient<T>& operator = (const gradient<T>& other);
 
-		// COPY
-		gradient<T>* clone (void);
-		gradient<T>& operator = (const gradient<T>& other);
+	void collect_grad (GRAD_GATHER<T> collector);
 
-		// MOVE
+protected:
+	//! copy constructor to copy over ignore
+	iexecutor (const iexecutor<T>& other)
+	{
+	}
 
-		// >>>> IEXECUTOR METHOD <<<<
-		// bind the toggle here
-		virtual void freeze (void);
-		// leaf_map_ value update
-		virtual void execute (void);
+	//! clone implementation
+	virtual iexecutor<T>* clone_impl (void) const
+	{
+		return new iexecutor(*this);
+	}
 
-		varptr<T> get_root (void) { return g_root_; }
-		void collect_grad (GRAD_GATHER<T> collector);
+	//! execute node
+	virtual void executor (inode<T>* n)
+	{
+
+	}
+
+
+	void clear_map (void);
+
+	void copy (const gradient<T>& other);
+	gradient (const gradient<T>& other);
+
+private:
+	// id to bind leaf_map_
+	const std::string gid_ = nnutils::uuid(this);
+
+	// predefine leaf of gradient connector
+	std::vector<inode<T>*> potential_srcs_;
+
+	// graph data (root, and leaf)
+	inode<T>* g_root_;
+	GRAD_MAP<T> leaf_map_;
 };
 
 }

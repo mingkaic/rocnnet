@@ -4,9 +4,9 @@
 
 #include <queue>
 #include "graph/mutable/mutable_connector.hpp"
-#include "graph/operation/elementary.hpp"
-#include "graph/operation/transform.hpp"
-#include "graph/operation/matmul.hpp"
+#include "graph/operation/immutable/elementary.hpp"
+#include "graph/operation/immutable/transform.hpp"
+#include "graph/operation/immutable/matmul.hpp"
 #include "creator_vertex.hpp"
 
 #ifdef creator_vertex_hpp
@@ -23,112 +23,112 @@ static nnet::mutable_connector<double>* mutable_build (CONNECTOR_TYPE cm)
 	{
 		case ABS:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return +args[0];
 			};
 			break;
 		case NEG:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return -args[0];
 			};
 			break;
 		case SIN:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::sin(args[0]);
 			};
 			break;
 		case COS:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::cos(args[0]);
 			};
 			break;
 		case TAN:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::tan(args[0]);
 			};
 			break;
 		case CSC:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::csc(args[0]);
 			};
 			break;
 		case SEC:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::sec(args[0]);
 			};
 			break;
 		case COT:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::cot(args[0]);
 			};
 			break;
 		case EXP:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::exp(args[0]);
 			};
 			break;
 		case ADD:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return args[0] + args[1];
 			};
 			break;
 		case SUB:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return args[0] - args[1];
 			};
 			break;
 		case MUL:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return args[0] * args[1];
 			};
 			break;
 		case DIV:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return args[0] / args[1];
 			};
 			break;
 		case MATMUL:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::matmul<double>::build(args[0], args[1]);
 			};
 			break;
 		case FIT:
 			nargs = 2;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::fit(args[0], args[1]);
 			};
 			break;
 		case TRANS:
 			nargs = 1;
-			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::ivariable<double>*
+			maker = [](std::vector<nnet::varptr<double> >& args) -> nnet::inode<double>*
 			{
 				return nnet::transpose(args[0]);
 			};
@@ -141,10 +141,10 @@ static nnet::mutable_connector<double>* mutable_build (CONNECTOR_TYPE cm)
 
 struct vertex_manager::node_registry
 {
-	// pairs metainfo and ivariable pointer
+	// pairs metainfo and inode pointer
 	struct info_wrapper
 	{
-		nnet::ivariable<double>* ptr_;
+		nnet::inode<double>* ptr_;
 		metainfo info_;
 	};
 
@@ -153,7 +153,7 @@ struct vertex_manager::node_registry
 	// we rely on session to destroy the allocated variables, we don't have to destroy here as well.
 //	~node_registry (void)
 //	{
-//		std::unordered_set<nnet::ivariable<double>*> indeps;
+//		std::unordered_set<nnet::inode<double>*> indeps;
 //		for (auto ns : nodes_)
 //		{
 //			// only mark independent nodes and leaves for deletion
@@ -177,7 +177,7 @@ struct vertex_manager::node_registry
 //			}
 //		}
 //		// destroy
-//		for (nnet::ivariable<double>* v : indeps)
+//		for (nnet::inode<double>* v : indeps)
 //		{
 //			delete v;
 //		}
@@ -207,7 +207,7 @@ static void extract_connections (CONNECTION_SET& conns,
 	// queue for breadth wise search
 	std::queue<nnet::iconnector<double>*> mcq;
 	// argument vector
-	std::vector<nnet::ivariable<double>*> args;
+	std::vector<nnet::inode<double>*> args;
 
 	nnet::iconnector<double>* conn = root;
 	std::string conn_id;
@@ -246,14 +246,15 @@ vertex_manager::vertex_manager (void) : inst(new node_registry()) {}
 
 vertex_manager::~vertex_manager (void) { delete inst; }
 
-std::string vertex_manager::register_op (CONNECTOR_TYPE cm)
+std::string vertex_manager::register_op (CONNECTOR_TYPE cm, size_t& nargs)
 {
 	node_registry::info_wrapper wrap;
 	nnet::mutable_connector<double>* con = mutable_build(cm);
 	std::string id = con->get_uid(); // get uid
-	wrap.ptr_ = con;
-	wrap.info_.op_type_ = cm; // store connector type
-	inst->nodes_[id] = wrap;
+	inst->nodes_[id].ptr_ = con;
+	inst->nodes_[id].info_.op_type_ = cm; // store connector type
+	nargs = con->nargs();
+	inst->nodes_[id].info_.nargs_ = nargs;
 	return id;
 }
 
@@ -281,7 +282,7 @@ std::string vertex_manager::register_leaf (std::string label, var_opt opt)
 			break;
 		default:
 			// error
-			throw std::invalid_argument("poorly defined variable option");
+			throw std::invalid_argument("poorly defined leaf option");
 	}
 	std::string id = leaf->get_uid();
 	// store data in registry
@@ -298,8 +299,8 @@ bool vertex_manager::delete_node (std::string id)
 	{
 		inst->nodes_.erase(id);
 		// unattach permanent node from mutable_connector wrapper
-		ccoms::update_message msg;
-		msg.cmd_ = ccoms::update_message::REMOVE_ARG;
+		react::update_message msg;
+		msg.cmd_ = react::update_message::REMOVE_ARG;
 		wrapper.ptr_->notify(msg);
 		// delete wrapper.ptr_: triggering chain destruction
 		delete wrapper.ptr_;
@@ -308,29 +309,29 @@ bool vertex_manager::delete_node (std::string id)
 	return false;
 }
 
-void vertex_manager::link (std::string id1, std::string id2, size_t index)
+void vertex_manager::link (std::string from_id, std::string to_id, size_t index)
 {
-	node_registry::info_wrapper w1;
-	node_registry::info_wrapper w2;
+	node_registry::info_wrapper from_wrap;
+	node_registry::info_wrapper to_wrap;
 
-	bool g1 = inst->grab_node(w1, id1);
+	bool grabbed_from = inst->grab_node(from_wrap, from_id);
 	// error: one non-existent node
-	if (false == g1 ||
-		false == inst->grab_node(w2, id2))
+	if (false == grabbed_from ||
+		false == inst->grab_node(to_wrap, to_id))
 	{
-		std::string invalid_id = g1 ? id1 : id2;
+		std::string invalid_id = grabbed_from ? from_id : to_id;
 		throw std::invalid_argument("invalid id: (" + invalid_id + ") node not found");
 	}
 
 	// error: can't connect to a leaf
-	if (!w2.info_.op_type_)
+	if (!to_wrap.info_.op_type_)
 	{
-		throw std::invalid_argument("can't connect to leaf " + w2.ptr_->get_name());
+		throw std::invalid_argument("can't connect to leaf " + to_wrap.ptr_->get_name());
 	}
 
 	nnet::mutable_connector<double>* mc =
-			static_cast<nnet::mutable_connector<double>*>(w2.ptr_);
-	mc->add_arg(w1.ptr_, index);
+			static_cast<nnet::mutable_connector<double>*>(to_wrap.ptr_);
+	mc->add_arg(from_wrap.ptr_, index);
 }
 
 bool vertex_manager::delete_link (std::string id, size_t index)

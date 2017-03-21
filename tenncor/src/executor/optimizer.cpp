@@ -8,7 +8,7 @@
 
 #include "executor/optimizer.hpp"
 
-#ifdef optimizer_hpp
+#ifdef TENNCOR_OPTIMIZER_HPP
 
 namespace nnet {
 	
@@ -25,7 +25,7 @@ group<double>* gd_optimizer::apply_grad (void) const
 		if (variable<double>* old_var = 
 			dynamic_cast<variable<double>*>(top_pair.first))
 		{
-			ivariable<double> *delta = top_pair.second;
+			inode<double> *delta = top_pair.second;
 			// pass assign_sub ownership to g_ptr group
 			g_ptr->add(new assign_sub<double>(old_var, delta), true);
 		}

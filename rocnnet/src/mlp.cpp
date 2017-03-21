@@ -21,17 +21,17 @@ void ml_perceptron::copy (const ml_perceptron& other, std::string scope)
 	{
 		delete hp.first;
 	}
-	if (0 == scope.size())
+	if (0 == this->scope_.size())
 	{
-		scope = other.scope + "_cpy";
+		this->scope_ = other.scope_ + "_cpy";
 	}
-	this->scope = scope;
+	this->scope_ = scope;
 	size_t level = 0;
     layer_perceptron* percept;
 	for (HID_PAIR hp : other.layers)
 	{
 	    percept = new layer_perceptron(*hp.first,
-			nnutils::formatter() << scope << ":hiddens" << level++);
+			nnutils::formatter() << this->scope_ << ":hiddens" << level++);
 		layers.push_back(HID_PAIR(percept, hp.second));
 	}
 }
@@ -42,8 +42,8 @@ ml_perceptron::ml_perceptron (const ml_perceptron& other, std::string scope)
 }
 
 ml_perceptron::ml_perceptron (size_t n_input, std::vector<IN_PAIR> hiddens, 
-    std::string scope) : 
-    scope(scope)
+    std::string scope) :
+    innet(scope)
 {
 	size_t level = 0;
 	size_t n_output;
@@ -52,7 +52,7 @@ ml_perceptron::ml_perceptron (size_t n_input, std::vector<IN_PAIR> hiddens,
 	{
 		n_output = ip.first;
 		percept = new layer_perceptron(n_input, n_output,
-			nnutils::formatter() << scope << ":hidden_" << level++);
+			nnutils::formatter() << this->scope_ << ":hidden_" << level++);
 		layers.push_back(HID_PAIR(percept, ip.second));
 		n_input = n_output;
 	}
@@ -76,7 +76,7 @@ ml_perceptron& ml_perceptron::operator = (const ml_perceptron& other)
 {
 	if (&other != this)
 	{
-		this->copy(other, scope);
+		this->copy(other, this->scope_);
 	}
 	return *this;
 }
@@ -87,10 +87,10 @@ varptr<double> ml_perceptron::operator () (placeholder<double>* input)
 {
 	// output of one layer's dimensions is expected to be matched by
 	// the layer_perceptron of the next layer
-	ivariable<double>* output = input;
+	inode<double>* output = input;
 	for (HID_PAIR hp : layers)
 	{
-		ivariable<double>* hypothesis = (*hp.first)(output);
+		inode<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 	}
 	return output;

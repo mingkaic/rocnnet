@@ -59,7 +59,7 @@ layer_perceptron& layer_perceptron::operator = (const layer_perceptron& other)
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
-varptr<double> layer_perceptron::operator () (ivariable<double>* input)
+varptr<double> layer_perceptron::operator () (inode<double>* input)
 {
 	// weights are n_output column by n_input rows
 	varptr<double> weighed = matmul<double>::build(input, weights_);

@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef gradient_hpp
+#ifdef TENNCOR_GRADIENT_HPP
 
 namespace nnet
 {
@@ -42,14 +42,14 @@ iexecutor<T>* gradient<T>::clone_impl (void)
 }
 
 template <typename T>
-gradient<T>::gradient (ivariable<T>* root, ivariable<T>* leaf) :
+gradient<T>::gradient (inode<T>* root, inode<T>* leaf) :
 	g_root_(root->get_gradient())
 {
 	// collect leaves from root
-	if (ioperation<T>* root_op = dynamic_cast<ioperation<T>*>(root))
+	if (operation<T>* root_op = dynamic_cast<operation<T>*>(root))
 	{
 		// collect potential sources
-		root_op->leaves_collect([this](ivariable<T>* src)
+		root_op->leaves_collect([this](inode<T>* src)
 		{
 			potential_srcs_.push_back(src);
 		});
@@ -101,14 +101,14 @@ void gradient<T>::freeze (void)
 {
 	clear_map();
 	// select leaves (as dependencies or potential srcs)
-	std::vector<ivariable<T>*> leaves = this->dependencies_;
+	std::vector<inode<T>*> leaves = this->dependencies_;
 	if (this->dependencies_.empty())
 	{
 		leaves = potential_srcs_;
 	}
 	// populate leaf_map_
 	bindable_toggle<T>* togg_last = nullptr;
-	for (ivariable<T>* var : leaves)
+	for (inode<T>* var : leaves)
 	{
 		// expect gradients to be the same shape as leaves
 		leaf_map_[var] = new placeholder<T>(std::vector<size_t>{}, "grad_in:" + var->get_name());
@@ -133,12 +133,16 @@ void gradient<T>::execute (void)
 {
 	for (auto leaf_pair : leaf_map_)
 	{
-		ivariable<T>* gleaf = leaf_pair.first->get_gradient();
+		inode<T>* gleaf = leaf_pair.first->get_gradient();
 		if (bindable_toggle<T>* togg = dynamic_cast<bindable_toggle<T>*>(gleaf))
 		{
 			togg->activate(gid_);
 		}
 		tensor<T>* root_res = g_root_->get_eval();
+		if (nullptr == root_res)
+		{
+			throw std::exception(); // TODO: make exception better
+		}
 		*(leaf_pair.second) = *root_res;
 	}
 }

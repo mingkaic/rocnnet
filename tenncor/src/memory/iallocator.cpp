@@ -1,5 +1,5 @@
 //
-//  allocator.cpp
+//  iallocator.cpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-08-29.
@@ -8,19 +8,27 @@
 
 #include "memory/iallocator.hpp"
 
-#ifdef allocator_hpp
+#ifdef TENNCOR_ALLOCATOR_HPP
 
 namespace nnet
 {
 	
-iallocator* iallocator::clone (void) {
+iallocator* iallocator::clone (void) const {
 	return clone_impl();
 }
 
-void* iallocator::get_raw (size_t alignment, size_t num_bytes) const
+bool iallocator::tracks_size (void) const { return false; }
+
+size_t iallocator::requested_size (void* ptr) const
 {
-	return get_raw(alignment, num_bytes, alloc_attrib());
+	throw std::bad_function_call();
+	return 0;
 }
+
+optional<size_t> iallocator::alloc_id (void* ptr) const { return optional<size_t>(); }
+
+void iallocator::gather_stat (alloc_stat& stats) const { stats.clear(); }
+
 
 }
 

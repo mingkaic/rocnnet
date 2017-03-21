@@ -7,7 +7,7 @@
 //
 
 #include "iexecutor.hpp"
-
+#define group_hpp
 #pragma once
 #ifndef group_hpp
 #define group_hpp

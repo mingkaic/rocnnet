@@ -1,10 +1,15 @@
-//
-//  utils.hpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-08-29.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
-//
+/*!
+ *
+ *  utils.hpp
+ *  cnnet
+ *
+ *  Purpose:
+ *  utils contain commonly used stream formatter, and uuid generator
+ *
+ *  Created by Mingkai Chen on 2016-08-29.
+ *  Copyright © 2016 Mingkai Chen. All rights reserved.
+ *
+ */
 
 #include <string>
 #include <sstream>
@@ -15,89 +20,77 @@
 #include <vector>
 
 #pragma once
-#ifndef utils_hpp
-#define utils_hpp
+#ifndef TENNCOR_UTILS_HPP
+#define TENNCOR_UTILS_HPP
 
 namespace nnutils
 {
 
+//! stream formatter
 class formatter
 {
-	private:
-		std::stringstream stream_;
+public:
+	//! to_stream conversion enum trick
+	enum convert_to_string
+	{
+		to_str
+	};
 
-		formatter(const formatter&);
-		formatter& operator = (formatter&);
-	public:
-		enum convert_to_string
+	//! default constructor
+	formatter (void);
+
+	//! default destructor
+	~formatter (void);
+
+	//! no copying or moving to force string conversion
+	//! format content is always passed as a string
+	formatter (const formatter&) = delete;
+	formatter (formatter&&) = delete;
+	formatter& operator = (const formatter&) = delete;
+	formatter& operator = (formatter&&) = delete;
+
+	//! overload << operator for non-vector values to add to stream
+	template <typename T>
+	formatter& operator << (const T& value)
+	{
+		stream_ << value;
+		return *this;
+	}
+
+	//! overload << operator for vectors
+	//! add values to string delimited by comma
+	template <typename T>
+	formatter& operator << (const std::vector<T>& values)
+	{
+		auto it = values.begin();
+		stream_ << *it;
+		it++;
+		while (it != values.end())
 		{
-			to_str
-		};
-
-		formatter() {}
-		~formatter() {}
-
-		template <typename T>
-		formatter& operator << (const T& value)
-		{
-			stream_ << value;
-			return *this;
+			stream_ << "," << *it;
+			it++;
 		}
+		return *this;
+	}
 
-		std::string str() const
-		{
-			return stream_.str();
-		}
+	//! explicit string conversion function
+	std::string str(void) const;
 
-		operator std::string () const
-		{
-			return stream_.str();
-		}
+	//! implicit string converter
+	operator std::string () const;
 
-		std::string operator >> (convert_to_string)
-		{
-			return stream_.str();
-		}
+	//! out stream as string
+	std::string operator >> (convert_to_string);
+
+private:
+	std::stringstream stream_; // internal stream
 };
 
-template <typename T, typename U>
-std::vector<U> to_vec (std::vector<T> vec, std::function<U(T)> convert)
-{
-	std::vector<U> res;
-	for (T v : vec)
-	{
-		res.push_back(convert(v));
-	}
-	return res;
-}
-
-// in place intersection
-template <typename T>
-void uset_intersect (std::unordered_set<T>& A, 
-					const std::unordered_set<T>& B)
-{
-	auto itA = A.begin();
-	auto itB = B.begin();
-	auto endA = A.end();
-	auto endB = B.end();
-
-	while (itA != endA)
-	{
-		if (std::find(itB, endB, *itA) == endB)
-		{
-			// found something in A but not B
-			// remove it from A
-			auto buffer = itA;
-			itA++;
-			A.erase(buffer);
-		}
-		else
-		{
-			itA++;
-		}
-	}
-}
+//! generates a "unique" string based on input address and current time
+//! uses cstdlib rand, so use srand to seed
+// todo: upgrade to random generator then expose generator for seeding
+std::string uuid (const void* addr);
 
 }
 
-#endif /* utils_hpp */
+#endif /* TENNCOR_UTILS_HPP */

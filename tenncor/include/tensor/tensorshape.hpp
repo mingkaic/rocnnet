@@ -1,89 +1,118 @@
-//
-//  tensorshape.hpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-08-29.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
-//
+/*!
+ *
+ *  tensorshape.hpp
+ *  cnnet
+ *
+ *  Purpose:
+ *  tensorshape stores aligned shape information
+ *
+ *  Created by Mingkai Chen on 2016-08-29.
+ *  Copyright © 2016 Mingkai Chen. All rights reserved.
+ *
+ */
 
 #include <iostream>
 #include <cassert>
 #include <stdexcept>
 #include <vector>
+#include <numeric>
+
 #include "utils/utils.hpp"
 
 #pragma once
-#ifndef tensorshape_hpp
-#define tensorshape_hpp
+#ifndef TENNCOR_TENSORSHAPE_HPP
+#define TENNCOR_TENSORSHAPE_HPP
 
 namespace nnet
 {
 
-// zero dimension denotes unknown
-struct dimension
+class tensorshape final
 {
-	size_t value_;
+public:
+	//! by default create a rankless shape
+	tensorshape (void) {}
 
-	dimension (size_t value) : value_(value) {}
-	explicit operator size_t (void) const {
-		return value_;
-	}
+	//! create a shape with the desired dimensions
+	tensorshape (const std::vector<size_t>& dims);
 
-	dimension merge_with (const dimension& other) const;
-	bool is_compatible_with (const dimension& other) const;
-	void assert_is_compatible_with (const dimension& other) const;
+	//! assign the desired dimensions to this shape
+	tensorshape& operator = (const std::vector<size_t>& dims);
+
+	// >>>> ACCESSORS <<<<
+	//! get a copy of the shape as a list
+	std::vector<size_t> as_list (void) const;
+
+	//! get number of elems that can fit in shape if known,
+	//! 0 if unknown
+	size_t n_elems (void) const;
+
+	//! get the minimum number of elements that can fit in shape
+	//! return the product of all known dimensions
+	size_t n_known (void) const;
+
+	//! get shape rank
+	size_t rank (void) const;
+
+	//! check if the shape is compatible with other
+	bool is_compatible_with (const tensorshape& other) const;
+
+	//! check if shape is partially defined
+	//! (if there are unknowns but rank is not 0)
+	bool is_part_defined (void) const;
+
+	//! check if shape is  fully defined
+	//! (there are no unknowns)
+	bool is_fully_defined (void) const;
+
+	// >>>> ASSERT <<<<
+	//! assert if shape has specified rank
+	void assert_has_rank (size_t rank) const;
+
+	//! assert if shape has same rank as other shape
+	void assert_same_rank (const tensorshape& other) const;
+
+	//! assert if shape is fully defined
+	void assert_is_fully_defined (void) const;
+
+	// >>>> MUTATORS <<<<
+	//! invalidate shape
+	void undefine (void) { dimensions_.clear(); }
+
+	// >>>> SHAPE CREATORS <<<<
+	//! create the most defined shape from this and other
+	//! prioritizes this over other value
+	tensorshape merge_with (const tensorshape& other) const;
+
+	//! create a copy of this shape with leading and
+	//! trailing ones removed
+	tensorshape trim (void) const;
+
+	//! create a shape that is the concatenation of another shape
+	tensorshape concatenate (const tensorshape& other) const;
+
+	//! create a new tensors with same dimension
+	//! value and the specified rank
+	//! clip or pad with 1's to fit rank
+	tensorshape with_rank (size_t rank) const;
+
+	//! create a new tensors with same dimension
+	//! value and at least the the specified rank
+	tensorshape with_rank_at_least (size_t rank) const;
+
+	//! create a new tensors with same dimension
+	//! value and at most the the specified rank
+	tensorshape with_rank_at_most (size_t rank) const;
+
+	// tensorshape_proto& as_proto (void) const; // serialize
+
+private:
+	// zero dimension denotes unknown/undefined value
+	std::vector<size_t> dimensions_;
 };
 
-class tensorshape
-{
-	private:
-		std::vector<dimension> dimensions_;
-
-	public:
-		tensorshape (void) {}
-		tensorshape (const std::vector<size_t>& dims);
-		tensorshape (const std::vector<dimension>& dims);
-		tensorshape& operator = (const std::vector<size_t>& dims);
-
-		// create the most defined tensor
-		tensorshape merge_with (const tensorshape& other) const;
-		// create a new tensor that is the concatenation of
-		// other to this tensor
-		tensorshape concatenate (const tensorshape& other) const;
-		// create new tensors with the same dimensional value but
-		// corresponds to the desired rank
-		tensorshape with_rank (size_t rank) const;
-		tensorshape with_rank_at_least (size_t rank) const;
-		tensorshape with_rank_at_most (size_t rank) const;
-
-		// get the number of elems that can fit into tensorshape, 0 denotes unknown
-		size_t n_elems (void) const;
-		size_t n_dims (void) const;
-		std::vector<dimension> dims (void) const; // deep copy
-		std::vector<size_t> as_list (void) const;
-
-		// returns a new shape with leading and padding ones removed
-		tensorshape trim (void) const;
-
-		// tensorshape_proto* as_proto (void) const; // serialize
-
-		bool is_compatible_with (const tensorshape& other) const;
-		// partially defined if complete
-		// (all fully defined are at least partially defined)
-		bool is_part_defined (void) const;
-		// fully defined if complete with no unknowns
-		bool is_fully_defined (void) const;
-
-		// assertions
-		void assert_has_rank (size_t rank) const;
-		void assert_same_rank (const tensorshape& other) const;
-		void assert_is_fully_defined (void) const;
-
-		void undefine (void) { dimensions_.clear(); }
-};
-
+//! print a shape's dimension values
 void print_shape (tensorshape ts);
 
 }
 
-#endif /* tensorshape_hpp */
+#endif /* TENNCOR_TENSORSHAPE_HPP */

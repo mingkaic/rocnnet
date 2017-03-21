@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef assign_hpp
+#ifdef TENNCOR_ASSIGN_HPP
 
 namespace nnet
 {
@@ -31,7 +31,7 @@ iexecutor<T>* assign<T>::clone_impl (void)
 }
 
 template <typename T>
-assign<T>::assign (variable<T>* dest, ivariable<T>* src, ASSIGN_OP<T> trans) :
+assign<T>::assign (variable<T>* dest, inode<T>* src, ASSIGN_OP<T> trans) :
 	transfer_(trans),
 	dest_(dest)
 {
@@ -54,7 +54,7 @@ template <typename T>
 void assign<T>::freeze (void)
 {
 	tensor<T>* out = dest_->get_eval();
-	if (ivariable<T>* src = this->dependencies_[0])
+	if (inode<T>* src = this->dependencies_[0])
 	{
 		tensor<T>* in = src->get_eval();
 		if (out->is_same_size(*in))
@@ -67,7 +67,7 @@ void assign<T>::freeze (void)
 	}
 	else
 	{
-		throw std::logic_error("assigning a non-variable node to a variable");
+		throw std::logic_error("assigning a non-leaf node to a leaf");
 	}
 }
 
@@ -98,7 +98,7 @@ assign<T>* assign_sub<T>::clone_impl (void)
 }
 
 template <typename T>
-assign_sub<T>::assign_sub (variable<T>* dest, ivariable<T>* src) :
+assign_sub<T>::assign_sub (variable<T>* dest, inode<T>* src) :
 	assign<T>(dest, src, [](T& target, T data) { target -= data; }) {}
 
 template <typename T>

@@ -1,52 +1,78 @@
-//
-//  iexecutor.hpp
-//  cnnet
-//
-//  Created by Mingkai Chen on 2016-11-12.
-//  Copyright © 2016 Mingkai Chen. All rights reserved.
-//
+/*!
+ *
+ *  iexecutor.hpp
+ *  cnnet
+ *
+ *  Purpose:
+ *  iexecutor provides an interface
+ *  to process nodes
+ *
+ *  Created by Mingkai Chen on 2016-11-12.
+ *  Copyright © 2016 Mingkai Chen. All rights reserved.
+ *
+ */
 
 #include <stack>
-#include "graph/operation/ioperation.hpp"
+
+//#include "graph/connector/immutable/operation.hpp"
+
+#define TENNCOR_EXECUTOR_HPP
 
 #pragma once
-#ifndef executor_hpp
-#define executor_hpp
+#ifndef TENNCOR_EXECUTOR_HPP
+#define TENNCOR_EXECUTOR_HPP
 
 namespace nnet
 {
 
-// does not check if variables in dependencies_ are deleted
-// owns nothing in dependencies_
-// please don't delete :(
 template <typename T>
-class iexecutor
+class iexecutor : public iobserver
 {
-	protected:
-		std::vector<ivariable<T>*> dependencies_;
+public:
+	//! virtual destructor
+	virtual ~iexecutor (void) {}
 
-		virtual iexecutor<T>* clone_impl (void) = 0;
+	// >>>> CLONE <<<<
+	//! clone function
+	iexecutor<T>* clone (void) const
+	{ return clone_impl(); }
 
-	public:
-		virtual ~iexecutor (void) {}
+	// >>>> MUTATOR <<<<
+	//! stop listening to updates
+	void freeze (void) { listen_ = false; }
 
-		// COPY
-		iexecutor<T>* clone (void);
-		
-		// MOVE
-		
-		virtual void add (ivariable<T>* node);
+	//! start listening to updates
+	void unfreeze (void)
+	{
+		listen_ = true;
+		for (subject* arg : this->dependencies_)
+		{
+			executor(static_cast<inode<T>*>(arg));
+		}
+	}
 
-		// stage 2: perform primary objective
-		virtual void execute (void) = 0;
-		
-		// take a snap shot of data before executing (useful for bulk assignment)
-		// equivalent to the operation of update (stage 1: perform preliminary actions)
-		virtual void freeze (void) = 0;
+	//! update observer value according to subject
+	virtual void update (subject* arg) final
+	{
+		if (listen_)
+		{
+			execute(static_cast<inode<T>*>(arg));
+		}
+	}
+
+protected:
+	//! clone implementation
+	virtual iexecutor<T>* clone_impl (void) const = 0;
+
+	//! execute node
+	virtual void executor (inode<T>* n) = 0;
+
+private:
+	bool listen_ = true;
 };
 
 }
 
 #include "../../src/executor/iexecutor.ipp"
 
-#endif /* executor_hpp */
+#endif /* TENNCOR_EXECUTOR_HPP */
