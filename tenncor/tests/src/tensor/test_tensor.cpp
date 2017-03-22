@@ -320,7 +320,16 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
-	std::vector<double> lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+std::cout << "cshape with size " << cp << "\n";
+	std::vector<double> lowerdata;
+	if (cp < 3)
+	{
+		lowerdata = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	}
 	std::vector<double> exactdata = FUZZ::getDouble(cp);
 	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
 
@@ -333,12 +342,22 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 	EXPECT_FALSE(comp.is_loosely_compatible_with(upperdata));
 
 	size_t np = pshape.n_known();
-	std::vector<double> lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+std::cout << "pshape with unknown " << np << "\n";
+	std::vector<double> lowerdata2;
+	if (np < 3)
+	{
+		lowerdata2 = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	}
 	std::vector<double> exactdata2 = FUZZ::getDouble(np);
 	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
 	std::vector<double> moddata = FUZZ::getDouble(mod);
 	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
 
+std::cout << "checking compatibility\n";
 	EXPECT_TRUE(pcom.is_compatible_with(exactdata2));
 	EXPECT_TRUE(pcom.is_compatible_with(moddata));
 	EXPECT_FALSE(pcom.is_compatible_with(lowerdata2));
