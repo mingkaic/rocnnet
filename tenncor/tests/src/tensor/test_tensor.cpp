@@ -218,11 +218,12 @@ std::cout << "shapes found\n";
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 
+std::cout << "cshape rank " << cv.size() << "\n";
 std::cout << "partial shapes matching\n";
 	{
 		tensorshape pshape = make_partial(cv); // same as cshape
 		mock_tensor pcom(pshape);
-
+std::cout << "cv made partial " << pshape.rank() << "\n";
 		// allowed compatible
 		// pcom, undef are both unallocated
 		EXPECT_FALSE(undef.is_alloc());
@@ -280,13 +281,14 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
-
+std::cout << "shapes found: cv of size " cv.size() << "\n";
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 	mock_tensor bad(ishape);
 
+std::cout << "checking if undefined shape is compatible\n";
 	// undefined tensor is compatible with anything
 	EXPECT_TRUE(undef.is_compatible_with(undef));
 	EXPECT_TRUE(undef.is_compatible_with(scalar));
@@ -294,10 +296,12 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 	EXPECT_TRUE(undef.is_compatible_with(pcom));
 	EXPECT_TRUE(undef.is_compatible_with(bad));
 
+std::cout << "checking if partial shape is compatible\n";
 	EXPECT_TRUE(pcom.is_compatible_with(comp));
 	EXPECT_TRUE(pcom.is_compatible_with(pcom));
 	EXPECT_FALSE(pcom.is_compatible_with(bad));
 
+std::cout << "checking if bad shape is incompatible\n";
 	EXPECT_FALSE(bad.is_compatible_with(comp));
 }
 
@@ -401,7 +405,7 @@ std::cout << "cshape of size " << cp << "\n";
 	size_t np = pshape.n_known();
 std::cout << "pshape of known " << np << "\n";
 	std::vector<double> lowerdata2;
-	if (cp < 3)
+	if (np < 3)
 	{
 		lowerdata2 = FUZZ::getDouble(1);
 	}
@@ -414,6 +418,7 @@ std::cout << "pshape of known " << np << "\n";
 	std::vector<double> moddata = FUZZ::getDouble(mod);
 	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
 
+std::cout << "data generated\n";
 	std::vector<size_t> pv = pshape.as_list();
 	size_t unknown = pv.size();
 std::cout << "rank of p " << unknown << "\n";
