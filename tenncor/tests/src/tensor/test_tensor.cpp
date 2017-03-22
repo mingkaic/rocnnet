@@ -213,11 +213,12 @@ TEST(TENSOR, IsSameSize_B003)
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	mock_tensor bad(ishape);
-
+std::cout << "shapes found\n";
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 
+std::cout << "partial shapes matching\n";
 	{
 		tensorshape pshape = make_partial(cv); // same as cshape
 		mock_tensor pcom(pshape);
@@ -237,6 +238,7 @@ TEST(TENSOR, IsSameSize_B003)
 		EXPECT_FALSE(pcom.is_same_size(scalar));
 	}
 
+std::cout << "complete shapes matching\n";
 	// trimmed compatible
 	{
 		// padd cv
@@ -377,7 +379,15 @@ std::cout << "shapes found\n";
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
 std::cout << "cshape of size " << cp << "\n";
-	std::vector<double> lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	std::vector<double> lowerdata;
+	if (cp < 3)
+	{
+		lowerdata = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	}
 	std::vector<double> exactdata = FUZZ::getDouble(cp);
 	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
 
@@ -389,8 +399,16 @@ std::cout << "cshape of size " << cp << "\n";
 	EXPECT_FALSE((bool)comp.guess_shape(upperdata));
 
 	size_t np = pshape.n_known();
-std::cout << "cshape of known " << np << "\n";
-	std::vector<double> lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+std::cout << "pshape of known " << np << "\n";
+	std::vector<double> lowerdata2;
+	if (cp < 3)
+	{
+		lowerdata2 = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	}
 	std::vector<double> exactdata2 = FUZZ::getDouble(np);
 	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
 	std::vector<double> moddata = FUZZ::getDouble(mod);
@@ -398,7 +416,7 @@ std::cout << "cshape of known " << np << "\n";
 
 	std::vector<size_t> pv = pshape.as_list();
 	size_t unknown = pv.size();
-std::cout << unknown << "\n";
+std::cout << "rank of p " << unknown << "\n";
 	for (size_t i = 0; i < pv.size(); i++)
 	{
 		if (0 == pv[i])
