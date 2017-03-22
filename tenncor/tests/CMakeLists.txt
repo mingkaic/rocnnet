@@ -1,6 +1,5 @@
 set(TEST_NAME tenncortest)
 set(TEST_MAIN "" CACHE STRING "path to test main")
-
 enable_testing()
 
 add_definitions(${MSVC_COMPILER_DEFS})
