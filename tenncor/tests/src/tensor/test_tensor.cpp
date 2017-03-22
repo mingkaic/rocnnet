@@ -213,17 +213,13 @@ TEST(TENSOR, IsSameSize_B003)
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	mock_tensor bad(ishape);
-std::cout << "shapes found\n";
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 
-std::cout << "cshape rank " << cv.size() << "\n";
-std::cout << "partial shapes matching\n";
 	{
 		tensorshape pshape = make_partial(cv); // same as cshape
 		mock_tensor pcom(pshape);
-std::cout << "cv made partial " << pshape.rank() << "\n";
 		// allowed compatible
 		// pcom, undef are both unallocated
 		EXPECT_FALSE(undef.is_alloc());
@@ -239,7 +235,6 @@ std::cout << "cv made partial " << pshape.rank() << "\n";
 		EXPECT_FALSE(pcom.is_same_size(scalar));
 	}
 
-std::cout << "complete shapes matching\n";
 	// trimmed compatible
 	{
 		// padd cv
@@ -281,14 +276,12 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
-std::cout << "shapes found: cv of size " << cv.size() << "\n";
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 	mock_tensor bad(ishape);
 
-std::cout << "checking if undefined shape is compatible\n";
 	// undefined tensor is compatible with anything
 	EXPECT_TRUE(undef.is_compatible_with(undef));
 	EXPECT_TRUE(undef.is_compatible_with(scalar));
@@ -296,12 +289,10 @@ std::cout << "checking if undefined shape is compatible\n";
 	EXPECT_TRUE(undef.is_compatible_with(pcom));
 	EXPECT_TRUE(undef.is_compatible_with(bad));
 
-std::cout << "checking if partial shape is compatible\n";
 	EXPECT_TRUE(pcom.is_compatible_with(comp));
 	EXPECT_TRUE(pcom.is_compatible_with(pcom));
 	EXPECT_FALSE(pcom.is_compatible_with(bad));
 
-std::cout << "checking if bad shape is incompatible\n";
 	EXPECT_FALSE(bad.is_compatible_with(comp));
 }
 
@@ -320,7 +311,6 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
-std::cout << "cshape with size " << cp << "\n";
 	std::vector<double> lowerdata;
 	if (cp < 3)
 	{
@@ -342,7 +332,6 @@ std::cout << "cshape with size " << cp << "\n";
 	EXPECT_FALSE(comp.is_loosely_compatible_with(upperdata));
 
 	size_t np = pshape.n_known();
-std::cout << "pshape with unknown " << np << "\n";
 	std::vector<double> lowerdata2;
 	if (np < 3)
 	{
@@ -357,7 +346,6 @@ std::cout << "pshape with unknown " << np << "\n";
 	std::vector<double> moddata = FUZZ::getDouble(mod);
 	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
 
-std::cout << "checking compatibility\n";
 	EXPECT_TRUE(pcom.is_compatible_with(exactdata2));
 	EXPECT_TRUE(pcom.is_compatible_with(moddata));
 	EXPECT_FALSE(pcom.is_compatible_with(lowerdata2));
@@ -394,14 +382,12 @@ TEST(TENSOR, GuessShape_B006)
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
-std::cout << "shapes found\n";
 	mock_tensor undef;
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
-std::cout << "cshape of size " << cp << "\n";
 	std::vector<double> lowerdata;
 	if (cp < 3)
 	{
@@ -422,7 +408,6 @@ std::cout << "cshape of size " << cp << "\n";
 	EXPECT_FALSE((bool)comp.guess_shape(upperdata));
 
 	size_t np = pshape.n_known();
-std::cout << "pshape of known " << np << "\n";
 	std::vector<double> lowerdata2;
 	if (np < 3)
 	{
@@ -437,10 +422,8 @@ std::cout << "pshape of known " << np << "\n";
 	std::vector<double> moddata = FUZZ::getDouble(mod);
 	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
 
-std::cout << "data generated\n";
 	std::vector<size_t> pv = pshape.as_list();
 	size_t unknown = pv.size();
-std::cout << "rank of p " << unknown << "\n";
 	for (size_t i = 0; i < pv.size(); i++)
 	{
 		if (0 == pv[i])
