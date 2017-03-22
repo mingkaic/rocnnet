@@ -35,7 +35,7 @@ Libraries should be found in the /bin directory
 
 Set RunTest option to ON during cmake generation should generate a default `libtenncor-inst.a` in the `bin` directory
 
-    cmake -DRunTest=ON <path/to/tenncor>
+    cmake -DTENNCOR_TEST=ON <path/to/tenncor>
 
 ## API Reference
 
