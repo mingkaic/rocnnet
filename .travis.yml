@@ -47,10 +47,10 @@ notifications:
 branches:
   except:
   - legacy
-  - experimental
 
 # safelist
 branches:
   only:
   - master
   - stable
+  - experimental

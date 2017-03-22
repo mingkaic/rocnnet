@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <ctime>
 
 #pragma once
 #ifndef TENNCOR_UTILS_HPP
