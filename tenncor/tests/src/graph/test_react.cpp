@@ -20,6 +20,7 @@
 // no audience, attach, detach
 TEST(REACT, CopySub_A000)
 {
+	FUZZ::delim();
 	mock_subject sassign1;
 	mock_subject sassign2;
 
@@ -56,6 +57,7 @@ TEST(REACT, CopySub_A000)
 // move constructor and assignment
 TEST(REACT, MoveSub_A000)
 {
+	FUZZ::delim();
 	mock_subject sassign1;
 	mock_subject sassign2;
 
@@ -96,6 +98,7 @@ TEST(REACT, MoveSub_A000)
 // notify
 TEST(REACT, Notify_A001)
 {
+	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
 	mock_subject s1(&o1);
@@ -129,6 +132,7 @@ TEST(REACT, Notify_A001)
 // destructor
 TEST(REACT, SUBDEATH_A002)
 {
+	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
 	mock_subject* s1 = new mock_subject(&o1);
@@ -148,6 +152,7 @@ TEST(REACT, SUBDEATH_A002)
 // attach
 TEST(REACT, Attach_A003)
 {
+	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
 	mock_subject s1;
@@ -181,6 +186,7 @@ TEST(REACT, Attach_A003)
 // detach without index and with index
 TEST(REACT, Detach_A004)
 {
+	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
 	mock_subject s1(&o1, &o2);
@@ -209,6 +215,7 @@ TEST(REACT, Detach_A004)
 // default and dependency constructors
 TEST(REACT, ObsConstruct_A005)
 {
+	FUZZ::delim();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
 	mock_observer2* o1 = new mock_observer2(s2);
@@ -239,6 +246,7 @@ TEST(REACT, ObsConstruct_A005)
 // copy constructor and assignment
 TEST(REACT, CopyObs_A006)
 {
+	FUZZ::delim();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
 
@@ -290,6 +298,7 @@ TEST(REACT, CopyObs_A006)
 // move constructor and assignment
 TEST(REACT, MoveObs_A006)
 {
+	FUZZ::delim();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
 
@@ -343,6 +352,7 @@ TEST(REACT, MoveObs_A006)
 // add_dependency
 TEST(REACT, AddDep_A007)
 {
+	FUZZ::delim();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
 	mock_observer2* o1 = new mock_observer2;
@@ -382,6 +392,7 @@ TEST(REACT, AddDep_A007)
 // remove_dependency
 TEST(REACT, RemDep_A008)
 {
+	FUZZ::delim();
 	mock_subject2* s1 = new mock_subject2;
 	mock_subject2* s2 = new mock_subject2;
 	mock_observer2* o1 = new mock_observer2(s2);
@@ -413,6 +424,7 @@ TEST(REACT, RemDep_A008)
 // replace_dependency
 TEST(REACT, RepDep_A009)
 {
+	FUZZ::delim();
 	mock_subject2* s1 = new mock_subject2;
 	mock_subject2* s2 = new mock_subject2;
 	mock_observer2* o1 = new mock_observer2(s1);
@@ -441,6 +453,7 @@ TEST(REACT, RepDep_A009)
 // destruction, depends on subject detach
 TEST(REACT, ObsDeath_A010)
 {
+	FUZZ::delim();
 	mock_subject s1;
 	mock_subject2 s2;
 

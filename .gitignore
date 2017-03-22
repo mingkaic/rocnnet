@@ -56,3 +56,4 @@ build/
 cmake-build*/
 scripts
 .vscode
+*.out

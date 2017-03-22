@@ -29,7 +29,8 @@ script:
 - cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ${TRAVIS_BUILD_DIR}
 - cmake --build .
 # run tests
-- ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest
+- ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle
+- cat fuzz.out
 
 after_success:
 # coverage log
@@ -40,17 +41,17 @@ after_success:
 
 notifications:
   email:
-    on_success: never
+    on_success: change
     on_failure: always
 
 # blocklist
 branches:
   except:
   - legacy
-  - experimental
 
 # safelist
 branches:
   only:
   - master
   - stable
+  - experimental

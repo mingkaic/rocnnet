@@ -35,6 +35,7 @@ static tensorshape random_partialshape ()
 // is_alloc, total_bytes
 TEST(TENSOR, Construct_B000)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
 
@@ -65,6 +66,7 @@ TEST(TENSOR, Construct_B000)
 // clone and assignment
 TEST(TENSOR, Copy_B001)
 {
+	FUZZ::delim();
 	mock_tensor undefassign;
 	mock_tensor scalarassign;
 	mock_tensor incomassign;
@@ -116,6 +118,7 @@ TEST(TENSOR, Copy_B001)
 // move constructor and assignment
 TEST(TENSOR, Move_B001)
 {
+	FUZZ::delim();
 	mock_tensor scalarassign;
 	mock_tensor compassign;
 
@@ -163,6 +166,7 @@ TEST(TENSOR, Move_B001)
 // get_shape, n_elems, rank. dims
 TEST(TENSOR, Shape_B002)
 {
+	FUZZ::delim();
 	tensorshape singular(std::vector<size_t>{1});
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
@@ -203,12 +207,12 @@ TEST(TENSOR, Shape_B002)
 // is_same_size
 TEST(TENSOR, IsSameSize_B003)
 {
+	FUZZ::delim();
 	tensorshape singular(std::vector<size_t>{1});
 	tensorshape cshape = random_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	mock_tensor bad(ishape);
-
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
@@ -216,7 +220,6 @@ TEST(TENSOR, IsSameSize_B003)
 	{
 		tensorshape pshape = make_partial(cv); // same as cshape
 		mock_tensor pcom(pshape);
-
 		// allowed compatible
 		// pcom, undef are both unallocated
 		EXPECT_FALSE(undef.is_alloc());
@@ -268,11 +271,11 @@ TEST(TENSOR, IsSameSize_B003)
 // is_compatible_with tensor
 TEST(TENSOR, IsCompatibleWithTensor_B004)
 {
+	FUZZ::delim();
 	tensorshape cshape = random_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
-
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
@@ -298,6 +301,7 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 // is_compatible_with vector
 TEST(TENSOR, IsCompatibleWithVector_B005)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
 
@@ -307,7 +311,15 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
-	std::vector<double> lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	std::vector<double> lowerdata;
+	if (cp < 3)
+	{
+		lowerdata = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	}
 	std::vector<double> exactdata = FUZZ::getDouble(cp);
 	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
 
@@ -320,7 +332,15 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 	EXPECT_FALSE(comp.is_loosely_compatible_with(upperdata));
 
 	size_t np = pshape.n_known();
-	std::vector<double> lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	std::vector<double> lowerdata2;
+	if (np < 3)
+	{
+		lowerdata2 = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	}
 	std::vector<double> exactdata2 = FUZZ::getDouble(np);
 	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
 	std::vector<double> moddata = FUZZ::getDouble(mod);
@@ -359,16 +379,24 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 // guess_shape
 TEST(TENSOR, GuessShape_B006)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
-
 	mock_tensor undef;
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
-	std::vector<double> lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	std::vector<double> lowerdata;
+	if (cp < 3)
+	{
+		lowerdata = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+	}
 	std::vector<double> exactdata = FUZZ::getDouble(cp);
 	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
 
@@ -380,7 +408,15 @@ TEST(TENSOR, GuessShape_B006)
 	EXPECT_FALSE((bool)comp.guess_shape(upperdata));
 
 	size_t np = pshape.n_known();
-	std::vector<double> lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	std::vector<double> lowerdata2;
+	if (np < 3)
+	{
+		lowerdata2 = FUZZ::getDouble(1);
+	}
+	else
+	{
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+	}
 	std::vector<double> exactdata2 = FUZZ::getDouble(np);
 	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
 	std::vector<double> moddata = FUZZ::getDouble(mod);
@@ -440,6 +476,7 @@ TEST(TENSOR, GuessShape_B006)
 // get, expose
 TEST(TENSOR, Get_B007)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
 	size_t crank = cshape.rank();
@@ -516,6 +553,7 @@ TEST(TENSOR, Get_B007)
 // set_shape, allocate shape
 TEST(TENSOR, Reshape_B008)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	// make cshape a 2d shape to make testing easy
 	// todo: improve to test higher dimensionality
@@ -635,6 +673,7 @@ TEST(TENSOR, Reshape_B008)
 // default allocate, dependent on set shape
 TEST(TENSOR, Allocate_B009)
 {
+	FUZZ::delim();
 	tensorshape cshape = random_shape();
 	tensorshape pshape = random_partialshape();
 
@@ -661,6 +700,7 @@ TEST(TENSOR, Allocate_B009)
 // deallocate
 TEST(TENSOR, Dealloc_B010)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
 
@@ -682,6 +722,7 @@ TEST(TENSOR, Dealloc_B010)
 // allocate shape
 TEST(TENSOR, AllocateShape_B011)
 {
+	FUZZ::delim();
 	tensorshape cshape = random_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape cshape2 = make_incompatible(cv);
@@ -721,6 +762,7 @@ TEST(TENSOR, AllocateShape_B011)
 // copy_from
 TEST(TENSOR, CopyWithShape_B012)
 {
+	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
 	tensorshape cshape2 = random_shape();

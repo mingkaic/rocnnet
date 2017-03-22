@@ -18,6 +18,7 @@
 // clone
 TEST(ALLOCATOR, Clone_A000)
 {
+	FUZZ::delim();
 	mock_allocator a(true);
 	mock_allocator b(false);
 	iallocator* aptr = &a;
@@ -39,6 +40,7 @@ TEST(ALLOCATOR, Clone_A000)
 // allocate
 TEST(ALLOCATOR, Allocate_A001)
 {
+	FUZZ::delim();
 	mock_allocator a(true);
 	mock_allocator b(false);
 
@@ -86,6 +88,7 @@ TEST(ALLOCATOR, Allocate_A001)
 // dealloc, dependent on allocate
 TEST(ALLOCATOR, Deallocate_A002)
 {
+	FUZZ::delim();
 	mock_allocator a(false);
 	mock_allocator b(true);
 	mock_allocator c(true);
@@ -129,6 +132,7 @@ TEST(ALLOCATOR, Deallocate_A002)
 // tracks_size, request_size
 TEST(ALLOCATOR, Track_A003)
 {
+	FUZZ::delim();
 	mock_allocator a(false);
 	mock_allocator b(true);
 

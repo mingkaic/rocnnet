@@ -46,6 +46,7 @@ static void generate_moreshapes (std::vector<size_t>& pcom, std::vector<size_t>&
 // and vector assignment
 TEST(TENSORSHAPE, Copy_A000)
 {
+	FUZZ::delim();
 	tensorshape incom_assign;
 	tensorshape pcom_assign;
 	tensorshape com_assign;
@@ -98,6 +99,7 @@ TEST(TENSORSHAPE, Copy_A000)
 // move constructor and assignment
 TEST(TENSORSHAPE, Move_A000)
 {
+	FUZZ::delim();
 	tensorshape pcom_assign;
 	tensorshape com_assign;
 	std::vector<size_t> empty;
@@ -129,6 +131,7 @@ TEST(TENSORSHAPE, Move_A000)
 // covers tensorshape as_list
 TEST(TENSORSHAPE, AsList_A001)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	generate_shapes(pds, cds);
@@ -149,6 +152,7 @@ TEST(TENSORSHAPE, AsList_A001)
 // covers tensorshape n_elems
 TEST(TENSORSHAPE, N_A002)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	// this generation is better for rank testing,
@@ -187,6 +191,7 @@ TEST(TENSORSHAPE, N_A002)
 // covers tensorshape rank
 TEST(TENSORSHAPE, Rank_A003)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	// this generation is better for rank testing,
@@ -207,6 +212,7 @@ TEST(TENSORSHAPE, Rank_A003)
 // covers is_compatible_with
 TEST(TENSORSHAPE, Compatible_A004)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	std::vector<size_t> pds2;
@@ -265,6 +271,7 @@ TEST(TENSORSHAPE, Compatible_A004)
 // covers is_part_defined
 TEST(TENSORSHAPE, PartDef_A005)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	std::vector<size_t> pds2;
@@ -289,6 +296,7 @@ TEST(TENSORSHAPE, PartDef_A005)
 // covers is_fully_defined and assert_is_fully defined
 TEST(TENSORSHAPE, FullDef_A006)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	std::vector<size_t> pds2;
@@ -318,6 +326,7 @@ TEST(TENSORSHAPE, FullDef_A006)
 // covers assert_has_rank and assert_same_rank
 TEST(TENSORSHAPE, RankAssert_A007)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	generate_shapes(pds, cds);
@@ -350,6 +359,7 @@ TEST(TENSORSHAPE, RankAssert_A007)
 // covers undefine, dependent on is_part_defined
 TEST(TENSORSHAPE, Undefine_A008)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	generate_shapes(pds, cds);
@@ -375,6 +385,7 @@ TEST(TENSORSHAPE, Undefine_A008)
 // covers merge_with
 TEST(TENSORSHAPE, Merge_A009)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	std::vector<size_t> pds2;
@@ -432,6 +443,7 @@ TEST(TENSORSHAPE, Merge_A009)
 // covers trim, dependent on rank
 TEST(TENSORSHAPE, Trim_A010)
 {
+	FUZZ::delim();
 	std::vector<size_t> ids;
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
@@ -469,6 +481,7 @@ TEST(TENSORSHAPE, Trim_A010)
 // covers concatenate
 TEST(TENSORSHAPE, Concat_A011)
 {
+	FUZZ::delim();
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;
 	generate_moreshapes(pds, cds);
@@ -506,6 +519,7 @@ TEST(TENSORSHAPE, Concat_A011)
 // covers with_rank, with_rank_at_least, with_rank_at_most, depends on rank
 TEST(TENSORSHAPE, WithRank_A012)
 {
+	FUZZ::delim();
 	std::vector<size_t> ids;
 	std::vector<size_t> pds;
 	std::vector<size_t> cds;

@@ -25,6 +25,7 @@ using namespace nnet;
 
 static const size_t GETTER_ID = 1523;
 static const size_t SETTER_ID = 2352932;
+static size_t SETTER_ITER = 0;
 static const size_t CHECK_ID = 111112;
 
 
@@ -32,6 +33,7 @@ static const size_t CHECK_ID = 111112;
 // singleton property
 TEST(ALLOC_BUILDER, Singleton_B000)
 {
+	FUZZ::delim();
 	// same thread
 	alloc_builder& inst1 = alloc_builder::get_instance();
 	alloc_builder& inst2 = alloc_builder::get_instance();
@@ -54,17 +56,20 @@ TEST(ALLOC_BUILDER, Singleton_B000)
 // registertype
 TEST(ALLOC_BUILDER, Register_A001)
 {
+	FUZZ::delim();
+	const size_t realsetter = SETTER_ID + SETTER_ITER;
 	alloc_builder& builder = alloc_builder::get_instance();
 
-	EXPECT_TRUE(builder.template registertype<mock_allocator>(SETTER_ID));
+	EXPECT_TRUE(builder.template registertype<mock_allocator>(realsetter));
 
 	// registering a used type is accepted
-	EXPECT_TRUE(builder.template registertype<mock_allocator>(SETTER_ID+1));
-	EXPECT_TRUE(builder.template registertype<default_alloc>(SETTER_ID+2));
+	EXPECT_TRUE(builder.template registertype<mock_allocator>(realsetter+1));
+	EXPECT_TRUE(builder.template registertype<default_alloc>(realsetter+2));
 
 	// registering the a used id (regardless of type) will return false
-	EXPECT_FALSE(builder.registertype<mock_allocator>(SETTER_ID));
-	EXPECT_FALSE(builder.registertype<default_alloc>(SETTER_ID));
+	EXPECT_FALSE(builder.registertype<mock_allocator>(realsetter));
+	EXPECT_FALSE(builder.registertype<default_alloc>(realsetter));
+	SETTER_ITER+=3;
 }
 
 
@@ -72,6 +77,7 @@ TEST(ALLOC_BUILDER, Register_A001)
 // get, depends on registertype
 TEST(ALLOC_BUILDER, Get_A002)
 {
+	FUZZ::delim();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(GETTER_ID);
@@ -100,6 +106,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 // check registry
 TEST(ALLOC_BUILDER, Check_A003)
 {
+	FUZZ::delim();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(CHECK_ID);
