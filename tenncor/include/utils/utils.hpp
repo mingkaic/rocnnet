@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <ctime>
+#include <chrono>
 
 #pragma once
 #ifndef TENNCOR_UTILS_HPP
