@@ -10,6 +10,8 @@ static std::ofstream fuzzLogger(FUZZ_FILE);
 
 void delim (void)
 {
+    static int i = 0;
+    std::cout << "running test number " << i++ << "\n";
     fuzzLogger.close();
 	remove(FUZZ_FILE);
     fuzzLogger.open(FUZZ_FILE);
