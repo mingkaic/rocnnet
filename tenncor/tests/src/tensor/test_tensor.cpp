@@ -369,13 +369,14 @@ TEST(TENSOR, GuessShape_B006)
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
 	tensorshape cshape = random_shape();
-
+std::cout << "shapes found\n";
 	mock_tensor undef;
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 
 	std::vector<double> zerodata;
 	size_t cp = cshape.n_elems();
+std::cout << "cshape of size " << cp << "\n";
 	std::vector<double> lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
 	std::vector<double> exactdata = FUZZ::getDouble(cp);
 	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
@@ -388,6 +389,7 @@ TEST(TENSOR, GuessShape_B006)
 	EXPECT_FALSE((bool)comp.guess_shape(upperdata));
 
 	size_t np = pshape.n_known();
+std::cout << "cshape of known " << np << "\n";
 	std::vector<double> lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
 	std::vector<double> exactdata2 = FUZZ::getDouble(np);
 	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
@@ -396,6 +398,7 @@ TEST(TENSOR, GuessShape_B006)
 
 	std::vector<size_t> pv = pshape.as_list();
 	size_t unknown = pv.size();
+std::cout << unknown << "\n";
 	for (size_t i = 0; i < pv.size(); i++)
 	{
 		if (0 == pv[i])
