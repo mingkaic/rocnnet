@@ -26,7 +26,7 @@ FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
 
 # set tenncor include path
 set(TENNCOR_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(TENNCOR_INCLUDE)
+include_directories(${TENNCOR_INCLUDE})
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
