@@ -17,6 +17,7 @@
 #include <functional>
 #include <algorithm>
 #include <complex>
+#include <limits>
 #include <experimental/optional>
 
 using namespace std::experimental;
