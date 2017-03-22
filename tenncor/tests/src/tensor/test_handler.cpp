@@ -107,7 +107,7 @@ TEST(HANDLER, Transfer_C000)
 // operator ()
 TEST(HANDLER, Constant_C001)
 {
-	double scalar = FUZZ<double>::get(1)[0];
+	double scalar = FUZZ::getDouble(1)[0];
 	const_init<double> ci(scalar);
 	tensorshape shape = random_shape();
 	tensor<double> block(shape);
@@ -126,9 +126,9 @@ TEST(HANDLER, Constant_C001)
 // operator ()
 TEST(HANDLER, Random_C002)
 {
-	double lo = FUZZ<double>::get(1, {127182, 12921231412323})[0];
+	double lo = FUZZ::getDouble(1, {127182, 12921231412323})[0];
 	double hi = lo+1;
-	double high = FUZZ<double>::get(1, {lo*2, lo*3+50})[0];
+	double high = FUZZ::getDouble(1, {lo*2, lo*3+50})[0];
 	rand_uniform<double> ri1(lo, hi);
 	rand_uniform<double> ri2(lo, high);
 	tensorshape shape = random_shape();
@@ -162,10 +162,10 @@ TEST(HANDLER, Copy_C003)
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
 
-	SUPERMARK = FUZZ<double>::get(1, {15, 117})[0];
-	double scalar = FUZZ<double>::get(1)[0];
-	double low = FUZZ<double>::get(1, {23, 127})[0];
-	double high = FUZZ<double>::get(1, {low*2, low*3+50})[0];
+	SUPERMARK = FUZZ::getDouble(1, {15, 117})[0];
+	double scalar = FUZZ::getDouble(1)[0];
+	double low = FUZZ::getDouble(1, {23, 127})[0];
+	double high = FUZZ::getDouble(1, {low*2, low*3+50})[0];
 	transfer_func<double> tf(marked_shape, marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
@@ -247,10 +247,10 @@ TEST(HANDLER, Move_C003)
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
 
-	SUPERMARK = FUZZ<double>::get(1, {119, 221})[0];
-	double scalar = FUZZ<double>::get(1)[0];
-	double low = FUZZ<double>::get(1, {23, 127})[0];
-	double high = FUZZ<double>::get(1, {low*2, low*3+50})[0];
+	SUPERMARK = FUZZ::getDouble(1, {119, 221})[0];
+	double scalar = FUZZ::getDouble(1)[0];
+	double low = FUZZ::getDouble(1, {23, 127})[0];
+	double high = FUZZ::getDouble(1, {low*2, low*3+50})[0];
 	transfer_func<double> tf(marked_shape, marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);

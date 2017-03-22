@@ -38,8 +38,8 @@ void print (std::vector<double> raw)
 
 tensorshape make_partial (std::vector<size_t> shapelist)
 {
-	std::vector<size_t> zeros = FUZZ<size_t>::get(
-		FUZZ<size_t>::get(1, {1, 5})[0], {0, shapelist.size()-1});
+	std::vector<size_t> zeros = FUZZ::getInt(
+		FUZZ::getInt(1, {1, 5})[0], {0, shapelist.size()-1});
 	for (size_t zidx : zeros)
 	{
 		shapelist[zidx] = 0;
@@ -95,7 +95,7 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 
 tensorshape random_shape (void)
 {
-	size_t rank = FUZZ<size_t>::get(1, {2, 10})[0];
-	std::vector<size_t> shape = FUZZ<size_t>::get(rank, {2, 21});
+	size_t rank = FUZZ::getInt(1, {2, 10})[0];
+	std::vector<size_t> shape = FUZZ::getInt(rank, {2, 21});
 	return tensorshape(shape);
 }

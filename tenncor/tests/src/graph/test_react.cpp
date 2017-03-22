@@ -156,7 +156,7 @@ TEST(REACT, Attach_A003)
 	EXPECT_TRUE(s1.no_audience());
 	EXPECT_TRUE(s2.no_audience());
 
-	size_t i = FUZZ<size_t>::get(1)[0];
+	size_t i = FUZZ::getInt(1)[0];
 	s1.mock_attach(&o1, i);
 	s2.mock_attach(&o2, i);
 	s2.mock_attach(&o1, i + 1);

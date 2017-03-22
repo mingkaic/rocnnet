@@ -14,16 +14,15 @@
 
 // todo: increase test iteration (not really fuzz testing if we only test with 1 set of inputs)
 // temporary fuzzer interface
-template <typename T>
 struct FUZZ
 {
-	static std::vector<T> get (size_t len, std::pair<T,T> range={0,0})
+	static std::vector<double> getDouble (size_t len, std::pair<double,double> range={0,0})
 	{
-		T min, max;
+		double min, max;
 		if (range.first == range.second)
 		{
-			min = std::numeric_limits<T>::min();
-			max = std::numeric_limits<T>::max();
+			min = std::numeric_limits<double>::min();
+			max = std::numeric_limits<double>::max();
 		}
 		else
 		{
@@ -32,22 +31,36 @@ struct FUZZ
 		}
 		std::default_random_engine generator;
 
-		std::vector<T> vec;
-		if (typeid(T) == typeid(size_t))
+		std::vector<double> vec;
+		std::uniform_real_distribution<double> dis(min, max);
+		for (size_t i = 0; i < len; i++)
 		{
-			std::uniform_int_distribution<T> dis(min, max);
-			for (size_t i = 0; i < len; i++)
-			{
-				vec.push_back(dis(generator));
-			}
+			vec.push_back((double) dis(generator));
+		}
+
+		return vec;
+	}
+
+	static std::vector<size_t> getInt (size_t len, std::pair<size_t,size_t> range={0,0})
+	{
+		size_t min, max;
+		if (range.first == range.second)
+		{
+			min = std::numeric_limits<size_t>::min();
+			max = std::numeric_limits<size_t>::max();
 		}
 		else
 		{
-			std::uniform_real_distribution<T> dis(min, max);
-			for (size_t i = 0; i < len; i++)
-			{
-				vec.push_back((T) dis(generator));
-			}
+			min = range.first;
+			max = range.second;
+		}
+		std::default_random_engine generator;
+
+		std::vector<size_t> vec;
+		std::uniform_int_distribution<size_t> dis(min, max);
+		for (size_t i = 0; i < len; i++)
+		{
+			vec.push_back(dis(generator));
 		}
 
 		return vec;
@@ -61,7 +74,7 @@ struct FUZZ_STRING
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz")
 	{
-		std::vector<size_t> indices = FUZZ<size_t>::get(len, {0, alphanum.size()-1});
+		std::vector<size_t> indices = FUZZ::getInt(len, {0, alphanum.size()-1});
 		std::string s(len, ' ');
 		std::transform(indices.begin(), indices.end(), s.begin(),
 		[&alphanum](size_t index)

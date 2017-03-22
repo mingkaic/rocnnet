@@ -27,11 +27,11 @@ TEST(CONNECTOR, Copy_C000)
 	mock_connector* assign3 = new mock_connector({}, "");
 	mock_connector* assign4 = new mock_connector({}, "");
 
-	std::string conname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string conname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label1 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+	std::string conname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string conname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label1 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 	mock_node* n1 = new mock_node(label1);
 
 	mock_connector* conn = new mock_connector(std::vector<inode<double> *>{n1}, conname);
@@ -113,11 +113,11 @@ TEST(CONNECTOR, Move_C000)
 	mock_connector* assign3 = new mock_connector({}, "");
 	mock_connector* assign4 = new mock_connector({}, "");
 
-	std::string conname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string conname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label1 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+	std::string conname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string conname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label1 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 	mock_node* n1 = new mock_node(label1);
 
 	mock_connector* conn = new mock_connector(std::vector<inode<double> *>{n1}, conname);
@@ -188,9 +188,9 @@ TEST(CONNECTOR, Move_C000)
 // get_name
 TEST(CONNECTOR, Name_C001)
 {
-	size_t nargs = FUZZ<size_t>::get(1, {2, 7})[0];
+	size_t nargs = FUZZ::getInt(1, {2, 7})[0];
 	std::vector<inode<double>*> ns;
-	std::vector<size_t> nlens = FUZZ<size_t>::get(nargs, {14, 29});
+	std::vector<size_t> nlens = FUZZ::getInt(nargs, {14, 29});
 	std::string argname = "";
 	for (size_t i = 0; i < nargs; i++)
 	{
@@ -199,7 +199,7 @@ TEST(CONNECTOR, Name_C001)
 		ns.push_back(new mock_node(label));
 	};
 	argname.pop_back(); // remove last comma
-	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 	mock_connector* con1 = new mock_connector(ns, bossname);
 	std::string expectname = "<"+bossname+":"+con1->get_uid()+">("+argname+")";
 	EXPECT_EQ(expectname, con1->get_name());
@@ -217,11 +217,11 @@ TEST(CONNECTOR, Name_C001)
 // update_graph, is_same_graph
 TEST(CONNECTOR, Graph_C002)
 {
-	std::string conname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string conname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label1 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+	std::string conname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string conname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label1 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 	mock_node* n1 = new mock_node(label1);
 	mock_connector* conn = new mock_connector(std::vector<inode<double> *>{n1}, conname);
 	mock_connector* conn2 = new mock_connector(std::vector<inode<double> *>{n1, n1}, conname2);
@@ -254,13 +254,13 @@ TEST(CONNECTOR, Graph_C002)
 // potential_descendent
 TEST(CONNECTOR, Descendent_C003)
 {
-	std::string conname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string conname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string bossname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label1 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-	std::string label3 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+	std::string conname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string conname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string bossname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label1 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+	std::string label3 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 	mock_node* n1 = new mock_node(label1);
 	mock_node* n2 = new mock_node(label2);
 	mock_node* n3 = new mock_node(label3);

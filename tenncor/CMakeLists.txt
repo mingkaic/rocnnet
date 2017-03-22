@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(tenncor C CXX)
+set(TENNCOR_LIB tenncor)
 
 find_package(Threads REQUIRED)
 
@@ -8,21 +9,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-
 option(TENNCOR_TEST "Test" OFF)
 option(VIS_EDGE "Visualize Graph Edges" OFF)
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-	add_definitions(-Wno-reorder -Wall -ansi -Wno-deprecated -pthread)
-endif()
-
-if (MSVC)
-	#vc 2012 fix for vararg templates
-	set(MSVC_COMPILER_DEFS "-D_VARIADIC_MAX=10")
-endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
 if (VIS_EDGE)
@@ -30,13 +22,11 @@ if (VIS_EDGE)
 	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 endif(VIS_EDGE)
 
-set(TENNCOR_INCLUDE include)
 FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
 
 # set tenncor include path
-include_directories(${TENNCOR_INCLUDE})
-
-set(TENNCOR_LIB tenncor)
+set(TENNCOR_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(TENNCOR_INCLUDE)
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<

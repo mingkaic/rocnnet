@@ -26,7 +26,7 @@ before_script:
 script:
 # build with test enabled
 - cd ${TRAVIS_BUILD_DIR}/build
-- cmake -DCMAKE_CXX_COMPILER=g++-6 -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
+- cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ${TRAVIS_BUILD_DIR}
 - cmake --build .
 # run tests
 - ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest
