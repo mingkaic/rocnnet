@@ -281,7 +281,7 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
-std::cout << "shapes found: cv of size " cv.size() << "\n";
+std::cout << "shapes found: cv of size " << cv.size() << "\n";
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
