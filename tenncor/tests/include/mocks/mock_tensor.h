@@ -69,7 +69,7 @@ protected:
 		if (is_alloc())
 		{
 			size_t n = alloc_shape_.n_elems();
-			std::vector<double> v = FUZZ<double>::get(n);
+			std::vector<double> v = FUZZ::getDouble(n);
 			std::memcpy(raw_data_, &v[0], sizeof(double) * n);
 		}
 	}

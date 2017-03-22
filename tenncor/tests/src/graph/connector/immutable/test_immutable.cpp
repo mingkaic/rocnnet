@@ -24,13 +24,13 @@ TEST(IMMUTABLE, Move_D000)
 
 TEST(IMMUTABLE, Descendent_D001)
 {
-//	std::string conname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string conname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string bossname = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string bossname2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string label1 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string label2 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
-//	std::string label3 = FUZZ_STRING::get(FUZZ<size_t>::get(1, {14, 29})[0]);
+//	std::string conname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string conname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string bossname = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string bossname2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string label1 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string label2 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
+//	std::string label3 = FUZZ_STRING::get(FUZZ::getInt(1, {14, 29})[0]);
 //	mock_node* n1 = new mock_node(label1);
 //	mock_node* n2 = new mock_node(label2);
 //	mock_node* n3 = new mock_node(label3);

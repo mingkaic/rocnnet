@@ -55,3 +55,4 @@ build/
 .idea/
 cmake-build*/
 scripts
+.vscode

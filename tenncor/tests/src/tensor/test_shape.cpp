@@ -19,10 +19,10 @@
 static void generate_shapes (std::vector<size_t>& pcom, std::vector<size_t>& com)
 {
 	// get an array of size greater than 1 and do not contain 0
-	std::vector<size_t> ds = FUZZ<size_t>::get(FUZZ<size_t>::get(1, {2, 17})[0], {1, 6});
+	std::vector<size_t> ds = FUZZ::getInt(FUZZ::getInt(1, {2, 17})[0], {1, 6});
 	com = ds;
 	// inject a 0 into ds
-	size_t idx = FUZZ<size_t>::get(1, {0, ds.size()-1})[0];
+	size_t idx = FUZZ::getInt(1, {0, ds.size()-1})[0];
 	ds.insert(ds.begin() + idx, 0);
 	pcom = ds;
 }
@@ -31,12 +31,12 @@ static void generate_shapes (std::vector<size_t>& pcom, std::vector<size_t>& com
 static void generate_moreshapes (std::vector<size_t>& pcom, std::vector<size_t>& com)
 {
 	// pcom can have more than 1 zero
-	pcom = FUZZ<size_t>::get(FUZZ<size_t>::get(1, {12, 61})[0], {0, 1});
-	size_t idx = FUZZ<size_t>::get(1, {0, pcom.size()-1})[0];
+	pcom = FUZZ::getInt(FUZZ::getInt(1, {12, 61})[0], {0, 1});
+	size_t idx = FUZZ::getInt(1, {0, pcom.size()-1})[0];
 	pcom.insert(pcom.begin() + idx, 0);
 
 	// com is not similar to pcom
-	com = FUZZ<size_t>::get(FUZZ<size_t>::get(1, {12, 31})[0], {1, 2});
+	com = FUZZ::getInt(FUZZ::getInt(1, {12, 31})[0], {1, 2});
 }
 
 
@@ -232,8 +232,8 @@ TEST(TENSORSHAPE, Compatible_A004)
 	std::vector<size_t> cds2_cpy2 = cds2;
 	std::vector<size_t> brank = cds2;
 	brank.push_back(0);
-	size_t idx1 = FUZZ<size_t>::get(1, {0, cds_cpy.size()-1})[0];
-	size_t idx2 = FUZZ<size_t>::get(1, {0, cds2_cpy.size()-1})[0];
+	size_t idx1 = FUZZ::getInt(1, {0, cds_cpy.size()-1})[0];
+	size_t idx2 = FUZZ::getInt(1, {0, cds2_cpy.size()-1})[0];
 	cds_cpy[idx1] = 0;
 	cds2_cpy[idx2] = 0;
 	// ensure cpy2 increments are not made to indices where cpy set to 0
@@ -331,7 +331,7 @@ TEST(TENSORSHAPE, RankAssert_A007)
 
 	com_ts.assert_has_rank(cds.size());
 	pcom_ts.assert_has_rank(pds.size());
-	incom_ts.assert_has_rank(FUZZ<size_t>::get(1)[0]);
+	incom_ts.assert_has_rank(FUZZ::getInt(1)[0]);
 	EXPECT_DEATH(com_ts.assert_has_rank(cds.size()+1), ".*");
 	EXPECT_DEATH(pcom_ts.assert_has_rank(pds.size()+1), ".*");
 
@@ -403,8 +403,8 @@ TEST(TENSORSHAPE, Merge_A009)
 	std::vector<size_t> cds2_cpy = cds2;
 	std::vector<size_t> cds_cpy2 = cds;
 	std::vector<size_t> cds2_cpy2 = cds2;
-	size_t idx1 = FUZZ<size_t>::get(1, {0, cds_cpy.size()-1})[0];
-	size_t idx2 = FUZZ<size_t>::get(1, {0, cds2_cpy.size()-1})[0];
+	size_t idx1 = FUZZ::getInt(1, {0, cds_cpy.size()-1})[0];
+	size_t idx2 = FUZZ::getInt(1, {0, cds2_cpy.size()-1})[0];
 	cds_cpy[idx1] = 0;
 	cds2_cpy[idx2] = 0;
 	// ensure cpy2 increments are not made to indices where cpy set to 0
@@ -439,7 +439,7 @@ TEST(TENSORSHAPE, Trim_A010)
 	// since pds and cds ranks are independent
 	generate_moreshapes(pds, cds);
 	// padd a bunch of ones to pds and cds
-	std::vector<size_t> npads = FUZZ<size_t>::get(5, {3, 12});
+	std::vector<size_t> npads = FUZZ::getInt(5, {3, 12});
 	ids.insert(ids.begin(), npads[0], 1);
 	std::vector<size_t> fakepds(npads[1], 1);
 	std::vector<size_t> fakecds(npads[2], 1);
@@ -519,7 +519,7 @@ TEST(TENSORSHAPE, WithRank_A012)
 	// expand rank
 	size_t peak = std::max(pds.size(), cds.size());
 	size_t trough = std::min(pds.size(), cds.size());
-	std::vector<size_t> bounds = FUZZ<size_t>::get(2, {3, trough});
+	std::vector<size_t> bounds = FUZZ::getInt(2, {3, trough});
 	size_t upperbound = peak + bounds[0];
 	size_t lowerbound = trough - bounds[1];
 	// expansion
