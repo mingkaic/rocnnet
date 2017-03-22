@@ -10,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #ifndef TENNCOR_FUZZ_H
 #define TENNCOR_FUZZ_H
