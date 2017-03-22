@@ -1,28 +1,23 @@
 language: generic
-# minimum linux-trusty needed for c++11 support 
-# (otherwise we'd have to unlink gcc/g++ then reinstall which is a lot of work)
 sudo: required
 dist: precise
+# install and setenv modern g++ and clang versions
 addons: 
-  apt: 
+  apt:
     sources: 
       - llvm-toolchain-precise 
       - ubuntu-toolchain-r-test 
-    packages: 
-      - clang-3.7 
-      - g++-5 
-      - gcc-5 
+    packages:
+      - clang-3.9
+      - g++-6
+      - gcc-6
+
 install:
 - cd ${TRAVIS_BUILD_DIR}
 # install coverage + profiling + googletest
 - bash install_test.sh
 
 before_script:
-# log our dependencies
-- which valgrind
-- which lcov
-- g++ --version
-
 # coverage then make build dir
 - cd ${TRAVIS_BUILD_DIR}
 - lcov --directory . --zerocounters
@@ -31,7 +26,7 @@ before_script:
 script:
 # build with test enabled
 - cd ${TRAVIS_BUILD_DIR}/build
-- cmake -DCMAKE_CXX_COMPILER=g++-5 -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
+- cmake -DCMAKE_CXX_COMPILER=g++-6 -DTENNCOR_TEST=ON ${TRAVIS_BUILD_DIR}
 - cmake --build .
 # run tests
 - ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest
