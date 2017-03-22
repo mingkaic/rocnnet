@@ -9,8 +9,6 @@ namespace nnet
 {
 
 // Instantiate tensors for instrumentation
-template class itensor_handler<double>;
-
 template class transfer_func<double>;
 
 template class const_init<double>;

@@ -23,19 +23,11 @@ template class varptr<double>;
 
 template class placeptr<double>;
 
-template class inode<double>;
-
-template class ileaf<double>;
-
-template class ivariable<double>;
-
 template class constant<double>;
 
 template class variable<double>;
 
 template class placeholder<double>;
-
-template class iconnector<double>;
 
 template class immutable<double>;
 
