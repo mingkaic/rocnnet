@@ -89,7 +89,7 @@ TEST(DERIVE, UnaryElementary)
 
 		for (size_t j = 0; j < raw.size(); j++)
 		{
-			EXPECT_EQ(derivs[i](in_raw[j]), raw[j]) << "failed to equate at index " << j;
+			EXPECT_EQ(derivs[i](in_raw[j]), raw[j]);
 		}
 		delete grad;
 	}
