@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mingkaic/rocnnet.svg?branch=master)](https://travis-ci.org/mingkaic/rocnnet)
+
 ## Synopsis
 
 ROCNNet is a neural net implemented in C++ using custom library Tenncor.

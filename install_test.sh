@@ -1,9 +1,12 @@
 #!/bin/sh
 
 # download lcov for coverage analysis
-wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.11.orig.tar.gz
-tar xf lcov_1.11.orig.tar.gz
-sudo make -C lcov-1.11/ install
+wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz
+tar xf lcov_1.13.orig.tar.gz
+sudo make -C lcov-1.13/ install
+
+# download coverall-lconv (ruby)
+gem install coveralls-lcov
 
 # download valgrind for profiling
 sudo apt-get -qq update
