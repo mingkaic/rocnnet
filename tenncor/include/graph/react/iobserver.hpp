@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 #include "subject.hpp"
 

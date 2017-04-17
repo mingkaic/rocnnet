@@ -224,9 +224,9 @@ TEST(REACT, ObsConstruct_A005)
 	std::vector<subject*> subs1 = o1->expose_dependencies();
 	std::vector<subject*> subs2 = o2->expose_dependencies();
 
-	ASSERT_EQ(1, subs1.size());
+	ASSERT_EQ((size_t) 1, subs1.size());
 	EXPECT_EQ(s2, subs1[0]);
-	ASSERT_EQ(2, subs2.size());
+	ASSERT_EQ((size_t) 2, subs2.size());
 	EXPECT_EQ(s1, subs2[0]);
 	EXPECT_EQ(s2, subs2[1]);
 
@@ -260,9 +260,9 @@ TEST(REACT, CopyObs_A006)
 
 	std::vector<subject*> subs1 = cpy1->expose_dependencies();
 	std::vector<subject*> subs2 = cpy2->expose_dependencies();
-	ASSERT_EQ(1, subs1.size());
+	ASSERT_EQ((size_t) 1, subs1.size());
 	EXPECT_EQ(s2, subs1[0]);
-	ASSERT_EQ(2, subs2.size());
+	ASSERT_EQ((size_t) 2, subs2.size());
 	EXPECT_EQ(s1, subs2[0]);
 	EXPECT_EQ(s2, subs2[1]);
 
@@ -271,9 +271,9 @@ TEST(REACT, CopyObs_A006)
 
 	std::vector<subject*> subs3 = sassign1->expose_dependencies();
 	std::vector<subject*> subs4 = sassign2->expose_dependencies();
-	ASSERT_EQ(1, subs3.size());
+	ASSERT_EQ((size_t) 1, subs3.size());
 	EXPECT_EQ(s2, subs3[0]);
-	ASSERT_EQ(2, subs4.size());
+	ASSERT_EQ((size_t) 2, subs4.size());
 	EXPECT_EQ(s1, subs4[0]);
 	EXPECT_EQ(s2, subs4[1]);
 
@@ -312,9 +312,9 @@ TEST(REACT, MoveObs_A006)
 
 	std::vector<subject*> subs1 = mv1->expose_dependencies();
 	std::vector<subject*> subs2 = mv2->expose_dependencies();
-	ASSERT_EQ(1, subs1.size());
+	ASSERT_EQ((size_t) 1, subs1.size());
 	EXPECT_EQ(s2, subs1[0]);
-	ASSERT_EQ(2, subs2.size());
+	ASSERT_EQ((size_t) 2, subs2.size());
 	EXPECT_EQ(s1, subs2[0]);
 	EXPECT_EQ(s2, subs2[1]);
 
@@ -326,9 +326,9 @@ TEST(REACT, MoveObs_A006)
 
 	std::vector<subject*> subs3 = sassign1->expose_dependencies();
 	std::vector<subject*> subs4 = sassign2->expose_dependencies();
-	ASSERT_EQ(1, subs3.size());
+	ASSERT_EQ((size_t) 1, subs3.size());
 	EXPECT_EQ(s2, subs3[0]);
-	ASSERT_EQ(2, subs4.size());
+	ASSERT_EQ((size_t) 2, subs4.size());
 	EXPECT_EQ(s1, subs4[0]);
 	EXPECT_EQ(s2, subs4[1]);
 
@@ -371,8 +371,8 @@ TEST(REACT, AddDep_A007)
 	std::vector<subject*> subs1 = o1->expose_dependencies();
 	std::vector<subject*> subs2 = o2->expose_dependencies();
 
-	ASSERT_EQ(2, subs1.size());
-	ASSERT_EQ(2, subs2.size());
+	ASSERT_EQ((size_t) 2, subs1.size());
+	ASSERT_EQ((size_t) 2, subs2.size());
 
 	EXPECT_EQ(s2, subs1[0]);
 	EXPECT_EQ(s1, subs1[1]);
@@ -403,12 +403,12 @@ TEST(REACT, RemDep_A008)
 	EXPECT_TRUE(o1->expose_dependencies().empty());
 
 	o2->mock_remove_dependency(1);
-	EXPECT_EQ(1, o2->expose_dependencies().size());
+	EXPECT_EQ((size_t) 1, o2->expose_dependencies().size());
 	o2->mock_remove_dependency(0);
 	EXPECT_TRUE(o2->expose_dependencies().empty());
 
 	o3->mock_remove_dependency(0);
-	EXPECT_EQ(2, o3->expose_dependencies().size());
+	EXPECT_EQ((size_t) 2, o3->expose_dependencies().size());
 	o3->mock_remove_dependency(1);
 	EXPECT_TRUE(o3->expose_dependencies().empty());
 
@@ -430,15 +430,15 @@ TEST(REACT, RepDep_A009)
 	mock_observer2* o1 = new mock_observer2(s1);
 
 	o1->mock_replace_dependency(nullptr, 1);
-	ASSERT_EQ(2, o1->expose_dependencies().size());
+	ASSERT_EQ((size_t) 2, o1->expose_dependencies().size());
 	o1->mock_replace_dependency(s2, 0);
 	std::vector<subject*> subs1 = o1->expose_dependencies();
-	ASSERT_EQ(2, subs1.size());
+	ASSERT_EQ((size_t) 2, subs1.size());
 	EXPECT_EQ(s2, subs1[0]);
 	EXPECT_EQ(nullptr, subs1[1]);
 	o1->mock_replace_dependency(s1, 1);
 	subs1 = o1->expose_dependencies();
-	ASSERT_EQ(2, subs1.size());
+	ASSERT_EQ((size_t) 2, subs1.size());
 	EXPECT_EQ(s2, subs1[0]);
 	EXPECT_EQ(s1, subs1[1]);
 
