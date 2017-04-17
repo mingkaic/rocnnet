@@ -5,12 +5,8 @@
 namespace FUZZ
 {
 
-static const char* FUZZ_FILE = "fuzz.out";
-static std::ofstream fuzzLogger(FUZZ_FILE);
-
 void delim (void)
 {
-    static int i = 0;
     fuzzLogger.close();
 	remove(FUZZ_FILE);
     fuzzLogger.open(FUZZ_FILE);
@@ -88,6 +84,7 @@ std::string getString (size_t len,
 		return alphanum[index];
 	});
 	fuzzLogger << "string<" << s << ">" << std::endl;
+
 	return s;
 }
 

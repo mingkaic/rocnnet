@@ -6,12 +6,13 @@ Test each module by behavior specified in 'behavior.txt'
 
 Test quality is defined by the code coverage.
 
-In terms of test coverage, we will favor fuzz testing over manual test cases 
-(due to the random nature of neural nets which is our target domain).
+Fuzz testing is a technique used to discover errors by inputting massive amounts of random data in attempt to crash the system.
+For now the quantity of data is controlled by the number of test iterations.
 
 #### Requirements
 
-Code Coverage: (not fulfilled)
+Code Coverage:
 
-- Function coverage: 100%
+- Function coverage: minimum 90%
 - Branch coverage: minimum 80%
+- Statement coverage: minimum 80%

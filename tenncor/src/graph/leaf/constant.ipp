@@ -65,20 +65,20 @@ constant<T>& constant<T>::operator = (constant<T>&& other)
 }
 
 template <typename T>
-const tensor<T>* constant<T>::get_gradient (inode<T>* wrt)
+const tensor<T>* constant<T>::get_gradient (inode<T>*)
 {
 	return zero->get_eval();
 }
 
 template <typename T>
-inode<T>* constant<T>::get_leaf (variable<T>* leaf)
+inode<T>* constant<T>::get_leaf (variable<T>*)
 {
 	return zero;
 }
 
 template <typename T>
 void constant<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE& leaves) const {}
+	typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
 constant<T>::constant (T scalar) :

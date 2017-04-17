@@ -75,7 +75,7 @@ protected:
 
 	//! dynamically initialize tensors
 	//! used by placeholder
-	struct assignment;
+	class assignment;
 
 private:
 	//! copy helper

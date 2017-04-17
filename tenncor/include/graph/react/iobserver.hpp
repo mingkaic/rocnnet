@@ -42,6 +42,10 @@ public:
 	//! publicly available to allow explicit updates
 	virtual void update (subject* arg) = 0;
 
+	// >>>> ACCESSOR <<<<
+	//! determine whether this observes sub
+	bool has_subject (subject* sub) const;
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor

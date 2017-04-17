@@ -94,14 +94,14 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 }
 
 template <typename T>
-inode<T>* placeholder<T>::get_leaf (variable<T>* leaf)
+inode<T>* placeholder<T>::get_leaf (variable<T>*)
 {
 	return this->zero.get();
 }
 
 template <typename T>
 void placeholder<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE& leaves) const {}
+	typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const

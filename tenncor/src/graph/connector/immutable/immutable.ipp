@@ -47,7 +47,7 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 {
 	if (this != &other)
 	{
-		iconnector<T>::operator = (other);
+		iconnector<T>::operator = (std::move(other));
 		move_helper(std::move(other));
 		Nf_ = std::move(other.Nf_);
 	}
@@ -148,7 +148,7 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 		};
 		gcache_[leaf] = ginit_(deps, leaf);
 	}
-	return it->second;
+	return gcache_[leaf];
 }
 
 template <typename T>
@@ -204,14 +204,14 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 }
 
 template <typename T>
-void immutable<T>::update (subject* arg)
+void immutable<T>::update (subject* /*arg*/)
 {
 	bool allgood = true;
 	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
 	std::vector<tensorshape> ts;
 	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
-		it != et && allgood; it++)
+		it != et && allgood && !damaged; it++)
 	{
 		if (inode<T>* a = dynamic_cast<inode<T>*>(*it))
 		{
@@ -267,13 +267,11 @@ ginit_(F)
 	{
 		if (inode<T>* arg = dynamic_cast<inode<T>*>(sub))
 		{
-			if (immutable<T>* a = static_cast<immutable<T>*>(arg))
+			immutable<T>* a = dynamic_cast<immutable<T>*>(arg);
+			if (nullptr != a && false == a->jacobians_.empty())
 			{
-				if (false == a->jacobians_.empty())
-				{
-					assert(jacobians_.empty()); // jacobian conflict across branches
-					jacobians_ = a->jacobians_; // copy over
-				}
+				assert(jacobians_.empty()); // jacobian conflict across branches
+				jacobians_ = a->jacobians_; // copy over
 			}
 			arg->get_leaves(gcache_);
 		}
@@ -338,6 +336,7 @@ template <typename T>
 void immutable<T>::move_helper (immutable&& other)
 {
 	data_ = std::move(other.data_);
+	other.data_ = nullptr;
 	ginit_ = std::move(other.ginit_);
 }
 

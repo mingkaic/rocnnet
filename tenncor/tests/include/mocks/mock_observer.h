@@ -27,7 +27,7 @@ public:
 	// dummy stops us from executing these real actions,
 	// since we test using dummy attach/detach procedures
 	virtual void update (subject*) {}
-	virtual void update (size_t s,notification n) {}
+	virtual void update (size_t, notification) {}
 	virtual void commit_sudoku (void) {}
 
 protected:

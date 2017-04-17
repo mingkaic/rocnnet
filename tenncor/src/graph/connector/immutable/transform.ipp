@@ -256,7 +256,7 @@ varptr<T> compress (const varptr<T> a, int index,
 	if (index >= 0)
 	{
 		gatherer =
-		[a, index, collector](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+		[a, index, collector](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
@@ -326,7 +326,7 @@ varptr<T> compress (const varptr<T> a, int index,
 			dest[0] = collector(std::vector<T>(args[0], args[0]+total));
 		};
 		shaper =
-		[index](std::vector<tensorshape> shapes)
+		[index](std::vector<tensorshape>)
 		{
 			return std::vector<size_t>{1};
 		};

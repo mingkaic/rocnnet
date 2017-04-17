@@ -125,7 +125,7 @@ matmul<T>::matmul (inode<T>* a, inode<T>* b,
 		}
 	}
 },
-[this](std::vector<inode<T>*> args, variable<T>* leaf)
+[this](std::vector<inode<T>*>, variable<T>*)
 {
 	return this;
 }, "matmul"),
@@ -146,9 +146,9 @@ matmul<T>::matmul (inode<T>* a, inode<T>* b,
 
 template <typename T>
 matmul<T>::matmul (const matmul<T>& other) :
+	immutable<T>(other),
 	transposeA_(other.transposeA_),
-	transposeB_(other.transposeB_),
-	immutable<T>(other) {}
+	transposeB_(other.transposeB_) {}
 
 template <typename T>
 matmul<T>::matmul (matmul<T>&& other) :
