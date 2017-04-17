@@ -39,21 +39,21 @@ TEST(TENSOR, ScalarConstructor_B000)
 	mock_tensor scalar(value);
 	EXPECT_TRUE(scalar.clean());
 	EXPECT_TRUE(scalar.is_alloc());
-	EXPECT_EQ(sizeof(double), scalar.total_bytes());
+	EXPECT_EQ((size_t) sizeof(double), scalar.total_bytes());
 	EXPECT_EQ(value, *scalar.rawptr());
 
 	value = vals[1];
 	mock_tensor scalar2(value);
 	EXPECT_TRUE(scalar2.clean());
 	EXPECT_TRUE(scalar2.is_alloc());
-	EXPECT_EQ(sizeof(double), scalar2.total_bytes());
+	EXPECT_EQ((size_t) sizeof(double), scalar2.total_bytes());
 	EXPECT_EQ(value, *scalar2.rawptr());
 
 	value = vals[2];
 	mock_tensor scalar3(value);
 	EXPECT_TRUE(scalar3.clean());
 	EXPECT_TRUE(scalar3.is_alloc());
-	EXPECT_EQ(sizeof(double), scalar3.total_bytes());
+	EXPECT_EQ((size_t) sizeof(double), scalar3.total_bytes());
 	EXPECT_EQ(value, *scalar3.rawptr());
 }
 
@@ -79,9 +79,9 @@ TEST(TENSOR, Construct_B001)
 	EXPECT_FALSE(incom.is_alloc());
 	EXPECT_TRUE(comp.is_alloc());
 
-	EXPECT_EQ(0, undef.total_bytes());
-	EXPECT_EQ(0, incom.total_bytes());
-	EXPECT_EQ(sizeof(double) * cshape.n_elems(),
+	EXPECT_EQ((size_t) 0, undef.total_bytes());
+	EXPECT_EQ((size_t) 0, incom.total_bytes());
+	EXPECT_EQ((size_t) sizeof(double) * cshape.n_elems(),
 		comp.total_bytes());
 }
 
@@ -205,20 +205,20 @@ TEST(TENSOR, Shape_B003)
 	EXPECT_TRUE(tensorshape_equal(pshape, incom.get_shape()));
 	EXPECT_TRUE(tensorshape_equal(cshape, comp.get_shape()));
 
-	EXPECT_EQ(0, undef.n_elems());
-	EXPECT_EQ(1, scalar.n_elems());
-	EXPECT_EQ(0, incom.n_elems());
+	EXPECT_EQ((size_t) 0, undef.n_elems());
+	EXPECT_EQ((size_t) 1, scalar.n_elems());
+	EXPECT_EQ((size_t) 0, incom.n_elems());
 	EXPECT_EQ(cshape.n_elems(), comp.n_elems());
 
-	EXPECT_EQ(0, undef.rank());
-	EXPECT_EQ(1, scalar.rank());
+	EXPECT_EQ((size_t) 0, undef.rank());
+	EXPECT_EQ((size_t) 1, scalar.rank());
 	EXPECT_EQ(pshape.rank(), incom.rank());
 	EXPECT_EQ(cshape.rank(), comp.rank());
 
 	EXPECT_TRUE(undef.dims().empty());
 	std::vector<size_t> sv = scalar.dims();
-	ASSERT_EQ(1, sv.size());
-	EXPECT_EQ(1, sv[0]);
+	ASSERT_EQ((size_t) 1, sv.size());
+	EXPECT_EQ((size_t) 1, sv[0]);
 
 	std::vector<size_t> expects = pshape.as_list();
 	std::vector<size_t> expectc = cshape.as_list();
@@ -542,7 +542,7 @@ TEST(TENSOR, Get_B008)
 		rcoordmax += rcoord[i] * multiplier;
 		multiplier *= cs[i];
 	}
-	ASSERT_GT(celem, 0);
+	ASSERT_GT(celem, (size_t) 0);
 	if (celem <= pcoordmax)
 	{
 		EXPECT_THROW(comp.get(pcoord), std::out_of_range);
@@ -629,12 +629,12 @@ TEST(TENSOR, Reshape_B009)
 			EXPECT_EQ(ac1[i][j], resc1[i][j]);
 		}
 		// check the padding
-		EXPECT_EQ(0, resc1[i][cols]);
+		EXPECT_EQ((size_t) 0, resc1[i][cols]);
 	}
 	// check the padding
 	for (size_t i = 0; i < cols+1; i++)
 	{
-		EXPECT_EQ(0, resc1[rows][i]);
+		EXPECT_EQ((size_t) 0, resc1[rows][i]);
 	}
 
 	// data clipping
@@ -669,7 +669,7 @@ TEST(TENSOR, Reshape_B009)
 			EXPECT_EQ(ac3[i][j], resc3[i][j]);
 		}
 		// check the padding
-		EXPECT_EQ(0, resc3[i][cols]);
+		EXPECT_EQ((size_t) 0, resc3[i][cols]);
 	}
 	for (size_t i = 0; i < rows; i++)
 	{
@@ -681,7 +681,7 @@ TEST(TENSOR, Reshape_B009)
 	// check the padding
 	for (size_t i = 0; i < cols-1; i++)
 	{
-		EXPECT_EQ(0, resc4[rows][i]);
+		EXPECT_EQ((size_t) 0, resc4[rows][i]);
 	}
 
 	double* p = comp.rawptr();
@@ -776,7 +776,6 @@ TEST(TENSOR, AllocateShape_B012)
 	EXPECT_TRUE(pcom.is_alloc());
 	EXPECT_TRUE(comp.is_alloc());
 
-	double* ppcom = pcom.rawptr();
 	ASSERT_TRUE(pcom.allocate(pshape2));
 	EXPECT_NE(orig, pcom.rawptr());
 }

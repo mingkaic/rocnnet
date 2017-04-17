@@ -13,6 +13,7 @@
 #include <fstream>
 #include <algorithm>
 #include <queue>
+#include <functional>
 
 #ifndef TENNCOR_FUZZ_H
 #define TENNCOR_FUZZ_H

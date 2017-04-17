@@ -178,11 +178,11 @@ TEST(TENSORSHAPE, N_A002)
 		}
 	}
 
-	EXPECT_EQ(0, incom_ts.n_elems());
-	EXPECT_EQ(0, pcom_ts.n_elems());
+	EXPECT_EQ((size_t) 0, incom_ts.n_elems());
+	EXPECT_EQ((size_t) 0, pcom_ts.n_elems());
 	EXPECT_EQ(expect_nelems, com_ts.n_elems());
 
-	EXPECT_EQ(0, incom_ts.n_known());
+	EXPECT_EQ((size_t) 0, incom_ts.n_known());
 	EXPECT_EQ(expect_nknown, pcom_ts.n_known());
 	EXPECT_EQ(expect_nelems, com_ts.n_known());
 }
@@ -202,7 +202,7 @@ TEST(TENSORSHAPE, Rank_A003)
 	tensorshape pcom_ts(pds);
 	tensorshape com_ts(cds);
 
-	EXPECT_EQ(0, incom_ts.rank());
+	EXPECT_EQ((size_t) 0, incom_ts.rank());
 	EXPECT_EQ(pds.size(), pcom_ts.rank());
 	ASSERT_EQ(cds.size(), com_ts.rank());
 }
@@ -469,9 +469,9 @@ TEST(TENSORSHAPE, Trim_A010)
 	tensorshape pcom_ts(fakepds);
 	tensorshape com_ts(fakecds);
 
-	EXPECT_EQ(0, incom_ts.trim().rank());
-	EXPECT_LT(0, fakeincom_ts.rank());
-	EXPECT_EQ(0, fakeincom_ts.trim().rank());
+	EXPECT_EQ((size_t) 0, incom_ts.trim().rank());
+	EXPECT_LT((size_t) 0, fakeincom_ts.rank());
+	EXPECT_EQ((size_t) 0, fakeincom_ts.trim().rank());
 
 	EXPECT_EQ(pds.size()+2, pcom_ts.trim().rank());
 	ASSERT_EQ(cds.size()+2, com_ts.trim().rank());
@@ -554,10 +554,10 @@ TEST(TENSORSHAPE, WithRank_A012)
 	EXPECT_EQ(cds.size(), com_ts.with_rank_at_least(lowerbound).rank());
 
 	// favor lower dimensionalities
-	EXPECT_EQ(0, incom_ts.with_rank_at_most(upperbound).rank());
+	EXPECT_EQ((size_t) 0, incom_ts.with_rank_at_most(upperbound).rank());
 	EXPECT_EQ(pds.size(), pcom_ts.with_rank_at_most(upperbound).rank());
 	EXPECT_EQ(cds.size(), com_ts.with_rank_at_most(upperbound).rank());
-	EXPECT_EQ(0, incom_ts.with_rank_at_most(lowerbound).rank());
+	EXPECT_EQ((size_t) 0, incom_ts.with_rank_at_most(lowerbound).rank());
 	EXPECT_EQ(lowerbound, pcom_ts.with_rank_at_most(lowerbound).rank());
 	EXPECT_EQ(lowerbound, com_ts.with_rank_at_most(lowerbound).rank());
 }
