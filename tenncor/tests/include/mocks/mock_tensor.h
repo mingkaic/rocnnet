@@ -18,7 +18,7 @@ public:
 	mock_tensor (void) :
 		tensor<double>() { randinit(); }
 	mock_tensor (double scalar) :
-		tensor<double>(scalar) {}
+		tensor<double>(scalar) { randinit(); }
 	mock_tensor (tensorshape shape) :
 		tensor<double>(shape) { randinit(); }
 	mock_tensor* clone (void) const { return new mock_tensor(*this); }

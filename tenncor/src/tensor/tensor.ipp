@@ -27,7 +27,7 @@ template <typename T>
 tensor<T>::tensor (T scalar, size_t alloc_id) :
 	tensor<T>(std::vector<size_t>{1}, alloc_id)
 {
-	raw_data_[0] = scalar;
+	// raw_data_[0] = scalar;
 }
 
 template <typename T>

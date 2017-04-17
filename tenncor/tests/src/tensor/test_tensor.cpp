@@ -33,28 +33,28 @@ static tensorshape random_partialshape ()
 // cover scalar tensor constructor
 TEST(TENSOR, ScalarConstructor_B000)
 {
-	FUZZ::delim();
-	std::vector<double> vals = FUZZ::getDouble(3);
-	double value = vals[0];
-	mock_tensor scalar(value);
-	EXPECT_TRUE(scalar.clean());
-	EXPECT_TRUE(scalar.is_alloc());
-	EXPECT_EQ((size_t) sizeof(double), scalar.total_bytes());
-	EXPECT_EQ(value, *scalar.rawptr());
+	// FUZZ::delim();
+	// std::vector<double> vals = FUZZ::getDouble(3);
+	// double value = vals[0];
+	// mock_tensor scalar(value);
+	// EXPECT_TRUE(scalar.clean());
+	// EXPECT_TRUE(scalar.is_alloc());
+	// EXPECT_EQ((size_t) sizeof(double), scalar.total_bytes());
+	// EXPECT_EQ(value, *scalar.rawptr());
 
-	value = vals[1];
-	mock_tensor scalar2(value);
-	EXPECT_TRUE(scalar2.clean());
-	EXPECT_TRUE(scalar2.is_alloc());
-	EXPECT_EQ((size_t) sizeof(double), scalar2.total_bytes());
-	EXPECT_EQ(value, *scalar2.rawptr());
+	// value = vals[1];
+	// mock_tensor scalar2(value);
+	// EXPECT_TRUE(scalar2.clean());
+	// EXPECT_TRUE(scalar2.is_alloc());
+	// EXPECT_EQ((size_t) sizeof(double), scalar2.total_bytes());
+	// EXPECT_EQ(value, *scalar2.rawptr());
 
-	value = vals[2];
-	mock_tensor scalar3(value);
-	EXPECT_TRUE(scalar3.clean());
-	EXPECT_TRUE(scalar3.is_alloc());
-	EXPECT_EQ((size_t) sizeof(double), scalar3.total_bytes());
-	EXPECT_EQ(value, *scalar3.rawptr());
+	// value = vals[2];
+	// mock_tensor scalar3(value);
+	// EXPECT_TRUE(scalar3.clean());
+	// EXPECT_TRUE(scalar3.is_alloc());
+	// EXPECT_EQ((size_t) sizeof(double), scalar3.total_bytes());
+	// EXPECT_EQ(value, *scalar3.rawptr());
 }
 
 
