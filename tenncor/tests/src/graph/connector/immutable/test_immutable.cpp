@@ -420,7 +420,7 @@ TEST(IMMUTABLE, ImmutableDeath_D005)
 }
 
 
-TEST(IMMUTABLE, DISABLED_TemporaryEval_D006)
+TEST(IMMUTABLE, TemporaryEval_D006)
 {
 	FUZZ::delim();
 	size_t nnodes = FUZZ::getInt(1, {131, 297})[0];
@@ -441,12 +441,13 @@ TEST(IMMUTABLE, DISABLED_TemporaryEval_D006)
 		std::vector<const double*>& indata, std::vector<tensorshape>&)
 		{
 			size_t outn = outshape.n_elems();
-			memcpy(outdata, indata[0], sizeof(double) * outn);
-			for (size_t i = 1, n = indata.size(); i < n; i++)
+			memset(outdata, 0, sizeof(double) * outn);
+			for (size_t i = 0, n = indata.size(); i < n; i++)
 			{
-				for (size_t j = 0, m = outn; j < m; j++)
+				double scalar = indata[i][0];
+				for (size_t j = 0; j < outn; j++)
 				{
-					outdata[j] += indata[i][j];
+					outdata[j] += scalar;
 				}
 			}
 		};
@@ -479,6 +480,7 @@ TEST(IMMUTABLE, DISABLED_TemporaryEval_D006)
 	inode<double>::GRAD_CACHE lcache;
 	for (immutable<double>* coll : collector)
 	{
+		if (coll == root) continue;
 		lcache.clear();
 		static_cast<immutable<double>*>(root)->temporary_eval(coll, out);
 		ASSERT_NE(nullptr, out);
@@ -491,7 +493,8 @@ TEST(IMMUTABLE, DISABLED_TemporaryEval_D006)
 		std::vector<double> odata = out->expose();
 		for (double od : odata)
 		{
-			EXPECT_EQ(datum, od);
+			double diff = std::abs(datum - od);
+			EXPECT_GT(0.000001 * single_rando, diff); // allow error of a tiny fraction of the random leaf value
 		}
 		delete out;
 	}
