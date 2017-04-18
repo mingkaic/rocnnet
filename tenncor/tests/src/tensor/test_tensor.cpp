@@ -511,8 +511,8 @@ TEST(TENSOR, Get_B008)
 	mock_tensor comp(cshape);
 
 	std::vector<double> cv = comp.expose(); // shouldn't die or throw
-	EXPECT_DEATH(undef.expose(), ".*");
-	EXPECT_DEATH(pcom.expose(), ".*");
+	// EXPECT_DEATH(undef.expose(), ".*");
+	// EXPECT_DEATH(pcom.expose(), ".*");
 
 	size_t pncoord = 1;
 	if (crank > 2)
