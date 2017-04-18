@@ -314,12 +314,12 @@ TEST(HANDLER, Move_C003)
 
 	// moving function and resulting in undefined is a standard-dependent behavior
 	// todo: decide on a more standard-independent way of testing moving function behavior
-//	EXPECT_DEATH(tf(ttransf3, {}), ".*");
-//	EXPECT_DEATH(ci(tscalar3), ".*");
-//	EXPECT_DEATH(ri(tblock3), ".*");
-//	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
-//	EXPECT_DEATH(cimv(tscalar3), ".*");
-//	EXPECT_DEATH(rimv(tblock3), ".*");
+	EXPECT_DEATH(tf(ttransf3, {}), ".*");
+	EXPECT_DEATH(ci(tscalar3), ".*");
+	EXPECT_DEATH(ri(tblock3), ".*");
+	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
+	EXPECT_DEATH(cimv(tscalar3), ".*");
+	EXPECT_DEATH(rimv(tblock3), ".*");
 }
 
 

@@ -63,7 +63,4 @@ public:
 };
 
 
-class mock_subject2 : public subject {};
-
-
 #endif //TENNCOR_MOCK_SUBJECT_H
