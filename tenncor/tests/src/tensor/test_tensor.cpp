@@ -510,8 +510,7 @@ TEST(TENSOR, Get_B008)
 	mock_tensor pcom(pshape);
 	mock_tensor comp(cshape);
 
-	// shouldn't die or throw
-	std::vector<double> cv = comp.expose();
+	std::vector<double> cv = comp.expose(); // shouldn't die or throw
 	EXPECT_DEATH(undef.expose(), ".*");
 	EXPECT_DEATH(pcom.expose(), ".*");
 
@@ -522,8 +521,11 @@ TEST(TENSOR, Get_B008)
 	}
 	size_t cncoord = crank;
 	size_t rncoord = FUZZ::getInt(1, {15, 127})[0];
-	std::vector<size_t> pcoord = FUZZ::getInt(pncoord);
+	// c coordinates have rank exactly fitting cshape
+	// p coordinates have rank less than rank of cshape
+	// r coordinates are random coordinates
 	std::vector<size_t> ccoord = FUZZ::getInt(cncoord);
+	std::vector<size_t> pcoord = FUZZ::getInt(pncoord);
 	std::vector<size_t> rcoord = FUZZ::getInt(rncoord);
 	EXPECT_THROW(undef.get(pcoord), std::out_of_range);
 	EXPECT_THROW(pcom.get(pcoord), std::out_of_range);
@@ -534,14 +536,20 @@ TEST(TENSOR, Get_B008)
 
 	std::vector<size_t> cs = cshape.as_list();
 	size_t pcoordmax = 0, ccoordmax = 0, rcoordmax = 0;
-	size_t multiplier = 1;
-	for (size_t i = 0; i < cs.size(); i++)
+	for (size_t i = 0, multiplier = 1, cn = cs.size(); i < cn; i++)
 	{
-		pcoordmax += pcoord[i] * multiplier;
+		if (i < pncoord)
+		{
+			pcoordmax += pcoord[i] * multiplier;
+		}
+		if (i < rncoord)
+		{
+			rcoordmax += rcoord[i] * multiplier;
+		}
 		ccoordmax += ccoord[i] * multiplier;
-		rcoordmax += rcoord[i] * multiplier;
 		multiplier *= cs[i];
 	}
+	
 	ASSERT_GT(celem, (size_t) 0);
 	if (celem <= pcoordmax)
 	{
