@@ -38,6 +38,7 @@ public:
 	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
 
 	void set_good (void) { this->is_init_ = true; }
+	void mock_init_data (initializer<double>& initer) { initer(*this->data_); }
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_leaf(*this); }

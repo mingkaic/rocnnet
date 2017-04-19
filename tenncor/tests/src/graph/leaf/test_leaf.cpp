@@ -20,6 +20,8 @@ TEST(LEAF, Copy_C000)
 	FUZZ::delim();
 	mock_leaf assign("");
 	mock_leaf assign2("");
+	
+	const_init<double> cinit(FUZZ::getInt(1)[0]);
 
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string label2 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -28,6 +30,7 @@ TEST(LEAF, Copy_C000)
 	mock_leaf res(comp, label1);
 	mock_leaf res2(part, label2);
 	res.set_good();
+	res.mock_init_data(cinit);
 
 	bool initstatus = res.good_status();
 	bool initstatus2 = res2.good_status();
@@ -67,12 +70,15 @@ TEST(LEAF, Copy_C000)
 	ASSERT_NE(nullptr, init_data);
 	ASSERT_NE(nullptr, cpy_data);
 	ASSERT_NE(nullptr, assign_data);
-	EXPECT_TRUE(tensorshape_equal(init_data->get_shape(), cpy_data->get_shape()));
-	EXPECT_TRUE(tensorshape_equal(init_data->get_shape(), assign_data->get_shape()));
+	ASSERT_TRUE(tensorshape_equal(init_data->get_shape(), cpy_data->get_shape()));
+	ASSERT_TRUE(tensorshape_equal(init_data->get_shape(), assign_data->get_shape()));
 	// we're checking tensor copy over
 	// data isn't initialized at this point, so we're exposing garabage.
 	// regardless, deep copy would still copy over memory content since
 	// [IMPORTANT!] tensor has no initialization data and we just pretended that status is good
+	ASSERT_TRUE(init_data->is_alloc());
+	ASSERT_TRUE(cpy_data->is_alloc());
+	ASSERT_TRUE(assign_data->is_alloc());
 	std::vector<double> idata = init_data->expose();
 	std::vector<double> cdata = cpy_data->expose();
 	std::vector<double> adata = assign_data->expose();
