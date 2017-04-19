@@ -8,14 +8,14 @@
 #include <algorithm>
 
 #include "util_test.h"
-#include "gmock/gmock.h"
+#include "mockerino.h"
 
 #include "graph/react/subject.hpp"
 
 using namespace nnet;
 
 
-class mock_subject : public subject
+class mock_subject : public subject, public mocker
 {
 public:
 	mock_subject (void) {}
@@ -58,8 +58,15 @@ public:
 		}
 	}
 
-	MOCK_METHOD1(detach, void(iobserver*));
-	MOCK_METHOD2(detach, void(iobserver*,size_t));
+	virtual void detach (iobserver*)
+	{
+		label_incr("detach1");
+	}
+
+	virtual void detach (iobserver*,size_t)
+	{
+		label_incr("detach2");
+	}
 };
 
 

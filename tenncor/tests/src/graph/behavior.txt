@@ -70,6 +70,9 @@ D010 - update explicitly runs its forward transfer function with current depdend
 
 // ELEMENTARY BEHAVIORS
 E000 -
+Exxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
+        and its value is equivalent to the primitive value
+        same applies for not equal (!=)
 
 // TRANSFORM BEHAVIORS
 F000 -

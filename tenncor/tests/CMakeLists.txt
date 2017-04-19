@@ -24,7 +24,7 @@ else()
 endif()
 
 target_link_libraries(${TEST_NAME}
-        pthread gtest gmock
+        pthread gtest
         ${CMAKE_THREAD_LIBS_INIT}
         ${TENNCOR_LIB_TEST})
 add_test(test ${TEST_NAME})
