@@ -46,11 +46,18 @@ public:
 	//! copy function
 	constant<T>* move (void);
 
-	//! declare copy assignment to prevent onheap from being copied over
-	virtual constant<T>& operator = (const constant<T>& other);
+	// >>>> COPY, MOVE && CLONE <<<<
+	//! deleted copy constructor
+	constant (const constant<T>& other) = delete;
 
-	//! declare move assignment to prevent onheap from being moved over
-	virtual constant<T>& operator = (constant<T>&& other);
+	//! deleted move constructor
+	constant (constant<T>&& other) = delete;
+
+	//! copy assignment deleted
+	constant<T>& operator = (const constant<T>& other) = delete;
+
+	//! move assignment deleted
+	constant<T>& operator = (constant<T>&& other) = delete;
 
 	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
 	//! get gradient wrt some node
@@ -80,13 +87,6 @@ protected:
 	//! executed when constant loses all audiences,
 	//! (after it obtains an audience of course)
 	virtual void commit_sudoku_sub (void);
-
-	// >>>> COPY, MOVE && CLONE <<<<
-	//! declare copy constructor to prevent onheap from being copied over
-	constant (const constant<T>& other);
-
-	//! declare move constructor to prevent onheap from being moved over
-	constant (constant<T>&& other);
 
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;

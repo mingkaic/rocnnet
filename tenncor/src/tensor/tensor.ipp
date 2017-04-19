@@ -170,7 +170,7 @@ bool tensor<T>::is_loosely_compatible_with (std::vector<T> data) const
 }
 
 template <typename T>
-optional<tensorshape> tensor<T>::guess_shape (std::vector<T> data) const
+optional<tensorshape> tensor<T>::guess_shape (const std::vector<T>& data) const
 {
 	size_t ndata = data.size();
 	optional<tensorshape> bestshape;
@@ -221,7 +221,7 @@ optional<tensorshape> tensor<T>::guess_shape (std::vector<T> data) const
 }
 
 template <typename T>
-optional<tensorshape> tensor<T>::loosely_guess_shape(std::vector<T> data) const
+optional<tensorshape> tensor<T>::loosely_guess_shape(const std::vector<T>& data) const
 {
 	size_t ndata = data.size();
 	if (allowed_shape_.is_fully_defined())
@@ -260,6 +260,9 @@ optional<tensorshape> tensor<T>::loosely_guess_shape(std::vector<T> data) const
 	}
 	return tensorshape(my_shape);
 }
+
+template <typename T>
+bool tensor<T>::is_aligned (void) const { return true; }
 
 template <typename T>
 bool tensor<T>::is_alloc (void) const

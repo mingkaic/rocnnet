@@ -119,7 +119,8 @@ public:
 	},
 	[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
 	{
-		std::memcpy(dest, &temp_[0], shape.n_elems());
+		size_t n = std::min(temp_.size(), shape.n_elems());
+		std::memcpy(dest, &temp_[0], n * sizeof(T));
 	}) {}
 
 	assignment* clone (void) const
