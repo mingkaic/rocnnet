@@ -154,11 +154,10 @@ public:
 	//! allowed shape will be adjusted similar to set_shape
 	bool copy_from (const tensor& other, const tensorshape shape);
 
-	// TODO: unimplemented
+	// TODO: unimplemented, read protocol buffers
 	// slice along the first dimension
 	tensor<T> slice (size_t dim_start, size_t limit);
 
-	// TODO: read protocol buffers
 	// bool shares_buffer_with (const tensor& other) const;
 	// size_t buffer_hash (void) const;
 	// bool from_proto (const tensorproto& other);

@@ -162,7 +162,7 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	{
 		out = one.get();
 	}
-		// check cache
+	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
 		out = get_leaf(leaf);
@@ -173,7 +173,7 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 			out = js(out, leaf);
 		}
 	}
-		// check graph
+	// check graph
 	else if (conn && this->is_same_graph(conn))
 	{
 		// WARNING: this is one of the more expensive operations
@@ -188,7 +188,7 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		out = pl;
 		delete res;
 	}
-		// is zero
+	// is zero
 	else
 	{
 		out = zero.get();

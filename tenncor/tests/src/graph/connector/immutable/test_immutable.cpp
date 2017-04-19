@@ -18,10 +18,10 @@
 #ifndef DISABLE_IMMUTABLE_TEST
 
 
-static bool ordered (std::vector<iconnector<double>*> ordering)
+static bool bottom_up (std::vector<iconnector<double>*> ordering)
 {
-	// ordering travels from root towards the root
-	// ordering test ensures get leaf is a top-down procedure
+	// ordering travels from leaf towards the root
+	// ordering test ensures get leaf is a bottom-up procedure
 	// todo: some how test caching performance (probabilistically increase hit rate as i increases)
 	// eventually most nodes in traversals should be cached, so ordering size should decrease
 	bool o = true;
@@ -30,8 +30,8 @@ static bool ordered (std::vector<iconnector<double>*> ordering)
 	{
 		if (last)
 		{
-			// last should be parent of ord
-			o = o && last->has_subject(ord);
+			// ord should be parent of last
+			o = o && ord->has_subject(last);
 		}
 		last = ord;
 	}
@@ -569,7 +569,7 @@ TEST(IMMUTABLE, GetLeaves_D007)
 }
 
 
-TEST(IMMUTABLE, DISABLED_GetLeaf_D008)
+TEST(IMMUTABLE, GetLeaf_D008)
 {
 	FUZZ::delim();
 
@@ -627,10 +627,10 @@ TEST(IMMUTABLE, DISABLED_GetLeaf_D008)
 	{
 		ordering.clear();
 		inode<double>* wun = root->get_leaf(*(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
-		EXPECT_TRUE(ordered(ordering));
+		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
 		inode<double>* zaro = root->get_leaf(notleaf);
-		EXPECT_TRUE(ordered(ordering));
+		EXPECT_TRUE(bottom_up(ordering));
 
 		EXPECT_TRUE(*wun == 1.0);
 		EXPECT_TRUE(*zaro == 0.0);
@@ -647,9 +647,35 @@ TEST(IMMUTABLE, DISABLED_GetLeaf_D008)
 }
 
 
-TEST(IMMUTABLE, DISABLED_GetGradient_D009)
+TEST(IMMUTABLE, GetGradient_D009)
 {
 	FUZZ::delim();
+
+	tensorshape shape = random_def_shape();
+	double single_rando = FUZZ::getDouble(1, {1.1, 2.2})[0];
+
+	auto unifiedshaper =
+		[&shape](std::vector<tensorshape>)
+		{
+			return shape;
+		};
+	auto summer =
+		[](double* outdata, const tensorshape& outshape,
+		   std::vector<const double*>& indata, std::vector<tensorshape>&)
+		{
+			size_t outn = outshape.n_elems();
+			memset(outdata, 0, sizeof(double) * outn);
+			for (size_t i = 0, n = indata.size(); i < n; i++)
+			{
+				double scalar = indata[i][0];
+				for (size_t j = 0; j < outn; j++)
+				{
+					outdata[j] += scalar;
+				}
+			}
+		};
+
+	const_init<double> cinit(single_rando);
 
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
@@ -678,20 +704,20 @@ TEST(IMMUTABLE, DISABLED_GetGradient_D009)
 	std::unordered_set<immutable<double>*> collector;
 
 	inode<double>* root = FUZZ::buildNTree<inode<double> >(2, nnodes,
-		[&leaves]() -> inode<double>*
+		[&leaves, &shape, &cinit]() -> inode<double>*
 		{
 			std::string llabel = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
-			double leafvalue = FUZZ::getDouble(1)[0];
-			variable<double>* im = new variable<double>(leafvalue, llabel);
+			variable<double>* im = new variable<double>(shape, cinit, llabel);
+			im->initialize();
 			leaves.emplace(im);
 			return im;
 		},
-		[&collector, &backer](std::vector<inode<double>*> args) -> inode<double>*
+		[&collector, &unifiedshaper, &summer, &backer](std::vector<inode<double>*> args) -> inode<double>*
 		{
 			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 			mock_immutable* im = new mock_immutable(
 				std::vector<inode<double>*>(args.begin(), args.end()), nlabel,
-				testshaper, testforward, backer);
+				unifiedshaper, summer, backer);
 			im->triggerOnDeath =
 				[&collector](mock_immutable* ded) {
 					collector.erase(ded);
@@ -701,26 +727,42 @@ TEST(IMMUTABLE, DISABLED_GetGradient_D009)
 		});
 
 	variable<double>* notleaf = new variable<double>(0);
+	inode<double>::GRAD_CACHE lcache;
 	for (size_t i = 0; i < nnodes/3; i++)
 	{
 		ordering.clear();
 		const tensor<double>* wun = root->get_gradient(
 			*(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
-		EXPECT_TRUE(ordered(ordering));
+		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
 		const tensor<double>* zaro = root->get_gradient(notleaf);
-		EXPECT_TRUE(ordered(ordering));
+		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		const tensor<double>* zaro_too = root->get_gradient(
-			*(FUZZ::rand_select<std::unordered_set<immutable<double>*> >(collector)));
-		EXPECT_TRUE(ordered(ordering));
 
 		ASSERT_NE(nullptr, wun);
 		ASSERT_NE(nullptr, zaro);
-		ASSERT_NE(nullptr, zaro_too);
 		EXPECT_EQ(1, wun->expose()[0]);
 		EXPECT_EQ(0, zaro->expose()[0]);
-		EXPECT_EQ(0, zaro_too->expose()[0]);
+
+		// SAME AS TEMPORARY EVAL
+		immutable<double>* coll = *(FUZZ::rand_select<std::unordered_set<immutable<double>*> >(collector));
+		if (coll == root) continue;
+		const tensor<double>* grad_too = root->get_gradient(coll);
+		EXPECT_TRUE(bottom_up(ordering));
+		ASSERT_NE(nullptr, grad_too);
+		ASSERT_TRUE(tensorshape_equal(shape, grad_too->get_shape()));
+		// out data should be 1 + M * single_rando where M is the
+		// number of root's leaves that are not in coll's leaves
+		lcache.clear();
+		coll->get_leaves(lcache);
+		size_t M = leaves.size() - lcache.size();
+		double datum = M * single_rando + 1;
+		std::vector<double> odata = grad_too->expose();
+		for (double od : odata)
+		{
+			double diff = std::abs(datum - od);
+			EXPECT_GT(0.000001 * single_rando, diff); // allow error of a tiny fraction of the random leaf value
+		}
 	}
 
 	for (variable<double>* l : leaves)
@@ -734,7 +776,7 @@ TEST(IMMUTABLE, DISABLED_GetGradient_D009)
 }
 
 
-TEST(IMMUTABLE, DISABLED_Update_D010)
+TEST(IMMUTABLE, Update_D010)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -755,13 +797,13 @@ TEST(IMMUTABLE, DISABLED_Update_D010)
 		std::vector<const double*>& indata, std::vector<tensorshape>&)
 	{
 		size_t outn = outshape.n_elems();
+		memcpy(outdata, indata[0], sizeof(double) * outn);
 		if (mutate)
 		{
-			memcpy(outdata, indata[0]+1, sizeof(double) * outn);
-		}
-		else
-		{
-			memcpy(outdata, indata[0], sizeof(double) * outn);
+			for (size_t i = 0; i < outn; i++)
+			{
+				outdata[i] += 1;
+			}
 		}
 	};
 

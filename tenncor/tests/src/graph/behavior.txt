@@ -98,6 +98,7 @@ I000 -
 
 // IVARIABLE BEHAVIOR
 J000 -
+Jxxx - one and zero tensors must contain scalar constant 1 and 0
 
 // VARIABLE BEHAVIOR
 K000 -
