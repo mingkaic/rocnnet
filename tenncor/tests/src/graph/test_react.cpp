@@ -11,25 +11,6 @@
 #include "fuzz.h"
 
 
-#include "gmock/gmock.h"
-struct IFoo
-{
-	virtual ~IFoo() {}
-	virtual int foo() { return 2; }
-};
-struct MockFoo : public IFoo
-{
-	virtual ~MockFoo() {}
-	MOCK_METHOD0(foo, int());
-};
-
-
-TEST(REACT, STUPID)
-{
-	MockFoo mfoo;
-}
-
-
 #define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
