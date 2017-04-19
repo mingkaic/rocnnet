@@ -84,6 +84,14 @@ TEST(ALLOCATOR, Allocate_A001)
 }
 
 
+// allocate an absurdly large amount of memory to cause error
+// (line 58, /tenncor/include/memory/iallocator.hpp)
+//TEST(ALLOCATOR, LargeAllocate_A001)
+//{
+//
+//}
+
+
 // covers allocator
 // dealloc, dependent on allocate
 TEST(ALLOCATOR, Deallocate_A002)

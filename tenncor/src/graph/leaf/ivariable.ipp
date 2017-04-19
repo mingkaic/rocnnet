@@ -118,7 +118,7 @@ void ivariable<T>::move_helper (ivariable<T>&& other)
 template <typename T>
 void ivariable<T>::common (void)
 {
-	one = std::unique_ptr<constant<T> >(constant<T>::get(0));
+	one = std::unique_ptr<constant<T> >(constant<T>::get(1));
 	zero = std::unique_ptr<constant<T> >(constant<T>::get(0));
 	one->is_managed_ = true;
 	zero->is_managed_ = true;
