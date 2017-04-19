@@ -39,7 +39,7 @@ static bool bottom_up (std::vector<iconnector<double>*> ordering)
 }
 
 
-TEST(IMMUTABLE, Copy_D000)
+TEST(IMMUTABLE, Copy_I000)
 {
 	FUZZ::delim();
 	immutable<double>* assign  = new mock_immutable({}, "");
@@ -68,7 +68,7 @@ TEST(IMMUTABLE, Copy_D000)
 }
 
 
-TEST(IMMUTABLE, Move_D000)
+TEST(IMMUTABLE, Move_I000)
 {
 	FUZZ::delim();
 	immutable<double>* assign  = new mock_immutable({}, "");
@@ -104,7 +104,7 @@ TEST(IMMUTABLE, Move_D000)
 }
 
 
-TEST(IMMUTABLE, Descendent_D001)
+TEST(IMMUTABLE, Descendent_I001)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -148,7 +148,7 @@ TEST(IMMUTABLE, Descendent_D001)
 }
 
 
-TEST(IMMUTABLE, Status_D002)
+TEST(IMMUTABLE, Status_I002)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -198,7 +198,7 @@ TEST(IMMUTABLE, Status_D002)
 }
 
 
-TEST(IMMUTABLE, Shape_D003)
+TEST(IMMUTABLE, Shape_I003)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -266,7 +266,7 @@ TEST(IMMUTABLE, Shape_D003)
 }
 
 
-TEST(IMMUTABLE, Tensor_D004)
+TEST(IMMUTABLE, Tensor_I004)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -377,7 +377,7 @@ TEST(IMMUTABLE, Tensor_D004)
 }
 
 
-TEST(IMMUTABLE, ImmutableDeath_D005)
+TEST(IMMUTABLE, ImmutableDeath_I005)
 {
 	FUZZ::delim();
 	size_t nnodes = FUZZ::getInt(1, {131, 297})[0];
@@ -420,7 +420,7 @@ TEST(IMMUTABLE, ImmutableDeath_D005)
 }
 
 
-TEST(IMMUTABLE, TemporaryEval_D006)
+TEST(IMMUTABLE, TemporaryEval_I006)
 {
 	FUZZ::delim();
 	size_t nnodes = FUZZ::getInt(1, {131, 297})[0];
@@ -510,7 +510,7 @@ TEST(IMMUTABLE, TemporaryEval_D006)
 }
 
 
-TEST(IMMUTABLE, GetLeaves_D007)
+TEST(IMMUTABLE, GetLeaves_I007)
 {
 	FUZZ::delim();
 	size_t nnodes = FUZZ::getInt(1, {131, 297})[0];
@@ -569,7 +569,7 @@ TEST(IMMUTABLE, GetLeaves_D007)
 }
 
 
-TEST(IMMUTABLE, GetLeaf_D008)
+TEST(IMMUTABLE, GetLeaf_I008)
 {
 	FUZZ::delim();
 
@@ -647,7 +647,7 @@ TEST(IMMUTABLE, GetLeaf_D008)
 }
 
 
-TEST(IMMUTABLE, GetGradient_D009)
+TEST(IMMUTABLE, GetGradient_I009)
 {
 	FUZZ::delim();
 
@@ -776,7 +776,7 @@ TEST(IMMUTABLE, GetGradient_D009)
 }
 
 
-TEST(IMMUTABLE, Update_D010)
+TEST(IMMUTABLE, Update_I010)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);

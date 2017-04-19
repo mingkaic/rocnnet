@@ -19,7 +19,7 @@
 
 // covers iconnector
 // copy constructor and assignment
-TEST(CONNECTOR, Copy_C000)
+TEST(CONNECTOR, Copy_H000)
 {
 	FUZZ::delim();
 	mock_connector* assign = new mock_connector({}, "");
@@ -120,7 +120,7 @@ TEST(CONNECTOR, Copy_C000)
 
 // covers iconnector
 // move constructor and assignment
-TEST(CONNECTOR, Move_C000)
+TEST(CONNECTOR, Move_H000)
 {
 	FUZZ::delim();
 	mock_connector* assign = new mock_connector({}, "");
@@ -223,7 +223,7 @@ TEST(CONNECTOR, Move_C000)
 
 // covers iconnector
 // get_name
-TEST(CONNECTOR, Name_C001)
+TEST(CONNECTOR, Name_H001)
 {
 	FUZZ::delim();
 	size_t nargs = FUZZ::getInt(1, {2, 7})[0];
@@ -255,7 +255,7 @@ TEST(CONNECTOR, Name_C001)
 
 // covers iconnector
 // update_graph, is_same_graph
-TEST(CONNECTOR, Graph_C002)
+TEST(CONNECTOR, Graph_H002)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -298,7 +298,7 @@ TEST(CONNECTOR, Graph_C002)
 
 // covers iconnector
 // potential_descendent
-TEST(CONNECTOR, Descendent_C003)
+TEST(CONNECTOR, Descendent_H003)
 {
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);

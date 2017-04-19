@@ -45,26 +45,6 @@ constant<T>* constant<T>::move (void)
 }
 
 template <typename T>
-constant<T>& constant<T>::operator = (const constant<T>& other)
-{
-	if (this != &other)
-	{
-		ileaf<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
-constant<T>& constant<T>::operator = (constant<T>&& other)
-{
-	if (this != &other)
-	{
-		ileaf<T>::operator = (std::move(other));
-	}
-	return *this;
-}
-
-template <typename T>
 const tensor<T>* constant<T>::get_gradient (inode<T>*)
 {
 	return zero->get_eval();
@@ -109,8 +89,28 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 	zero = new constant<T>(0);
 	zero->is_managed_ = true;
 
+	size_t rawn = raw.size();
 	typename ileaf<T>::assignment assigner;
-	this->data_->allocate();
+	if (false == this->data_->is_alloc())
+	{
+		// loosely guess fails if n_elems/n_known > raw size
+		// we ensure this will never happen by padding with zeros
+		if (shape.n_known() > rawn)
+		{
+			size_t deficiency = shape.n_known() - rawn;
+			raw.insert(raw.end(), deficiency, 0);
+		}
+		optional<tensorshape> propershape = this->data_->loosely_guess_shape(raw);
+		assert((bool) propershape);
+		this->data_->allocate(*propershape);
+	}
+	// we should also pad 0s for well defined shapes
+	size_t n = this->data_->n_elems();
+	if (n > rawn)
+	{
+		size_t deficiency = n - rawn;
+		raw.insert(raw.end(), deficiency, 0);
+	}
 	assigner(*this->data_, raw);
 	this->is_init_ = true;
 }
@@ -125,31 +125,15 @@ void constant<T>::commit_sudoku_sub (void)
 }
 
 template <typename T>
-constant<T>::constant (const constant<T>& other) :
-	ileaf<T>(other)
-{
-	zero = new constant<T>(0);
-	zero->is_managed_ = true;
-}
-
-template <typename T>
-constant<T>::constant (constant<T>&& other) :
-	ileaf<T>(std::move(other))
-{
-	zero = new constant<T>(0);
-	zero->is_managed_ = true;
-}
-
-template <typename T>
 inode<T>* constant<T>::clone_impl (void) const
 {
-	return new constant<T>(*this);
+	return nullptr;
 }
 
 template <typename T>
 inode<T>* constant<T>::move_impl (void)
 {
-	return new constant<T>(std::move(*this));
+	return nullptr;
 }
 
 }
