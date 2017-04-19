@@ -6,12 +6,31 @@
 
 #include <algorithm>
 
-#include "mocks/mock_subject.h"
-#include "mocks/mock_observer.h"
+// #include "mocks/mock_subject.h"
+// #include "mocks/mock_observer.h"
 #include "fuzz.h"
 
 
-//#define DISABLE_REACT_TEST
+#include "gmock/gmock.h"
+struct IFoo
+{
+	virtual ~IFoo() {}
+	virtual int foo() { return 2; }
+}
+struct MockFoo : public IFoo
+{
+	virtual ~MockFoo() {}
+	MOCK_METHOD0(foo, int());
+}
+
+
+TEST(REACT, STUPID)
+{
+	MockFoo mfoo;
+}
+
+
+#define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
 
