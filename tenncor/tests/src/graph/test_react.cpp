@@ -6,12 +6,12 @@
 
 #include <algorithm>
 
-// #include "mocks/mock_subject.h"
-// #include "mocks/mock_observer.h"
+#include "mocks/mock_subject.h"
+#include "mocks/mock_observer.h"
 #include "fuzz.h"
 
 
-#define DISABLE_REACT_TEST
+//#define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
 
