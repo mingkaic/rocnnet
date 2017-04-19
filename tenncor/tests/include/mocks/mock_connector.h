@@ -8,14 +8,14 @@
 #include <algorithm>
 
 #include "util_test.h"
-#include "gmock/gmock.h"
+#include "mockerino.h"
 
 #include "graph/connector/iconnector.hpp"
 
 using namespace nnet;
 
 
-class mock_connector : public iconnector<double>
+class mock_connector : public iconnector<double>, public mocker
 {
 public:
 	mock_connector (std::vector<inode<double>*> dependencies, std::string label) :
@@ -41,16 +41,22 @@ public:
 
 	void* get_gid (void) { return this->gid_; }
 
-	MOCK_CONST_METHOD2(temporary_eval,
-		void(const iconnector<double>*,tensor<double>*&));
-	MOCK_CONST_METHOD0(get_shape, tensorshape(void));
-	MOCK_CONST_METHOD0(good_status, bool(void));
-	MOCK_CONST_METHOD0(get_eval, const tensor<double>*(void));
-	MOCK_CONST_METHOD1(get_leaves, void(GRAD_CACHE&));
-	MOCK_METHOD1(get_leaf, inode<double>*(variable<double>*));
-	MOCK_METHOD1(get_gradient, const tensor<double>*(inode<double>*));
-	MOCK_METHOD1(update, void(subject*));
-	MOCK_METHOD0(commit_sudoku, void(void));
+	virtual void temporary_eval (const iconnector<double>*,tensor<double>*&) const {}
+	virtual tensorshape get_shape (void) const { return tensorshape(); }
+	virtual bool good_status (void) const { return false; }
+	virtual const tensor<double>* get_eval (void) const { return nullptr; }
+	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
+	virtual const tensor<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual void update (subject*) {}
+
+	virtual void commit_sudoku (void)
+	{
+		label_incr("commit_sudoku");
+	}
+	virtual void get_leaves (GRAD_CACHE&) const
+	{
+		label_incr("get_leaves1");
+	}
 
 protected:
 	virtual inode<double>* clone_impl (void) const

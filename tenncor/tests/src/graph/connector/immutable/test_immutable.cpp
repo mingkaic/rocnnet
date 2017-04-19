@@ -161,10 +161,10 @@ TEST(IMMUTABLE, Status_D002)
 	std::string label3 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string label4 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 
-	injectable_node* n1 = new injectable_node(label1);
-	injectable_node* n2 = new injectable_node(label2);
-	injectable_node* n3 = new injectable_node(label3);
-	injectable_node* n4 = new injectable_node(label4);
+	mock_node* n1 = new mock_node(label1);
+	mock_node* n2 = new mock_node(label2);
+	mock_node* n3 = new mock_node(label3);
+	mock_node* n4 = new mock_node(label4);
 
 	tensorshape n1s = random_def_shape();
 	tensorshape n2s = random_def_shape();
@@ -211,10 +211,10 @@ TEST(IMMUTABLE, Shape_D003)
 	std::string label3 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string label4 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 
-	injectable_node* n1 = new injectable_node(label1);
-	injectable_node* n2 = new injectable_node(label2);
-	injectable_node* n3 = new injectable_node(label3);
-	injectable_node* n4 = new injectable_node(label4); // status is bad
+	mock_node* n1 = new mock_node(label1);
+	mock_node* n2 = new mock_node(label2);
+	mock_node* n3 = new mock_node(label3);
+	mock_node* n4 = new mock_node(label4); // status is bad
 
 	// mock tensors initialize with random data...
 	tensorshape n1s = random_def_shape();
@@ -279,10 +279,10 @@ TEST(IMMUTABLE, Tensor_D004)
 	std::string label3 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string label4 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 
-	injectable_node* n1 = new injectable_node(label1);
-	injectable_node* n2 = new injectable_node(label2);
-	injectable_node* n3 = new injectable_node(label3);
-	injectable_node* n4 = new injectable_node(label4); // status is bad
+	mock_node* n1 = new mock_node(label1);
+	mock_node* n2 = new mock_node(label2);
+	mock_node* n3 = new mock_node(label3);
+	mock_node* n4 = new mock_node(label4); // status is bad
 
 	tensorshape n1s = random_def_shape();
 	tensorshape n2s = random_def_shape();
@@ -740,7 +740,7 @@ TEST(IMMUTABLE, DISABLED_Update_D010)
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 
-	injectable_node* n1 = new injectable_node(label1);
+	mock_node* n1 = new mock_node(label1);
 	tensorshape n1s = random_def_shape();
 	n1->data_ = new mock_tensor(n1s);
 

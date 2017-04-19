@@ -12,7 +12,7 @@
 
 struct mocker
 {
-	void label_incr (std::string key)
+	void label_incr (std::string key) const
 	{
 		std::string realkey = inst_+"::"+key;
 		if (mocker::usage_.end() == mocker::usage_.find(realkey))

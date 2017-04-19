@@ -6,12 +6,11 @@
 
 #include <algorithm>
 
+#include "gtest/gtest.h"
+
 #include "mocks/mock_node.h"
 #include "mocks/mock_connector.h"
 #include "fuzz.h"
-
-
-using namespace testing;
 
 
 //#define DISABLE_CONNECTOR_TEST
@@ -77,18 +76,19 @@ TEST(CONNECTOR, Copy_C000)
 	EXPECT_EQ(ogid3, gid7);
 	EXPECT_EQ(ogid4, gid8);
 
-	EXPECT_CALL(*conn, commit_sudoku()).Times(1);
-	EXPECT_CALL(*conn2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*boss, commit_sudoku()).Times(2);
-	EXPECT_CALL(*boss2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*cpy, commit_sudoku()).Times(1);
-	EXPECT_CALL(*cpy2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*cpy3, commit_sudoku()).Times(2);
-	EXPECT_CALL(*cpy4, commit_sudoku()).Times(2);
-	EXPECT_CALL(*assign, commit_sudoku()).Times(1);
-	EXPECT_CALL(*assign2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*assign3, commit_sudoku()).Times(2);
-	EXPECT_CALL(*assign4, commit_sudoku()).Times(2);
+	conn->inst_ = "conn";
+	conn2->inst_ = "conn2";
+	boss->inst_ = "boss";
+	boss2->inst_ = "boss2";
+	cpy->inst_ = "cpy";
+	cpy2->inst_ = "cpy2";
+	cpy3->inst_ = "cpy3";
+	cpy4->inst_ = "cpy4";
+	assign->inst_ = "assign";
+	assign2->inst_ = "assign2";
+	assign3->inst_ = "assign3";
+	assign4->inst_ = "assign4";
+
 	delete n1;
 	delete conn;
 	delete conn2;
@@ -102,6 +102,19 @@ TEST(CONNECTOR, Copy_C000)
 	delete cpy2;
 	delete cpy3;
 	delete cpy4;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
+	mocker::usage_.clear();
 }
 
 
@@ -166,10 +179,19 @@ TEST(CONNECTOR, Move_C000)
 	EXPECT_EQ(ogid3, assign3->get_gid());
 	EXPECT_EQ(ogid4, assign4->get_gid());
 
-	EXPECT_CALL(*assign, commit_sudoku()).Times(1);
-	EXPECT_CALL(*assign2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*assign3, commit_sudoku()).Times(2);
-	EXPECT_CALL(*assign4, commit_sudoku()).Times(2);
+	conn->inst_ = "conn";
+	conn2->inst_ = "conn2";
+	boss->inst_ = "boss";
+	boss2->inst_ = "boss2";
+	mv->inst_ = "cpy";
+	mv2->inst_ = "cpy2";
+	mv3->inst_ = "cpy3";
+	mv4->inst_ = "cpy4";
+	assign->inst_ = "assign";
+	assign2->inst_ = "assign2";
+	assign3->inst_ = "assign3";
+	assign4->inst_ = "assign4";
+
 	delete n1;
 	delete conn;
 	delete conn2;
@@ -183,6 +205,19 @@ TEST(CONNECTOR, Move_C000)
 	delete mv2;
 	delete mv3;
 	delete mv4;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
+	mocker::usage_.clear();
 }
 
 
@@ -203,16 +238,18 @@ TEST(CONNECTOR, Name_C001)
 	};
 	argname.pop_back(); // remove last comma
 	std::string bossname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
-	mock_connector* con1 = new mock_connector(ns, bossname);
-	std::string expectname = "<"+bossname+":"+con1->get_uid()+">("+argname+")";
-	EXPECT_EQ(expectname, con1->get_name());
+	mock_connector* conn1 = new mock_connector(ns, bossname);
+	std::string expectname = "<"+bossname+":"+conn1->get_uid()+">("+argname+")";
+	EXPECT_EQ(expectname, conn1->get_name());
 
-	EXPECT_CALL(*con1, commit_sudoku()).Times(nargs);
+	conn1->inst_ = "conn1";
 	for (inode<double>* n : ns)
 	{
 		delete n;
 	}
-	delete con1;
+	delete conn1;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn1::commit_sudoku", nargs));
+	mocker::usage_.clear();
 }
 
 
@@ -242,15 +279,20 @@ TEST(CONNECTOR, Graph_C002)
 	EXPECT_TRUE(boss->is_same_graph(conn));
 	EXPECT_TRUE(boss2->is_same_graph(boss2));
 
-	EXPECT_CALL(*conn, commit_sudoku()).Times(1);
-	EXPECT_CALL(*conn2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*boss, commit_sudoku()).Times(2);
-	EXPECT_CALL(*boss2, commit_sudoku()).Times(2);
+	conn->inst_ = "conn";
+	conn2->inst_ = "conn2";
+	boss->inst_ = "boss";
+	boss2->inst_ = "boss2";
 	delete n1;
 	delete conn;
 	delete conn2;
 	delete boss;
 	delete boss2;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
+	mocker::usage_.clear();
 }
 
 
@@ -274,19 +316,19 @@ TEST(CONNECTOR, Descendent_C003)
 	mock_connector* separate = new mock_connector(std::vector<inode<double>*>{n3, n2}, conname2);
 	mock_connector* boss = new mock_connector(std::vector<inode<double> *>{n1, n2}, conname2);
 
-	EXPECT_CALL(*conn, get_leaves(_)).Times(2);
-	EXPECT_CALL(*conn2, get_leaves(_)).Times(2);
-	EXPECT_CALL(*boss, get_leaves(_)).Times(2);
-	EXPECT_CALL(*separate, get_leaves(_)).Times(2);
+	conn->inst_ = "conn";
+	conn2->inst_ = "conn2";
+	boss->inst_ = "boss";
+	separate->inst_ = "separate";
 	conn->potential_descendent(conn2);
 	conn2->potential_descendent(conn);
 	boss->potential_descendent(separate);
 	separate->potential_descendent(boss);
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::get_leaves1", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::get_leaves1", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::get_leaves1", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("separate::get_leaves1", 2));
 
-	EXPECT_CALL(*conn, commit_sudoku()).Times(1);
-	EXPECT_CALL(*conn2, commit_sudoku()).Times(2);
-	EXPECT_CALL(*separate, commit_sudoku()).Times(2);
-	EXPECT_CALL(*boss, commit_sudoku()).Times(2);
 	delete n1;
 	delete n2;
 	delete n3;
@@ -294,6 +336,11 @@ TEST(CONNECTOR, Descendent_C003)
 	delete conn2;
 	delete boss;
 	delete separate;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("separate::commit_sudoku", 2));
+	mocker::usage_.clear();
 }
 
 

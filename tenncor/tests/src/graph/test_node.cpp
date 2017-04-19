@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "gtest/gtest.h"
+
 #include "mocks/mock_node.h"
 #include "fuzz.h"
 
