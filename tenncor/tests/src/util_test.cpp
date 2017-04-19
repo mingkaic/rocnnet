@@ -84,7 +84,7 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 	size_t cols = dimensions[0];
 	size_t rows = dimensions[1];
 	std::vector<std::vector<double> > mat(rows);
-	auto it = v.begin(), et = v.end();
+	auto it = v.begin();
 	for (size_t i = 0; i < rows; i++)
 	{
 		mat[i].insert(mat[i].end(), it, it+cols);
@@ -93,7 +93,7 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 	return mat;
 }
 
-tensorshape random_shape (void)
+tensorshape random_def_shape (void)
 {
 	size_t rank = FUZZ::getInt(1, {2, 10})[0];
 	std::vector<size_t> shape = FUZZ::getInt(rank, {2, 21});

@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include "util_test.h"
-#include "gmock/gmock.h"
+#include "mockerino.h"
 
 #include "graph/react/iobserver.hpp"
 
@@ -27,14 +27,14 @@ public:
 	// dummy stops us from executing these real actions,
 	// since we test using dummy attach/detach procedures
 	virtual void update (subject*) {}
-	virtual void update (size_t s,notification n) {}
+	virtual void update (size_t, notification) {}
 	virtual void commit_sudoku (void) {}
 
 protected:
 	dummy_observer (const dummy_observer& other) : iobserver(other) {}
 };
 
-class mock_observer : public dummy_observer
+class mock_observer : public dummy_observer, public mocker
 {
 public:
 	// trust tester to allocate on stack
@@ -47,15 +47,25 @@ public:
 	{
 		return this->dependencies_;
 	}
-	MOCK_METHOD2(update, void(size_t,notification));
-	MOCK_METHOD1(update, void(subject*));
-	MOCK_METHOD0(commit_sudoku, void());
 
-protected:
+	virtual void update (subject*)
+	{
+		label_incr("update1");
+	}
+
+	virtual void update (size_t,notification)
+	{
+		label_incr("update2");
+	}
+
+	virtual void commit_sudoku (void)
+	{
+		label_incr("commit_sudoku");
+	}
 };
 
 
-class mock_observer2 : public iobserver
+class mock_observer2 : public iobserver, public mocker
 {
 public:
 	// trust tester to allocate on stack
@@ -96,8 +106,16 @@ public:
 	{
 		return this->dependencies_;
 	}
-	MOCK_METHOD1(update, void(subject*));
-	MOCK_METHOD0(commit_sudoku, void(void));
+
+	virtual void update (subject*)
+	{
+		label_incr("update1");
+	}
+
+	virtual void commit_sudoku (void)
+	{
+		label_incr("commit_sudoku");
+	}
 };
 
 

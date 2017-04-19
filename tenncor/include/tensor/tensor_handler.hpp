@@ -26,6 +26,7 @@ namespace nnet
 //! Accumulate an array of shape
 using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
+// todo: reduce shape information in forward op (it's unnecessary)
 //! Maps argument data to this data according to shape
 template <typename T>
 using FORWARD_OP = std::function<void(T*,const tensorshape&,std::vector<const T*>&,std::vector<tensorshape>&)>;

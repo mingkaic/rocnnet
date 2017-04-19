@@ -25,9 +25,9 @@ tensor<T>::tensor (void) :
 
 template <typename T>
 tensor<T>::tensor (T scalar, size_t alloc_id) :
-	tensor<T>(std::vector<size_t>{1})
+	tensor<T>(std::vector<size_t>{1}, alloc_id)
 {
-	set_allocator(alloc_id);
+	raw_data_[0] = scalar;
 }
 
 template <typename T>
@@ -252,7 +252,7 @@ optional<tensorshape> tensor<T>::loosely_guess_shape(std::vector<T> data) const
 		}
 	}
 	my_shape[first_undef] = ndata / known;
-	if (size_t mod = ndata % known)
+	if (0 != ndata % known)
 	{
 		// int division above will floor
 		// (if we cast to double, we may lose precision)
@@ -439,7 +439,7 @@ bool tensor<T>::copy_from (const tensor<T>& other, const tensorshape shape)
 
 // slice along the first dimension
 template <typename T>
-tensor<T> tensor<T>::slice (size_t dim_start, size_t limit)
+tensor<T> tensor<T>::slice (size_t /*dim_start*/, size_t /*limit*/)
 {
 	throw std::bad_function_call(); // NOT IMPLEMENTED
 	return tensor<T>();

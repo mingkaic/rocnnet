@@ -11,18 +11,6 @@
 namespace nnet
 {
 
-template <typename T>
-inline std::vector<subject*> to_sub (std::vector<inode<T>*> nodes)
-{
-	std::vector<subject*> subs(nodes.size(), nullptr);
-	std::transform(nodes.begin(), nodes.end(), subs.begin(),
-		[](inode<T>* n) -> subject*
-		{
-			return n;
-		});
-	return subs;
-}
-
 template <typename T, typename N>
 inline std::vector<iconnector<T>*> to_con (std::vector<N*> args)
 {
@@ -143,16 +131,16 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 
 template <typename T>
 iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string label) :
-	iobserver(to_sub<T>(dependencies)),
-	inode<T>(label)
+	inode<T>(label),
+	iobserver(std::vector<subject*>(dependencies.begin(), dependencies.end()))
 {
 	update_graph(to_con<T, inode<T> >(dependencies));
 }
 
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
-	iobserver(other),
-	inode<T>(other)
+	inode<T>(other),
+	iobserver(other)
 {
 	if (to_con<T, subject>(
 		this->dependencies_).empty())
@@ -168,8 +156,8 @@ iconnector<T>::iconnector (const iconnector<T>& other) :
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
-	iobserver(std::move(other)),
 	inode<T>(std::move(other)),
+	iobserver(std::move(other)),
 	gid_(std::move(other.gid_))
 {
 	other.gid_ = nullptr;

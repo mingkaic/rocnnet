@@ -4,6 +4,12 @@
 *.o
 *.obj
 
+# Avoid intermediate representation files
+*.ll
+
+# System Files
+.*
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -28,17 +34,10 @@
 *.out
 *.app
 
-# Folder view configuration files
-.DS_Store
 Desktop.ini
 
-# Thumbnail cache files
-._*
-Thumbs.db
-
-# Files that might appear on external disks
-.Spotlight-V100
-.Trashes
+# Any databases
+*.db
 
 # Compiled Python files
 *.pyc
@@ -46,14 +45,15 @@ Thumbs.db
 # Application specific files
 venv
 node_modules
-.sass-cache
+*.log
 
 # Application specific folder structure
 bin/
 docs/
 build/
-.idea/
-cmake-build*/
-scripts
-.vscode
-*.out
+cmake-build-*/
+scripts/
+
+# whitelist
+!.gitignore
+!.travis.yml

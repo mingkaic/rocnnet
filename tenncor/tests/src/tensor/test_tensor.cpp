@@ -30,41 +30,65 @@ static tensorshape random_partialshape ()
 }
 
 
+// cover scalar tensor constructor
+TEST(TENSOR, ScalarConstructor_B000)
+{
+	FUZZ::delim();
+	std::vector<double> vals = FUZZ::getDouble(3);
+	double value = vals[0];
+	mock_tensor scalar(value);
+	EXPECT_TRUE(scalar.clean());
+	EXPECT_TRUE(scalar.is_alloc());
+	EXPECT_EQ((size_t) sizeof(double), scalar.total_bytes());
+	EXPECT_EQ(value, *scalar.rawptr());
+
+	value = vals[1];
+	mock_tensor scalar2(value);
+	EXPECT_TRUE(scalar2.clean());
+	EXPECT_TRUE(scalar2.is_alloc());
+	EXPECT_EQ((size_t) sizeof(double), scalar2.total_bytes());
+	EXPECT_EQ(value, *scalar2.rawptr());
+
+	value = vals[2];
+	mock_tensor scalar3(value);
+	EXPECT_TRUE(scalar3.clean());
+	EXPECT_TRUE(scalar3.is_alloc());
+	EXPECT_EQ((size_t) sizeof(double), scalar3.total_bytes());
+	EXPECT_EQ(value, *scalar3.rawptr());
+}
+
+
 // cover tensor
-// default, scalar, shape constructors,
+// default, shape constructors,
 // is_alloc, total_bytes
-TEST(TENSOR, Construct_B000)
+TEST(TENSOR, Construct_B001)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor incom(pshape);
 	mock_tensor comp(cshape);
 
 	EXPECT_TRUE(undef.clean());
-	EXPECT_TRUE(scalar.clean());
 	EXPECT_TRUE(incom.clean());
 	EXPECT_TRUE(comp.clean());
 
 	EXPECT_FALSE(undef.is_alloc());
-	EXPECT_TRUE(scalar.is_alloc());
 	EXPECT_FALSE(incom.is_alloc());
 	EXPECT_TRUE(comp.is_alloc());
 
-	EXPECT_EQ(0, undef.total_bytes());
-	EXPECT_EQ(sizeof(double), scalar.total_bytes());
-	EXPECT_EQ(0, incom.total_bytes());
-	EXPECT_EQ(sizeof(double) * cshape.n_elems(),
+	EXPECT_EQ((size_t) 0, undef.total_bytes());
+	EXPECT_EQ((size_t) 0, incom.total_bytes());
+	EXPECT_EQ((size_t) sizeof(double) * cshape.n_elems(),
 		comp.total_bytes());
 }
 
 
 // cover tensor
 // clone and assignment
-TEST(TENSOR, Copy_B001)
+TEST(TENSOR, Copy_B002)
 {
 	FUZZ::delim();
 	mock_tensor undefassign;
@@ -73,7 +97,7 @@ TEST(TENSOR, Copy_B001)
 	mock_tensor compassign;
 
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
@@ -116,14 +140,14 @@ TEST(TENSOR, Copy_B001)
 
 // cover tensor
 // move constructor and assignment
-TEST(TENSOR, Move_B001)
+TEST(TENSOR, Move_B002)
 {
 	FUZZ::delim();
 	mock_tensor scalarassign;
 	mock_tensor compassign;
 
 	tensorshape sshape(std::vector<size_t>{1});
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
 	mock_tensor comp(cshape);
 
@@ -164,12 +188,12 @@ TEST(TENSOR, Move_B001)
 
 // cover tensor
 // get_shape, n_elems, rank. dims
-TEST(TENSOR, Shape_B002)
+TEST(TENSOR, Shape_B003)
 {
 	FUZZ::delim();
 	tensorshape singular(std::vector<size_t>{1});
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
 	mock_tensor scalar(FUZZ::getDouble(1)[0]);
@@ -181,20 +205,20 @@ TEST(TENSOR, Shape_B002)
 	EXPECT_TRUE(tensorshape_equal(pshape, incom.get_shape()));
 	EXPECT_TRUE(tensorshape_equal(cshape, comp.get_shape()));
 
-	EXPECT_EQ(0, undef.n_elems());
-	EXPECT_EQ(1, scalar.n_elems());
-	EXPECT_EQ(0, incom.n_elems());
+	EXPECT_EQ((size_t) 0, undef.n_elems());
+	EXPECT_EQ((size_t) 1, scalar.n_elems());
+	EXPECT_EQ((size_t) 0, incom.n_elems());
 	EXPECT_EQ(cshape.n_elems(), comp.n_elems());
 
-	EXPECT_EQ(0, undef.rank());
-	EXPECT_EQ(1, scalar.rank());
+	EXPECT_EQ((size_t) 0, undef.rank());
+	EXPECT_EQ((size_t) 1, scalar.rank());
 	EXPECT_EQ(pshape.rank(), incom.rank());
 	EXPECT_EQ(cshape.rank(), comp.rank());
 
 	EXPECT_TRUE(undef.dims().empty());
 	std::vector<size_t> sv = scalar.dims();
-	ASSERT_EQ(1, sv.size());
-	EXPECT_EQ(1, sv[0]);
+	ASSERT_EQ((size_t) 1, sv.size());
+	EXPECT_EQ((size_t) 1, sv[0]);
 
 	std::vector<size_t> expects = pshape.as_list();
 	std::vector<size_t> expectc = cshape.as_list();
@@ -205,11 +229,11 @@ TEST(TENSOR, Shape_B002)
 
 // cover tensor
 // is_same_size
-TEST(TENSOR, IsSameSize_B003)
+TEST(TENSOR, IsSameSize_B004)
 {
 	FUZZ::delim();
 	tensorshape singular(std::vector<size_t>{1});
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	mock_tensor bad(ishape);
@@ -269,10 +293,10 @@ TEST(TENSOR, IsSameSize_B003)
 
 // cover tensor
 // is_compatible_with tensor
-TEST(TENSOR, IsCompatibleWithTensor_B004)
+TEST(TENSOR, IsCompatibleWithTensor_B005)
 {
 	FUZZ::delim();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
@@ -299,11 +323,11 @@ TEST(TENSOR, IsCompatibleWithTensor_B004)
 
 // cover tensor
 // is_compatible_with vector
-TEST(TENSOR, IsCompatibleWithVector_B005)
+TEST(TENSOR, IsCompatibleWithVector_B006)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
 	mock_tensor comp(cshape);
@@ -377,11 +401,11 @@ TEST(TENSOR, IsCompatibleWithVector_B005)
 
 // covers tensor
 // guess_shape
-TEST(TENSOR, GuessShape_B006)
+TEST(TENSOR, GuessShape_B007)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	mock_tensor undef;
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
@@ -474,11 +498,11 @@ TEST(TENSOR, GuessShape_B006)
 
 // cover tensor
 // get, expose
-TEST(TENSOR, Get_B007)
+TEST(TENSOR, Get_B008)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	size_t crank = cshape.rank();
 	size_t celem = cshape.n_elems();
 
@@ -486,10 +510,9 @@ TEST(TENSOR, Get_B007)
 	mock_tensor pcom(pshape);
 	mock_tensor comp(cshape);
 
-	// shouldn't die or throw
-	std::vector<double> cv = comp.expose();
-	EXPECT_DEATH(undef.expose(), ".*");
-	EXPECT_DEATH(pcom.expose(), ".*");
+	std::vector<double> cv = comp.expose(); // shouldn't die or throw
+	// EXPECT_DEATH(undef.expose(), ".*");
+	// EXPECT_DEATH(pcom.expose(), ".*");
 
 	size_t pncoord = 1;
 	if (crank > 2)
@@ -498,8 +521,11 @@ TEST(TENSOR, Get_B007)
 	}
 	size_t cncoord = crank;
 	size_t rncoord = FUZZ::getInt(1, {15, 127})[0];
-	std::vector<size_t> pcoord = FUZZ::getInt(pncoord);
+	// c coordinates have rank exactly fitting cshape
+	// p coordinates have rank less than rank of cshape
+	// r coordinates are random coordinates
 	std::vector<size_t> ccoord = FUZZ::getInt(cncoord);
+	std::vector<size_t> pcoord = FUZZ::getInt(pncoord);
 	std::vector<size_t> rcoord = FUZZ::getInt(rncoord);
 	EXPECT_THROW(undef.get(pcoord), std::out_of_range);
 	EXPECT_THROW(pcom.get(pcoord), std::out_of_range);
@@ -510,15 +536,21 @@ TEST(TENSOR, Get_B007)
 
 	std::vector<size_t> cs = cshape.as_list();
 	size_t pcoordmax = 0, ccoordmax = 0, rcoordmax = 0;
-	size_t multiplier = 1;
-	for (size_t i = 0; i < cs.size(); i++)
+	for (size_t i = 0, multiplier = 1, cn = cs.size(); i < cn; i++)
 	{
-		pcoordmax += pcoord[i] * multiplier;
+		if (i < pncoord)
+		{
+			pcoordmax += pcoord[i] * multiplier;
+		}
+		if (i < rncoord)
+		{
+			rcoordmax += rcoord[i] * multiplier;
+		}
 		ccoordmax += ccoord[i] * multiplier;
-		rcoordmax += rcoord[i] * multiplier;
 		multiplier *= cs[i];
 	}
-	ASSERT_GT(celem, 0);
+	
+	ASSERT_GT(celem, (size_t) 0);
 	if (celem <= pcoordmax)
 	{
 		EXPECT_THROW(comp.get(pcoord), std::out_of_range);
@@ -551,7 +583,7 @@ TEST(TENSOR, Get_B007)
 
 // cover tensor
 // set_shape, allocate shape
-TEST(TENSOR, Reshape_B008)
+TEST(TENSOR, Reshape_B009)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
@@ -605,12 +637,12 @@ TEST(TENSOR, Reshape_B008)
 			EXPECT_EQ(ac1[i][j], resc1[i][j]);
 		}
 		// check the padding
-		EXPECT_EQ(0, resc1[i][cols]);
+		EXPECT_EQ((size_t) 0, resc1[i][cols]);
 	}
 	// check the padding
 	for (size_t i = 0; i < cols+1; i++)
 	{
-		EXPECT_EQ(0, resc1[rows][i]);
+		EXPECT_EQ((size_t) 0, resc1[rows][i]);
 	}
 
 	// data clipping
@@ -645,7 +677,7 @@ TEST(TENSOR, Reshape_B008)
 			EXPECT_EQ(ac3[i][j], resc3[i][j]);
 		}
 		// check the padding
-		EXPECT_EQ(0, resc3[i][cols]);
+		EXPECT_EQ((size_t) 0, resc3[i][cols]);
 	}
 	for (size_t i = 0; i < rows; i++)
 	{
@@ -657,7 +689,7 @@ TEST(TENSOR, Reshape_B008)
 	// check the padding
 	for (size_t i = 0; i < cols-1; i++)
 	{
-		EXPECT_EQ(0, resc4[rows][i]);
+		EXPECT_EQ((size_t) 0, resc4[rows][i]);
 	}
 
 	double* p = comp.rawptr();
@@ -671,10 +703,10 @@ TEST(TENSOR, Reshape_B008)
 
 // cover tensor
 // default allocate, dependent on set shape
-TEST(TENSOR, Allocate_B009)
+TEST(TENSOR, Allocate_B010)
 {
 	FUZZ::delim();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	tensorshape pshape = random_partialshape();
 
 	mock_tensor undef;
@@ -698,11 +730,11 @@ TEST(TENSOR, Allocate_B009)
 
 // cover tensor
 // deallocate
-TEST(TENSOR, Dealloc_B010)
+TEST(TENSOR, Dealloc_B011)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
 	mock_tensor pcom(pshape);
@@ -720,10 +752,10 @@ TEST(TENSOR, Dealloc_B010)
 
 // cover tensor
 // allocate shape
-TEST(TENSOR, AllocateShape_B011)
+TEST(TENSOR, AllocateShape_B012)
 {
 	FUZZ::delim();
-	tensorshape cshape = random_shape();
+	tensorshape cshape = random_def_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape cshape2 = make_incompatible(cv);
 	tensorshape pshape = make_partial(cv);
@@ -752,7 +784,6 @@ TEST(TENSOR, AllocateShape_B011)
 	EXPECT_TRUE(pcom.is_alloc());
 	EXPECT_TRUE(comp.is_alloc());
 
-	double* ppcom = pcom.rawptr();
 	ASSERT_TRUE(pcom.allocate(pshape2));
 	EXPECT_NE(orig, pcom.rawptr());
 }
@@ -760,13 +791,13 @@ TEST(TENSOR, AllocateShape_B011)
 
 // cover tensor
 // copy_from
-TEST(TENSOR, CopyWithShape_B012)
+TEST(TENSOR, CopyWithShape_B013)
 {
 	FUZZ::delim();
 	tensorshape pshape = random_partialshape();
-	tensorshape cshape = random_shape();
-	tensorshape cshape2 = random_shape();
-	tensorshape cshape3 = random_shape();
+	tensorshape cshape = random_def_shape();
+	tensorshape cshape2 = random_def_shape();
+	tensorshape cshape3 = random_def_shape();
 
 	mock_tensor undef;
 	mock_tensor pcom(pshape);

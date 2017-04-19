@@ -146,7 +146,6 @@ itensor_handler<T>* const_init<T>::move_impl (void)
 
 template <typename T>
 rand_uniform<T>::rand_uniform (T min, T max) :
-	distribution_(std::uniform_real_distribution<T>(min, max)),
 	initializer<T>(
 [](std::vector<tensorshape>) { return tensorshape(); },
 [this](T* out, const tensorshape& shape,
@@ -157,7 +156,7 @@ rand_uniform<T>::rand_uniform (T min, T max) :
 	{
 		out[i] = distribution_(generator);
 	}
-}) {}
+}), distribution_(std::uniform_real_distribution<T>(min, max)) {}
 
 template <typename T>
 rand_uniform<T>* rand_uniform<T>::clone (void) const

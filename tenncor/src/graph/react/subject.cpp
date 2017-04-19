@@ -22,7 +22,7 @@ subject::~subject (void)
 	notify(UNSUBSCRIBE); // unsubscribe all audiences
 }
 
-subject& subject::operator = (const subject& other) { return *this; }
+subject& subject::operator = (const subject&) { return *this; }
 
 subject& subject::operator = (subject&& other)
 {
@@ -54,7 +54,7 @@ bool subject::no_audience (void) const
 	return audience_.empty();
 }
 
-subject::subject (const subject& other) {}
+subject::subject (const subject&) {}
 
 subject::subject (subject&& other) :
 	audience_(std::move(other.audience_)) {}

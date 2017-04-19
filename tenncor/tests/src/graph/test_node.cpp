@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "gtest/gtest.h"
+
 #include "mocks/mock_node.h"
 #include "fuzz.h"
 
@@ -68,7 +70,7 @@ TEST(NODE, Move_B000)
 
 // covers inode
 // get_uid
-TEST(NODE, Uid_B001)
+TEST(NODE, UID_B001)
 {
 	FUZZ::delim();
 	std::unordered_set<std::string> us;

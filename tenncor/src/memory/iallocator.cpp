@@ -19,13 +19,13 @@ iallocator* iallocator::clone (void) const {
 
 bool iallocator::tracks_size (void) const { return false; }
 
-size_t iallocator::requested_size (void* ptr) const
+size_t iallocator::requested_size (void*) const
 {
 	throw std::bad_function_call();
 	return 0;
 }
 
-optional<size_t> iallocator::alloc_id (void* ptr) const { return optional<size_t>(); }
+optional<size_t> iallocator::alloc_id (void*) const { return optional<size_t>(); }
 
 void iallocator::gather_stat (alloc_stat& stats) const { stats.clear(); }
 

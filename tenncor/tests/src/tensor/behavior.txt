@@ -21,38 +21,39 @@ A011 - two tensorshapes can concatenate to form a tensorshape depending on the o
 A012 - a tensorshape's rank can be manipulated by padding with ones or clipping
 
 // TENSOR
-B000 - default tensor construction creates an undefined tensor
-        scalar tensor constructrion creates allocates a tensor of rank 1, nelems = 1
+B000 - scalar tensor constructrion creates allocates a tensor of rank 1, nelems = 1
+        scalar tensor's raw data is initialized as the scalar
+B001 - default tensor construction creates an undefined tensor
         constructing with a fully_defined_shape is allocated on construction
         otherwise tensor is not allocated
         unallocated tensors have 0 bytes, allocated tensors have bytes of n_elems * sizeof(type)
-B001 - copy and move creates/moves a tensor of equivalent shape and raw data
+B002 - copy and move creates/moves a tensor of equivalent shape and raw data
         cloning from itensor on tensor instance will return tensor instance (not tested)
-B002 - tensor can access through a shallow copy of the shape, or through shape info
-B003 - two tensors are the same size if their allowed shapes are compatible or
+B003 - tensor can access through a shallow copy of the shape, or through shape info
+B004 - two tensors are the same size if their allowed shapes are compatible or
         they are both allocated and their trimmed shapes are compatible
-B004 - two tensors are compatible if their alloc_shape if allocated (or allowed_shape) are compatible
-B005 - a tensor is compatible with a data vector if data is compatible
+B005 - two tensors are compatible if their alloc_shape if allocated (or allowed_shape) are compatible
+B006 - a tensor is compatible with a data vector if data is compatible
         if data.size() == alloc_shape if allocated (or allowed_shape) size
         loosely compatible if data.size() < alloc_shape if allocated (or allowed_shape) size
         unmet condition returns undefined optional
-B006 - guess shape return a shape if the shape has n_elems == data.size() and is compatible
+B007 - guess shape return a shape if the shape has n_elems == data.size() and is compatible
         with allowed_shape otherwise return undefined optional
         loosely guess return a shape if n_elems < data.size() and is compatible
         with allowed_shape shape otherwise return undefined optional
-B007 - tensors coordinates <c0, c1, ..., cn> are mapped to
+B008 - tensors coordinates <c0, c1, ..., cn> are mapped to
         output tensor vector with shape <d0, d1, ..., dn> by sum_i=0:n(product_j=0:i(dj) * ci)
-B008 - reshape changes clips or pads raw data with zeros if the tensor is allocated
+B009 - reshape changes clips or pads raw data with zeros if the tensor is allocated
         if this is nonfully defined, it will not be allocated
         additionally allowed shape is undated to be more defined
-B009 - default allocate (no provided shape) returns false if allowed shape is not fully defined.
+B010 - default allocate (no provided shape) returns false if allowed shape is not fully defined.
         otherwise it is allocated. will not reallocate if already allocated
-B010 - deallocation fails if tensor is not allocated,
+B011 - deallocation fails if tensor is not allocated,
         otherwise alloc_shape must be undefined and raw_data is nullptr
-B011 - allocate will fail if provided shape is not compatible with allowed shape
+B012 - allocate will fail if provided shape is not compatible with allowed shape
         allocate will not reallocate if this is allocated and shape is identical to current allocated shape
         otherwise allocate may reallocate
-B012 - copy_from another tensor will return true if other tensor is allocated
+B013 - copy_from another tensor will return true if other tensor is allocated
         and shape is fully defined. resulting tensor will have the same value as
         other within specified shape dimensions, data not specified by other is 0
 

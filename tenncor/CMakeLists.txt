@@ -11,10 +11,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 option(TENNCOR_TEST "Test" OFF)
 option(VIS_EDGE "Visualize Graph Edges" OFF)
+option(LCOVERAGE "Evaluate Coverage" ON)
 
+# enable modern c++
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
+
+# enable warnings
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
 if (VIS_EDGE)
@@ -31,12 +36,17 @@ add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (TENNCOR_TEST)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ALLOCATOR_TEST -DDISABLE_BUILDER_TEST -DDISABLE_REACT_TEST -DDISABLE_NODE_TEST -DDISABLE_CONNECTOR_TEST")
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TENSOR_MODULE_TESTS -DDISABLE_MEMORY_MODULE_TESTS")
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_REACT_TEST -DDISABLE_NODE_TEST -DDISABLE_CONNECTOR_TEST") #todo: remove to enable tests
-	# for testing
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0") # debug, no optimisation
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+	#todo: remove to enable tests
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_REACT_TEST")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_NODE_TEST")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_CONNECTOR_TEST")
+#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_IMMUTABLE_TEST")
+	# coverage
+	if (LCOVERAGE)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0") # debug, no optimisation
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+	endif(LCOVERAGE)
 	set(TENNCOR_LIB_TEST tenncor-inst)
 	add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC}
 		declare/graph.cpp declare/tensor.cpp)

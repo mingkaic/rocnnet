@@ -95,7 +95,7 @@ bool tensorshape::is_fully_defined (void) const
 	bool known = true;
 	for (size_t d : dimensions_)
 	{
-		known = known && 0 < d;
+		known = known && (0 < d);
 	}
 	return known;
 }

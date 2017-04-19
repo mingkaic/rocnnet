@@ -48,66 +48,72 @@ C003 - connector potential descendent calls both this and other connnector get_l
 // IMMUTABLE BEHAVIOR (Not tested)
 D000 - cloning and moving immutable copies and moves over data, Nf_ and ginit_
 D001 - immutable A is a potential descendent of connector B if A's leaf set is a subset of B's leaf set
-D002 - immutable tensor shape is the result of the shaper function.
-        bad status returns an undefined tensor
-D003 - immutable tensor initializes its tensor from the forward transfer functions if all its arguments are good
+D002 - immutable has good status if all its children are good, otherwise it's bad
+D003 - immutable tensor shape is the result of the shaper function.
+        bad status returns an undefined tensorshape
+D004 - immutable tensor initializes its tensor from the forward transfer functions if all its arguments are good
         otherwise good status is false, bad status returns nullptr on get_eval
-D004 - immutable dies when any of its dependencies dies
-D005 - temporary_eval evaluates the resulting value from node target (taking target's value as scalar 1)
-        up to calling node. tensor is allocated and is owned in calling scope.
+D005 - immutable dies when any of its dependencies dies
+D006 - temporary_eval grabs the resulting value from target node up to calling node.
+        the target node's value is taken as scalar 1.
+        tensor is allocated and is owned by the caller.
         (meaning deleting the resulting tensor should have no adverse affect on any object state)
-D006 - immutable get_leaves return a map from leaf to nullptr
-D007 - get_leaf (given an input argument of leaf A) returns the node mapped by A in
+D007 - immutable get_leaves return a map from leaf to nullptr
+D008 - given an input of leaf A, get_leaf returns the node mapped by A in
         back_map (provided during construction). leaf A is back_map's second argument.
-D008 - get_gradient applies jacobian transformations regardless of its input leaf node
+D009 - get_gradient applies jacobian transformations regardless of its input leaf node
         if wrt is this, base result (without jacobian) is scalar 1,
         else if wrt is not a leaf but is a potential descendent, base result is evaluation from wrt to this
         else if wrt is not a leaf and isn't a potential descendent, the base result is scalar 0
         otherwise the base result is the non-null value mapped from gcache
-D009 - update explicitly runs its forward transfer function with current depdendency states as its argument
+D010 - update explicitly runs its forward transfer function with current depdendency states as its argument
 
 // ELEMENTARY BEHAVIORS
+E000 -
+Exxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
+        and its value is equivalent to the primitive value
+        same applies for not equal (!=)
 
 // TRANSFORM BEHAVIORS
+F000 -
 
 // MATMUL BEHAVIOR
+G000 -
 
 
 
+- exposing operation nodes with null/invalid tensors will fail
+- elementary operations must error on exposure when not all of its leaves are initialized
+- binary operations must fail when its argument shapes are do not match (by the rules of the operation) at constructing if shape_eval is enabled, or at exposure on all others
+- elementary binary operations argument shapes must be equivalent (same rank, and dimensional values)
+- matrix operations only takes 2-D tensors
+- matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)
 
-// BASE OPERATION NODE
-F001 - operation must reuse its gradient object
-F002 - exposing operation nodes with null/invalid tensors will fail
 
-F100 - elementary operations must error on exposure when not all of its leaves are initialized
-F101 - binary operations must fail when its argument shapes are do not match (by the rules of the operation) at constructing if shape_eval is enabled, or at exposure on all others
-F102 - elementary binary operations argument shapes must be equivalent (same rank, and dimensional values)
-F103 - matrix operations only takes 2-D tensors
-F104 - matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)
+// LEAF BEHAVIOR
+H000 -
 
-F200 - each graph instance builds from a single variable; deleting graph will not change the variable
-F201 - graphs created from append_graph methods will preserve the input graph
+// CONSTANT BEHAVIOR
+I000 -
 
-F300 - conditional's eval, shape, gradient, and jacobian are obtained from its active dependency (except for jacobian, and gradient; undefined behavior for now)
-F301 - not_zero's active dependency is non-zero (scalar or otherwise) and is initialized (get_eval is non-null)
-F302 - push_toggle activation will notify its dependencies of activation once, then return to default state
-F303 - push_toggle activation value will linger until explicitly called to update again
-F304 - when binding bindable_toggle, bound variables will reset and update previously active toggles
-F305 - binding toggles will return a unique value dictating unique bind relationships; different relationships have different bound vector
+// IVARIABLE BEHAVIOR
+J000 -
+
+// VARIABLE BEHAVIOR
+K000 -
+
+// PLACEHOLDER BEHAVIOR
+L000 -
+
 
 // VARIABLE LEAF NODES
-D100 - ileaf inheriteds should auto notify when initialized or reinitialized
-D200 - variables auto initialize scalar on construction
-D201 - variable's gradient is a one variable
-D300 - assigning raw data or tensors to placeholders will initialize it
-D301 - placeholders can be initialized at construction, this initializer will be promptedly destroyed
-D302 - placeholder's gradient is a zero constant
-D400 - constants must self destruct when its subject loses all its subscribers
-D401 - constants are always initialized
-D402 - constant's gradient is a zero constant
+- ileaf inheriteds should auto notify when initialized or reinitialized
+- variables auto initialize scalar on construction
+- variable's gradient is a one variable
+- assigning raw data or tensors to placeholders will initialize it
+- placeholders can be initialized at construction, this initializer will be promptedly destroyed
+- placeholder's gradient is a zero constant
+- constants must self destruct when its subject loses all its subscribers
+- constants are always initialized
+- constant's gradient is a zero constant
 
-// VARIABLE NODE EXECUTORS
-G000 - iexecutor should prevent its destination from being updated when its source nodes notify
-G001 - iexecutor should remove its source nodes when they are destroyed
-G002 - iexecutor should remove its destination nodes when they are destroyed
-G003 - group should execute its executors in order of when they are added

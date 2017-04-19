@@ -194,7 +194,8 @@ private:
 	//! allocator
 	iallocator* alloc_;
 
-	tensorshape allowed_shape_; //! not necessarily defined shape
+	//! not necessarily defined shape
+	tensorshape allowed_shape_;
 };
 
 }

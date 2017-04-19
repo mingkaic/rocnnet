@@ -70,8 +70,8 @@ static tensorshape marked_shape (std::vector<tensorshape>)
 TEST(HANDLER, Transfer_C000)
 {
 	FUZZ::delim();
-	tensorshape c1 = random_shape();
-	tensorshape c2 = random_shape();
+	tensorshape c1 = random_def_shape();
+	tensorshape c2 = random_def_shape();
 	tensorshape resshape = c1.concatenate(c2);
 	mock_tensor arg1(c1);
 	mock_tensor arg2(c2);
@@ -111,7 +111,7 @@ TEST(HANDLER, Constant_C001)
 	FUZZ::delim();
 	double scalar = FUZZ::getDouble(1)[0];
 	const_init<double> ci(scalar);
-	tensorshape shape = random_shape();
+	tensorshape shape = random_def_shape();
 	tensor<double> block(shape);
 	ci(block);
 
@@ -134,7 +134,7 @@ TEST(HANDLER, Random_C002)
 	double high = FUZZ::getDouble(1, {lo*2, lo*3+50})[0];
 	rand_uniform<double> ri1(lo, hi);
 	rand_uniform<double> ri2(lo, high);
-	tensorshape shape = random_shape();
+	tensorshape shape = random_def_shape();
 	tensor<double> block1(shape);
 	tensor<double> block2(shape);
 	ri1(block1);
@@ -182,7 +182,7 @@ TEST(HANDLER, Copy_C003)
 	ciassign = ci;
 	riassign = ri;
 
-	tensorshape shape = random_shape();
+	tensorshape shape = random_def_shape();
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
@@ -264,7 +264,7 @@ TEST(HANDLER, Move_C003)
 	const_init<double> cimv(std::move(ci));
 	rand_uniform<double> rimv(std::move(ri));
 
-	tensorshape shape = random_shape();
+	tensorshape shape = random_def_shape();
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
@@ -315,10 +315,10 @@ TEST(HANDLER, Move_C003)
 	// moving function and resulting in undefined is a standard-dependent behavior
 	// todo: decide on a more standard-independent way of testing moving function behavior
 //	EXPECT_DEATH(tf(ttransf3, {}), ".*");
-//	EXPECT_DEATH(ci(tscalar3), ".*");
-//	EXPECT_DEATH(ri(tblock3), ".*");
-//	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
-//	EXPECT_DEATH(cimv(tscalar3), ".*");
+// 	EXPECT_DEATH(ci(tscalar3), ".*");
+// 	EXPECT_DEATH(ri(tblock3), ".*");
+// 	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
+// 	EXPECT_DEATH(cimv(tscalar3), ".*");
 //	EXPECT_DEATH(rimv(tblock3), ".*");
 }
 

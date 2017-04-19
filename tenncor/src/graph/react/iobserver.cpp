@@ -40,6 +40,12 @@ iobserver& iobserver::operator = (iobserver&& other)
 	return *this;
 }
 
+bool iobserver::has_subject (subject* sub) const
+{
+	auto et = dependencies_.end();
+	return et != std::find(dependencies_.begin(), et, sub);
+}
+
 iobserver::iobserver (void) {}
 
 iobserver::iobserver (std::vector<subject*> dependencies)

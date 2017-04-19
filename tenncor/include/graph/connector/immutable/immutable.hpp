@@ -13,6 +13,7 @@
  */
 
 #include "graph/connector/iconnector.hpp"
+#include "graph/leaf/variable.hpp"
 
 #pragma once
 #ifndef TENNCOR_IMMUTABLE_HPP
