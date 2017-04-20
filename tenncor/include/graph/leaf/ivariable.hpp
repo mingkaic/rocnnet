@@ -39,7 +39,7 @@ public:
 	ivariable (const ivariable<T>& other);
 
 	//! move construct to init zero and one
-	ivariable (ileaf<T>&& other);
+	ivariable (ivariable<T>&& other);
 
 	//! declare copy assignment to copy over initializer
 	virtual ivariable<T>& operator = (const ivariable<T>& other);

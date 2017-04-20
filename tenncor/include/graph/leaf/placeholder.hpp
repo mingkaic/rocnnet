@@ -40,18 +40,6 @@ public:
 	//! move function
 	placeholder<T>* move (void);
 
-	//! copy constructor
-	placeholder (const placeholder<T>& other);
-
-	//! move constructor
-	placeholder (placeholder<T>&& other);
-
-	//! copy assignment
-	virtual placeholder<T>& operator = (const placeholder<T>& other);
-
-	//! move assignment
-	virtual placeholder<T>& operator = (placeholder<T>&& other);
-
 	// >>>> DATA ASSIGNMENT <<<<
 	//! assign raw data according to a
 	//! vector representation of inner tensor

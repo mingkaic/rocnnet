@@ -47,7 +47,11 @@ public:
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 	virtual const tensor<double>* get_gradient (inode<double>*) { return nullptr; }
-	virtual void update (subject*) {}
+
+	virtual void update (subject*)
+	{
+		label_incr("update1");
+	}
 
 	virtual void commit_sudoku (void)
 	{

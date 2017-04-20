@@ -97,15 +97,15 @@ public:
 	// this algorithm attempts to cover up the first unknown with data.size() / n_known
 	// iff data.size() % n_known == 0
 	// todo: attempt to parameterize some lambda function to distribute data.size() / n_known amongst all unknown (same for loosely guess)
-	optional<tensorshape> guess_shape (std::vector<T> data) const;
+	optional<tensorshape> guess_shape (const std::vector<T>& data) const;
 
-	//! return loosely compatible shape with n_elems < data.size()
+	//! return loosely compatible shape with n_elems <= data.size()
 	//! or undefined if compatibility is impossible
-	optional<tensorshape> loosely_guess_shape (std::vector<T> data) const;
+	optional<tensorshape> loosely_guess_shape (const std::vector<T>& data) const;
 
 	//! checks if tensorshape is aligned
 	//! same number of column for each row
-	virtual bool is_aligned (void) const { return true; }
+	virtual bool is_aligned (void) const;
 
 	// >>> DATA INFORMATION <<<
 	//! checks if memory is allocated
