@@ -21,6 +21,7 @@
 // copy constructor and assignment
 TEST(CONNECTOR, Copy_H000)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_connector* assign = new mock_connector({}, "");
 	mock_connector* assign2 = new mock_connector({}, "");
@@ -114,7 +115,6 @@ TEST(CONNECTOR, Copy_H000)
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -122,6 +122,7 @@ TEST(CONNECTOR, Copy_H000)
 // move constructor and assignment
 TEST(CONNECTOR, Move_H000)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_connector* assign = new mock_connector({}, "");
 	mock_connector* assign2 = new mock_connector({}, "");
@@ -217,7 +218,6 @@ TEST(CONNECTOR, Move_H000)
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -225,6 +225,7 @@ TEST(CONNECTOR, Move_H000)
 // get_name
 TEST(CONNECTOR, Name_H001)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	size_t nargs = FUZZ::getInt(1, {2, 7})[0];
 	std::vector<inode<double>*> ns;
@@ -249,7 +250,6 @@ TEST(CONNECTOR, Name_H001)
 	}
 	delete conn1;
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn1::commit_sudoku", nargs));
-	mocker::usage_.clear();
 }
 
 
@@ -257,6 +257,7 @@ TEST(CONNECTOR, Name_H001)
 // update_graph, is_same_graph
 TEST(CONNECTOR, Graph_H002)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -292,7 +293,6 @@ TEST(CONNECTOR, Graph_H002)
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -300,6 +300,7 @@ TEST(CONNECTOR, Graph_H002)
 // potential_descendent
 TEST(CONNECTOR, Descendent_H003)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
@@ -340,7 +341,6 @@ TEST(CONNECTOR, Descendent_H003)
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("separate::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 

@@ -52,7 +52,6 @@ TEST(REACT, CopySub_A000)
 	cpy2.mock_detach(&o1);
 	sassign2.mock_detach(&o1);
 	sassign2.mock_detach(&o1);
-	mocker::usage_.clear();
 }
 
 
@@ -94,7 +93,6 @@ TEST(REACT, MoveSub_A000)
 	mv2.mock_detach(&o1);
 	sassign2.mock_detach(&o1);
 	sassign2.mock_detach(&o1);
-	mocker::usage_.clear();
 }
 
 
@@ -102,6 +100,7 @@ TEST(REACT, MoveSub_A000)
 // notify
 TEST(REACT, Notify_A001)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
@@ -131,7 +130,6 @@ TEST(REACT, Notify_A001)
 	s1.mock_detach(&o1);
 	s2.mock_detach(&o1);
 	s2.mock_detach(&o2);
-	mocker::usage_.clear();
 }
 
 
@@ -139,6 +137,7 @@ TEST(REACT, Notify_A001)
 // destructor
 TEST(REACT, SUBDEATH_A002)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_observer o1;
 	mock_observer o2;
@@ -156,7 +155,6 @@ TEST(REACT, SUBDEATH_A002)
 	delete s2;
 	EXPECT_TRUE(mocker::EXPECT_CALL("o1::update2", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("o2::update2", 1));
-	mocker::usage_.clear();
 }
 
 
@@ -191,7 +189,6 @@ TEST(REACT, Attach_A003)
 	s1.mock_detach(&o1);
 	s2.mock_detach(&o1);
 	s2.mock_detach(&o2);
-	mocker::usage_.clear();
 }
 
 
@@ -221,7 +218,6 @@ TEST(REACT, Detach_A004)
 	EXPECT_FALSE(s3.no_audience());
 	s3.mock_detach(&o2, 0);
 	EXPECT_TRUE(s3.no_audience());
-	mocker::usage_.clear();
 }
 
 
@@ -229,6 +225,7 @@ TEST(REACT, Detach_A004)
 // default and dependency constructors
 TEST(REACT, ObsConstruct_A005)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
@@ -256,7 +253,6 @@ TEST(REACT, ObsConstruct_A005)
 
 	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -264,6 +260,7 @@ TEST(REACT, ObsConstruct_A005)
 // copy constructor and assignment
 TEST(REACT, CopyObs_A006)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
@@ -316,7 +313,6 @@ TEST(REACT, CopyObs_A006)
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -324,6 +320,7 @@ TEST(REACT, CopyObs_A006)
 // move constructor and assignment
 TEST(REACT, MoveObs_A006)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
@@ -382,7 +379,6 @@ TEST(REACT, MoveObs_A006)
 	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::commit_sudoku", 0));
 	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -390,6 +386,7 @@ TEST(REACT, MoveObs_A006)
 // add_dependency
 TEST(REACT, AddDep_A007)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
@@ -426,7 +423,6 @@ TEST(REACT, AddDep_A007)
 	delete o2;
 	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -459,7 +455,6 @@ TEST(REACT, RemDep_A008)
 	delete o1;
 	delete o2;
 	delete o3;
-	mocker::usage_.clear();
 }
 
 
@@ -467,6 +462,7 @@ TEST(REACT, RemDep_A008)
 // replace_dependency
 TEST(REACT, RepDep_A009)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_subject2* s1 = new mock_subject2;
 	mock_subject2* s2 = new mock_subject2;
@@ -491,7 +487,6 @@ TEST(REACT, RepDep_A009)
 	delete s2;
 	delete o1;
 	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
-	mocker::usage_.clear();
 }
 
 
@@ -499,6 +494,7 @@ TEST(REACT, RepDep_A009)
 // destruction, depends on subject detach
 TEST(REACT, ObsDeath_A010)
 {
+	mocker::usage_.clear();
 	FUZZ::delim();
 	mock_subject s1;
 	mock_subject2 s2;
@@ -512,7 +508,6 @@ TEST(REACT, ObsDeath_A010)
 
 	EXPECT_TRUE(s2.no_audience());
 	s1.mock_detach(tempptr);
-	mocker::usage_.clear();
 }
 
 

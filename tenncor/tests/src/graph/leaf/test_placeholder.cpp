@@ -6,6 +6,11 @@
 
 #include <algorithm>
 
+#include "mocks/mock_connector.h"
+#include "graph/leaf/placeholder.hpp"
+
+#include "util_test.h"
+
 #include "gtest/gtest.h"
 #include "fuzz.h"
 
@@ -14,61 +19,138 @@
 #ifndef DISABLE_PLACEHOLDER_TEST
 
 
-// Behavior D100
-TEST(PLACEHOLDER, InitNotify_D100)
+TEST(PLACHOLDER, Constructor_G000)
 {
-	nnet::placeholder<double> invar(std::vector<size_t>{5, 5}, "const_arr");
-	MockOperation* op = MockOperation::build(&invar); // observes cvar
-	EXPECT_CALL(*op, mock_update(_, _)).Times(1);
-	// call update on initializations
-	std::vector<double> raw;
-	for (size_t i = 0; i < 25; i++)
+	FUZZ::delim();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	tensorshape shape = random_def_shape();
+
+	placeholder<double> place(shape, label1);
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+
+	EXPECT_FALSE(place.good_status());
+}
+
+
+TEST(PLACHOLDER, Copy_G001)
+{
+	FUZZ::delim();
+	placeholder<double> assign(std::vector<size_t>{1});
+
+	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	std::string label1 = FUZZ::getString(strns[0]);
+	std::string label2 = FUZZ::getString(strns[1]);
+	tensorshape shape = random_def_shape();
+
+	placeholder<double> place(shape, label1);
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+
+	place = raw;
+	placeholder<double>* pcpy = place.clone();
+	assign = place;
+
+	std::vector<double> cpyout = expose(pcpy);
+	std::vector<double> assout = expose(&assign);
+
+	size_t n = raw.size();
+	ASSERT_EQ(cpyout.size(), n);
+	ASSERT_EQ(assout.size(), n);
+	for (size_t i = 0; i < n; i++)
 	{
-		raw.push_back(rand());
+		EXPECT_EQ(raw[i], cpyout[i]);
+		EXPECT_EQ(raw[i], assout[i]);
 	}
-	invar = raw;
-	delete op;
+
+	delete pcpy;
 }
 
 
-// Behavior D300
-TEST(PLACEHOLDER, Initialization_D300) {
-	const size_t insize = 20;
-	nnet::placeholder<double> invar((std::vector<size_t>{4, 5}), "in");
-	std::vector<double> raw;
-	for (size_t i = 0; i < insize; i++) {
-		raw.push_back(rand());
+TEST(PLACHOLDER, Move_G001)
+{
+	FUZZ::delim();
+	placeholder<double> assign(std::vector<size_t>{1});
+
+	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	std::string label1 = FUZZ::getString(strns[0]);
+	std::string label2 = FUZZ::getString(strns[1]);
+	tensorshape shape = random_def_shape();
+
+	placeholder<double> place(shape, label1);
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+
+	size_t n = raw.size();
+	place = raw;
+	placeholder<double>* pmv = place.move();
+
+	std::vector<double> mvout = expose(pmv);
+	ASSERT_EQ(mvout.size(), n);
+
+	for (size_t i = 0; i < n; i++)
+	{
+		EXPECT_EQ(raw[i], mvout[i]);
 	}
-	invar = raw;
-	std::vector<double> res = nnet::expose<double>(&invar);
-	ASSERT_EQ(res.size(), insize);
-	for (size_t i = 0; i < insize; i++) {
-		EXPECT_EQ(raw[i], res[i]);
+
+	EXPECT_EQ(nullptr, place.get_eval());
+
+	assign = std::move(*pmv);
+
+	std::vector<double> assout = expose(&assign);
+	ASSERT_EQ(assout.size(), n);
+
+	EXPECT_EQ(nullptr, pmv->get_eval());
+
+	for (size_t i = 0; i < n; i++)
+	{
+		EXPECT_EQ(raw[i], assout[i]);
+	}
+
+	delete pmv;
+}
+
+
+TEST(PLACHOLDER, AssignRaw_G002)
+{
+	mocker::usage_.clear();
+	FUZZ::delim();
+	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	std::string label1 = FUZZ::getString(strns[0]);
+	std::string label2 = FUZZ::getString(strns[1]);
+	tensorshape shape = random_def_shape();
+
+	placeholder<double> place(shape, label1);
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+
+	mock_connector conn({&place}, label2);
+	conn.inst_ = "conn";
+
+	EXPECT_FALSE(place.good_status());
+	place = raw;
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::update1", 1));
+
+	EXPECT_TRUE(place.good_status());
+	const tensor<double>* placer = place.get_eval();
+	EXPECT_TRUE(placer->is_alloc());
+	EXPECT_TRUE(tensorshape_equal(shape, placer->get_shape()));
+	std::vector<double> out = placer->expose();
+	for (size_t i = 0, n = out.size(); i < n; i++)
+	{
+		EXPECT_EQ(raw[i], out[i]);
 	}
 }
 
 
-// Behavior D301
-TEST(PLACEHOLDER, ConstructInit_D301) {
-	double constant = rand();
-	nnet::const_init<double> cinit(constant);
-	const size_t insize = 20;
-	nnet::placeholder<double> invar((std::vector<size_t>{4, 5}), cinit, "in");
-	std::vector<double> res = nnet::expose<double>(&invar);
-	ASSERT_EQ(res.size(), insize);
-	for (size_t i = 0; i < insize; i++) {
-		EXPECT_EQ(constant, res[i]);
-	}
+TEST(PLACHOLDER, AssignTensor_G003)
+{
 }
 
 
-// Behavior D302
-TEST(PLACEHOLDER, ZeroConstGrad_D302) {
-	nnet::placeholder<double> invar(std::vector<size_t>{1}, "in");
-	invar = std::vector<double>{1};
-	nnet::inode<double>* gradient = invar.get_gradient();
-	std::vector<double> res = nnet::expose<double>(gradient);
-	ASSERT_EQ(0, res.size());
+TEST(PLACHOLDER, GetLeaf_G004)
+{
+}
+
+
+TEST(PLACHOLDER, GetLeaves_G005)
+{
 }
 
 
