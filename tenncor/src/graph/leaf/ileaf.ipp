@@ -87,7 +87,7 @@ ileaf<T>::ileaf (const ileaf<T>& other) :
 
 template <typename T>
 ileaf<T>::ileaf (ileaf<T>&& other) :
-	inode<T>(other)
+	inode<T>(std::move(other))
 {
 	move_helper(std::move(other));
 }
@@ -102,7 +102,7 @@ void ileaf<T>::copy_helper (const ileaf<T>& other)
 template <typename T>
 void ileaf<T>::move_helper (ileaf<T>&& other)
 {
-	data_ = std::unique_ptr<tensor<T> >(std::move(other.data_));
+	data_ = std::move(other.data_);
 	is_init_ = std::move(other.is_init_);
 }
 

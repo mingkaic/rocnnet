@@ -54,6 +54,36 @@ D005 - constant self destructs when it loses all its subscribers if is_managed f
         otherwise constant wouldnt self destruct
 D006 - constant tensors are always allocated
 
+// IVARIABLE BEHAVIOR
+E000 - ivariable clone and move copy and move over initializer
+E001 - ivariable can initialize when initializer is not null
+E002 - ivariable get_gradient returns 1 scalar tensor
+        if input is this otherwise return 0 scalar
+
+// VARIABLE BEHAVIOR
+F000 - variable scalar constructor is initialized
+        variable constructor with no initializer specifies null init
+        otherwise initializer is clone of input initializer
+F001 - variable clone and move clones and moves from ivariable
+F002 - variable set_initializer deletes its existing initializer
+        and clones new init from input
+F003 - variable get_leaf returns 1 scalar node if input leaf is this,
+        otherwise return 0 scalar node
+F004 - variable get_leaves adds itself to the referenced leaf set
+F005 - variable initialize notifies on success.
+        variable initialization succeeds when initializer is not null,
+        the existing tensorshape is well defined,
+        or input shape is well defined and is compatible with tensor shape
+
+// PLACEHOLDER BEHAVIOR
+G000 - placeholder specifying shape has non-null initialization,
+        but has un-initialized status (is_init_)
+G001 - placeholder clone and move clones and moves from ivariable
+G002 - placeholder assigning raw data initializes tensor and notifies observers
+G003 - placeholder assigning tensor moves input tensor to inner tensor
+G004 - placeholder get_leaf returns 0 scalar node
+G005 - placeholder get_leaves does not change referenced leaf set
+
 // CONNECTOR BEHAVIOR
 H000 - copying connector copies over graph id if the original connector has at least one
         connector dependency (conform to definition of same graph)
@@ -89,16 +119,16 @@ I009 - get_gradient applies jacobian transformations regardless of its input lea
 I010 - update explicitly runs its forward transfer function with current depdendency states as its argument
 
 // ELEMENTARY BEHAVIORS
-E000 -
-Exxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
+J000 -
+Jxxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
         and its value is equivalent to the primitive value
         same applies for not equal (!=)
 
 // TRANSFORM BEHAVIORS
-F000 -
+K000 -
 
 // MATMUL BEHAVIOR
-G000 -
+L000 -
 
 - exposing operation nodes with null/invalid tensors will fail
 - elementary operations must error on exposure when not all of its leaves are initialized
@@ -106,39 +136,3 @@ G000 -
 - elementary binary operations argument shapes must be equivalent (same rank, and dimensional values)
 - matrix operations only takes 2-D tensors
 - matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)
-
-
-
-
-
-// IVARIABLE BEHAVIOR
-J000 - ivariable clone and move do not copy or move over zero or one,
-        they do copy and move over initializer
-J001 - ivariable can initialize when initializer is not null
-J002 - ivariable get_gradient returns 1 scalar tensor
-        if input is this otherwise return 0 scalar
-J003 - ivariable one and zero tensors must contain scalar constant 1 and 0
-
-// VARIABLE BEHAVIOR
-K000 - variable scalar constructor is initialized
-        variable constructor with no initializer specifies null init
-        otherwise initializer is clone of input initializer
-K001 - variable clone and move clones and moves from ivariable
-K002 - variable set_initializer deletes its existing initializer
-        and clones new init from input
-K003 - variable get_leaf returns 1 scalar node if input leaf is this,
-        otherwise return 0 scalar node
-K004 - variable get_leaves adds itself to the referenced leaf set
-K005 - variable initialize notifies on success.
-        variable initialization succeeds when initializer is not null,
-        the existing tensorshape is well defined,
-        or input shape is well defined and is compatible with tensor shape
-
-// PLACEHOLDER BEHAVIOR
-L000 - placeholder specifying shape has non-null initialization,
-        but has un-initialized status (is_init_)
-L001 - placeholder clone and move clones and moves from ivariable
-L002 - placeholder assigning raw data initializes tensor and notifies observers
-L003 - placeholder assigning tensor moves input tensor to inner tensor
-L004 - placeholder get_leaf returns 0 scalar node
-L005 - placeholder get_leaves does not change referenced leaf set

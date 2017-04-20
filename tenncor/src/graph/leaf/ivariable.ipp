@@ -88,8 +88,8 @@ ivariable<T>::ivariable (const ivariable<T>& other) :
 }
 
 template <typename T>
-ivariable<T>::ivariable (ileaf<T>&& other) :
-	ileaf<T>(other)
+ivariable<T>::ivariable (ivariable<T>&& other) :
+	ileaf<T>(std::move(other))
 {
 	common();
 	move_helper(std::move(other));
@@ -98,21 +98,31 @@ ivariable<T>::ivariable (ileaf<T>&& other) :
 template <typename T>
 void ivariable<T>::copy_helper (const ivariable<T>& other)
 {
+	if (init_ == other.init_) return;
 	if (nullptr != init_)
 	{
 		delete init_;
 	}
-	init_ = other.init_->clone();
+	if (other.init_)
+	{
+		init_ = other.init_->clone();
+	}
+	else
+	{
+		init_ = nullptr;
+	}
 }
 
 template <typename T>
 void ivariable<T>::move_helper (ivariable<T>&& other)
 {
+	if (init_ == other.init_) return;
 	if (nullptr != init_)
 	{
 		delete init_;
 	}
 	init_ = std::move(other.init_);
+	other.init_ = nullptr;
 }
 
 template <typename T>

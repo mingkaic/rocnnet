@@ -48,18 +48,6 @@ public:
 	//! move function
 	variable<T>* move (void);
 
-	//! copy constructor
-	variable (const variable<T>& other);
-
-	//! move constructor
-	variable (variable<T>&& other);
-
-	//! copy assignment
-	virtual variable<T>& operator = (const variable<T>& other);
-
-	//! move assignment
-	virtual variable<T>& operator = (variable<T>&& other);
-
 	// INITIALIZE VALUE
 	//! copy over initializer, replace current initializer
 	void set_initializer (const initializer<T>& init);
@@ -81,7 +69,6 @@ public:
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
 protected:
-
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 

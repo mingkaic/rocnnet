@@ -41,34 +41,6 @@ variable<T>* variable<T>::move (void)
 }
 
 template <typename T>
-variable<T>::variable (const variable<T>& other) :
-	ivariable<T>(other) {}
-
-template <typename T>
-variable<T>::variable (variable<T>&& other) :
-	ivariable<T>(other) {}
-
-template <typename T>
-variable<T>& variable<T>::operator = (const variable<T>& other)
-{
-	if (this != &other)
-	{
-		ileaf<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
-variable<T>& variable<T>::operator = (variable<T>&& other)
-{
-	if (this != &other)
-	{
-		ileaf<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
 void variable<T>::set_initializer (const initializer<T>& init)
 {
 	if (this->init_)
@@ -82,9 +54,9 @@ template <typename T>
 tensor<T>& variable<T>::initialize (void)
 {
 	assert(nullptr != this->init_);
-	// if not alloc, attempt to allocate
+	// if not alloc, attempt to allocate, throw if fail
 	if (false == this->data_->is_alloc() &&
-		this->data_->allocate())
+		false == this->data_->allocate())
 	{
 		throw std::exception(); // todo: better exception
 	}
@@ -98,8 +70,7 @@ template <typename T>
 tensor<T>& variable<T>::initialize (tensorshape shape)
 {
 	assert(this->init_ != nullptr);
-	if (false == this->data_->is_alloc() &&
-		this->data_->allocate(shape))
+	if (false == this->data_->allocate(shape))
 	{
 		throw std::exception(); // todo: better exception
 	}
