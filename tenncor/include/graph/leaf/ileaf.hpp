@@ -77,6 +77,9 @@ protected:
 	//! used by placeholder
 	class assignment;
 
+	template <typename U>
+	friend void assign_add (ileaf<U>* orig, std::vector<U>& raw_data);
+
 private:
 	//! copy helper
 	void copy_helper (const ileaf<T>& other);
@@ -84,6 +87,22 @@ private:
 	//! move helper
 	void move_helper (ileaf<T>&& other);
 };
+
+template <typename T>
+void assign_add (ileaf<T>* orig, std::vector<T>& raw_data)
+{
+	transfer_func<T> assign(
+	[orig](std::vector<tensorshape>)
+	{
+		return orig->get_shape();
+	},
+	[&raw_data](T* dest, const tensorshape& shape, std::vector<const T*>&, std::vector<tensorshape>&)
+	{
+		size_t ns = shape.n_elems();
+		memcpy(&raw_data[0], dest, sizeof(T) * ns);
+	});
+	assign(*orig->data_, {});
+}
 
 }
 
