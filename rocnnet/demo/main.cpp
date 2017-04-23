@@ -5,6 +5,7 @@
 #include <random>
 #include <algorithm>
 #include <iterator>
+#include <ctime>
 
 #include "mlp.hpp"
 #include "edgeinfo/comm_record.hpp"
@@ -24,9 +25,22 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 	return vec;
 }
 
+static std::vector<double> avgevry2 (std::vector<double>& in)
+{
+	std::vector<double> out;
+	for (size_t i = 0, n = in.size()/2; i < n; i++)
+	{
+		double val = (in.at(2*i) + in.at(2*i+1)) / 2;
+		out.push_back(val);
+	}
+	return out;
+}
+
 int main (int argc, char** argv)
 {
-	size_t n_train = 1000;
+	std::clock_t start;
+	double duration;
+	size_t n_train = 10000;
 	size_t n_test = 100;
 	size_t n_in = 10;
 	size_t n_out = 5;
@@ -57,50 +71,33 @@ int main (int argc, char** argv)
 	}
 
 	// train mlp to output input
-
-	for (size_t i = 0; i < n_train; i++)
-	{
-		std::cout << "training " << i << std::endl;
-		std::vector<double> batch = batch_generate(n_in, n_batch);
-		in = batch;
-		std::vector<double> batch_out;
-		for (size_t i = 0, n = batch.size()/2; i < n; i++)
-		{
-			double val = (batch.at(2*i) + batch.at(2*i+1)) / 2;
-			batch_out.push_back(val);
-		}
-		expected_out = batch_out;
-	}
-
-
-//	std::vector<VECS> samples;
-//	for (size_t i = 0; i < train_size; i++)
+//	start = std::clock();
+//	for (size_t i = 0; i < n_train; i++)
 //	{
-//		std::cout << "training " << i << "\n";
-//		samples.clear();
-//		fill_binary_samples(samples, n_in, batch_size);
-//		net.train(samples[0].first, samples[0].second);
+//		std::cout << "training " << i << std::endl;
+		std::vector<double> batch = batch_generate(n_in, n_batch);
+		std::vector<double> batch_out = avgevry2(batch);
+		in = batch;
+		expected_out = batch_out;
 //	}
-//
-//	size_t fails = 0;
+//	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+//	std::cout<< "training time: " << duration << " seconds\n";
+
 //	double err = 0;
 //	for (size_t i = 0; i < test_size; i++)
 //	{
 //		std::cout << "testing " << i << "\n";
-//		samples.clear();
-//		fill_binary_samples(samples, n_in, test_size);
-//		// feed input
-//		fanin = samples[0].first;
-//		std::vector<double> res = nnet::expose<double>(fanout);;
-//		std::vector<double> expect = samples[0].second;
-//		for (size_t i = 0; i < res.size(); i++)
+//		std::vector<double> batch = batch_generate(n_in, n_batch);
+//		std::vector<double> batch_out = avgevry2(batch);
+//		in = batch;
+//		expected_out = batch_out;
+//		std::vector<double> res = nnet::expose(diff);
+//		double avgerr = 0;
+//		for (double r : res)
 //		{
-//			err += std::abs(expect[i] - res[i]);
-//			if (expect[i] != std::round(res[i]))
-//			{
-//				fails++;
-//			}
+//			avgerr += std::abs(r);
 //		}
+//		err += avgerr / res.size();
 //	}
 
 #ifdef EDGE_RCD

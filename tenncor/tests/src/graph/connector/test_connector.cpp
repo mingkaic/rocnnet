@@ -104,15 +104,15 @@ TEST(CONNECTOR, Copy_H000)
 	delete cpy3;
 	delete cpy4;
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
 }
@@ -215,7 +215,7 @@ TEST(CONNECTOR, Move_H000)
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 0));
 	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 0));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
 }
@@ -290,7 +290,7 @@ TEST(CONNECTOR, Graph_H002)
 	delete boss;
 	delete boss2;
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
 }
@@ -338,7 +338,7 @@ TEST(CONNECTOR, Descendent_H003)
 	delete boss;
 	delete separate;
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
 	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
 	EXPECT_TRUE(mocker::EXPECT_CALL("separate::commit_sudoku", 2));
 }
