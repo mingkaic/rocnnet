@@ -43,7 +43,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 		}
 		else
 		{
-			throw std::exception(); // todo: better exception or warning + handling
+			throw std::exception(); // todo: better exception or warning + handling (loosely guess, then clip or pad with zero)
 		}
 	}
 	typename ileaf<T>::assignment* assigner =

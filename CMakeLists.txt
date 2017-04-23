@@ -41,16 +41,20 @@ if(BUILD_DOC)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
+set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)
 FILE(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
 
-# todo: uncomment to build
-#include_directories(${ROCNNET_INCLUDE})
-#add_library(rocnnet STATIC ${ROCNNET_SRC})
-#target_link_libraries(rocnnet ${TENNCOR_LIB})
+include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
+add_library(rocnnet STATIC ${ROCNNET_SRC})
+target_link_libraries(rocnnet tenncor)
+
+include_directories(${ROCNNET_INCLUDE})
+add_executable(demo ${ROCNNET_DIR}/demo/main.cpp)
+target_link_libraries(demo rocnnet)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY FOR VISER <<<<<<<<<<<<<<<<<<<<
 set(IO_INCLUDE ${IO_DIR}/include)

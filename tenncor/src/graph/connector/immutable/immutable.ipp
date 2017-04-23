@@ -13,9 +13,15 @@ namespace nnet
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name)
+	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
+	std::string name, bool ignore_jacobian)
 {
-	return new immutable<T>(args, shaper, Nf, F, name);
+	immutable<T>* imm = new immutable<T>(args, shaper, Nf, F, name);
+	if (ignore_jacobian)
+	{
+		imm->jacobians_.list_.clear();
+	}
+	return imm;
 }
 
 template <typename T>
@@ -168,7 +174,7 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		out = get_leaf(leaf);
 		// todo: move this down to accommodate non-leaf gradients
 		// modify res with jacobian
-		for (JTRANSFER<T> js : jacobians_)
+		for (JTRANSFER<T> js : jacobians_.list_)
 		{
 			out = js(out, leaf);
 		}
@@ -263,17 +269,24 @@ iconnector<T>(args, label),
 Nf_(shaper, forward),
 ginit_(F)
 {
+	std::unordered_set<inode<T>*> deps;
+	std::string jlabel = "";
+	// todo: test for jacobian, and leaf transfer
 	for (subject* sub : this->dependencies_)
 	{
-		if (inode<T>* arg = dynamic_cast<inode<T>*>(sub))
+		inode<T>* arg = dynamic_cast<inode<T>*>(sub);
+		if (deps.end() == deps.find(arg))
 		{
-			immutable<T>* a = dynamic_cast<immutable<T>*>(arg);
-			if (nullptr != a && false == a->jacobians_.empty())
+			immutable<T>* imm = dynamic_cast<immutable<T>*>(arg);
+			if (nullptr != imm && false == imm->jacobians_.list_.empty())
 			{
-				assert(jacobians_.empty()); // jacobian conflict across branches
-				jacobians_ = a->jacobians_; // copy over
+				jacobians_ = imm->jacobians_; // copy over
+				// test for jacobian conflict across branches
+				assert(jlabel.empty() || jlabel == jacobians_.uid_);
+				jlabel = jacobians_.uid_;
 			}
 			arg->get_leaves(gcache_);
+			deps.emplace(arg);
 		}
 	}
 	common();

@@ -199,6 +199,7 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 	}
 }
 
+// todo: test with odd trees to find edge cases of graph_node usage
 template <typename T>
 struct iconnector<T>::graph_node
 {
@@ -223,8 +224,15 @@ struct iconnector<T>::graph_node
 	{
 		graph_node* old = nullptr;
 		get_master(old);
-		master->users_ += old->users_;
-		old->top_ = master;
+		if (old != master)
+		{
+			master->users_ += old->users_;
+			old->top_ = master;
+		}
+		else
+		{
+			old->users_++;
+		}
 	}
 
 	// replace old with this

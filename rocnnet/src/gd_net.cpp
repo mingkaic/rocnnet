@@ -6,11 +6,13 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "../include/gd_net.hpp"
+#include "gd_net.hpp"
 
 #ifdef gd_net_hpp
 
-namespace nnet
+using namespace nnet;
+
+namespace rocnnet
 {
 
 group<double>* ad_hoc_gd_setup (double learning_rate,
@@ -128,7 +130,7 @@ gd_net::gd_net (size_t n_input,
 	std::vector<IN_PAIR> hiddens,
 	ioptimizer<double>* optimizer,
 	std::string scope) : 
-	ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer) 
+ml_perceptron(n_input, hiddens, scope), n_input(n_input), optimizer_(optimizer)
 {
 	size_t n_out = hiddens.back().first;
 	batch_size = new placeholder<double>(std::vector<size_t>{0}, "batch_size");

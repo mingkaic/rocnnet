@@ -122,7 +122,8 @@ I010 - update explicitly runs its forward transfer function with current depdend
 J000 -
 Jxxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
         and its value is equivalent to the primitive value
-        same applies for not equal (!=)
+        same applies for not equal (!=),
+        equality and inequality fails assertion if input node has bad status
 
 // TRANSFORM BEHAVIORS
 K000 -

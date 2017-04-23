@@ -36,7 +36,8 @@ class immutable : public iconnector<T>
 public:
 	//! builder for immutables
 	static immutable<T>* get (std::vector<inode<T>*> args,
-		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name);
+		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
+		std::string name, bool ignore_jacobian = false);
 
 	//! destructor
 	virtual ~immutable (void) {}
@@ -111,11 +112,20 @@ protected:
 	//! declare move constructor to move over transfer functions
 	immutable (immutable<T>&& other);
 
+	struct JList
+	{
+		JList (void) :
+			uid_(nnutils::uuid(this)) {}
+
+		std::string uid_;
+		std::list<JTRANSFER<T> > list_;
+	};
+
 	//! list of jacobian transfer function
 	//! to be executed on resulting root node
 	//! execution order: front to back
 	//! insertion order: back to front
-	std::list<JTRANSFER<T> > jacobians_;
+	JList jacobians_;
 
 private:
 	//! initialization helper

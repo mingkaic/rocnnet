@@ -83,6 +83,7 @@ std::vector<T> expose (const inode<T>* var)
 template <typename T>
 bool operator == (const inode<T>& c, T scalar)
 {
+	assert(c.good_status());
 	std::vector<T> res = expose<T>(&c);
 	return 1 == res.size() && scalar == res[0];
 }
@@ -90,6 +91,7 @@ bool operator == (const inode<T>& c, T scalar)
 template <typename T>
 bool operator != (const inode<T>& c, T scalar)
 {
+	assert(c.good_status());
 	std::vector<T> res = expose<T>(&c);
 	return 1 == res.size() && scalar != res[0];
 }

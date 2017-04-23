@@ -42,14 +42,26 @@ void itensor_handler<T>::operator () (
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}
-
 	tensorshape s = shaper_(ts);
-	tensorshape oshape = out.get_shape();
-	if (false == s.is_compatible_with(oshape))
+
+	if (s.is_fully_defined())
 	{
-		throw std::exception(); // TODO: better exception
+		// if out is allocated, verify shape with out
+		if (out.is_alloc())
+		{
+			tensorshape oshape = out.get_shape();
+			if (false == s.is_compatible_with(oshape))
+			{
+				throw std::exception(); // TODO: better exception
+			}
+		}
+		// otherwise allocate out
+		else
+		{
+			out.allocate(s);
+		}
+		forward_(out.raw_data_, s, raws, ts);
 	}
-	forward_(out.raw_data_, oshape, raws, ts);
 }
 
 template <typename T>
