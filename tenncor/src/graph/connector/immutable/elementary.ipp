@@ -25,6 +25,21 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 	return firstshape;
 }
 
+template <typename T>
+inline optional<T> scalarize (const varptr<T>& other)
+{
+	optional<T> out;
+	if (other->good_status())
+	{
+		std::vector<T> v = expose(other.get());
+		if (1 == v.size())
+		{
+			out = v[0];
+		}
+	}
+	return out;
+}
+
 // nulls are treated as 0
 template <typename T>
 varptr<T> operator + (const varptr<T> a)
@@ -429,6 +444,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a->good_status() && *a == (T)0) return b;
 	else if (b->good_status() && *b == (T)0) return a;
+	else if (optional<T> ascalar = scalarize(a))
+		return (*ascalar) + b;
+	else if (optional<T> bscalar = scalarize(b))
+		return a + (*bscalar);
+
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -501,6 +521,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a->good_status() && *a == (T)0) return b;
 	else if (b->good_status() && *b == (T)0) return a;
+	else if (optional<T> ascalar = scalarize(a))
+		return (*ascalar) - b;
+	else if (optional<T> bscalar = scalarize(b))
+		return a - (*bscalar);
+
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -575,9 +600,15 @@ template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && (*a == (T)0 || *b == (T)0)) return constant<T>::get(0);
+	if ((a->good_status() && *a == (T)0) || (b->good_status() && *b == (T)0))
+		return constant<T>::get(0);
 	if (a->good_status() && *a == (T)1) return b;
 	if (b->good_status() && *b == (T)1) return a;
+	else if (optional<T> ascalar = scalarize(a))
+		return (*ascalar) * b;
+	else if (optional<T> bscalar = scalarize(b))
+		return a * (*bscalar);
+
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -660,6 +691,11 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	assert(!b->good_status() || *b != (T) 0); // don't allow infinity
 	if (a->good_status() && *a == (T)0) return constant<T>::get(0);
 	if (b->good_status() && *b == (T)1) return a;
+	else if (optional<T> ascalar = scalarize(a))
+		return (*ascalar) / b;
+	else if (optional<T> bscalar = scalarize(b))
+		return a / (*bscalar);
+
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{

@@ -133,14 +133,20 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->jacobians_.list_.push_back(
-	[a, b, transposeA, transposeB](inode<T>* root, variable<T>* wrt)
+	[a, b, transposeA, transposeB](
+		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
 		varptr<T> grada = a->get_leaf(wrt);
 		varptr<T> gradb = b->get_leaf(wrt);
 
+		if (grada->good_status() && *grada == (T)0 &&
+			gradb->good_status() && *gradb == (T)0)
+		{
+			return root;
+		}
+
 		varptr<T> mA = new matmul<T>(root, b, transposeA, !transposeB);
 		varptr<T> mB = new matmul<T>(a, root, !transposeA, transposeB);
-
 		return mA * grada + mB * gradb;
 	});
 }

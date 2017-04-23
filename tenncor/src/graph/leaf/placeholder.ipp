@@ -41,10 +41,11 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 		{
 			this->data_->allocate(*cand_shape);
 		}
-		else
-		{
-			throw std::exception(); // todo: better exception or warning + handling (loosely guess, then clip or pad with zero)
-		}
+		// assertion would've failed otherwise
+//		else
+//		{
+//			throw std::exception(); // todo: better exception or warning + handling (loosely guess, then clip or pad with zero)
+//		}
 	}
 	typename ileaf<T>::assignment* assigner =
 		dynamic_cast<typename ileaf<T>::assignment*>(this->init_);

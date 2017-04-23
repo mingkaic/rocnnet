@@ -174,9 +174,10 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		out = get_leaf(leaf);
 		// todo: move this down to accommodate non-leaf gradients
 		// modify res with jacobian
-		for (JTRANSFER<T> js : jacobians_.list_)
+		for (auto it = jacobians_.list_.rbegin(),
+			et = jacobians_.list_.rend(); it != et; it++)
 		{
-			out = js(out, leaf);
+			out = (*it)(out, leaf);
 		}
 	}
 	// check graph

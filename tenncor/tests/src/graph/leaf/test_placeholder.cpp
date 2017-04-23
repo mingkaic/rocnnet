@@ -120,7 +120,7 @@ TEST(PLACHOLDER, AssignRaw_G002)
 	tensorshape part = make_partial(shape.as_list());
 
 	placeholder<double> place(shape, label1);
-	placeholder<double> place2(part, label3);
+	placeholder<double> place2(part, label2);
 	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
 
 	mock_connector conn({&place}, label3);
@@ -128,7 +128,6 @@ TEST(PLACHOLDER, AssignRaw_G002)
 
 	EXPECT_FALSE(place.good_status());
 	place = raw;
-	EXPECT_THROW({place2 = raw;}, std::exception);
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn::update1", 1));
 
 	EXPECT_TRUE(place.good_status());
@@ -136,6 +135,18 @@ TEST(PLACHOLDER, AssignRaw_G002)
 	EXPECT_TRUE(placer->is_alloc());
 	EXPECT_TRUE(tensorshape_equal(shape, placer->get_shape()));
 	std::vector<double> out = placer->expose();
+	for (size_t i = 0, n = out.size(); i < n; i++)
+	{
+		EXPECT_EQ(raw[i], out[i]);
+	}
+
+	// partial placeholders may guess shape for input vector
+	// place2 will succeed since place2 is made partial from initial shape
+	place2 = raw;
+	EXPECT_TRUE(place2.good_status());
+	const tensor<double>* placer2 = place2.get_eval();
+	EXPECT_TRUE(placer2->is_alloc());
+	out = placer2->expose();
 	for (size_t i = 0, n = out.size(); i < n; i++)
 	{
 		EXPECT_EQ(raw[i], out[i]);

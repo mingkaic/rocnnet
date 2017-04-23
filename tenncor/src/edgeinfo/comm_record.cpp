@@ -20,26 +20,20 @@ bool operator == (edge_record::subinfo const& lhs, edge_record::subinfo const& r
 	return (lhs.obs_ == rhs.obs_) && (lhs.sub_ == rhs.sub_) && (lhs.sid_ == rhs.sid_);
 }
 
-void edge_record::edge_capture (
-		iobserver* observer,
-		subject_owner* subject,
-		size_t idx)
+void edge_record::edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
 {
-	edge_record::prec_.add(observer);
-	edge_record::prec_.add(subject);
-	edges_.insert(subinfo(observer, subject, idx));
+	edge_record::prec_.add(obs);
+	edge_record::prec_.add(sub);
+	edges_.insert(subinfo(obs, sub, idx));
 }
 
-void edge_record::edge_release (
-		iobserver* observer,
-		subject_owner* subject,
-		size_t idx)
+void edge_record::edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
 {
-	auto it = edges_.find(subinfo(observer, subject, idx));
+	auto it = edges_.find(subinfo(obs, sub, idx));
 	if (edges_.end() != it)
 	{
-		edge_record::prec_.remove(observer);
-		edge_record::prec_.remove(subject);
+		edge_record::prec_.remove(obs);
+		edge_record::prec_.remove(sub);
 	}
 }
 

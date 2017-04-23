@@ -71,6 +71,7 @@ template <typename T>
 varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
 	if (nullptr == a && nullptr == watch) return nullptr;
+	if (a->good_status() && *a == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},

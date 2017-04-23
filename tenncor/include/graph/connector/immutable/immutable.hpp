@@ -127,6 +127,9 @@ protected:
 	//! insertion order: back to front
 	JList jacobians_;
 
+	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
+	std::unique_ptr<constant<T> > one; //! commonly used one constant
+
 private:
 	//! initialization helper
 	void common (void);
@@ -136,9 +139,6 @@ private:
 
 	//! move helper
 	void move_helper (immutable&& other);
-
-	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
-	std::unique_ptr<constant<T> > one; //! commonly used one constant
 
 	// >>>> FORWARD OPERATIONS <<<<
 	//! inner tensor to cache forward evaluated values

@@ -52,6 +52,7 @@ include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(rocnnet STATIC ${ROCNNET_SRC})
 target_link_libraries(rocnnet tenncor)
 
+#>>>>>>>>>>>>>>>>>>>> BUILD DEMO EXECUTABLE <<<<<<<<<<<<<<<<<<<<
 include_directories(${ROCNNET_INCLUDE})
 add_executable(demo ${ROCNNET_DIR}/demo/main.cpp)
 target_link_libraries(demo rocnnet)

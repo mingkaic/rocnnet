@@ -7,6 +7,7 @@
 #include <iterator>
 
 #include "mlp.hpp"
+#include "edgeinfo/comm_record.hpp"
 
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
@@ -25,18 +26,17 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 
 int main (int argc, char** argv)
 {
+	size_t n_train = 1000;
+	size_t n_test = 100;
 	size_t n_in = 10;
-	size_t n_out = 10;
-	size_t n_batch = 5;
+	size_t n_out = 5;
+//	size_t n_batch = 5;
+	size_t n_batch = 1;
 	nnet::placeholder<double> in((std::vector<size_t>{n_in, n_batch}), "layerin");
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
-		rocnnet::IN_PAIR(10, nnet::sigmoid<double>),
-		rocnnet::IN_PAIR(10, nnet::sigmoid<double>),
-//		rocnnet::IN_PAIR(10, nnet::sigmoid<double>),
-//		rocnnet::IN_PAIR(10, nnet::sigmoid<double>),
-//		rocnnet::IN_PAIR(10, nnet::sigmoid<double>),
-//		rocnnet::IN_PAIR(n_out, nnet::identity<double>)
+		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
+		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
 	rocnnet::ml_perceptron mlp(n_in, hiddens);
 	mlp.initialize();
@@ -46,22 +46,32 @@ int main (int argc, char** argv)
 	nnet::varptr<double> diff = output - nnet::varptr<double>(&expected_out);
 	nnet::varptr<double> error = diff * diff;
 
-	std::vector<double> batch = batch_generate(n_in, n_batch);
-	in = batch;
-	expected_out = batch;
-	// training using error
+	// training using gradient descent
 	{
 		nnet::inode<double>::GRAD_CACHE leafset;
 		error->get_leaves(leafset);
-		size_t i = 0;
 		for (auto lit : leafset)
 		{
 			const nnet::tensor<double>* gres = error->get_gradient(lit.first);
-			i++;
 		}
 	}
 
 	// train mlp to output input
+
+	for (size_t i = 0; i < n_train; i++)
+	{
+		std::cout << "training " << i << std::endl;
+		std::vector<double> batch = batch_generate(n_in, n_batch);
+		in = batch;
+		std::vector<double> batch_out;
+		for (size_t i = 0, n = batch.size()/2; i < n; i++)
+		{
+			double val = (batch.at(2*i) + batch.at(2*i+1)) / 2;
+			batch_out.push_back(val);
+		}
+		expected_out = batch_out;
+	}
+
 
 //	std::vector<VECS> samples;
 //	for (size_t i = 0; i < train_size; i++)
@@ -92,6 +102,10 @@ int main (int argc, char** argv)
 //			}
 //		}
 //	}
+
+#ifdef EDGE_RCD
+	rocnnet_record::erec::rec.to_csv<double>();
+#endif /* EDGE_RCD */
 
 	return 0;
 }

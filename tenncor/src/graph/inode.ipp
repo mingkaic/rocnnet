@@ -93,7 +93,7 @@ bool operator != (const inode<T>& c, T scalar)
 {
 	assert(c.good_status());
 	std::vector<T> res = expose<T>(&c);
-	return 1 == res.size() && scalar != res[0];
+	return 1 != res.size() || scalar != res[0];
 }
 
 }
