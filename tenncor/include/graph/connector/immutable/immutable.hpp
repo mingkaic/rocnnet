@@ -64,8 +64,7 @@ public:
 
 	//! grab a temporary value traversing top-down
 	//! allocates out tensor. caller owns out
-	virtual void temporary_eval (const iconnector<T>* target,
-		tensor<T>*& out) const;
+	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
 	//! check if the arguments are good; data is available
 	virtual bool good_status (void) const;
@@ -81,7 +80,7 @@ public:
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_leaf
-	virtual const tensor<T>* get_gradient (inode<T>* wrt);
+	virtual inode<T>* get_gradient (inode<T>* wrt);
 
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
@@ -93,6 +92,9 @@ protected:
 	immutable (std::vector<inode<T>*> args,
 		SHAPER shaper, FORWARD_OP<T> Nf,
 		BACK_MAP<T> F, std::string label);
+
+	//! copy everything but with new arguments
+	immutable (std::vector<inode<T>*> args, const immutable<T>& other);
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! ovride smart destruction,

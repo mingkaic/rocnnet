@@ -44,7 +44,7 @@ public:
 	virtual bool good_status (void) const { return nullptr != data_; }
 	virtual const tensor<double>* get_eval(void) const { return data_; }
 	virtual void get_leaves (GRAD_CACHE&) const {}
-	virtual const tensor<double>* get_gradient (inode<double>* wrt) { return wrt == this ? data_ : nullptr; }
+	virtual inode<double>* get_gradient (inode<double>* wrt) { return wrt == this ? this : nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 
 protected:

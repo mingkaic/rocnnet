@@ -81,43 +81,33 @@ const tensor<T>* immutable<T>::get_eval (void) const
 }
 
 template <typename T>
-void immutable<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out) const
+void immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) const
 {
 	// base case
 	if (this == target)
 	{
 		// return 1
-		out = new tensor<T>(1);
+		out = constant<T>::get(1);
 		return;
 	}
-	// traverse towards target by looking at leaf sets
-	std::vector<tensor<T>*> allocated;
-	std::vector<const tensor<T>*> tens;
+	// traverse towards target by comparing leaf sets
+	std::vector<inode<T>*> args;
 	for (subject* sub : this->dependencies_)
 	{
-		inode<T>* a = static_cast<inode<T>*>(sub);
-		iconnector<T>* con = dynamic_cast<iconnector<T>*>(a);
+		iconnector<T>* con = dynamic_cast<iconnector<T>*>(sub);
 		if (nullptr != con && con->potential_descendent(target))
 		{
-			tensor<T>* t = nullptr;
-			con->temporary_eval(target, t);
-
-			allocated.push_back(t);
-			tens.push_back(t);
+			inode<T>* tempout;
+			con->temporary_eval(target, tempout);
+			args.push_back(tempout);
 		}
 		else
 		{
-			tens.push_back(a->get_eval());
+			args.push_back(static_cast<inode<T>*>(sub));
 		}
 	};
 
-	out = new tensor<T>(this->get_shape());
-	// out is the shape of the resulting shape
-	Nf_(*out, tens);
-	for (tensor<T>* at : allocated)
-	{
-		delete at;
-	}
+	out = new immutable<T>(args, *this);
 }
 
 template <typename T>
@@ -158,9 +148,9 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 }
 
 template <typename T>
-const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
+inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 {
-	inode<T>* out;
+	inode<T>* out = nullptr;
 	bool outtemp = false;
 	iconnector<T>* conn = dynamic_cast<iconnector<T>*>(wrt);
 	// check self
@@ -184,30 +174,17 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	else if (conn && this->is_same_graph(conn))
 	{
 		// WARNING: this is one of the more expensive operations
-		// evoke temporary call
+		// evoke temporary call, out pollutes memory, but it will be removed eventually...
+		// todo: implement top-down garabage cleanup
 		outtemp = true;
-
-		tensor<T>* res;
-		this->temporary_eval(conn, res);
-
-		placeholder<T>* pl = new placeholder<T>(this->get_shape());
-		*pl = *res; // move tensor value to placeholder temporary
-		out = pl;
-		delete res;
+		this->temporary_eval(conn, out);
 	}
 	// is zero
 	else
 	{
 		out = zero.get();
 	}
-
-	const tensor<T>* res = out->get_eval();
-	if (outtemp)
-	{
-		res = res->clone();
-		delete out;
-	}
-	return res;
+	return out;
 }
 
 template <typename T>
@@ -220,7 +197,9 @@ void immutable<T>::update (subject* /*arg*/)
 	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
 		it != et && allgood && !damaged; it++)
 	{
-		if (inode<T>* a = dynamic_cast<inode<T>*>(*it))
+		inode<T>* a = dynamic_cast<inode<T>*>(*it);
+		damaged = nullptr == a;
+		if (!damaged)
 		{
 			allgood = allgood && a->good_status();
 			if (allgood)
@@ -228,10 +207,6 @@ void immutable<T>::update (subject* /*arg*/)
 				tens.push_back(a->get_eval());
 				ts.push_back(a->get_shape());
 			}
-		}
-		else
-		{
-			damaged = true;
 		}
 	};
 
@@ -292,6 +267,17 @@ ginit_(F)
 	}
 	common();
 	update(nullptr); // update data_ initially
+}
+
+template <typename T>
+immutable<T>::immutable (std::vector<inode<T>*> args, const immutable<T>& other) :
+	immutable<T>(other)
+{
+	for (size_t i = 0, n = args.size(); i < n; i++)
+	{
+		this->replace_dependency(args[i], i);
+	}
+	update(nullptr);
 }
 
 template <typename T>

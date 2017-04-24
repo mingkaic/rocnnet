@@ -45,9 +45,9 @@ constant<T>* constant<T>::move (void)
 }
 
 template <typename T>
-const tensor<T>* constant<T>::get_gradient (inode<T>*)
+inode<T>* constant<T>::get_gradient (inode<T>*)
 {
-	return zero->get_eval();
+	return zero;
 }
 
 template <typename T>

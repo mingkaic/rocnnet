@@ -55,8 +55,7 @@ public:
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	//! Grab a temporary value traversing top-down
-	virtual void temporary_eval (const iconnector<T>* target,
-		tensor<T>*& out) const = 0;
+	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

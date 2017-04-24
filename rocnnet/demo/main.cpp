@@ -14,7 +14,8 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
 	size_t total = n * batchsize;
 
-	std::random_device rnd_device;
+//	std::random_device rnd_device;
+	std::default_random_engine rnd_device;
 	// Specify the engine and distribution.
 	std::mt19937 mersenne_engine(rnd_device());
 	std::uniform_real_distribution<double> dist(0, 1);
@@ -41,7 +42,7 @@ int main (int argc, char** argv)
 	std::clock_t start;
 	double duration;
 	size_t n_train = 500;
-	size_t n_test = 500;
+	size_t n_test = 5000;
 	size_t n_in = 10;
 	size_t n_out = 5;
 //	size_t n_batch = 5;
@@ -57,7 +58,7 @@ int main (int argc, char** argv)
 
 	nnet::varptr<double> output = mlp(&in);
 	nnet::placeholder<double> expected_out(std::vector<size_t>{n_out, n_batch}, "expected_out");
-	nnet::varptr<double> diff = output - nnet::varptr<double>(&expected_out);
+	nnet::varptr<double> diff = nnet::varptr<double>(&expected_out) - output;
 	nnet::varptr<double> error = diff * diff;
 
 	double learning_rate = 0.9;
@@ -84,9 +85,9 @@ int main (int argc, char** argv)
 
 	// train mlp to output input
 	start = std::clock();
-	for (size_t i = 0; i < n_train; i++)
-	{
-		std::cout << "training " << i << std::endl;
+//	for (size_t i = 0; i < n_train; i++)
+//	{
+//		std::cout << "training " << i << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		in = batch;
@@ -95,28 +96,28 @@ int main (int argc, char** argv)
 		{
 			trainer();
 		}
-	}
+//	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout<< "training time: " << duration << " seconds\n";
 
-	double err = 0;
-	for (size_t i = 0; i < n_test; i++)
-	{
-//		std::cout << "testing " << i << "\n";
-		std::vector<double> batch = batch_generate(n_in, n_batch);
-		std::vector<double> batch_out = avgevry2(batch);
-		in = batch;
-		expected_out = batch_out;
-		std::vector<double> res = nnet::expose<double>(diff);
-		double avgerr = 0;
-		for (double r : res)
-		{
-			avgerr += std::abs(r);
-		}
-		err += avgerr / res.size();
-	}
-	err *= 100 / n_test;
-	std::cout << "error rate: " << err << "%\n";
+//	double err = 0;
+//	for (size_t i = 0; i < n_test; i++)
+//	{
+////		std::cout << "testing " << i << "\n";
+//		std::vector<double> batch = batch_generate(n_in, n_batch);
+//		std::vector<double> batch_out = avgevry2(batch);
+//		in = batch;
+//		expected_out = batch_out;
+//		std::vector<double> res = nnet::expose<double>(diff);
+//		double avgerr = 0;
+//		for (double r : res)
+//		{
+//			avgerr += std::abs(r);
+//		}
+//		err += avgerr / res.size();
+//	}
+//	err *= 100.0 / (double) n_test;
+//	std::cout << "error rate: " << err << "%\n";
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();

@@ -41,12 +41,12 @@ public:
 
 	void* get_gid (void) { return this->gid_; }
 
-	virtual void temporary_eval (const iconnector<double>*,tensor<double>*&) const {}
+	virtual void temporary_eval (const iconnector<double>*,inode<double>*&) const {}
 	virtual tensorshape get_shape (void) const { return tensorshape(); }
 	virtual bool good_status (void) const { return false; }
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
-	virtual const tensor<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual inode<double>* get_gradient (inode<double>*) { return nullptr; }
 
 	virtual void update (subject*)
 	{
