@@ -130,7 +130,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 {
 	return this->one.get();
 }, "matmul"),
-	transposeA_(transposeA), transposeB_(transposeB)
+transposeA_(transposeA), transposeB_(transposeB)
 {
 	this->jacobians_.list_.push_back(
 	[a, b, transposeA, transposeB](

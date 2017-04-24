@@ -127,14 +127,3 @@ Memory Layer
     - iallocator allows custom allocators for security or analysis purposes
     
     - session marks which nodes, tensors, and raw data to serialize
-    
-### Chain Rulez
-
-Let X be matrix, F, G = some differentiable function
-
-U = F(X)
-
-(todo: REPLACE JACOBIAN!)
-grad(G(U), X) = grad(G(F(X))/ X)
-grad(G(U), X) = grad(G(U), X_ij) 
-= Trace(matmul(transpose(grad(G(U), U)), grad(U, X_ij)))

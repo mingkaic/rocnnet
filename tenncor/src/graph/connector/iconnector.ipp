@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include <queue>
+
 #ifdef TENNCOR_ICONNECTOR_HPP
 
 namespace nnet
@@ -130,6 +132,22 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 }
 
 template <typename T>
+void iconnector<T>::update_status (bool freeze)
+{
+	graph_node* info = nullptr;
+	this->gid_->get_master(info);
+	info->freeze_ = freeze;
+	if (freeze) return;
+	// sort jobs from bottom-most to top-most nodes
+	while (false == info->jobs_.empty())
+	{
+		iconnector<T>* job = info->jobs_.top();
+		job->update(nullptr);
+		info->jobs_.pop();
+	}
+}
+
+template <typename T>
 iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string label) :
 	inode<T>(label),
 	iobserver(std::vector<subject*>(dependencies.begin(), dependencies.end()))
@@ -199,17 +217,34 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 	}
 }
 
+template <typename T>
+struct bottom_first
+{
+	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
+	{
+		return c1->potential_descendent(c2);
+	}
+};
+
+template <typename T>
+using job_container_t = std::vector<iconnector<T>*>;
+
+template <typename T>
+using job_queue_t = std::priority_queue<iconnector<T>*, job_container_t<T>, bottom_first<T> >;
+
 // todo: test with odd trees to find edge cases of graph_node usage
 template <typename T>
 struct iconnector<T>::graph_node
 {
 	graph_node* top_ = nullptr;
 	size_t users_ = 0;
+	bool freeze_ = false;
+	job_queue_t<T> jobs_;
 
 	// traverse up to single master (worst case: O(n))
 	void get_master (graph_node*& out) const
 	{
-		if (top_ == nullptr)
+		if (nullptr == top_)
 		{
 			out = const_cast<graph_node*>(this);
 		}
@@ -227,6 +262,8 @@ struct iconnector<T>::graph_node
 		if (old != master)
 		{
 			master->users_ += old->users_;
+			master->freeze_ = freeze_;
+			master->jobs_ = jobs_;
 			old->top_ = master;
 		}
 		else

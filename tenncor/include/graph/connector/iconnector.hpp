@@ -57,6 +57,12 @@ public:
 	//! Grab a temporary value traversing top-down
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const = 0;
 
+	// >>>> GRAPH WIDE OPTION <<<<
+	//! Freeze or unfreeze the entire graph
+	//! Freeze prevents graph from updating temporarily (updates are queued)
+	//! Unfreeze allows graph to be updated again, and executes all updates in queue
+	void update_status (bool freeze);
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies

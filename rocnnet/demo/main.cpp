@@ -41,8 +41,8 @@ int main (int argc, char** argv)
 {
 	std::clock_t start;
 	double duration;
-	size_t n_train = 500;
-	size_t n_test = 5000;
+	size_t n_train = 60000;
+	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;
 //	size_t n_batch = 5;
@@ -60,64 +60,58 @@ int main (int argc, char** argv)
 	nnet::placeholder<double> expected_out(std::vector<size_t>{n_out, n_batch}, "expected_out");
 	nnet::varptr<double> diff = nnet::varptr<double>(&expected_out) - output;
 	nnet::varptr<double> error = diff * diff;
+	nnet::iconnector<double>* topdog = static_cast<nnet::iconnector<double>*>(error.get());
 
 	double learning_rate = 0.9;
 	// training using gradient descent
-	std::vector<std::function<void(void)> > update;
+	std::vector<nnet::variable_updater<double> > update;
+	nnet::inode<double>::GRAD_CACHE leafset;
+	error->get_leaves(leafset);
+	for (auto lit : leafset)
 	{
-		nnet::inode<double>::GRAD_CACHE leafset;
-		error->get_leaves(leafset);
-		for (auto lit : leafset)
-		{
-			nnet::variable<double>* Wb = lit.first;
-			update.push_back(
-			[Wb, error, &learning_rate]()
-			{
-				std::vector<double> out = error->get_gradient(Wb)->expose();
-				std::transform(out.begin(), out.end(), out.begin(),
-				[&learning_rate](double v) {
-					return v * learning_rate;
-				});
-				nnet::assign_add<double>(Wb, out);
-			});
-		}
+		nnet::variable<double>* Wb = lit.first;
+		nnet::varptr<double> gres = error->get_gradient(Wb);
+		// Wb = Wb + learning_rate * gres
+		update.push_back(Wb->assign_add(gres * learning_rate));
 	}
 
 	// train mlp to output input
 	start = std::clock();
-//	for (size_t i = 0; i < n_train; i++)
-//	{
+	for (size_t i = 0; i < n_train; i++)
+	{
 //		std::cout << "training " << i << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		in = batch;
 		expected_out = batch_out;
+		topdog->update_status(true); // freeze
 		for (auto& trainer : update)
 		{
 			trainer();
 		}
-//	}
+		topdog->update_status(false); // update again
+	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-	std::cout<< "training time: " << duration << " seconds\n";
+	std::cout << "training time: " << duration << " seconds\n";
 
-//	double err = 0;
-//	for (size_t i = 0; i < n_test; i++)
-//	{
-////		std::cout << "testing " << i << "\n";
-//		std::vector<double> batch = batch_generate(n_in, n_batch);
-//		std::vector<double> batch_out = avgevry2(batch);
-//		in = batch;
-//		expected_out = batch_out;
-//		std::vector<double> res = nnet::expose<double>(diff);
-//		double avgerr = 0;
-//		for (double r : res)
-//		{
-//			avgerr += std::abs(r);
-//		}
-//		err += avgerr / res.size();
-//	}
-//	err *= 100.0 / (double) n_test;
-//	std::cout << "error rate: " << err << "%\n";
+	double err = 0;
+	for (size_t i = 0; i < n_test; i++)
+	{
+//		std::cout << "testing " << i << "\n";
+		std::vector<double> batch = batch_generate(n_in, n_batch);
+		std::vector<double> batch_out = avgevry2(batch);
+		in = batch;
+		expected_out = batch_out;
+		std::vector<double> res = nnet::expose<double>(diff);
+		double avgerr = 0;
+		for (double r : res)
+		{
+			avgerr += std::abs(r);
+		}
+		err += avgerr / res.size();
+	}
+	err *= 100.0 / (double) n_test;
+	std::cout << "error rate: " << err << "%\n";
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();

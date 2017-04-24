@@ -109,7 +109,7 @@ I006 - temporary_eval grabs the resulting node from target node up to calling no
 I007 - immutable get_leaves return a map from leaf to nullptr
 I008 - given an input of leaf A, get_leaf returns the node mapped by A in
         back_map (provided during construction). leaf A is back_map's second argument.
-I009 - get_gradient applies jacobian transformations regardless of its input leaf node
+I009 - get_gradient calculates gradient node from any node and applies jacobian transformation appropriately
         if wrt is this, return (without jacobian) is scalar 1 node,
         else if wrt is not a leaf but is a potential descendent, return temporary_eval from wrt to this
         else if wrt is not a leaf and isn't a potential descendent, return scalar 0 node

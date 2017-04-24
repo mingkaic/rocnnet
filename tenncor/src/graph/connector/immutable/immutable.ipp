@@ -151,7 +151,6 @@ template <typename T>
 inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 {
 	inode<T>* out = nullptr;
-	bool outtemp = false;
 	iconnector<T>* conn = dynamic_cast<iconnector<T>*>(wrt);
 	// check self
 	if (wrt == this)
@@ -162,7 +161,6 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
 		out = get_leaf(leaf);
-		// todo: move this down to accommodate non-leaf gradients
 		// modify res with jacobian
 		for (auto it = jacobians_.list_.rbegin(),
 			et = jacobians_.list_.rend(); it != et; it++)
@@ -176,8 +174,13 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		// WARNING: this is one of the more expensive operations
 		// evoke temporary call, out pollutes memory, but it will be removed eventually...
 		// todo: implement top-down garabage cleanup
-		outtemp = true;
 		this->temporary_eval(conn, out);
+		// todo: apply jacobian (and test)
+//		for (auto it = jacobians_.list_.rbegin(),
+//			et = jacobians_.list_.rend(); it != et; it++)
+//		{
+//			out = (*it)(out, leaf);
+//		}
 	}
 	// is zero
 	else
@@ -190,6 +193,15 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 template <typename T>
 void immutable<T>::update (subject* /*arg*/)
 {
+	{
+		typename iconnector<T>::graph_node* info = nullptr;
+		this->gid_->get_master(info);
+		if (info->freeze_)
+		{
+			info->jobs_.push(this);
+			return;
+		}
+	}
 	bool allgood = true;
 	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
