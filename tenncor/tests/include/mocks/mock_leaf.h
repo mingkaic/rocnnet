@@ -20,7 +20,7 @@ public:
 	mock_leaf (std::string name) : ileaf<double>(random_def_shape(), name) {}
 	mock_leaf (const tensorshape& shape, std::string name) : ileaf<double>(shape, name) {}
 
-	virtual const tensor<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual inode<double>* get_gradient (inode<double>*) { return nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
 

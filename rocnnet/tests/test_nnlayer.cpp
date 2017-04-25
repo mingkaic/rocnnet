@@ -71,7 +71,7 @@ TEST(PERCEPTRON, layer_multiple_in)
 	nnet::placeholder<double> in1((std::vector<size_t>{5}), "layerin1");
 	nnet::placeholder<double> in2((std::vector<size_t>{5}), "layerin2");
 	// layer connect
-	nnet::layer_perceptron layer(5, 5);
+	nnet::perceptron layer(5, 5);
 	nnet::varptr<double> res1 = layer(&in1);
 	nnet::varptr<double> res2 = layer(&in2);
 	// initialize weights
@@ -92,7 +92,7 @@ TEST(PERCEPTRON, layer_action)
 	nnet::session& sess = nnet::session::get_instance();
 	std::vector<double> vin = {1, 2, 3, 4, 5};
 	std::vector<double> exout = {1, 2, 3};
-	nnet::layer_perceptron layer(vin.size(), exout.size());
+	nnet::perceptron layer(vin.size(), exout.size());
 	nnet::placeholder<double> in(std::vector<size_t>{5}, "layerin");
 	nnet::varptr<double> res = layer(&in);
 	// initialize weight

@@ -15,6 +15,7 @@
 #include "gd_net.hpp"
 
 #pragma once
+#ifdef ACTIVATE_GD_NET
 #ifndef dqn_hpp
 #define dqn_hpp
 
@@ -126,3 +127,4 @@ class dq_net {
 }
 
 #endif /* dqn_hpp */
+#endif

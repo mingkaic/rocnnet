@@ -61,7 +61,7 @@ public:
 
 	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
 	//! get gradient wrt some node
-	virtual const tensor<T>* get_gradient (inode<T>* wrt);
+	virtual inode<T>* get_gradient (inode<T>* wrt);
 
 	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
 	//! grab operational gradient node, used by other nodes

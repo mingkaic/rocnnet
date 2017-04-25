@@ -6,51 +6,67 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "utils/futils.hpp"
+#include "perceptron.hpp"
+
 #pragma once
-#ifndef mlp_hpp
-#define mlp_hpp
+#ifndef ROCNNET_MLP_HPP
+#define ROCNNET_MLP_HPP
 
-#include "graph/functions.hpp"
-#include "layer.hpp"
-#include "innet.hpp"
-
-namespace nnet
+namespace rocnnet
 {
 
-#define IN_PAIR std::pair<size_t, nnet::VAR_FUNC<double> >
-#define HID_PAIR std::pair<layer_perceptron*, nnet::VAR_FUNC<double> >
+using VAR_FUNC = std::function<nnet::varptr<double>(nnet::inode<double>*)>;
+using IN_PAIR = std::pair<size_t, VAR_FUNC>;
+using HID_PAIR = std::pair<perceptron*, VAR_FUNC>;
 
-class ml_perceptron : public innet
+class ml_perceptron
 {
-	protected:
-		std::vector<HID_PAIR> layers;
-		
-		void copy (const ml_perceptron& other, std::string scope);
-		ml_perceptron (const ml_perceptron& other, std::string scope);
-		virtual ml_perceptron* clone_impl (std::string scope)
-		{
-			return new ml_perceptron (*this, scope);
-		}
+public:
+	// trust that passed in operations are unconnected
+	ml_perceptron (size_t n_input, std::vector<IN_PAIR> hiddens,
+		std::string scope = "MLP");
 
-	public:
-		// trust that passed in operations are unconnected
-		ml_perceptron (size_t n_input, std::vector<IN_PAIR> hiddens,
-			std::string scope = "MLP");
-		virtual ~ml_perceptron (void);
-		
-		// COPY
-        virtual ml_perceptron* clone (std::string scope = "");
-		ml_perceptron& operator = (const ml_perceptron& other);
+	virtual ~ml_perceptron (void);
 
-        // MOVE
-        
-        // PLACEHOLDER CONNECTION
-		// input are expected to have shape n_input by batch_size
-		// outputs are expected to have shape output by batch_size
-		nnet::varptr<double> operator () (placeholder<double>* input);
-		std::vector<WB_PAIR> get_variables (void);
+	ml_perceptron* clone (std::string scope = "");
+
+	ml_perceptron* move (std::string scope = "");
+
+	ml_perceptron& operator = (const ml_perceptron& other);
+
+	ml_perceptron& operator = (ml_perceptron&& other);
+
+	void initialize (void);
+
+	// PLACEHOLDER CONNECTION
+	// input are expected to have shape n_input by batch_size
+	// outputs are expected to have shape output by batch_size
+	nnet::varptr<double> operator () (nnet::inode<double>* input);
+
+	std::vector<WB_PAIR> get_variables (void) const;
+
+protected:
+	ml_perceptron (const ml_perceptron& other, std::string& scope);
+
+	ml_perceptron (ml_perceptron&& other, std::string& scope);
+
+	virtual ml_perceptron* clone_impl (std::string& scope);
+
+	virtual ml_perceptron* move_impl (std::string& scope);
+
+	std::vector<HID_PAIR> layers;
+
+private:
+	void copy_helper (const ml_perceptron& other, std::string& scope);
+
+	void move_helper (ml_perceptron&& other, std::string& scope);
+
+	size_t n_input_;
+
+	std::string scope_;
 };
 
 }
 
-#endif /* mlp_hpp */
+#endif /* ROCNNET_MLP_HPP */

@@ -61,11 +61,11 @@ varptr<T> exp (const varptr<T> a);
 
 //! square root of a
 template <typename T>
-varptr<T> sqrt (const varptr<T> a); // TODO implement
+varptr<T> sqrt (const varptr<T> a);
 
 //! a to the power of scalar
 template <typename T>
-varptr<T> pow (const varptr<T> a, T scalar); // TODO implement
+varptr<T> pow (const varptr<T> a, T scalar);
 
 //! clip values in range [min, max]
 template<typename T>

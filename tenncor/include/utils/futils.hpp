@@ -36,6 +36,13 @@ varptr<T> tanh (varptr<T> x)
 	return (etx + (T)1) / (etx - (T)1);
 }
 
+//! self explanatory
+template <typename T>
+varptr<T> identity (varptr<T> x)
+{
+	return x;
+}
+
 // TODO: fix graph copy
 //template <typename T>
 // clones every node from root to anything in leaf_set_src

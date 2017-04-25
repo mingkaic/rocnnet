@@ -17,30 +17,30 @@ using PUUID = size_t;
 // hashes pointers
 class ptr_record
 {
-	public:
-		// returns id
-		PUUID add (void* ptr);
+public:
+	// returns id
+	PUUID add (void* ptr);
 
-		PUUID get_hash (void* ptr);
+	PUUID get_hash (void* ptr);
 
-		bool remove (void* ptr);
+	bool remove (void* ptr);
 
-		PUUID get_max_id (void);
+	PUUID get_max_id (void);
 
-	private:
-		PUUID get_id (void);
+private:
+	PUUID get_id (void);
 
-		struct ptrinfo
-		{
-			ptrinfo (PUUID id) : id_(id) {}
+	struct ptrinfo
+	{
+		ptrinfo (PUUID id) : id_(id) {}
 
-			PUUID id_;
-			size_t usage_ = 1;
-		};
+		PUUID id_;
+		size_t usage_ = 1;
+	};
 
-		PUUID lastid = 0;
-		std::unordered_map<void*, ptrinfo> ptrs_;
-		std::stack<PUUID> unusaged_id_;
+	PUUID lastid = 0;
+	std::unordered_map<void*, ptrinfo> ptrs_;
+	std::stack<PUUID> unusaged_id_;
 };
 
 }

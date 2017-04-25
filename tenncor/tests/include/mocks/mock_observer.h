@@ -27,7 +27,7 @@ public:
 	// dummy stops us from executing these real actions,
 	// since we test using dummy attach/detach procedures
 	virtual void update (subject*) {}
-	virtual void update (size_t, notification) {}
+	virtual void update (std::unordered_set<size_t>&, notification) {}
 	virtual void commit_sudoku (void) {}
 
 protected:
@@ -53,7 +53,7 @@ public:
 		label_incr("update1");
 	}
 
-	virtual void update (size_t,notification)
+	virtual void update (std::unordered_set<size_t>&,notification)
 	{
 		label_incr("update2");
 	}
