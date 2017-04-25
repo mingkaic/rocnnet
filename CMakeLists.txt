@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(rocnnet C CXX)
 
 find_package(Threads REQUIRED)
+option(LCOVERAGE "Evaluate Coverage" ON)
 
 set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -53,6 +54,9 @@ add_library(rocnnet STATIC ${ROCNNET_SRC})
 target_link_libraries(rocnnet tenncor)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMO EXECUTABLE <<<<<<<<<<<<<<<<<<<<
+if (LCOVERAGE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
 add_executable(demo ${ROCNNET_DIR}/demo/main.cpp)
 target_link_libraries(demo rocnnet)
