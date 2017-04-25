@@ -13,7 +13,6 @@
 #include "executor/optimizer.hpp"
 
 #pragma once
-#ifdef ACTIVATE_GD_NET
 #ifndef gd_net_hpp
 #define gd_net_hpp
 
@@ -27,72 +26,95 @@ namespace rocnnet
 class gd_net : public ml_perceptron
 {
 public:
-	gd_net (size_t n_input,
-		std::vector<IN_PAIR> hiddens,
-		nnet::ioptimizer<double>* optimizer = nullptr,
-		std::string scope = "MLP");
-	virtual ~gd_net (void) {}
+	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope = "MLP");
 
-	// COPY
-	gd_net* clone (std::string scope = "GD_COPY") { return static_cast<gd_net*>(clone_impl(scope)); }
+	~gd_net (void)
+	{
+		delete train_in_;
+		delete expected_out_;
+	}
+
+	gd_net* clone (std::string scope = "") { return static_cast<gd_net*>(clone_impl(scope)); }
+
+	gd_net* move (std::string scope = "") { return static_cast<gd_net*>(move_impl(scope)); }
+
 	gd_net& operator = (const gd_net& other)
 	{
 		if (&other != this)
 		{
-			copy(other);
+			ml_perceptron::operator = (other);
+			copy_helper(other);
 		}
 		return *this;
 	}
 
-	// MOVE
-
-	// RECORD TRAINING?
-	void set_the_record_str8 (bool record_training)
+	gd_net& operator = (gd_net&& other)
 	{
-		this->record_training = record_training;
+		if (&other != this)
+		{
+			ml_perceptron::operator = (std::move(other));
+			move_helper(std::move(other));
+		}
+		return *this;
 	}
 
-	// operator () is inherited from ml_perceptron
-	void train (std::vector<double> train_in,
-		std::vector<double> expected_out);
+	void train (std::vector<double>& train_in, std::vector<double>& expected_out);
+
+	double learning_rate_ = 0.5;
 
 protected:
-	void train_set_up (void);
-
-	void copy (const gd_net& other, std::string scope = "")
+	gd_net (const gd_net& other, std::string& scope) :
+		ml_perceptron(other, scope)
 	{
-		n_input = other.n_input;
-		learning_rate = other.learning_rate;
-		batch_size = other.batch_size->clone();
-		train_in_ = other.train_in_->clone();
-		expected_out_ = other.expected_out_->clone();
-		train_set_up();
-		ml_perceptron::copy(other, scope);
+		copy_helper(other);
 	}
-	gd_net (const gd_net& net, std::string scope);
 
-	virtual ml_perceptron* clone_impl (std::string scope)
+	gd_net (gd_net&& other, std::string scope) :
+		ml_perceptron(std::move(other), scope)
+	{
+		move_helper(std::move(other));
+	}
+
+	virtual ml_perceptron* clone_impl (std::string& scope)
 	{
 		return new gd_net(*this, scope);
 	}
 
+	virtual ml_perceptron* move_impl (std::string& scope)
+	{
+		return new gd_net(std::move(*this), scope);
+	}
+
 private:
-	size_t n_input;
-	double learning_rate = 0.5; // implement setter
-	bool record_training = false;
-	// training input
-	nnet::placeholder<double>* train_in_ = nullptr;
-	nnet::placeholder<double>* expected_out_ = nullptr;
-	nnet::placeholder<double>* batch_size = nullptr;
-	// training output
-	nnet::varptr<double> diff_;
-	// training executors
-	nnet::group<double>* updates;
-	// owns optimizer
-	ioptimizer<double>* optimizer_ = nullptr;
+	void train_setup (void);
+
+	void copy_helper (const gd_net& other)
+	{
+		delete train_in_;
+		delete expected_out_;
+		train_in_ = other.train_in_->clone();
+		expected_out_ = other.expected_out_->clone();
+		train_setup();
+	}
+
+	void move_helper (gd_net&& other)
+	{
+		delete train_in_;
+		delete expected_out_;
+		train_in_ = other.train_in_->move();
+		expected_out_ = other.expected_out_->move();
+		train_setup();
+	}
+
+	std::vector<nnet::variable_updater<double> > updates_;
+
+	nnet::placeholder<double>* train_in_;
+
+	nnet::placeholder<double>* expected_out_;
+
+	nnet::iconnector<double>* error_;
 };
 
 }
 
 #endif /* gd_net_hpp */
-#endif

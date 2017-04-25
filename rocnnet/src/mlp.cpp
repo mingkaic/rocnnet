@@ -85,7 +85,6 @@ nnet::varptr<double> ml_perceptron::operator () (nnet::inode<double>* input)
 	// sanity check
 	nnet::tensorshape in_shape = input->get_shape();
 	assert(in_shape.is_compatible_with(std::vector<size_t>{n_input_, 0}));
-	in_shape.assert_is_fully_defined(); // not quite sure about this one
 	// output of one layer's dimensions is expected to be matched by
 	// the perceptron of the next layer
 	nnet::inode<double>* output = input;
