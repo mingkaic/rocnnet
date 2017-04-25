@@ -27,6 +27,9 @@ namespace nnet
 {
 
 template <typename T>
+using variable_updater = std::function<void(void)>;
+
+template <typename T>
 class variable final : public ivariable<T>
 {
 public:
@@ -67,6 +70,31 @@ public:
 	//! merge/update the gradient/leaf info
 	virtual void get_leaves (
 		typename inode<T>::GRAD_CACHE& leaves) const;
+
+	//! return update data function (add input node data to this)
+	variable_updater<T> assign_add (inode<T>* input) const
+	{
+		return [this, input]()
+		{
+			tensor<T>* outputt = this->data_.get();
+			const tensor<T>* inputt = input->get_eval();
+			transfer_func<T> assign(
+				[outputt](std::vector<tensorshape>)
+				{
+					return outputt->get_shape();
+				},
+				[](T* dest, const tensorshape& shape, std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
+				{
+					size_t ns = shape.n_elems();
+					assert(ns == inshapes.at(0).n_elems());
+					for (size_t i = 0; i < ns; i++)
+					{
+						dest[i] += srcs[0][i];
+					}
+				});
+			assign(*outputt, {inputt});
+		};
+	}
 
 protected:
 	//! clone implementation

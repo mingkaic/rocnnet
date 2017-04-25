@@ -42,10 +42,7 @@ void subject::notify (notification msg) const
 		std::unordered_set<size_t> indices = it->second;
 		// increment iterator before updating to account for audience_ modifications
 		it++;
-		for (size_t idx : indices)
-		{
-			viewer->update(idx, msg);
-		}
+		viewer->update(indices, msg);
 	}
 }
 

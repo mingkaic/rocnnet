@@ -42,14 +42,26 @@ void itensor_handler<T>::operator () (
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}
-
 	tensorshape s = shaper_(ts);
-	tensorshape oshape = out.get_shape();
-	if (false == s.is_compatible_with(oshape))
+
+	if (s.is_fully_defined())
 	{
-		throw std::exception(); // TODO: better exception
+		// if out is allocated, verify shape with out
+		if (out.is_alloc())
+		{
+			tensorshape oshape = out.get_shape();
+			if (false == s.is_compatible_with(oshape))
+			{
+				throw std::exception(); // TODO: better exception
+			}
+		}
+		// otherwise allocate out
+		else
+		{
+			out.allocate(s);
+		}
+		forward_(out.raw_data_, s, raws, ts);
 	}
-	forward_(out.raw_data_, oshape, raws, ts);
 }
 
 template <typename T>
@@ -102,7 +114,7 @@ initializer<T>* initializer<T>::move (void)
 template <typename T>
 void initializer<T>::operator () (tensor<T>& out) const
 {
-	itensor_handler<T>::operator ()(out, {});
+	itensor_handler<T>::operator ()(out, {&out});
 }
 
 template <typename T>
@@ -112,7 +124,7 @@ initializer<T>::initializer (SHAPER shaper, FORWARD_OP<T> forward) :
 template <typename T>
 const_init<T>::const_init (T value) :
 	initializer<T>(
-[](std::vector<tensorshape>) { return tensorshape(); },
+[](std::vector<tensorshape> inshapes) { return inshapes[0]; },
 [value](T* out, const tensorshape& shape,
 	std::vector<const T*>&, std::vector<tensorshape>&)
 {
@@ -147,7 +159,7 @@ itensor_handler<T>* const_init<T>::move_impl (void)
 template <typename T>
 rand_uniform<T>::rand_uniform (T min, T max) :
 	initializer<T>(
-[](std::vector<tensorshape>) { return tensorshape(); },
+[](std::vector<tensorshape> inshapes) { return inshapes[0]; },
 [this](T* out, const tensorshape& shape,
 	   std::vector<const T*>&, std::vector<tensorshape>&)
 {

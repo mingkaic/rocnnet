@@ -47,7 +47,7 @@ D000 - constant scalar constructor initializes data as a scalar of the same valu
         the tensor has shape specified in constructor
         if the input vector does not match shape, clip data or pad data to fit
 D001 - constant clone and move are deleted, clone and move return nullptr
-D002 - constant get_gradient returns 0 scalar tensor
+D002 - constant get_gradient returns 0 scalar node
 D003 - constant get_leaf returns 0 scalar node
 D004 - constant get_leaves does not change referenced leaf set
 D005 - constant self destructs when it loses all its subscribers if is_managed flag is off
@@ -57,7 +57,7 @@ D006 - constant tensors are always allocated
 // IVARIABLE BEHAVIOR
 E000 - ivariable clone and move copy and move over initializer
 E001 - ivariable can initialize when initializer is not null
-E002 - ivariable get_gradient returns 1 scalar tensor
+E002 - ivariable get_gradient returns 1 scalar node
         if input is this otherwise return 0 scalar
 
 // VARIABLE BEHAVIOR
@@ -104,25 +104,24 @@ I003 - immutable tensor shape is the result of the shaper function.
 I004 - immutable tensor initializes its tensor from the forward transfer functions if all its arguments are good
         otherwise good status is false, bad status returns nullptr on get_eval
 I005 - immutable dies when any of its dependencies dies
-I006 - temporary_eval grabs the resulting value from target node up to calling node.
+I006 - temporary_eval grabs the resulting node from target node up to calling node.
         the target node's value is taken as scalar 1.
-        tensor is allocated and is owned by the caller.
-        (meaning deleting the resulting tensor should have no adverse affect on any object state)
 I007 - immutable get_leaves return a map from leaf to nullptr
 I008 - given an input of leaf A, get_leaf returns the node mapped by A in
         back_map (provided during construction). leaf A is back_map's second argument.
-I009 - get_gradient applies jacobian transformations regardless of its input leaf node
-        if wrt is this, base result (without jacobian) is scalar 1,
-        else if wrt is not a leaf but is a potential descendent, base result is evaluation from wrt to this
-        else if wrt is not a leaf and isn't a potential descendent, the base result is scalar 0
-        otherwise the base result is the non-null value mapped from gcache
+I009 - get_gradient calculates gradient node from any node and applies jacobian transformation appropriately
+        if wrt is this, return (without jacobian) is scalar 1 node,
+        else if wrt is not a leaf but is a potential descendent, return temporary_eval from wrt to this
+        else if wrt is not a leaf and isn't a potential descendent, return scalar 0 node
+        otherwise the base result is the non-null node mapped from gcache
 I010 - update explicitly runs its forward transfer function with current depdendency states as its argument
 
 // ELEMENTARY BEHAVIORS
 J000 -
 Jxxx - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
         and its value is equivalent to the primitive value
-        same applies for not equal (!=)
+        same applies for not equal (!=),
+        equality and inequality fails assertion if input node has bad status
 
 // TRANSFORM BEHAVIORS
 K000 -

@@ -60,9 +60,9 @@ matmul<T>& matmul<T>::operator = (matmul<T>&& other)
 
 template <typename T>
 matmul<T>::matmul (inode<T>* a, inode<T>* b,
-	   bool transposeA, bool transposeB) :
-	immutable<T>((std::vector<inode<T>*>{a, b}),
-[this](std::vector<tensorshape> shapes) -> tensorshape
+	bool transposeA, bool transposeB) :
+immutable<T>((std::vector<inode<T>*>{a, b}),
+[transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
 {
 	tensorshape t1s = shapes[0];
 	tensorshape t2s = shapes[1];
@@ -77,23 +77,24 @@ matmul<T>::matmul (inode<T>* a, inode<T>* b,
 		size_t bx = t2s.rank() ? bl[0] : 0;
 		size_t by = t2s.rank() > 1 ? bl[1] : 1;
 
-		if (ay == bx && transposeA_ && transposeB_)
+		if (ay == bx && transposeA && transposeB)
 		{
 			return std::vector<size_t>{by, ax};
 		}
-		else if (ay == by && transposeA_)
+		else if (ay == by && transposeA)
 		{
 			return std::vector<size_t>{bx, ax};
 		}
-		else if (ax == bx && transposeB_)
+		else if (ax == bx && transposeB)
 		{
 			return std::vector<size_t>{by, ay};
 		}
-		else if (ax == by && !transposeA_ && !transposeB_)
+		else if (ax == by && !transposeA && !transposeB)
 		{
 			return std::vector<size_t>{bx, ay};
 		}
 	}
+	// warn user
 	return tensorshape();
 },
 [this](T* out, const tensorshape& outs, std::vector<const T*>& in, std::vector<tensorshape>&)
@@ -127,19 +128,25 @@ matmul<T>::matmul (inode<T>* a, inode<T>* b,
 },
 [this](std::vector<inode<T>*>, variable<T>*)
 {
-	return this;
+	return this->one.get();
 }, "matmul"),
-	transposeA_(transposeA), transposeB_(transposeB)
+transposeA_(transposeA), transposeB_(transposeB)
 {
-	this->jacobians_.push_back(
-	[a, b, transposeA, transposeB](inode<T>* root, variable<T>* wrt)
+	this->jacobians_.list_.push_back(
+	[a, b, transposeA, transposeB](
+		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
 		varptr<T> grada = a->get_leaf(wrt);
 		varptr<T> gradb = b->get_leaf(wrt);
 
+		if (grada->good_status() && *grada == (T)0 &&
+			gradb->good_status() && *gradb == (T)0)
+		{
+			return root;
+		}
+
 		varptr<T> mA = new matmul<T>(root, b, transposeA, !transposeB);
 		varptr<T> mB = new matmul<T>(a, root, !transposeA, transposeB);
-
 		return mA * grada + mB * gradb;
 	});
 }

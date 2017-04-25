@@ -164,9 +164,9 @@ TEST(CONSTANT, GetGradient_D002)
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(c+1);
 
-	const tensor<double>* g1 = res->get_gradient(nullptr);
-	const tensor<double>* g2 = res->get_gradient(res);
-	const tensor<double>* g3 = res->get_gradient(res2);
+	const tensor<double>* g1 = res->get_gradient(nullptr)->get_eval();
+	const tensor<double>* g2 = res->get_gradient(res)->get_eval();
+	const tensor<double>* g3 = res->get_gradient(res2)->get_eval();
 
 	std::vector<double> gres = g1->expose();
 	std::vector<double> gres1 = g2->expose();

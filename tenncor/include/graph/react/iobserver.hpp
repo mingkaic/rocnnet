@@ -82,7 +82,7 @@ protected:
 
 private:
 	//! update observer value with notification
-	virtual void update (size_t dep_idx, notification msg);
+	virtual void update (std::unordered_set<size_t>& dep_indices, notification msg);
 
 	//! copy helper function
 	void copy_helper (const iobserver& other);

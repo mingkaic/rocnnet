@@ -94,3 +94,5 @@ This convention means that for matrices, rows are the second dimension, and colu
 contrary to row and column major order. 
 
 This will play a major role in matrix operations. An ongoing effort is made towards parameterizing shape conventions.
+
+No special structured tensors are supported. (Example: symmetric, Toeplitz, positive definite)

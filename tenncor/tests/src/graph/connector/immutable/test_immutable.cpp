@@ -476,7 +476,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 			return im;
 		});
 
-	tensor<double>* out = nullptr;
+	inode<double>* out = nullptr;
 	inode<double>::GRAD_CACHE lcache;
 	for (immutable<double>* coll : collector)
 	{
@@ -484,19 +484,19 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 		lcache.clear();
 		static_cast<immutable<double>*>(root)->temporary_eval(coll, out);
 		ASSERT_NE(nullptr, out);
-		ASSERT_TRUE(tensorshape_equal(shape, out->get_shape()));
+		const tensor<double>* outt = out->get_eval();
+		ASSERT_TRUE(tensorshape_equal(shape, outt->get_shape()));
 		// out data should be 1 + M * single_rando where M is the
 		// number of root's leaves that are not in coll's leaves
 		coll->get_leaves(lcache);
 		size_t M = leaves.size() - lcache.size();
 		double datum = M * single_rando + 1;
-		std::vector<double> odata = out->expose();
+		std::vector<double> odata = outt->expose();
 		for (double od : odata)
 		{
 			double diff = std::abs(datum - od);
 			EXPECT_GT(0.000001 * single_rando, diff); // allow error of a tiny fraction of the random leaf value
 		}
-		delete out;
 	}
 
 	for (inode<double>* l : leaves)
@@ -731,11 +731,11 @@ TEST(IMMUTABLE, GetGradient_I009)
 	for (size_t i = 0; i < nnodes/3; i++)
 	{
 		ordering.clear();
-		const tensor<double>* wun = root->get_gradient(
-			*(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
+		variable<double>* rselected = *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves));
+		const tensor<double>* wun = root->get_gradient(rselected)->get_eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		const tensor<double>* zaro = root->get_gradient(notleaf);
+		const tensor<double>* zaro = root->get_gradient(notleaf)->get_eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
 
@@ -747,7 +747,7 @@ TEST(IMMUTABLE, GetGradient_I009)
 		// SAME AS TEMPORARY EVAL
 		immutable<double>* coll = *(FUZZ::rand_select<std::unordered_set<immutable<double>*> >(collector));
 		if (coll == root) continue;
-		const tensor<double>* grad_too = root->get_gradient(coll);
+		const tensor<double>* grad_too = root->get_gradient(coll)->get_eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ASSERT_NE(nullptr, grad_too);
 		ASSERT_TRUE(tensorshape_equal(shape, grad_too->get_shape()));

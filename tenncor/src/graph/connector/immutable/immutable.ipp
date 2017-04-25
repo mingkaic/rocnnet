@@ -13,9 +13,15 @@ namespace nnet
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name)
+	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
+	std::string name, bool ignore_jacobian)
 {
-	return new immutable<T>(args, shaper, Nf, F, name);
+	immutable<T>* imm = new immutable<T>(args, shaper, Nf, F, name);
+	if (ignore_jacobian)
+	{
+		imm->jacobians_.list_.clear();
+	}
+	return imm;
 }
 
 template <typename T>
@@ -75,43 +81,33 @@ const tensor<T>* immutable<T>::get_eval (void) const
 }
 
 template <typename T>
-void immutable<T>::temporary_eval (const iconnector<T>* target, tensor<T>*& out) const
+void immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) const
 {
 	// base case
 	if (this == target)
 	{
 		// return 1
-		out = new tensor<T>(1);
+		out = constant<T>::get(1);
 		return;
 	}
-	// traverse towards target by looking at leaf sets
-	std::vector<tensor<T>*> allocated;
-	std::vector<const tensor<T>*> tens;
+	// traverse towards target by comparing leaf sets
+	std::vector<inode<T>*> args;
 	for (subject* sub : this->dependencies_)
 	{
-		inode<T>* a = static_cast<inode<T>*>(sub);
-		iconnector<T>* con = dynamic_cast<iconnector<T>*>(a);
+		iconnector<T>* con = dynamic_cast<iconnector<T>*>(sub);
 		if (nullptr != con && con->potential_descendent(target))
 		{
-			tensor<T>* t = nullptr;
-			con->temporary_eval(target, t);
-
-			allocated.push_back(t);
-			tens.push_back(t);
+			inode<T>* tempout;
+			con->temporary_eval(target, tempout);
+			args.push_back(tempout);
 		}
 		else
 		{
-			tens.push_back(a->get_eval());
+			args.push_back(static_cast<inode<T>*>(sub));
 		}
 	};
 
-	out = new tensor<T>(this->get_shape());
-	// out is the shape of the resulting shape
-	Nf_(*out, tens);
-	for (tensor<T>* at : allocated)
-	{
-		delete at;
-	}
+	out = new immutable<T>(args, *this);
 }
 
 template <typename T>
@@ -152,10 +148,9 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 }
 
 template <typename T>
-const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
+inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 {
-	inode<T>* out;
-	bool outtemp = false;
+	inode<T>* out = nullptr;
 	iconnector<T>* conn = dynamic_cast<iconnector<T>*>(wrt);
 	// check self
 	if (wrt == this)
@@ -166,46 +161,47 @@ const tensor<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
 		out = get_leaf(leaf);
-		// todo: move this down to accommodate non-leaf gradients
 		// modify res with jacobian
-		for (JTRANSFER<T> js : jacobians_)
+		for (auto it = jacobians_.list_.rbegin(),
+			et = jacobians_.list_.rend(); it != et; it++)
 		{
-			out = js(out, leaf);
+			out = (*it)(out, leaf);
 		}
 	}
 	// check graph
 	else if (conn && this->is_same_graph(conn))
 	{
 		// WARNING: this is one of the more expensive operations
-		// evoke temporary call
-		outtemp = true;
-
-		tensor<T>* res;
-		this->temporary_eval(conn, res);
-
-		placeholder<T>* pl = new placeholder<T>(this->get_shape());
-		*pl = *res; // move tensor value to placeholder temporary
-		out = pl;
-		delete res;
+		// evoke temporary call, out pollutes memory, but it will be removed eventually...
+		// todo: implement top-down garabage cleanup
+		this->temporary_eval(conn, out);
+		// todo: apply jacobian (and test)
+//		for (auto it = jacobians_.list_.rbegin(),
+//			et = jacobians_.list_.rend(); it != et; it++)
+//		{
+//			out = (*it)(out, leaf);
+//		}
 	}
 	// is zero
 	else
 	{
 		out = zero.get();
 	}
-
-	const tensor<T>* res = out->get_eval();
-	if (outtemp)
-	{
-		res = res->clone();
-		delete out;
-	}
-	return res;
+	return out;
 }
 
 template <typename T>
 void immutable<T>::update (subject* /*arg*/)
 {
+	{
+		typename iconnector<T>::graph_node* info = nullptr;
+		this->gid_->get_master(info);
+		if (info->freeze_)
+		{
+			info->jobs_.push(this);
+			return;
+		}
+	}
 	bool allgood = true;
 	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
@@ -213,7 +209,9 @@ void immutable<T>::update (subject* /*arg*/)
 	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
 		it != et && allgood && !damaged; it++)
 	{
-		if (inode<T>* a = dynamic_cast<inode<T>*>(*it))
+		inode<T>* a = dynamic_cast<inode<T>*>(*it);
+		damaged = nullptr == a;
+		if (!damaged)
 		{
 			allgood = allgood && a->good_status();
 			if (allgood)
@@ -221,10 +219,6 @@ void immutable<T>::update (subject* /*arg*/)
 				tens.push_back(a->get_eval());
 				ts.push_back(a->get_shape());
 			}
-		}
-		else
-		{
-			damaged = true;
 		}
 	};
 
@@ -263,21 +257,39 @@ iconnector<T>(args, label),
 Nf_(shaper, forward),
 ginit_(F)
 {
+	std::unordered_set<inode<T>*> deps;
+	std::string jlabel = "";
+	// todo: test for jacobian, and leaf transfer
 	for (subject* sub : this->dependencies_)
 	{
-		if (inode<T>* arg = dynamic_cast<inode<T>*>(sub))
+		inode<T>* arg = dynamic_cast<inode<T>*>(sub);
+		if (deps.end() == deps.find(arg))
 		{
-			immutable<T>* a = dynamic_cast<immutable<T>*>(arg);
-			if (nullptr != a && false == a->jacobians_.empty())
+			immutable<T>* imm = dynamic_cast<immutable<T>*>(arg);
+			if (nullptr != imm && false == imm->jacobians_.list_.empty())
 			{
-				assert(jacobians_.empty()); // jacobian conflict across branches
-				jacobians_ = a->jacobians_; // copy over
+				jacobians_ = imm->jacobians_; // copy over
+				// test for jacobian conflict across branches
+				assert(jlabel.empty() || jlabel == jacobians_.uid_);
+				jlabel = jacobians_.uid_;
 			}
 			arg->get_leaves(gcache_);
+			deps.emplace(arg);
 		}
 	}
 	common();
 	update(nullptr); // update data_ initially
+}
+
+template <typename T>
+immutable<T>::immutable (std::vector<inode<T>*> args, const immutable<T>& other) :
+	immutable<T>(other)
+{
+	for (size_t i = 0, n = args.size(); i < n; i++)
+	{
+		this->replace_dependency(args[i], i);
+	}
+	update(nullptr);
 }
 
 template <typename T>

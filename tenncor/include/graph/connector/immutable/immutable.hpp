@@ -36,7 +36,8 @@ class immutable : public iconnector<T>
 public:
 	//! builder for immutables
 	static immutable<T>* get (std::vector<inode<T>*> args,
-		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F, std::string name);
+		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
+		std::string name, bool ignore_jacobian = false);
 
 	//! destructor
 	virtual ~immutable (void) {}
@@ -63,8 +64,7 @@ public:
 
 	//! grab a temporary value traversing top-down
 	//! allocates out tensor. caller owns out
-	virtual void temporary_eval (const iconnector<T>* target,
-		tensor<T>*& out) const;
+	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
 	//! check if the arguments are good; data is available
 	virtual bool good_status (void) const;
@@ -80,7 +80,7 @@ public:
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_leaf
-	virtual const tensor<T>* get_gradient (inode<T>* wrt);
+	virtual inode<T>* get_gradient (inode<T>* wrt);
 
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
@@ -92,6 +92,9 @@ protected:
 	immutable (std::vector<inode<T>*> args,
 		SHAPER shaper, FORWARD_OP<T> Nf,
 		BACK_MAP<T> F, std::string label);
+
+	//! copy everything but with new arguments
+	immutable (std::vector<inode<T>*> args, const immutable<T>& other);
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! ovride smart destruction,
@@ -111,11 +114,23 @@ protected:
 	//! declare move constructor to move over transfer functions
 	immutable (immutable<T>&& other);
 
+	struct JList
+	{
+		JList (void) :
+			uid_(nnutils::uuid(this)) {}
+
+		std::string uid_;
+		std::list<JTRANSFER<T> > list_;
+	};
+
 	//! list of jacobian transfer function
 	//! to be executed on resulting root node
 	//! execution order: front to back
 	//! insertion order: back to front
-	std::list<JTRANSFER<T> > jacobians_;
+	JList jacobians_;
+
+	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
+	std::unique_ptr<constant<T> > one; //! commonly used one constant
 
 private:
 	//! initialization helper
@@ -126,9 +141,6 @@ private:
 
 	//! move helper
 	void move_helper (immutable&& other);
-
-	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
-	std::unique_ptr<constant<T> > one; //! commonly used one constant
 
 	// >>>> FORWARD OPERATIONS <<<<
 	//! inner tensor to cache forward evaluated values

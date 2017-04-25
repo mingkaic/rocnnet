@@ -52,7 +52,7 @@ public:
 
 	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
 	//! get gradient wrt some node
-	virtual const tensor<T>* get_gradient (inode<T>* wrt);
+	virtual inode<T>* get_gradient (inode<T>* wrt);
 
 protected:
 	std::unique_ptr<constant<T> > zero; //! commonly used constant zero

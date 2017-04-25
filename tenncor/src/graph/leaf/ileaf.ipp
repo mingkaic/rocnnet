@@ -138,7 +138,7 @@ public:
 	{
 		// update temp_
 		temp_ = data;
-		itensor_handler<T>::operator ()(out, {});
+		itensor_handler<T>::operator ()(out, {&out});
 	}
 
 protected:
