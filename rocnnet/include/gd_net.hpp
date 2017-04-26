@@ -26,93 +26,46 @@ namespace rocnnet
 class gd_net : public ml_perceptron
 {
 public:
-	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope = "MLP");
+	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, 
+		double learning_rate, std::string scope = "MLP");
 
-	~gd_net (void)
-	{
-		delete train_in_;
-		delete expected_out_;
-	}
+	~gd_net (void);
 
-	gd_net* clone (std::string scope = "") { return static_cast<gd_net*>(clone_impl(scope)); }
+	gd_net* clone (std::string scope = "");
 
-	gd_net* move (std::string scope = "") { return static_cast<gd_net*>(move_impl(scope)); }
+	gd_net* move (std::string scope = "");
 
-	gd_net& operator = (const gd_net& other)
-	{
-		if (&other != this)
-		{
-			ml_perceptron::operator = (other);
-			copy_helper(other);
-		}
-		return *this;
-	}
+	gd_net& operator = (const gd_net& other);
 
-	gd_net& operator = (gd_net&& other)
-	{
-		if (&other != this)
-		{
-			ml_perceptron::operator = (std::move(other));
-			move_helper(std::move(other));
-		}
-		return *this;
-	}
+	gd_net& operator = (gd_net&& other);
 
 	void train (std::vector<double>& train_in, std::vector<double>& expected_out);
 
-	double learning_rate_ = 0.5;
-
 protected:
-	gd_net (const gd_net& other, std::string& scope) :
-		ml_perceptron(other, scope)
-	{
-		copy_helper(other);
-	}
+	gd_net (const gd_net& other, std::string& scope);
 
-	gd_net (gd_net&& other, std::string scope) :
-		ml_perceptron(std::move(other), scope)
-	{
-		move_helper(std::move(other));
-	}
+	gd_net (gd_net&& other, std::string scope);
 
-	virtual ml_perceptron* clone_impl (std::string& scope)
-	{
-		return new gd_net(*this, scope);
-	}
+	virtual ml_perceptron* clone_impl (std::string& scope);
 
-	virtual ml_perceptron* move_impl (std::string& scope)
-	{
-		return new gd_net(std::move(*this), scope);
-	}
+	virtual ml_perceptron* move_impl (std::string& scope);
 
 private:
 	void train_setup (void);
 
-	void copy_helper (const gd_net& other)
-	{
-		delete train_in_;
-		delete expected_out_;
-		train_in_ = other.train_in_->clone();
-		expected_out_ = other.expected_out_->clone();
-		train_setup();
-	}
+	void copy_helper (const gd_net& other);
 
-	void move_helper (gd_net&& other)
-	{
-		delete train_in_;
-		delete expected_out_;
-		train_in_ = other.train_in_->move();
-		expected_out_ = other.expected_out_->move();
-		train_setup();
-	}
+	void move_helper (gd_net&& other);
 
 	std::vector<nnet::variable_updater<double> > updates_;
 
-	nnet::placeholder<double>* train_in_;
+	nnet::placeholder<double>* train_in_ = nullptr;
 
-	nnet::placeholder<double>* expected_out_;
+	nnet::placeholder<double>* expected_out_ = nullptr;
 
-	nnet::iconnector<double>* error_;
+	nnet::iconnector<double>* error_ = nullptr;
+	
+	double learning_rate_;
 };
 
 }

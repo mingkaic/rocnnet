@@ -67,7 +67,10 @@ public:
 protected:
 	// >>>> ABSTRACT CLONE <<<<
 	//! clone implementation
-	virtual itensor<T>* clone_impl (void) const = 0;
+	virtual itensor<T>* clone_impl (bool shapeonly) const = 0;
+	
+	//! move implementation
+	virtual itensor<T>* move_impl (void) = 0;
 };
 
 }

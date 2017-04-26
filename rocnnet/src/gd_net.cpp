@@ -15,8 +15,10 @@ using namespace nnet;
 namespace rocnnet
 {
 
-gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope) :
-	ml_perceptron(n_input, hiddens, scope)
+gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, 
+	double learning_rate, std::string scope) :
+ml_perceptron(n_input, hiddens, scope),
+learning_rate_(learning_rate)
 {
 	size_t n_output = hiddens.back().first;
 	train_in_ = new nnet::placeholder<double>(
@@ -24,6 +26,42 @@ gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope)
 	expected_out_ = new nnet::placeholder<double>(
 		std::vector<size_t>{n_output, 0}, "expected_out");
 	train_setup();
+}
+
+gd_net::~gd_net (void)
+{
+	delete train_in_;
+	delete expected_out_;
+}
+
+gd_net* gd_net::clone (std::string scope)
+{
+	return static_cast<gd_net*>(clone_impl(scope));
+}
+
+gd_net* gd_net::move (std::string scope)
+{
+	return static_cast<gd_net*>(move_impl(scope));
+}
+
+gd_net& gd_net::operator = (const gd_net& other)
+{
+	if (&other != this)
+	{
+		ml_perceptron::operator = (other);
+		copy_helper(other);
+	}
+	return *this;
+}
+
+gd_net& gd_net::operator = (gd_net&& other)
+{
+	if (&other != this)
+	{
+		ml_perceptron::operator = (std::move(other));
+		move_helper(std::move(other));
+	}
+	return *this;
 }
 
 // batch gradient descent
@@ -43,6 +81,28 @@ void gd_net::train (std::vector<double>& train_in, std::vector<double>& expected
 	error_->update_status(false); // update again
 }
 
+gd_net::gd_net (const gd_net& other, std::string& scope) :
+	ml_perceptron(other, scope)
+{
+	copy_helper(other);
+}
+
+gd_net::gd_net (gd_net&& other, std::string scope) :
+	ml_perceptron(std::move(other), scope)
+{
+	move_helper(std::move(other));
+}
+
+ml_perceptron* gd_net::clone_impl (std::string& scope)
+{
+	return new gd_net(*this, scope);
+}
+
+ml_perceptron* gd_net::move_impl (std::string& scope)
+{
+	return new gd_net(std::move(*this), scope);
+}
+
 void gd_net::train_setup (void)
 {
 	nnet::varptr<double> output = ml_perceptron::operator()(train_in_);
@@ -59,6 +119,28 @@ void gd_net::train_setup (void)
 		// Wb = Wb + learning_rate * gres
 		updates_.push_back(Wb->assign_add(gres * learning_rate_));
 	}
+}
+
+void gd_net::copy_helper (const gd_net& other)
+{
+	updates_.clear();
+	learning_rate_ = other.learning_rate_;
+	if (train_in_) delete train_in_;
+	if (expected_out_) delete expected_out_;
+	train_in_ = other.train_in_->clone();
+	expected_out_ = other.expected_out_->clone();
+	train_setup();
+}
+
+void gd_net::move_helper (gd_net&& other)
+{
+	updates_.clear();
+	learning_rate_ = std::move(other.learning_rate_);
+	if (train_in_) delete train_in_;
+	if (expected_out_) delete expected_out_;
+	train_in_ = other.train_in_->move();
+	expected_out_ = other.expected_out_->move();
+	train_setup();
 }
 
 }

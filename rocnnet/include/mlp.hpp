@@ -58,8 +58,6 @@ protected:
 
 	virtual ml_perceptron* move_impl (std::string& scope);
 
-	std::vector<HID_PAIR> layers;
-
 private:
 	void copy_helper (const ml_perceptron& other, std::string& scope);
 
@@ -68,6 +66,8 @@ private:
 	size_t n_input_;
 
 	std::string scope_;
+
+	std::vector<HID_PAIR> layers_;
 };
 
 }

@@ -23,7 +23,7 @@ sudo cp -a googletest/include/gtest /usr/include
 sudo cp -a googlemock/libgmock_main.so googlemock/libgmock.so /usr/lib/
 sudo cp -a googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/
 
-# download latest version of protobuf
-curl -OL https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip
-unzip protoc-3.2.0-linux-x86_64.zip -d protoc3
-sudo mv protoc3/bin/protoc /usr/bin/protoc
+# download protobuf3 and copy to /usr
+sudo wget https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz
+tar -xvf protobuf-cpp-3.2.0.tar.gz
+cd protobuf-3.2.0 && ./configure --prefix=/usr && make && sudo make install

@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <cstring>
 
 #include "tensor/itensor.hpp"
 #include "tensor/tensorshape.hpp"
@@ -48,12 +49,12 @@ public:
 	//! deallocate tensor
 	virtual ~tensor (void);
 
-	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	// >>>> COPY && MOVE <<<<
 	//! clone function
-	tensor<T>* clone (void) const;
-
-	//! move constructor
-	tensor (tensor<T>&& other);
+	tensor<T>* clone (bool shapeonly = false) const;
+	
+	//! move function
+	tensor<T>* move (void);
 
 	//! copy assignment
 	virtual tensor<T>& operator = (const tensor<T>& other);
@@ -125,21 +126,7 @@ public:
 	std::vector<T> expose (void) const;
 
 	//! serialize protobuf tensor
-	void serialize (tenncor::tensor_proto* proto) const
-	{
-		if (false == is_alloc()) return;
-		// copy bytes
-		size_t nb = total_bytes();
-		proto->set_data(raw_data_, nb);
-
-		std::vector<size_t> allow = allowed_shape_.as_list();
-		std::vector<size_t> alloc = alloc_shape_.as_list();
-		google::protobuf::RepeatedField<uint64_t> allow_field(allow.begin(), allow.end());
-		google::protobuf::RepeatedField<uint64_t> alloc_field(alloc.begin(), alloc.end());
-
-		proto->mutable_allow_shape()->Swap(&allow_field);
-		proto->mutable_alloc_shape()->Swap(&alloc_field);
-	}
+	void serialize (tenncor::tensor_proto* proto) const;
 
 	// >>>> MUTATOR <<<<
 	//! get allocator from factory and set it as alloc_
@@ -173,41 +160,10 @@ public:
 	bool copy_from (const tensor& other, const tensorshape shape);
 
 	//! read data and shape from other, take allocator as is
-	bool from_proto (const tenncor::tensor_proto& other)
-	{
-		std::string protostr = other.data();
-		const char* protoraw = protostr.c_str();
-		// shapes must have same dimensionality... (otherwise, input data is definitely corrupt)
-		assert(other.alloc_shape_size() == other.allow_shape_size());
-		std::vector<size_t> allow;
-		std::vector<size_t> alloc;
-		for (size_t i = 0, n = other.allow_shape_size(); i < n; i++)
-		{
-			allow.push_back(other.allow_shape(i));
-			alloc.push_back(other.alloc_shape(i));
-		}
-		allowed_shape_ = tensorshape(allow);
-		tensorshape temp_alloc_shape(alloc);
-		// another sanity check, be less stringent, since this may represent some less evident issue
-		if (false == temp_alloc_shape.is_compatible_with(allowed_shape_) ||
-			false == temp_alloc_shape.is_fully_defined()) return false;
-
-		deallocate();
-		alloc_shape_ = temp_alloc_shape;
-		assert(allocate());
-
-		// copy data over from protoraw
-		std::memcpy(raw_data_, protoraw, protostr.size());
-
-		return true;
-	}
+	bool from_proto (const tenncor::tensor_proto& other);
 
 	//! read data and shape from other, reassign allocator
-	bool from_proto (const tenncor::tensor_proto& other, size_t alloc_id)
-	{
-		set_allocator(alloc_id);
-		return from_proto(other);
-	}
+	bool from_proto (const tenncor::tensor_proto& other, size_t alloc_id);
 
 	// slice along the first dimension
 	tensor<T> slice (size_t dim_start, size_t limit);
@@ -216,12 +172,18 @@ public:
 	// size_t buffer_hash (void) const;
 
 protected:
-	// >>>> COPY && CLONE <<<<
+	// >>>> COPY, CLONE, && MOVE <<<<
 	//! copy constructor
-	tensor (const tensor<T>& other);
+	tensor (const tensor<T>& other, bool shapeonly);
+
+	//! move constructor
+	tensor (tensor<T>&& other);
 
 	//! clone implementation
-	virtual itensor<T>* clone_impl (void) const;
+	virtual itensor<T>* clone_impl (bool shapeonly) const;
+	
+	//! move implementation
+	virtual itensor<T>* move_impl (void);
 
 	// >>>> PROTECTED MEMBERS <<<<
 	T* raw_data_ = nullptr; //! raw data is available to tensor manipulators
@@ -236,10 +198,10 @@ private:
 		const T* in, const tensorshape& ins) const;
 
 	//! copy utility helper
-	void copy (const tensor<T>& other);
+	void copy_helper (const tensor<T>& other, bool shapeonly);
 
 	//! move utility helper
-	void move (tensor<T>&& other);
+	void move_helper (tensor<T>&& other);
 
 	// >>>> PRIVATE MEMBERS <<<<
 	//! allocator

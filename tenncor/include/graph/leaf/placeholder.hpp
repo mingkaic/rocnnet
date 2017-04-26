@@ -40,6 +40,10 @@ public:
 	//! move function
 	placeholder<T>* move (void);
 
+	virtual placeholder<T>& operator = (const placeholder<T>& other);
+
+	virtual placeholder<T>& operator = (placeholder<T>&& other);
+
 	// >>>> DATA ASSIGNMENT <<<<
 	//! assign raw data according to a
 	//! vector representation of inner tensor
@@ -61,6 +65,10 @@ public:
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
 protected:
+	placeholder (const placeholder<T>& other) : ivariable<T>(other) {}
+	
+	placeholder (placeholder<T>&& other) : ivariable<T>(std::move(other)) {}
+
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 

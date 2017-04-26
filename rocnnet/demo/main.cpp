@@ -40,7 +40,6 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 int main (int argc, char** argv)
 {
 	std::string serialname = "demotest.pbx";
-
 	std::clock_t start;
 	double duration;
 	size_t n_train = 600;
@@ -53,14 +52,12 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::gd_net gdn(n_in, hiddens);
-	rocnnet::gd_net* gdn2 = gdn.clone();
-	rocnnet::gd_net gdn3(n_in, hiddens);
+	rocnnet::gd_net gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net* trained_gdn = gdn.clone();
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
 	gdn.initialize();
-	gdn2->initialize();
-	gdn3.initialize(serialname);
-	gdn.learning_rate_ = gdn2->learning_rate_ =
-	gdn3.learning_rate_ = 0.9;
+	trained_gdn->initialize();
+	pretrained_gdn.initialize(serialname);
 
 	// train mlp to output input
 	start = std::clock();
@@ -69,17 +66,18 @@ int main (int argc, char** argv)
 		std::cout << "training " << i << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		gdn.train(batch, batch_out);
+		trained_gdn->train(batch, batch_out);
+		// gdn.train(batch, batch_out);
 	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
 	nnet::placeholder<double> in((std::vector<size_t>{n_in, 1}), "test_layerin");
-	nnet::placeholder<double> in2((std::vector<size_t>{n_in, 1}), "test_layerin2");
+	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_layerin2");
 	nnet::placeholder<double> in3((std::vector<size_t>{n_in, 1}), "test_layerin3");
 	nnet::varptr<double> out = gdn(&in);
-	nnet::varptr<double> out2 = (*gdn2)(&in2);
-	nnet::varptr<double> out3 = gdn3(&in3);
+	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
+	nnet::varptr<double> out3 = pretrained_gdn(&in3);
 
 	double good_err = 0;
 	double bad_err = 0;
@@ -90,22 +88,22 @@ int main (int argc, char** argv)
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		in = batch;
-		in2 = batch;
+		trained_in = batch;
 		in3 = batch;
 		std::vector<double> res = nnet::expose<double>(out);
-		std::vector<double> res2 = nnet::expose<double>(out2);
+		std::vector<double> trained_res = nnet::expose<double>(trained_out);
 		std::vector<double> res3 = nnet::expose<double>(out3);
 		double avgerr = 0;
-		double avgerr2 = 0;
+		double trained_avgerr = 0;
 		double avgerr3 = 0;
 		for (size_t i = 0, n = batch_out.size(); i < n; i++)
 		{
 			avgerr += std::abs(res[i] - batch_out[i]);
-			avgerr2 += std::abs(res2[i] - batch_out[i]);
+			trained_avgerr += std::abs(trained_res[i] - batch_out[i]);
 			avgerr3 += std::abs(res3[i] - batch_out[i]);
 		}
-		good_err += avgerr / res.size();
-		bad_err += avgerr2 / res2.size();
+		bad_err += avgerr / res.size();
+		good_err += trained_avgerr / trained_res.size();
 		pretrained_err += avgerr3 / res3.size();
 	}
 	good_err *= 100.0 / (double) n_test;
@@ -115,9 +113,9 @@ int main (int argc, char** argv)
 	std::cout << "untrained mlp error rate: " << bad_err << "%\n";
 	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
 
-//	gdn.save(serialname);
+	gdn.save(serialname);
 	
-	delete gdn2;
+	delete trained_gdn;
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();

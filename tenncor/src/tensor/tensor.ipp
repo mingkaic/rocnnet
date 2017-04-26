@@ -50,12 +50,15 @@ tensor<T>::~tensor (void)
 }
 
 template <typename T>
-tensor<T>* tensor<T>::clone (void) const { return static_cast<tensor<T>*>(clone_impl()); }
+tensor<T>* tensor<T>::clone (bool shapeonly) const
+{
+	return static_cast<tensor<T>*>(clone_impl(shapeonly));
+}
 
 template <typename T>
-tensor<T>::tensor (tensor<T>&& other)
+tensor<T>* tensor<T>::move (void)
 {
-	move(std::move(other));
+	return static_cast<tensor<T>*>(move_impl());
 }
 
 template <typename T>
@@ -63,7 +66,7 @@ tensor<T>& tensor<T>::operator = (const tensor<T>& other)
 {
 	if (this != &other)
 	{
-		copy(other);
+		copy_helper(other, false);
 	}
 	return *this;
 }
@@ -73,7 +76,7 @@ tensor<T>& tensor<T>::operator = (tensor<T>&& other)
 {
 	if (this != &other)
 	{
-		move(std::move(other));
+		move_helper(std::move(other));
 	}
 	return *this;
 }
@@ -307,6 +310,23 @@ std::vector<T> tensor<T>::expose (void) const
 }
 
 template <typename T>
+void tensor<T>::serialize (tenncor::tensor_proto* proto) const
+{
+	if (false == is_alloc()) return;
+	// copy bytes
+	size_t nb = total_bytes();
+	proto->set_data(raw_data_, nb);
+
+	std::vector<size_t> allow = allowed_shape_.as_list();
+	std::vector<size_t> alloc = alloc_shape_.as_list();
+	google::protobuf::RepeatedField<uint64_t> allow_field(allow.begin(), allow.end());
+	google::protobuf::RepeatedField<uint64_t> alloc_field(alloc.begin(), alloc.end());
+
+	proto->mutable_allow_shape()->Swap(&allow_field);
+	proto->mutable_alloc_shape()->Swap(&alloc_field);
+}
+
+template <typename T>
 void tensor<T>::set_allocator (size_t alloc_id)
 {
 	if (iallocator* alloc =
@@ -440,6 +460,43 @@ bool tensor<T>::copy_from (const tensor<T>& other, const tensorshape shape)
 	return success;
 }
 
+template <typename T>
+bool tensor<T>::from_proto (const tenncor::tensor_proto& other)
+{
+	std::string protostr = other.data();
+	const char* protoraw = protostr.c_str();
+	// shapes must have same dimensionality... (otherwise, input data is definitely corrupt)
+	assert(other.alloc_shape_size() == other.allow_shape_size());
+	std::vector<size_t> allow;
+	std::vector<size_t> alloc;
+	for (size_t i = 0, n = other.allow_shape_size(); i < n; i++)
+	{
+		allow.push_back(other.allow_shape(i));
+		alloc.push_back(other.alloc_shape(i));
+	}
+	allowed_shape_ = tensorshape(allow);
+	tensorshape temp_alloc_shape(alloc);
+	// another sanity check, be less stringent, since this may represent some less evident issue
+	if (false == temp_alloc_shape.is_compatible_with(allowed_shape_) ||
+		false == temp_alloc_shape.is_fully_defined()) return false;
+
+	deallocate();
+	alloc_shape_ = temp_alloc_shape;
+	assert(allocate());
+
+	// copy data over from protoraw
+	std::memcpy(raw_data_, protoraw, protostr.size());
+
+	return true;
+}
+
+template <typename T>
+bool tensor<T>::from_proto (const tenncor::tensor_proto& other, size_t alloc_id)
+{
+	set_allocator(alloc_id);
+	return from_proto(other);
+}
+
 // slice along the first dimension
 template <typename T>
 tensor<T> tensor<T>::slice (size_t /*dim_start*/, size_t /*limit*/)
@@ -456,22 +513,28 @@ tensor<T> tensor<T>::slice (size_t /*dim_start*/, size_t /*limit*/)
 //	 return 0;
 // }
 
-//template <typename T>
-// bool from_proto (const tensorproto& other);
-
-//template <typename T>
-// bool from_proto (const tensorproto& other);
-
 template <typename T>
-tensor<T>::tensor (const tensor<T>& other)
+tensor<T>::tensor (const tensor<T>& other, bool shapeonly)
 {
-	copy(other);
+	copy_helper(other, shapeonly);
 }
 
 template <typename T>
-itensor<T>* tensor<T>::clone_impl (void) const
+tensor<T>::tensor (tensor<T>&& other)
 {
-	return new tensor<T>(*this);
+	move_helper(std::move(other));
+}
+
+template <typename T>
+itensor<T>* tensor<T>::clone_impl (bool shapeonly) const
+{
+	return new tensor<T>(*this, shapeonly);
+}
+
+template <typename T>	
+itensor<T>* tensor<T>::move_impl (void)
+{
+	return new tensor<T>(std::move(*this));
 }
 
 template <typename T>
@@ -509,7 +572,7 @@ void tensor<T>::raw_copy (T* out, const tensorshape& outs,
 }
 
 template <typename T>
-void tensor<T>::copy (const tensor<T>& other)
+void tensor<T>::copy_helper (const tensor<T>& other, bool shapeonly)
 {
 	if (raw_data_)
 	{
@@ -523,12 +586,13 @@ void tensor<T>::copy (const tensor<T>& other)
 	{
 		size_t ns = alloc_shape_.n_elems();
 		raw_data_ = alloc_->template allocate<T>(ns);
-		std::memcpy(raw_data_, other.raw_data_, sizeof(T) * ns);
+		if (false == shapeonly)
+			std::memcpy(raw_data_, other.raw_data_, sizeof(T) * ns);
 	}
 }
 
 template <typename T>
-void tensor<T>::move (tensor<T>&& other)
+void tensor<T>::move_helper (tensor<T>&& other)
 {
 	if (raw_data_)
 	{

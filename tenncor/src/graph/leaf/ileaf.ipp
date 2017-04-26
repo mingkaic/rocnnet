@@ -95,15 +95,17 @@ ileaf<T>::ileaf (ileaf<T>&& other) :
 template <typename T>
 void ileaf<T>::copy_helper (const ileaf<T>& other)
 {
-	data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
 	is_init_ = other.is_init_;
+	// copy over data if other has good_status (we want to ignore uninitialized data)
+	data_ = std::unique_ptr<tensor<T> >(
+		other.data_->clone(!other.good_status()));
 }
 
 template <typename T>
 void ileaf<T>::move_helper (ileaf<T>&& other)
 {
-	data_ = std::move(other.data_);
 	is_init_ = std::move(other.is_init_);
+	data_ = std::move(other.data_);
 }
 
 template <typename T>
@@ -142,8 +144,6 @@ public:
 	}
 
 protected:
-	assignment (const assignment& other) : initializer<T>(other) {}
-
 	virtual itensor_handler<T>* clone_impl (void) const
 	{
 		return new assignment(*this);

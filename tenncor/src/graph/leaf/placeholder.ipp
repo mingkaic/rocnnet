@@ -27,6 +27,28 @@ placeholder<T>* placeholder<T>::move (void)
 	return static_cast<placeholder<T>*>(move_impl());
 }
 
+template <typename T>
+placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
+{
+	if (this == &other)
+	{
+		ivariable<T>::operator = (other);
+		this->notify(UPDATE);
+	}
+	return *this;
+}
+
+template <typename T>
+placeholder<T>& placeholder<T>::operator = (placeholder<T>&& other)
+{
+	if (this == &other)
+	{
+		ivariable<T>::operator = (std::move(other));
+		this->notify(UPDATE);
+	}
+	return *this;
+}
+
 // maintains shape
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
