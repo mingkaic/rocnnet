@@ -135,6 +135,32 @@ public:
 		return static_cast<assignment*>(move_impl());
 	}
 
+	assignment (assignment&& other) :
+		initializer<T>(std::move(other))
+	{
+		common_helper();
+	}
+
+	virtual assignment& operator = (const assignment& other)
+	{
+		if (this != &other)
+		{
+			initializer<T>::operator = (other);
+			common_helper();
+		}
+		return *this;
+	}
+
+	virtual assignment& operator = (assignment&& other)
+	{
+		if (this != &other)
+		{
+			initializer<T>::operator = (std::move(other));
+			common_helper();
+		}
+		return *this;
+	}
+
 	// perform assignment
 	void operator () (tensor<T>& out, std::vector<T>& data)
 	{
@@ -144,14 +170,32 @@ public:
 	}
 
 protected:
-	virtual itensor_handler<T>* clone_impl (void) const
+	assignment (const assignment& other) :
+		initializer<T>(other)
+	{
+		common_helper();
+	}
+
+	virtual assignment* clone_impl (void) const
 	{
 		return new assignment(*this);
 	}
 
-	virtual itensor_handler<T>* move_impl (void)
+	virtual assignment* move_impl (void)
 	{
 		return new assignment(std::move(*this));
+	}
+
+private:
+	void common_helper (void)
+	{
+		// don't bother copy over temp
+		this->forward_ =
+			[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
+			{
+				size_t n = std::min(temp_.size(), shape.n_elems());
+				std::memcpy(dest, &temp_[0], n * sizeof(T));
+			};
 	}
 
 	std::vector<T> temp_;

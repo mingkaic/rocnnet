@@ -61,7 +61,6 @@ protected:
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
 
-private:
 	FORWARD_OP<T> forward_; //! raw data transformation function
 };
 
@@ -146,7 +145,43 @@ public:
 	//! clone function for copying from parents
 	rand_uniform<T>* move (void);
 
+	//! move constructor
+	rand_uniform (rand_uniform<T>&& other) :
+		initializer<T>(std::move(other))
+	{
+		move_helper(std::move(other));
+	}
+
+	//! copy assignment
+	virtual rand_uniform<T>& operator = (const rand_uniform<T>& other)
+	{
+		if (this != &other)
+		{
+			initializer<T>::operator = (other);
+			copy_helper(other);
+		}
+		return *this;
+	}
+
+	//! move assignment
+	virtual rand_uniform<T>& operator = (rand_uniform<T>&& other)
+	{
+		if (this != &other)
+		{
+			initializer<T>::operator = (std::move(other));
+			move_helper(std::move(other));
+		}
+		return *this;
+	}
+
 protected:
+	//! copy constructor
+	rand_uniform (const rand_uniform<T>& other) :
+		initializer<T>(other)
+	{
+		copy_helper(other);
+	}
+
 	//! clone implementation for copying from parents
 	virtual itensor_handler<T>* clone_impl (void) const;
 
@@ -154,6 +189,10 @@ protected:
 	virtual itensor_handler<T>* move_impl (void);
 
 private:
+	void copy_helper (const rand_uniform<T>& other);
+
+	void move_helper (rand_uniform<T>&& other);
+
 	std::uniform_real_distribution<T>  distribution_;
 };
 

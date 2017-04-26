@@ -35,44 +35,59 @@ TEST(PLACHOLDER, Constructor_G000)
 TEST(PLACHOLDER, Copy_G001)
 {
 	FUZZ::delim();
-	placeholder<double> assign(std::vector<size_t>{1});
-	placeholder<double> assign2(std::vector<size_t>{1});
-
 	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	tensorshape shape = random_def_shape();
 
+	placeholder<double> assign(std::vector<size_t>{1});
 	placeholder<double> place(shape, label1);
-	placeholder<double> uninit(shape, label2);
 	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
-
 	place = raw;
 	placeholder<double>* pcpy = place.clone();
-	placeholder<double>* uninitcpy = uninit.clone();
 	assign = place;
-	assign2 = uninit;
-	
-	// copy of uninitialized placeholders should still be able to initialize
-	*uninitcpy = raw;
-	assign2 = raw;
 
 	std::vector<double> cpyout = expose(pcpy);
 	std::vector<double> assout = expose(&assign);
+
+	size_t n = raw.size();
+	ASSERT_EQ(cpyout.size(), n);
+	ASSERT_EQ(assout.size(), n);
+	for (size_t i = 0; i < n; i++)
+	{
+		EXPECT_EQ(raw[i], cpyout[i]);
+		EXPECT_EQ(raw[i], assout[i]);
+	}
+
+	// check re-assignment after cloning
+	std::vector<double> raw2 = FUZZ::getDouble(n);
+	placeholder<double> assign2(std::vector<size_t>{1});
+	placeholder<double> uninit(shape, label2);
+	placeholder<double>* uninitcpy = uninit.clone();
+	assign2 = uninit;
+
+	// copy of uninitialized placeholders should still be able to initialize
+	*pcpy = raw2;
+	assign = raw2;
+	// copy of initialized placeholders should be able to initialize
+	*uninitcpy = raw2;
+	assign2 = raw2;
+
+	cpyout = expose(pcpy);
+	assout = expose(&assign);
 	std::vector<double> cpy2out = expose(uninitcpy);
 	std::vector<double> ass2out = expose(&assign2);
 
-	size_t n = raw.size();
 	ASSERT_EQ(cpyout.size(), n);
 	ASSERT_EQ(assout.size(), n);
 	ASSERT_EQ(cpy2out.size(), n);
 	ASSERT_EQ(ass2out.size(), n);
 	for (size_t i = 0; i < n; i++)
 	{
-		EXPECT_EQ(raw[i], cpyout[i]);
-		EXPECT_EQ(raw[i], assout[i]);
-		EXPECT_EQ(raw[i], cpy2out[i]);
-		EXPECT_EQ(raw[i], ass2out[i]);
+		EXPECT_EQ(raw2[i], cpyout[i]);
+		EXPECT_EQ(raw2[i], assout[i]);
+		EXPECT_EQ(raw2[i], cpy2out[i]);
+		EXPECT_EQ(raw2[i], ass2out[i]);
 	}
 
 	delete pcpy;

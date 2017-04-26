@@ -161,7 +161,7 @@ rand_uniform<T>::rand_uniform (T min, T max) :
 	initializer<T>(
 [](std::vector<tensorshape> inshapes) { return inshapes[0]; },
 [this](T* out, const tensorshape& shape,
-	   std::vector<const T*>&, std::vector<tensorshape>&)
+   std::vector<const T*>&, std::vector<tensorshape>&)
 {
 	size_t len = shape.n_elems();
 	for (size_t i = 0; i < len; i++)
@@ -192,6 +192,38 @@ template <typename T>
 itensor_handler<T>* rand_uniform<T>::move_impl (void)
 {
 	return new rand_uniform(std::move(*this));
+}
+
+template <typename T>
+void rand_uniform<T>::copy_helper (const rand_uniform<T>& other)
+{
+	distribution_ = other.distribution_;
+	this->forward_ =
+		[this](T* out, const tensorshape& shape,
+			std::vector<const T*>&, std::vector<tensorshape>&)
+		{
+			size_t len = shape.n_elems();
+			for (size_t i = 0; i < len; i++)
+			{
+				out[i] = distribution_(generator);
+			}
+		};
+}
+
+template <typename T>
+void rand_uniform<T>::move_helper (rand_uniform<T>&& other)
+{
+	distribution_ = std::move(other.distribution_);
+	this->forward_ =
+		[this](T* out, const tensorshape& shape,
+			std::vector<const T*>&, std::vector<tensorshape>&)
+		{
+			size_t len = shape.n_elems();
+			for (size_t i = 0; i < len; i++)
+			{
+				out[i] = distribution_(generator);
+			}
+		};
 }
 
 }

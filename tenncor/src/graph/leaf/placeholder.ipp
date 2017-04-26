@@ -30,7 +30,7 @@ placeholder<T>* placeholder<T>::move (void)
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		ivariable<T>::operator = (other);
 		this->notify(UPDATE);
@@ -41,7 +41,7 @@ placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
 template <typename T>
 placeholder<T>& placeholder<T>::operator = (placeholder<T>&& other)
 {
-	if (this == &other)
+	if (this != &other)
 	{
 		ivariable<T>::operator = (std::move(other));
 		this->notify(UPDATE);
