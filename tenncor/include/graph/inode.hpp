@@ -86,6 +86,8 @@ public:
 	//! grab operational gradient node, used by other nodes
 	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
 
+	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor

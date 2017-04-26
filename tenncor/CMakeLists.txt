@@ -27,12 +27,16 @@ if (VIS_EDGE)
 	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 endif(VIS_EDGE)
 
+include(FindProtobuf)
+add_subdirectory(proto)
+
 FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
 
 # set tenncor include path
 set(TENNCOR_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${TENNCOR_INCLUDE})
+include_directories(${TENNCOR_INCLUDE} ${CMAKE_CURRENT_BINARY_DIR})
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
+target_link_libraries(${TENNCOR_LIB} proto ${PROTOBUF_LIBRARY})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (TENNCOR_TEST)
@@ -55,6 +59,7 @@ if (TENNCOR_TEST)
 	set(TENNCOR_LIB_TEST tenncor-inst)
 	add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC}
 		declare/graph.cpp declare/tensor.cpp)
+	target_link_libraries(${TENNCOR_LIB_TEST} proto ${PROTOBUF_LIBRARY})
 
 	add_subdirectory(ext/gtest)
 	add_subdirectory(tests)

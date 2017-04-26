@@ -72,32 +72,7 @@ public:
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
 	//! return update data function (add input node data to this)
-	variable_updater<T> assign_add (inode<T>* input) const
-	{
-		return [this, input]()
-		{
-			tensor<T>* outputt = this->data_.get();
-			const tensor<T>* inputt = input->get_eval();
-			transfer_func<T> assign(
-				[outputt](std::vector<tensorshape>)
-				{
-					return outputt->get_shape();
-				},
-				[](T* dest, const tensorshape& shape, std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
-				{
-					size_t ns = shape.n_elems();
-					tensorshape& ins = inshapes.at(0);
-					assert((ins.is_fully_defined() && ns == ins.n_elems()) ||
-						(!ins.is_fully_defined() && 0 == ns % ins.n_known()));
-					assert(nullptr != srcs[0]);
-					for (size_t i = 0; i < ns; i++)
-					{
-						dest[i] += srcs[0][i];
-					}
-				});
-			assign(*outputt, {inputt});
-		};
-	}
+	variable_updater<T> assign_add (inode<T>* input) const;
 
 protected:
 	//! clone implementation

@@ -53,6 +53,18 @@ public:
 	//! (if the node is initialized)
 	virtual bool good_status (void) const;
 
+	//! Inherited from inode: data_ takes data from proto
+	virtual bool read_proto (const tenncor::tensor_proto& proto)
+	{
+		bool success = data_->from_proto(proto);
+		if (success)
+		{
+			is_init_ = true;
+			this->notify(UPDATE);
+		}
+		return success;
+	}
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! assign initializer

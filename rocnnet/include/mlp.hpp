@@ -8,6 +8,7 @@
 
 #include "utils/futils.hpp"
 #include "perceptron.hpp"
+#include "memory/tensor_io.hpp"
 
 #pragma once
 #ifndef ROCNNET_MLP_HPP
@@ -37,7 +38,7 @@ public:
 
 	ml_perceptron& operator = (ml_perceptron&& other);
 
-	void initialize (void);
+	void initialize (std::string serialname = "");
 
 	// PLACEHOLDER CONNECTION
 	// input are expected to have shape n_input by batch_size
@@ -45,6 +46,8 @@ public:
 	nnet::varptr<double> operator () (nnet::inode<double>* input);
 
 	std::vector<WB_PAIR> get_variables (void) const;
+
+	bool save (std::string fname) const;
 
 protected:
 	ml_perceptron (const ml_perceptron& other, std::string& scope);

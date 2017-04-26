@@ -18,6 +18,7 @@
 #include "tensor/itensor.hpp"
 #include "tensor/tensorshape.hpp"
 #include "memory/default_alloc.hpp"
+#include "proto/tenncor.pb.h"
 
 #pragma once
 #ifndef TENNCOR_TENSOR_HPP
@@ -123,6 +124,23 @@ public:
 	//! otherwise return data array copy
 	std::vector<T> expose (void) const;
 
+	//! serialize protobuf tensor
+	void serialize (tenncor::tensor_proto* proto) const
+	{
+		if (false == is_alloc()) return;
+		// copy bytes
+		size_t nb = total_bytes();
+		proto->set_data(raw_data_, nb);
+
+		std::vector<size_t> allow = allowed_shape_.as_list();
+		std::vector<size_t> alloc = alloc_shape_.as_list();
+		google::protobuf::RepeatedField<uint64_t> allow_field(allow.begin(), allow.end());
+		google::protobuf::RepeatedField<uint64_t> alloc_field(alloc.begin(), alloc.end());
+
+		proto->mutable_allow_shape()->Swap(&allow_field);
+		proto->mutable_alloc_shape()->Swap(&alloc_field);
+	}
+
 	// >>>> MUTATOR <<<<
 	//! get allocator from factory and set it as alloc_
 	void set_allocator (size_t alloc_id);
@@ -154,14 +172,48 @@ public:
 	//! allowed shape will be adjusted similar to set_shape
 	bool copy_from (const tensor& other, const tensorshape shape);
 
-	// TODO: unimplemented, read protocol buffers
+	//! read data and shape from other, take allocator as is
+	bool from_proto (const tenncor::tensor_proto& other)
+	{
+		std::string protostr = other.data();
+		const char* protoraw = protostr.c_str();
+		// shapes must have same dimensionality... (otherwise, input data is definitely corrupt)
+		assert(other.alloc_shape_size() == other.allow_shape_size());
+		std::vector<size_t> allow;
+		std::vector<size_t> alloc;
+		for (size_t i = 0, n = other.allow_shape_size(); i < n; i++)
+		{
+			allow.push_back(other.allow_shape(i));
+			alloc.push_back(other.alloc_shape(i));
+		}
+		allowed_shape_ = tensorshape(allow);
+		tensorshape temp_alloc_shape(alloc);
+		// another sanity check, be less stringent, since this may represent some less evident issue
+		if (false == temp_alloc_shape.is_compatible_with(allowed_shape_) ||
+			false == temp_alloc_shape.is_fully_defined()) return false;
+
+		deallocate();
+		alloc_shape_ = temp_alloc_shape;
+		assert(allocate());
+
+		// copy data over from protoraw
+		std::memcpy(raw_data_, protoraw, protostr.size());
+
+		return true;
+	}
+
+	//! read data and shape from other, reassign allocator
+	bool from_proto (const tenncor::tensor_proto& other, size_t alloc_id)
+	{
+		set_allocator(alloc_id);
+		return from_proto(other);
+	}
+
 	// slice along the first dimension
 	tensor<T> slice (size_t dim_start, size_t limit);
 
 	// bool shares_buffer_with (const tensor& other) const;
 	// size_t buffer_hash (void) const;
-	// bool from_proto (const tensorproto& other);
-	// bool from_proto (iallocator* a, const tensorproto& other);
 
 protected:
 	// >>>> COPY && CLONE <<<<

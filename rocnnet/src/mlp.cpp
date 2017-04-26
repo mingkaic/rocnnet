@@ -70,11 +70,21 @@ ml_perceptron& ml_perceptron::operator = (ml_perceptron&& other)
 	return *this;
 }
 
-void ml_perceptron::initialize (void)
+void ml_perceptron::initialize (std::string serialname)
 {
+	std::vector<nnet::inode<double>*> vars;
 	for (HID_PAIR hp : layers)
 	{
-		hp.first->initialize();
+		WB_PAIR wb = hp.first->get_variables();
+		vars.push_back(wb.first);
+		vars.push_back(wb.second);
+	}
+
+	if (nnet::read<double>(vars, serialname) && vars.empty()) return;
+
+	for (nnet::inode<double>* v : vars)
+	{
+		static_cast<nnet::variable<double>*>(v)->initialize();
 	}
 }
 
@@ -104,6 +114,18 @@ std::vector<WB_PAIR> ml_perceptron::get_variables (void) const
 		wb_vec.push_back(hp.first->get_variables());
 	}
 	return wb_vec;
+}
+
+bool ml_perceptron::save (std::string fname) const
+{
+	std::vector<nnet::inode<double>*> vars;
+	for (HID_PAIR hp : layers)
+	{
+		WB_PAIR wb = hp.first->get_variables();
+		vars.push_back(wb.first);
+		vars.push_back(wb.second);
+	}
+	return nnet::write<double>(vars, fname);
 }
 
 ml_perceptron::ml_perceptron (const ml_perceptron& other, std::string& scope)
