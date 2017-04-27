@@ -7,7 +7,7 @@
 #include <iterator>
 #include <ctime>
 
-#include "mlp.hpp"
+#include "gd_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
@@ -39,48 +39,25 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 
 int main (int argc, char** argv)
 {
+	std::string serialname = "demotest.pbx";
 	std::clock_t start;
 	double duration;
 	size_t n_train = 600;
 	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;
-//	size_t n_batch = 5;
 	size_t n_batch = 1;
-	nnet::placeholder<double> in((std::vector<size_t>{n_in, n_batch}), "layerin");
-	nnet::placeholder<double> in2((std::vector<size_t>{n_in, n_batch}), "layerin2");
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::ml_perceptron mlp(n_in, hiddens);
-	rocnnet::ml_perceptron* mlp2 = mlp.clone();
-	mlp.initialize();
-	mlp2->initialize();
-
-	nnet::varptr<double> output = mlp(&in);
-	nnet::placeholder<double> expected_out(std::vector<size_t>{n_out, n_batch}, "expected_out");
-	nnet::varptr<double> diff = nnet::varptr<double>(&expected_out) - output;
-	nnet::varptr<double> error = diff * diff;
-	nnet::iconnector<double>* topdog = static_cast<nnet::iconnector<double>*>(error.get());
-
-	nnet::varptr<double> out2 = (*mlp2)(&in2);
-	nnet::placeholder<double> expected_out2(std::vector<size_t>{n_out, n_batch}, "expected_out2");
-	nnet::varptr<double> diff2 = nnet::varptr<double>(&expected_out2) - out2;
-
-	double learning_rate = 0.9;
-	// training using gradient descent
-	std::vector<nnet::variable_updater<double> > update;
-	nnet::inode<double>::GRAD_CACHE leafset;
-	error->get_leaves(leafset);
-	for (auto lit : leafset)
-	{
-		nnet::variable<double>* Wb = lit.first;
-		nnet::varptr<double> gres = error->get_gradient(Wb);
-		// Wb = Wb + learning_rate * gres
-		update.push_back(Wb->assign_add(gres * learning_rate));
-	}
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
+	untrained_gdn.initialize();
+	trained_gdn->initialize();
+	pretrained_gdn.initialize(serialname);
 
 	// train mlp to output input
 	start = std::clock();
@@ -89,50 +66,55 @@ int main (int argc, char** argv)
 		std::cout << "training " << i << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		in = batch;
-		expected_out = batch_out;
-		topdog->update_status(true); // freeze
-		for (auto& trainer : update)
-		{
-			trainer();
-		}
-		topdog->update_status(false); // update again
+		trained_gdn->train(batch, batch_out);
 	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
-	double good_err = 0;
-	double bad_err = 0;
+	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, 1}), "test_untrain_layerin");
+	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_train_layerin");
+	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, 1}), "test_pretrain_layerin");
+	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
+	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
+	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);
+
+	double untrained_err = 0;
+	double trained_err = 0;
+	double pretrained_err = 0;
 	for (size_t i = 0; i < n_test; i++)
 	{
 		std::cout << "testing " << i << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		in = batch;
-		in2 = batch;
-		expected_out = batch_out;
-		expected_out2 = batch_out;
-		std::vector<double> res = nnet::expose<double>(diff);
-		std::vector<double> res2 = nnet::expose<double>(diff2);
-		double avgerr = 0;
-		for (double r : res)
+		untrained_in = batch;
+		trained_in = batch;
+		pretrained_in = batch;
+		std::vector<double> untrained_res = nnet::expose<double>(untrained_out);
+		std::vector<double> trained_res = nnet::expose<double>(trained_out);
+		std::vector<double> pretrained_res = nnet::expose<double>(pretrained_out);
+		double untrained_avgerr = 0;
+		double trained_avgerr = 0;
+		double pretrained_avgerr = 0;
+		for (size_t i = 0, n = batch_out.size(); i < n; i++)
 		{
-			avgerr += std::abs(r);
+			untrained_avgerr += std::abs(untrained_res[i] - batch_out[i]);
+			trained_avgerr += std::abs(trained_res[i] - batch_out[i]);
+			pretrained_avgerr += std::abs(pretrained_res[i] - batch_out[i]);
 		}
-		double avgerr2 = 0;
-		for (double r : res2)
-		{
-			avgerr2 += std::abs(r);
-		}
-		good_err += avgerr / res.size();
-		bad_err += avgerr2 / res2.size();
+		untrained_err += untrained_avgerr / untrained_res.size();
+		trained_err += trained_avgerr / trained_res.size();
+		pretrained_err += pretrained_avgerr / pretrained_res.size();
 	}
-	good_err *= 100.0 / (double) n_test;
-	bad_err *= 100.0 / (double) n_test;
-	std::cout << "trained mlp error rate: " << good_err << "%\n";
-	std::cout << "untrained mlp error rate: " << bad_err << "%\n";
+	untrained_err *= 100.0 / (double) n_test;
+	trained_err *= 100.0 / (double) n_test;
+	pretrained_err *= 100.0 / (double) n_test;
+	std::cout << "untrained mlp error rate: " << untrained_err << "%\n";
+	std::cout << "trained mlp error rate: " << trained_err << "%\n";
+	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
+
+	trained_gdn->save(serialname);
 	
-	delete mlp2;
+	delete trained_gdn;
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();

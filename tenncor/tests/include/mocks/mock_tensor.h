@@ -22,8 +22,8 @@ public:
 	mock_tensor (tensorshape shape) :
 		tensor<double>(shape) { randinit(); }
 	mock_tensor* clone (void) const { return new mock_tensor(*this); }
-	mock_tensor (const mock_tensor& other) :
-		tensor<double>(other) { randinit(); }
+	mock_tensor (const mock_tensor& other, bool shapeonly = false) :
+		tensor<double>(other, shapeonly) { randinit(); }
 	mock_tensor (mock_tensor&& other) :
 		tensor<double>(std::move(other)) { randinit(); }
 	mock_tensor& operator = (const mock_tensor& other) { tensor<double>::operator=(other); return *this; }

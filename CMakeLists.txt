@@ -12,7 +12,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(TENNCOR_DIR ${PROJECT_SOURCE_DIR}/tenncor)
 set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
 
-set(IO_DIR	  	${PROJECT_SOURCE_DIR}/tenncor_io)
+set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
@@ -42,7 +42,7 @@ if(BUILD_DOC)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
-set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include)
+set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<

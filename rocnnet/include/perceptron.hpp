@@ -42,8 +42,6 @@ public:
 
 	perceptron& operator = (perceptron&& other);
 
-	void initialize (void);
-
 	// input are expected to have shape n_input by batch_size
 	// outputs are expected to have shape n_output by batch_size
 	nnet::varptr<double> operator () (nnet::inode<double>* input);

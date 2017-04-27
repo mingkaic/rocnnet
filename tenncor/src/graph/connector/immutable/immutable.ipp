@@ -233,7 +233,7 @@ void immutable<T>::update (subject* /*arg*/)
 		if (data_ == nullptr)
 		{
 			// initialize data in the expected resulting shape
-			data_ = std::make_unique<tensor<T> >(Nf_.shaper_(ts));
+			data_ = std::make_unique<tensor<T> >(Nf_.calc_shape(ts));
 		}
 		Nf_(*data_, tens);
 		this->notify(UPDATE);

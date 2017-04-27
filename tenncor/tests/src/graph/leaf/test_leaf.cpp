@@ -20,35 +20,44 @@ TEST(LEAF, Copy_C000)
 	FUZZ::delim();
 	mock_leaf assign("");
 	mock_leaf assign2("");
+	mock_leaf assign3("");
 	
 	const_init<double> cinit(FUZZ::getInt(1)[0]);
 
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
-	std::string label2 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	std::vector<size_t> strlens = FUZZ::getInt(3, {14, 29});
+	std::string label1 = FUZZ::getString(strlens[0]);
+	std::string label2 = FUZZ::getString(strlens[1]);
+	std::string label3 = FUZZ::getString(strlens[2]);
 	tensorshape comp = random_def_shape();
 	tensorshape part = make_partial(comp.as_list());
 	mock_leaf res(comp, label1);
 	mock_leaf res2(part, label2);
+	mock_leaf uninit(comp, label3);
 	res.set_good();
 	res.mock_init_data(cinit);
 
 	bool initstatus = res.good_status();
 	bool initstatus2 = res2.good_status();
+	bool initstatus3 = uninit.good_status();
 	const tensor<double>* init_data = res.get_eval();
 	const tensor<double>* init_data2 = res2.get_eval(); // res2 is not good
 
 	ileaf<double>* cpy = res.clone();
 	ileaf<double>* cpy2 = res2.clone();
+	ileaf<double>* cpy3 = uninit.clone();
 	assign = res;
 	assign2 = res2;
+	assign3 = uninit;
 
 	bool cpystatus = cpy->good_status();
 	bool cpystatus2 = cpy2->good_status();
+	bool cpystatus3 = cpy3->good_status();
 	const tensor<double>* cpy_data = cpy->get_eval();
 	const tensor<double>* cpy_data2 = cpy2->get_eval();
 
 	bool assignstatus = assign.good_status();
 	bool assignstatus2 = assign2.good_status();
+	bool assignstatus3 = assign3.good_status();
 	const tensor<double>* assign_data = assign.get_eval();
 	const tensor<double>* assign_data2 = assign2.get_eval();
 
@@ -56,11 +65,14 @@ TEST(LEAF, Copy_C000)
 	EXPECT_EQ(initstatus, assignstatus);
 	EXPECT_EQ(initstatus2, cpystatus2);
 	EXPECT_EQ(initstatus2, assignstatus2);
+	EXPECT_EQ(initstatus3, cpystatus3);
+	EXPECT_EQ(initstatus3, assignstatus3);
 	EXPECT_NE(initstatus, cpystatus2);
 	EXPECT_NE(initstatus, assignstatus2);
 	EXPECT_NE(initstatus2, cpystatus);
 	EXPECT_NE(initstatus2, assignstatus);
 
+	// no point in checking memory of uninitialized data
 	// expect deep copy
 	EXPECT_NE(init_data, cpy_data);
 	EXPECT_NE(init_data, assign_data);
@@ -88,6 +100,7 @@ TEST(LEAF, Copy_C000)
 
 	delete cpy;
 	delete cpy2;
+	delete cpy3;
 }
 
 
@@ -98,56 +111,78 @@ TEST(LEAF, Move_C000)
 	FUZZ::delim();
 	mock_leaf assign("");
 	mock_leaf assign2("");
+	mock_leaf assign3("");
+	
+	const_init<double> cinit(FUZZ::getInt(1)[0]);
 
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
-	std::string label2 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	std::vector<size_t> strlens = FUZZ::getInt(3, {14, 29});
+	std::string label1 = FUZZ::getString(strlens[0]);
+	std::string label2 = FUZZ::getString(strlens[1]);
+	std::string label3 = FUZZ::getString(strlens[2]);
 	tensorshape comp = random_def_shape();
 	tensorshape part = make_partial(comp.as_list());
 	mock_leaf res(comp, label1);
 	mock_leaf res2(part, label2);
+	mock_leaf uninit(comp, label3);
 	res.set_good();
+	res.mock_init_data(cinit);
 
 	bool initstatus = res.good_status();
 	bool initstatus2 = res2.good_status();
+	bool initstatus3 = uninit.good_status();
 	const tensor<double>* init_data = res.get_eval();
 	const tensor<double>* init_data2 = res2.get_eval();
+	const tensor<double>* init_data3 = uninit.get_eval();
 
 	ileaf<double>* mv = res.move();
 	ileaf<double>* mv2 = res2.move();
+	ileaf<double>* mv3 = uninit.move();
 
 	bool mvstatus = mv->good_status();
 	bool mvstatus2 = mv2->good_status();
+	bool mvstatus3 = mv3->good_status();
 	// ensure shallow copy
 	const tensor<double>* mv_data = mv->get_eval();
 	const tensor<double>* mv_data2 = mv2->get_eval();
+	const tensor<double>* mv_data3 = mv3->get_eval();
 	EXPECT_EQ(init_data, mv_data);
 	EXPECT_EQ(init_data2, mv_data2);
+	EXPECT_EQ(init_data3, mv_data3);
 	EXPECT_NE(init_data2, mv_data);
 	EXPECT_NE(init_data, mv_data2);
 	EXPECT_EQ(nullptr, res.get_eval());
 	EXPECT_EQ(nullptr, res2.get_eval());
+	EXPECT_EQ(nullptr, uninit.get_eval());
 
 	mock_leaf* mmv = static_cast<mock_leaf*>(mv);
 	mock_leaf* mmv2 = static_cast<mock_leaf*>(mv2);
+	mock_leaf* mmv3 = static_cast<mock_leaf*>(mv3);
 	assign = std::move(*mmv);
 	assign2 = std::move(*mmv2);
+	assign3 = std::move(*mmv3);
 
 	bool assignstatus = assign.good_status();
 	bool assignstatus2 = assign2.good_status();
+	bool assignstatus3 = assign3.good_status();
 	// ensure shallow copy
 	const tensor<double>* assign_data = assign.get_eval();
 	const tensor<double>* assign_data2 = assign2.get_eval();
+	const tensor<double>* assign_data3 = assign3.get_eval();
 	EXPECT_EQ(mv_data, assign_data);
 	EXPECT_EQ(mv_data2, assign_data2);
+	EXPECT_EQ(mv_data3, assign_data3);
 	EXPECT_NE(mv_data, assign_data2);
 	EXPECT_NE(mv_data2, assign_data);
 	EXPECT_EQ(nullptr, mv->get_eval());
 	EXPECT_EQ(nullptr, mv2->get_eval());
+	EXPECT_EQ(nullptr, mv3->get_eval());
 
 	EXPECT_EQ(initstatus, mvstatus);
 	EXPECT_EQ(initstatus, assignstatus);
 	EXPECT_EQ(initstatus2, mvstatus2);
 	EXPECT_EQ(initstatus2, assignstatus2);
+	EXPECT_EQ(initstatus3, mvstatus3);
+	EXPECT_EQ(initstatus3, assignstatus3);
 	EXPECT_NE(initstatus, mvstatus2);
 	EXPECT_NE(initstatus, assignstatus2);
 	EXPECT_NE(initstatus2, mvstatus);
@@ -155,6 +190,7 @@ TEST(LEAF, Move_C000)
 
 	delete mv;
 	delete mv2;
+	delete mv3;
 }
 
 

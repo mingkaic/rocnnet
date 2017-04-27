@@ -46,6 +46,7 @@ public:
 	virtual void get_leaves (GRAD_CACHE&) const {}
 	virtual inode<double>* get_gradient (inode<double>* wrt) { return wrt == this ? this : nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
+	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_node(*this); }

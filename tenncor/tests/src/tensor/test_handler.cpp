@@ -22,6 +22,7 @@ using namespace nnet;
 #ifndef DISABLE_HANDLER_TEST
 
 
+// todo: remove this bad practice, maybe deterministically mark shapes and data if necessary
 static double SUPERMARK = 1;
 
 

@@ -95,34 +95,23 @@ ileaf<T>::ileaf (ileaf<T>&& other) :
 template <typename T>
 void ileaf<T>::copy_helper (const ileaf<T>& other)
 {
-	data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
 	is_init_ = other.is_init_;
+	// copy over data if other has good_status (we want to ignore uninitialized data)
+	data_ = std::unique_ptr<tensor<T> >(
+		other.data_->clone(!other.good_status()));
 }
 
 template <typename T>
 void ileaf<T>::move_helper (ileaf<T>&& other)
 {
-	data_ = std::move(other.data_);
 	is_init_ = std::move(other.is_init_);
+	data_ = std::move(other.data_);
 }
 
 template <typename T>
 class ileaf<T>::assignment : public initializer<T>
 {
 public:
-	assignment (void) :
-		initializer<T>(
-	[](std::vector<tensorshape> ts) -> tensorshape
-	{
-		if (ts.empty()) return {};
-		return ts[0];
-	},
-	[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
-	{
-		size_t n = std::min(temp_.size(), shape.n_elems());
-		std::memcpy(dest, &temp_[0], n * sizeof(T));
-	}) {}
-
 	assignment* clone (void) const
 	{
 		return static_cast<assignment*>(clone_impl());
@@ -142,18 +131,24 @@ public:
 	}
 
 protected:
-	assignment (const assignment& other) : initializer<T>(other) {}
-
-	virtual itensor_handler<T>* clone_impl (void) const
+	virtual assignment* clone_impl (void) const
 	{
 		return new assignment(*this);
 	}
 
-	virtual itensor_handler<T>* move_impl (void)
+	virtual assignment* move_impl (void)
 	{
 		return new assignment(std::move(*this));
 	}
+	
+	virtual void calc_data (T* dest, const tensorshape& outshape,
+		std::vector<const T*>&, std::vector<tensorshape>&) const
+	{
+		size_t n = std::min(temp_.size(), outshape.n_elems());
+		std::memcpy(dest, &temp_[0], n * sizeof(T));
+	}
 
+private:
 	std::vector<T> temp_;
 };
 
