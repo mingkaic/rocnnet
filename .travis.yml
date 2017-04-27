@@ -1,21 +1,13 @@
 language: generic
 sudo: required
-dist: precise
-# install and setenv modern g++ and clang versions
-addons: 
-  apt:
-    sources: 
-      - llvm-toolchain-precise 
-      - ubuntu-toolchain-r-test 
-    packages:
-      - clang-3.9
-      - g++-6
-      - gcc-6
+dist: xenial
+
+cache:
+  directories:
+  - $HOME/travistest-dep
 
 install:
-- cd ${TRAVIS_BUILD_DIR}
-# install coverage + profiling + googletest
-- bash install_test.sh
+- sudo bash -x $TRAVIS_BUILD_DIR/travis.sh $HOME/travistest-dep $TRAVIS_BUILD_DIR
 
 before_script:
 # coverage then make build dir
@@ -43,19 +35,12 @@ after_success:
 - lcov --list coverage.info # debug < see coverage here
 - coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
 
-notifications:
-  email:
-    on_success: change
-    on_failure: always
-
-# blocklist
-branches:
-  except:
-  - legacy
-
 # safelist
 branches:
   only:
   - master
   - stable
   - experimental
+
+notifications:
+  email: false
