@@ -5,7 +5,7 @@
 //  Created by Mingkai Chen on 2017-02-05.
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
-#include <iostream>
+
 #ifdef TENNCOR_TENSOR_HANDLER_HPP
 
 namespace nnet
@@ -26,15 +26,10 @@ itensor_handler<T>* itensor_handler<T>::move (void)
 }
 
 template <typename T>
-itensor_handler<T>::itensor_handler (SHAPER shaper, FORWARD_OP<T> forward) :
-	shaper_(shaper), forward_(forward) {}
-
-template <typename T>
 void itensor_handler<T>::operator () (
 	tensor<T>& out,
 	std::vector<const tensor<T>*> args) const
 {
-	assert(shaper_ && forward_);
 	std::vector<tensorshape> ts;
 	std::vector<const T*> raws;
 	for (const tensor<T>* arg : args)
@@ -42,7 +37,7 @@ void itensor_handler<T>::operator () (
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}
-	tensorshape s = shaper_(ts);
+	tensorshape s = this->calc_shape(ts);
 
 	if (s.is_fully_defined())
 	{
@@ -60,13 +55,13 @@ void itensor_handler<T>::operator () (
 		{
 			out.allocate(s);
 		}
-		forward_(out.raw_data_, s, raws, ts);
+		calc_data(out.raw_data_, s, raws, ts);
 	}
 }
 
 template <typename T>
 transfer_func<T>::transfer_func (SHAPER shaper, FORWARD_OP<T> forward) :
-	itensor_handler<T>(shaper, forward) {}
+	shaper_(shaper), forward_(forward) {}
 
 template <typename T>
 transfer_func<T>* transfer_func<T>::clone (void) const
@@ -118,19 +113,7 @@ void initializer<T>::operator () (tensor<T>& out) const
 }
 
 template <typename T>
-initializer<T>::initializer (SHAPER shaper, FORWARD_OP<T> forward) :
-	itensor_handler<T>(shaper, forward) {}
-
-template <typename T>
-const_init<T>::const_init (T value) :
-	initializer<T>(
-[](std::vector<tensorshape> inshapes) { return inshapes[0]; },
-[value](T* out, const tensorshape& shape,
-	std::vector<const T*>&, std::vector<tensorshape>&)
-{
-	size_t len = shape.n_elems();
-	std::fill(out, out+len, value);
-}) {}
+const_init<T>::const_init (T value) : value_(value) {}
 
 template <typename T>
 const_init<T>* const_init<T>::clone (void) const
@@ -158,17 +141,7 @@ itensor_handler<T>* const_init<T>::move_impl (void)
 
 template <typename T>
 rand_uniform<T>::rand_uniform (T min, T max) :
-	initializer<T>(
-[](std::vector<tensorshape> inshapes) { return inshapes[0]; },
-[this](T* out, const tensorshape& shape,
-   std::vector<const T*>&, std::vector<tensorshape>&)
-{
-	size_t len = shape.n_elems();
-	for (size_t i = 0; i < len; i++)
-	{
-		out[i] = distribution_(generator);
-	}
-}), distribution_(std::uniform_real_distribution<T>(min, max)) {}
+	distribution_(std::uniform_real_distribution<T>(min, max)) {}
 
 template <typename T>
 rand_uniform<T>* rand_uniform<T>::clone (void) const
@@ -195,35 +168,12 @@ itensor_handler<T>* rand_uniform<T>::move_impl (void)
 }
 
 template <typename T>
-void rand_uniform<T>::copy_helper (const rand_uniform<T>& other)
+void rand_uniform<T>::calc_data (T* dest, const tensorshape& outshape,
+	std::vector<const T*>&, std::vector<tensorshape>&) const
 {
-	distribution_ = other.distribution_;
-	this->forward_ =
-		[this](T* out, const tensorshape& shape,
-			std::vector<const T*>&, std::vector<tensorshape>&)
-		{
-			size_t len = shape.n_elems();
-			for (size_t i = 0; i < len; i++)
-			{
-				out[i] = distribution_(generator);
-			}
-		};
-}
-
-template <typename T>
-void rand_uniform<T>::move_helper (rand_uniform<T>&& other)
-{
-	distribution_ = std::move(other.distribution_);
-	this->forward_ =
-		[this](T* out, const tensorshape& shape,
-			std::vector<const T*>&, std::vector<tensorshape>&)
-		{
-			size_t len = shape.n_elems();
-			for (size_t i = 0; i < len; i++)
-			{
-				out[i] = distribution_(generator);
-			}
-		};
+	size_t len = outshape.n_elems();
+	auto gen = std::bind(distribution_, generator);
+	std::generate(dest, dest+len, gen);
 }
 
 }

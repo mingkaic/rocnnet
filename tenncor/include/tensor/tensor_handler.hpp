@@ -45,13 +45,12 @@ public:
 
 	//! clone function for copying from itensor_handler
 	itensor_handler<T>* move (void);
-
-	SHAPER shaper_; //! publicly expose shaper, due its frequent usage
+	
+	//! calculate the shape given input shapes
+	//! publicly expose shape calculator due its utility
+	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const = 0;
 
 protected:
-	//! tensor handler accepts a shape manipulator and a forward transfer function
-	itensor_handler (SHAPER shaper, FORWARD_OP<T> forward);
-
 	//! clone implementation for copying from itensor_handler
 	virtual itensor_handler<T>* clone_impl (void) const = 0;
 
@@ -61,7 +60,9 @@ protected:
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
 
-	FORWARD_OP<T> forward_; //! raw data transformation function
+	//! calculate raw data from output shape, input shapes, and input data 
+	virtual void calc_data (T*,const tensorshape&,
+		std::vector<const T*>&,std::vector<tensorshape>&) const = 0;
 };
 
 //! Transfer function
@@ -81,6 +82,12 @@ public:
 
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
+	
+	//! calls shape transformer
+	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const
+	{
+		return shaper_(shapes);
+	}
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -88,6 +95,17 @@ protected:
 
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void);
+
+	//! calculate raw data using forward functor
+	virtual void calc_data (T* dest, const tensorshape& outshape,
+		std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes) const
+	{
+		forward_(dest, outshape, srcs, inshapes);
+	}
+
+	SHAPER shaper_; //! shape transformation
+	
+	FORWARD_OP<T> forward_; //! raw data transformation function
 };
 
 template <typename T>
@@ -103,10 +121,12 @@ public:
 
 	//! perform initialization
 	void operator () (tensor<T>& out) const;
-
-protected:
-	//! initializer forwards functions to itensor_handler
-	initializer (SHAPER shaper, FORWARD_OP<T> forward);
+	
+	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const
+	{
+		if (shapes.empty()) return {};
+		return shapes[0];
+	}
 };
 
 //! Constant Initializer
@@ -129,6 +149,17 @@ protected:
 
 	//! move implementation for moving from parents
 	virtual itensor_handler<T>* move_impl (void);
+	
+	//! initialize data as constant
+	virtual void calc_data (T* dest, const tensorshape& outshape,
+		std::vector<const T*>&, std::vector<tensorshape>&) const
+	{
+		size_t len = outshape.n_elems();
+		std::fill(dest, dest+len, value_);
+	}
+		
+private:
+	T value_;
 };
 
 //! Uniformly Random Initializer
@@ -145,54 +176,18 @@ public:
 	//! clone function for copying from parents
 	rand_uniform<T>* move (void);
 
-	//! move constructor
-	rand_uniform (rand_uniform<T>&& other) :
-		initializer<T>(std::move(other))
-	{
-		move_helper(std::move(other));
-	}
-
-	//! copy assignment
-	virtual rand_uniform<T>& operator = (const rand_uniform<T>& other)
-	{
-		if (this != &other)
-		{
-			initializer<T>::operator = (other);
-			copy_helper(other);
-		}
-		return *this;
-	}
-
-	//! move assignment
-	virtual rand_uniform<T>& operator = (rand_uniform<T>&& other)
-	{
-		if (this != &other)
-		{
-			initializer<T>::operator = (std::move(other));
-			move_helper(std::move(other));
-		}
-		return *this;
-	}
-
 protected:
-	//! copy constructor
-	rand_uniform (const rand_uniform<T>& other) :
-		initializer<T>(other)
-	{
-		copy_helper(other);
-	}
-
 	//! clone implementation for copying from parents
 	virtual itensor_handler<T>* clone_impl (void) const;
 
 	//! clone function for copying from parents
 	virtual itensor_handler<T>* move_impl (void);
+	
+	//! initialize data as constant
+	virtual void calc_data (T* dest, const tensorshape& outshape,
+		std::vector<const T*>&, std::vector<tensorshape>&) const;
 
 private:
-	void copy_helper (const rand_uniform<T>& other);
-
-	void move_helper (rand_uniform<T>&& other);
-
 	std::uniform_real_distribution<T>  distribution_;
 };
 

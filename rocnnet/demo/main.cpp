@@ -52,10 +52,10 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::gd_net gdn(n_in, hiddens, 0.9);
-	rocnnet::gd_net* trained_gdn = gdn.clone();
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
 	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
-	gdn.initialize();
+	untrained_gdn.initialize();
 	trained_gdn->initialize();
 	pretrained_gdn.initialize(serialname);
 
@@ -67,53 +67,52 @@ int main (int argc, char** argv)
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		trained_gdn->train(batch, batch_out);
-		// gdn.train(batch, batch_out);
 	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
-	nnet::placeholder<double> in((std::vector<size_t>{n_in, 1}), "test_layerin");
-	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_layerin2");
-	nnet::placeholder<double> in3((std::vector<size_t>{n_in, 1}), "test_layerin3");
-	nnet::varptr<double> out = gdn(&in);
+	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, 1}), "test_untrain_layerin");
+	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_train_layerin");
+	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, 1}), "test_pretrain_layerin");
+	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
 	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
-	nnet::varptr<double> out3 = pretrained_gdn(&in3);
+	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);
 
-	double good_err = 0;
-	double bad_err = 0;
+	double untrained_err = 0;
+	double trained_err = 0;
 	double pretrained_err = 0;
 	for (size_t i = 0; i < n_test; i++)
 	{
 		std::cout << "testing " << i << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		in = batch;
+		untrained_in = batch;
 		trained_in = batch;
-		in3 = batch;
-		std::vector<double> res = nnet::expose<double>(out);
+		pretrained_in = batch;
+		std::vector<double> untrained_res = nnet::expose<double>(untrained_out);
 		std::vector<double> trained_res = nnet::expose<double>(trained_out);
-		std::vector<double> res3 = nnet::expose<double>(out3);
-		double avgerr = 0;
+		std::vector<double> pretrained_res = nnet::expose<double>(pretrained_out);
+		double untrained_avgerr = 0;
 		double trained_avgerr = 0;
-		double avgerr3 = 0;
+		double pretrained_avgerr = 0;
 		for (size_t i = 0, n = batch_out.size(); i < n; i++)
 		{
-			avgerr += std::abs(res[i] - batch_out[i]);
+			untrained_avgerr += std::abs(untrained_res[i] - batch_out[i]);
 			trained_avgerr += std::abs(trained_res[i] - batch_out[i]);
-			avgerr3 += std::abs(res3[i] - batch_out[i]);
+			pretrained_avgerr += std::abs(pretrained_res[i] - batch_out[i]);
 		}
-		bad_err += avgerr / res.size();
-		good_err += trained_avgerr / trained_res.size();
-		pretrained_err += avgerr3 / res3.size();
+		untrained_err += untrained_avgerr / untrained_res.size();
+		trained_err += trained_avgerr / trained_res.size();
+		pretrained_err += pretrained_avgerr / pretrained_res.size();
 	}
-	good_err *= 100.0 / (double) n_test;
-	bad_err *= 100.0 / (double) n_test;
+	untrained_err *= 100.0 / (double) n_test;
+	trained_err *= 100.0 / (double) n_test;
 	pretrained_err *= 100.0 / (double) n_test;
-	std::cout << "trained mlp error rate: " << good_err << "%\n";
-	std::cout << "untrained mlp error rate: " << bad_err << "%\n";
+	std::cout << "untrained mlp error rate: " << untrained_err << "%\n";
+	std::cout << "trained mlp error rate: " << trained_err << "%\n";
 	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
 
-	gdn.save(serialname);
+	trained_gdn->save(serialname);
 	
 	delete trained_gdn;
 

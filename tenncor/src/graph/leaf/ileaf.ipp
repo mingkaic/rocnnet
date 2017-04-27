@@ -112,19 +112,6 @@ template <typename T>
 class ileaf<T>::assignment : public initializer<T>
 {
 public:
-	assignment (void) :
-		initializer<T>(
-	[](std::vector<tensorshape> ts) -> tensorshape
-	{
-		if (ts.empty()) return {};
-		return ts[0];
-	},
-	[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
-	{
-		size_t n = std::min(temp_.size(), shape.n_elems());
-		std::memcpy(dest, &temp_[0], n * sizeof(T));
-	}) {}
-
 	assignment* clone (void) const
 	{
 		return static_cast<assignment*>(clone_impl());
@@ -133,32 +120,6 @@ public:
 	assignment* move (void)
 	{
 		return static_cast<assignment*>(move_impl());
-	}
-
-	assignment (assignment&& other) :
-		initializer<T>(std::move(other))
-	{
-		common_helper();
-	}
-
-	virtual assignment& operator = (const assignment& other)
-	{
-		if (this != &other)
-		{
-			initializer<T>::operator = (other);
-			common_helper();
-		}
-		return *this;
-	}
-
-	virtual assignment& operator = (assignment&& other)
-	{
-		if (this != &other)
-		{
-			initializer<T>::operator = (std::move(other));
-			common_helper();
-		}
-		return *this;
 	}
 
 	// perform assignment
@@ -170,12 +131,6 @@ public:
 	}
 
 protected:
-	assignment (const assignment& other) :
-		initializer<T>(other)
-	{
-		common_helper();
-	}
-
 	virtual assignment* clone_impl (void) const
 	{
 		return new assignment(*this);
@@ -185,19 +140,15 @@ protected:
 	{
 		return new assignment(std::move(*this));
 	}
-
-private:
-	void common_helper (void)
+	
+	virtual void calc_data (T* dest, const tensorshape& outshape,
+		std::vector<const T*>&, std::vector<tensorshape>&) const
 	{
-		// don't bother copy over temp
-		this->forward_ =
-			[this](T* dest, const tensorshape& shape, std::vector<const T*>&,std::vector<tensorshape>&)
-			{
-				size_t n = std::min(temp_.size(), shape.n_elems());
-				std::memcpy(dest, &temp_[0], n * sizeof(T));
-			};
+		size_t n = std::min(temp_.size(), outshape.n_elems());
+		std::memcpy(dest, &temp_[0], n * sizeof(T));
 	}
 
+private:
 	std::vector<T> temp_;
 };
 
