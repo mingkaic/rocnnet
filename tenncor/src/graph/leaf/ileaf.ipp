@@ -12,6 +12,9 @@ namespace nnet
 {
 
 template <typename T>
+ileaf<T>::~ileaf (void) {}
+
+template <typename T>
 ileaf<T>* ileaf<T>::clone (void) const
 {
 	return static_cast<ileaf<T>*>(this->clone_impl());
@@ -71,6 +74,18 @@ template <typename T>
 bool ileaf<T>::good_status (void) const
 {
 	return is_init_;
+}
+
+template <typename T>
+bool ileaf<T>::read_proto (const tenncor::tensor_proto& proto)
+{
+	bool success = data_->from_proto(proto);
+	if (success)
+	{
+		is_init_ = true;
+		this->notify(UPDATE);
+	}
+	return success;
 }
 
 template <typename T>

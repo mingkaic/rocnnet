@@ -40,7 +40,7 @@ public:
 		std::string name, bool ignore_jacobian = false);
 
 	//! destructor
-	virtual ~immutable (void) {}
+	virtual ~immutable (void);
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! clone function
@@ -87,12 +87,7 @@ public:
 	virtual void update (subject* arg);
 
 	//! Inherited from inode: data_ takes data from proto
-	virtual bool read_proto (const tenncor::tensor_proto&)
-	{
-		// it doesn't really make sense to deserialize data_ here, since data serves as a cache...
-		// todo: have an option to disable cachine for performance boost
-		return false;
-	}
+	virtual bool read_proto (const tenncor::tensor_proto&);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
