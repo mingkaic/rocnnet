@@ -58,8 +58,8 @@ if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
-add_executable(demo ${ROCNNET_DIR}/demo/main.cpp)
-target_link_libraries(demo rocnnet)
+add_executable(gd_demo ${ROCNNET_DIR}/demo/gd_demo.cpp)
+target_link_libraries(gd_demo rocnnet)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY FOR VISER <<<<<<<<<<<<<<<<<<<<
 set(IO_INCLUDE ${IO_DIR}/include)

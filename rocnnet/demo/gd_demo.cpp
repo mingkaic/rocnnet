@@ -39,7 +39,14 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 
 int main (int argc, char** argv)
 {
+	std::string outdir = ".";
+	if (argc > 1)
+	{
+		outdir = std::string(argv[1]);
+	}
 	std::string serialname = "demotest.pbx";
+	std::string serialpath = outdir + "/" + serialname;
+
 	std::clock_t start;
 	double duration;
 	size_t n_train = 600;
@@ -57,7 +64,7 @@ int main (int argc, char** argv)
 	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
 	untrained_gdn.initialize();
 	trained_gdn->initialize();
-	pretrained_gdn.initialize(serialname);
+	pretrained_gdn.initialize(serialpath);
 
 	// train mlp to output input
 	start = std::clock();
@@ -112,7 +119,7 @@ int main (int argc, char** argv)
 	std::cout << "trained mlp error rate: " << trained_err << "%\n";
 	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
 
-	trained_gdn->save(serialname);
+	trained_gdn->save(serialpath);
 	
 	delete trained_gdn;
 

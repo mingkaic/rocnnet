@@ -5,6 +5,7 @@ dist: xenial
 cache:
   directories:
   - $HOME/travistest-dep
+  - $HOME/prototxts
 
 install:
 - sudo bash -x $TRAVIS_BUILD_DIR/travis.sh $HOME/travistest-dep $TRAVIS_BUILD_DIR
@@ -21,7 +22,7 @@ script:
 - cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ${TRAVIS_BUILD_DIR}
 - cmake --build .
 # run tests
-- ${TRAVIS_BUILD_DIR}/bin/bin/demo
+- ${TRAVIS_BUILD_DIR}/bin/bin/gd_demo $HOME/prototxts
 - ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle
 - cat fuzz.out
 
