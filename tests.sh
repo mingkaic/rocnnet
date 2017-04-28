@@ -17,6 +17,10 @@ assert_cmd() {
 
 PBX_CACHE=${1:./prototxts}
 
+if [ ! -d $PBX_CACHE ]; then
+    mkdir $PBX_CACHE
+fi
+
 # compilation
 on_travis pushd ${TRAVIS_BUILD_DIR}
 lcov --directory . --zerocounters
