@@ -15,7 +15,7 @@ assert_cmd() {
     return $!
 }
 
-PBX_CACHE=${1:"./prototxts"}
+PBX_CACHE=${1:./prototxts}
 
 # compilation
 on_travis pushd ${TRAVIS_BUILD_DIR}
