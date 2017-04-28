@@ -15,7 +15,7 @@ assert_cmd() {
     return $!
 }
 
-PBX_CACHE=${1:./prototxts}
+PBX_CACHE=${1:-./prototxt}
 
 if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
