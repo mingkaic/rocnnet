@@ -61,12 +61,6 @@ perceptron& perceptron::operator = (perceptron&& other)
 	return *this;
 }
 
-void perceptron::initialize (void)
-{
-	weights_->initialize();
-	bias_->initialize();
-}
-
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape n_output by batch_size
 nnet::varptr<double> perceptron::operator () (nnet::inode<double>* input)

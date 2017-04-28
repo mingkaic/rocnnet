@@ -26,7 +26,7 @@ class ileaf : public inode<T>
 {
 public:
 	//! virtual destructor for constant and ivariable
-	virtual ~ileaf (void) {}
+	virtual ~ileaf (void);
 
 	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
 	//! clone function
@@ -52,6 +52,9 @@ public:
 	//! check if data is available
 	//! (if the node is initialized)
 	virtual bool good_status (void) const;
+
+	//! Inherited from inode: data_ takes data from proto
+	virtual bool read_proto (const tenncor::tensor_proto& proto);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

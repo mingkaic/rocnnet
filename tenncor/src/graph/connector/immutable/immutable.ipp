@@ -25,6 +25,9 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 }
 
 template <typename T>
+immutable<T>::~immutable (void) {}
+
+template <typename T>
 immutable<T>* immutable<T>::clone (void) const
 {
 	return static_cast<immutable<T>*>(this->clone_impl());
@@ -233,7 +236,7 @@ void immutable<T>::update (subject* /*arg*/)
 		if (data_ == nullptr)
 		{
 			// initialize data in the expected resulting shape
-			data_ = std::make_unique<tensor<T> >(Nf_.shaper_(ts));
+			data_ = std::make_unique<tensor<T> >(Nf_.calc_shape(ts));
 		}
 		Nf_(*data_, tens);
 		this->notify(UPDATE);
@@ -246,6 +249,14 @@ void immutable<T>::update (subject* /*arg*/)
 	{
 		master->replace(this->gid_); // gid_ = lhs
 	}
+}
+
+template <typename T>
+bool immutable<T>::read_proto (const tenncor::tensor_proto&)
+{
+	// it doesn't really make sense to deserialize data_ here, since data serves as a cache...
+	// todo: have an option to disable caching for performance boost
+	return false;
 }
 
 template <typename T>

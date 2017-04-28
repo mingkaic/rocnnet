@@ -1,56 +1,17 @@
 language: generic
 sudo: required
-dist: precise
-# install and setenv modern g++ and clang versions
-addons: 
-  apt:
-    sources: 
-      - llvm-toolchain-precise 
-      - ubuntu-toolchain-r-test 
-    packages:
-      - clang-3.9
-      - g++-6
-      - gcc-6
+dist: xenial
+
+cache:
+  directories:
+  - $HOME/rocnnet-dep
+  - $HOME/prototxts
 
 install:
-- cd ${TRAVIS_BUILD_DIR}
-# install coverage + profiling + googletest
-- bash install_test.sh
-
-before_script:
-# coverage then make build dir
-- cd ${TRAVIS_BUILD_DIR}
-- lcov --directory . --zerocounters
-- mkdir build
+- sudo bash -x $TRAVIS_BUILD_DIR/travis.sh $HOME/rocnnet-dep $TRAVIS_BUILD_DIR
 
 script:
-# build with test enabled
-- cd ${TRAVIS_BUILD_DIR}/build
-- cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ${TRAVIS_BUILD_DIR}
-- cmake --build .
-# run tests
-- ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle
-- cat fuzz.out
-
-after_success:
-# coverage log
-- cd ${TRAVIS_BUILD_DIR}
-- lcov --version
-- gcov --version
-- lcov --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
-- lcov --remove coverage.info '**/gtest*' '**/tests/*' '/usr/*' --output-file coverage.info # filter out system and test code
-- lcov --list coverage.info # debug < see coverage here
-- coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
-
-notifications:
-  email:
-    on_success: change
-    on_failure: always
-
-# blocklist
-branches:
-  except:
-  - legacy
+- bash tests.sh $HOME/prototxts
 
 # safelist
 branches:
@@ -58,3 +19,7 @@ branches:
   - master
   - stable
   - experimental
+
+# no need to pollute inboxes
+notifications:
+  email: false

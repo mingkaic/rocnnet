@@ -28,14 +28,14 @@ scope_(scope)
 		n_output = ip.first;
 		percept = new perceptron(n_input, n_output,
 			nnutils::formatter() << this->scope_ << ":hidden_" << level++);
-		layers.push_back(HID_PAIR(percept, ip.second));
+		layers_.push_back(HID_PAIR(percept, ip.second));
 		n_input = n_output;
 	}
 }
 
 ml_perceptron::~ml_perceptron (void)
 {
-	for (HID_PAIR hp : layers)
+	for (HID_PAIR hp : layers_)
 	{
 		// delete perceptrons to kill the graph
 		delete hp.first;
@@ -70,11 +70,21 @@ ml_perceptron& ml_perceptron::operator = (ml_perceptron&& other)
 	return *this;
 }
 
-void ml_perceptron::initialize (void)
+void ml_perceptron::initialize (std::string serialname)
 {
-	for (HID_PAIR hp : layers)
+	std::vector<nnet::inode<double>*> vars;
+	for (HID_PAIR hp : layers_)
 	{
-		hp.first->initialize();
+		WB_PAIR wb = hp.first->get_variables();
+		vars.push_back(wb.first);
+		vars.push_back(wb.second);
+	}
+
+	if (nnet::read<double>(vars, serialname) && vars.empty()) return;
+
+	for (nnet::inode<double>* v : vars)
+	{
+		static_cast<nnet::variable<double>*>(v)->initialize();
 	}
 }
 
@@ -85,11 +95,10 @@ nnet::varptr<double> ml_perceptron::operator () (nnet::inode<double>* input)
 	// sanity check
 	nnet::tensorshape in_shape = input->get_shape();
 	assert(in_shape.is_compatible_with(std::vector<size_t>{n_input_, 0}));
-	in_shape.assert_is_fully_defined(); // not quite sure about this one
 	// output of one layer's dimensions is expected to be matched by
 	// the perceptron of the next layer
 	nnet::inode<double>* output = input;
-	for (HID_PAIR hp : layers)
+	for (HID_PAIR hp : layers_)
 	{
 		nnet::inode<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
@@ -100,11 +109,23 @@ nnet::varptr<double> ml_perceptron::operator () (nnet::inode<double>* input)
 std::vector<WB_PAIR> ml_perceptron::get_variables (void) const
 {
 	std::vector<WB_PAIR> wb_vec;
-	for (HID_PAIR hp : layers)
+	for (HID_PAIR hp : layers_)
 	{
 		wb_vec.push_back(hp.first->get_variables());
 	}
 	return wb_vec;
+}
+
+bool ml_perceptron::save (std::string fname) const
+{
+	std::vector<nnet::inode<double>*> vars;
+	for (HID_PAIR hp : layers_)
+	{
+		WB_PAIR wb = hp.first->get_variables();
+		vars.push_back(wb.first);
+		vars.push_back(wb.second);
+	}
+	return nnet::write<double>(vars, fname);
 }
 
 ml_perceptron::ml_perceptron (const ml_perceptron& other, std::string& scope)
@@ -129,10 +150,12 @@ ml_perceptron* ml_perceptron::move_impl (std::string& scope)
 
 void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 {
-	for (HID_PAIR hp : layers)
+	n_input_ = other.n_input_;
+	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;
 	}
+	layers_.clear();
 	if (0 == scope_.size())
 	{
 		scope_ = other.scope_ + "_cpy";
@@ -143,20 +166,22 @@ void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 	}
 	size_t level = 0;
 	perceptron* percept;
-	for (HID_PAIR hp : other.layers)
+	for (HID_PAIR hp : other.layers_)
 	{
 		percept = new perceptron(*hp.first,
 			nnutils::formatter() << scope_ << ":hiddens" << level++);
-		layers.push_back(HID_PAIR(percept, hp.second));
+		layers_.push_back(HID_PAIR(percept, hp.second));
 	}
 }
 
 void ml_perceptron::move_helper (ml_perceptron&& other, std::string& scope)
 {
-	for (HID_PAIR hp : layers)
+	n_input_ = std::move(other.n_input_);
+	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;
 	}
+	layers_.clear();
 	if (0 == scope_.size())
 	{
 		scope_ = std::move(other.scope_);
@@ -167,11 +192,11 @@ void ml_perceptron::move_helper (ml_perceptron&& other, std::string& scope)
 	}
 	size_t level = 0;
 	perceptron* percept;
-	for (HID_PAIR hp : other.layers)
+	for (HID_PAIR hp : other.layers_)
 	{
 		percept = new perceptron(std::move(*hp.first),
 			nnutils::formatter() << scope_ << ":hiddens" << level++);
-		layers.push_back(HID_PAIR(percept, hp.second));
+		layers_.push_back(HID_PAIR(percept, hp.second));
 	}
 }
 

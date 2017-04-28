@@ -14,10 +14,12 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <cstring>
 
 #include "tensor/itensor.hpp"
 #include "tensor/tensorshape.hpp"
 #include "memory/default_alloc.hpp"
+#include "proto/tenncor.pb.h"
 
 #pragma once
 #ifndef TENNCOR_TENSOR_HPP
@@ -47,12 +49,12 @@ public:
 	//! deallocate tensor
 	virtual ~tensor (void);
 
-	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	// >>>> COPY && MOVE <<<<
 	//! clone function
-	tensor<T>* clone (void) const;
-
-	//! move constructor
-	tensor (tensor<T>&& other);
+	tensor<T>* clone (bool shapeonly = false) const;
+	
+	//! move function
+	tensor<T>* move (void);
 
 	//! copy assignment
 	virtual tensor<T>& operator = (const tensor<T>& other);
@@ -123,6 +125,9 @@ public:
 	//! otherwise return data array copy
 	std::vector<T> expose (void) const;
 
+	//! serialize protobuf tensor
+	void serialize (tenncor::tensor_proto* proto) const;
+
 	// >>>> MUTATOR <<<<
 	//! get allocator from factory and set it as alloc_
 	void set_allocator (size_t alloc_id);
@@ -154,22 +159,31 @@ public:
 	//! allowed shape will be adjusted similar to set_shape
 	bool copy_from (const tensor& other, const tensorshape shape);
 
-	// TODO: unimplemented, read protocol buffers
+	//! read data and shape from other, take allocator as is
+	bool from_proto (const tenncor::tensor_proto& other);
+
+	//! read data and shape from other, reassign allocator
+	bool from_proto (const tenncor::tensor_proto& other, size_t alloc_id);
+
 	// slice along the first dimension
 	tensor<T> slice (size_t dim_start, size_t limit);
 
 	// bool shares_buffer_with (const tensor& other) const;
 	// size_t buffer_hash (void) const;
-	// bool from_proto (const tensorproto& other);
-	// bool from_proto (iallocator* a, const tensorproto& other);
 
 protected:
-	// >>>> COPY && CLONE <<<<
+	// >>>> COPY, CLONE, && MOVE <<<<
 	//! copy constructor
-	tensor (const tensor<T>& other);
+	tensor (const tensor<T>& other, bool shapeonly);
+
+	//! move constructor
+	tensor (tensor<T>&& other);
 
 	//! clone implementation
-	virtual itensor<T>* clone_impl (void) const;
+	virtual itensor<T>* clone_impl (bool shapeonly) const;
+	
+	//! move implementation
+	virtual itensor<T>* move_impl (void);
 
 	// >>>> PROTECTED MEMBERS <<<<
 	T* raw_data_ = nullptr; //! raw data is available to tensor manipulators
@@ -184,10 +198,10 @@ private:
 		const T* in, const tensorshape& ins) const;
 
 	//! copy utility helper
-	void copy (const tensor<T>& other);
+	void copy_helper (const tensor<T>& other, bool shapeonly);
 
 	//! move utility helper
-	void move (tensor<T>&& other);
+	void move_helper (tensor<T>&& other);
 
 	// >>>> PRIVATE MEMBERS <<<<
 	//! allocator

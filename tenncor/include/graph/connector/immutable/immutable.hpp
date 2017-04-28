@@ -40,7 +40,7 @@ public:
 		std::string name, bool ignore_jacobian = false);
 
 	//! destructor
-	virtual ~immutable (void) {}
+	virtual ~immutable (void);
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! clone function
@@ -85,6 +85,9 @@ public:
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
 	virtual void update (subject* arg);
+
+	//! Inherited from inode: data_ takes data from proto
+	virtual bool read_proto (const tenncor::tensor_proto&);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

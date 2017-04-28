@@ -28,7 +28,7 @@ void* default_alloc::get_raw (size_t, size_t num_bytes)
 
 void default_alloc::del_raw (void* ptr, size_t)
 {
-	free (ptr);
+	free(ptr);
 }
 
 iallocator* default_alloc::clone_impl (void) const

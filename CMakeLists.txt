@@ -12,7 +12,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(TENNCOR_DIR ${PROJECT_SOURCE_DIR}/tenncor)
 set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
 
-set(IO_DIR	  	${PROJECT_SOURCE_DIR}/tenncor_io)
+set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
@@ -32,17 +32,17 @@ if(BUILD_DOC)
 		message("Doxygen build started")
 		configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 		add_customer_target(doc_doxygen ALL
-				COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-				WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-				COMMENT "Generating API Documentation with Doxygen"
-				VERBATIM)
+			COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+			COMMENT "Generating API Documentation with Doxygen"
+			VERBATIM)
 	else (DOXYGEN_FOUND)
 		message(WARNING "Doxygen need to be installed to generate the doxygen documetation")
 	endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
-set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include)
+set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
@@ -58,8 +58,8 @@ if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
-add_executable(demo ${ROCNNET_DIR}/demo/main.cpp)
-target_link_libraries(demo rocnnet)
+add_executable(gd_demo ${ROCNNET_DIR}/demo/gd_demo.cpp)
+target_link_libraries(gd_demo rocnnet)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY FOR VISER <<<<<<<<<<<<<<<<<<<<
 set(IO_INCLUDE ${IO_DIR}/include)

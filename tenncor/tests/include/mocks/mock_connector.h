@@ -47,6 +47,7 @@ public:
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
 	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 	virtual inode<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 	virtual void update (subject*)
 	{
