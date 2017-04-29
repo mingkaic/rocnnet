@@ -13,7 +13,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_CONNECTOR_TEST
 #ifndef DISABLE_CONNECTOR_TEST
 
 

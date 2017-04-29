@@ -13,34 +13,20 @@ namespace nnet
 
 inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 {
-	tensorshape firstshape = shapes.front();
-	size_t nshapes = shapes.size();
-	for (size_t i = 1; i < nshapes; ++i)
+	tensorshape lastshape;
+	for (size_t i = 0, nshapes = shapes.size(); i < nshapes; ++i)
 	{
-		if (false == shapes[i].is_compatible_with(firstshape))
+		if (shapes[i].n_elems() == 1) continue;
+		if (false == shapes[i].is_compatible_with(lastshape))
 		{
 			throw std::exception(); // TODO: make better exception
 		}
+		lastshape = shapes[i];
 	}
-	return firstshape;
+	if (false == lastshape.is_part_defined()) return std::vector<size_t>{1};
+	return lastshape;
 }
 
-template <typename T>
-inline optional<T> scalarize (const varptr<T>& other)
-{
-	optional<T> out;
-	if (other->good_status())
-	{
-		std::vector<T> v = expose(other.get());
-		if (1 == v.size())
-		{
-			out = v[0];
-		}
-	}
-	return out;
-}
-
-// nulls are treated as 0
 template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
@@ -278,62 +264,31 @@ template <typename T>
 varptr<T> pow (const varptr<T> a, T scalar)
 {
 	if (nullptr == a) return nullptr;
-	FORWARD_OP<T> forward;
-	BACK_MAP<T> back;
 	if (scalar == 0)
 	{
-		forward =
-		[](T* dest, const tensorshape& shape, std::vector<const T*>&, std::vector<tensorshape>&)
-		{
-			size_t ns = shape.n_elems();
-			std::fill(dest, dest+ns, 1);
-		};
-		back =
-		[](std::vector<inode<T>*>, variable<T>* leaf)
-		{
-			// forward is 1, back is 0
-			return leaf->get_leaf(nullptr); // return zero node
-		};
+		return constant<T>::get(1);
 	}
 	else if (scalar == 1)
 	{
-		forward =
-		[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
-		{
-			size_t ns = shape.n_elems();
-			const T* in = args.at(0);
-			memcpy(dest, in, sizeof(T) * ns);
-		};
-		back =
-		[](std::vector<inode<T>*>, variable<T>* leaf)
-		{
-			// forward is x, back is 1
-			return leaf->get_leaf(leaf); // return one node
-		};
+		return a;
 	}
-	else
+	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	[scalar](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
-		forward =
-		[scalar](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+		size_t ns = shape.n_elems();
+		const T* in = args.at(0);
+		for (size_t i = 0; i < ns; i++)
 		{
-			size_t ns = shape.n_elems();
-			const T* in = args.at(0);
-			for (size_t i = 0; i < ns; i++)
-			{
-				dest[i] = std::pow(in[i], scalar);
-			}
-		};
-		back =
-		[scalar](std::vector<inode<T>*> args, variable<T>* leaf)
-		{
-			// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
-			varptr<T> a = args.front();
-			varptr<T> grad = a->get_leaf(leaf); // wrap
-			return scalar * grad * pow(a, scalar-1);
-		};
-	}
-
-	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper, forward, back, "sqrt");
+			dest[i] = std::pow(in[i], scalar);
+		}
+	},
+	[scalar](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
+		varptr<T> a = args.front();
+		varptr<T> grad = a->get_leaf(leaf); // wrap
+		return scalar * grad * pow(a, scalar-1);
+	}, "sqrt");
 }
 
 template <typename T>
@@ -357,7 +312,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	{
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_leaf(leaf);
-		return clip_val(grad, min, max);
+		return grad * clip_val(a, min, max);
 	}, "clip_val");
 }
 
@@ -386,9 +341,9 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	},
 	[cap](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-	   	inode<T>* a = args.front();
+		varptr<T> a = args.front();
 		varptr<T> grad = a->get_leaf(leaf);
-	   	return clip_norm(varptr<T>(grad), cap);
+	   	return grad * clip_norm(a, cap);
 	}, "clip_norm");
 }
 
@@ -398,7 +353,8 @@ varptr<T> operator + (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (b->good_status() && *b == (T)0) return constant<T>::get(a);
+	if (a == (T)0) return b;
+	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -420,7 +376,8 @@ template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0) return constant<T>::get(b);
+	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(b);
+	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -442,22 +399,37 @@ template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0) return b;
-	else if (b->good_status() && *b == (T)0) return a;
-	else if (optional<T> ascalar = scalarize(a))
-		return (*ascalar) + b;
-	else if (optional<T> bscalar = scalarize(b))
-		return a + (*bscalar);
+	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return b;
+	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& shape,
+		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
-		for (size_t i = 0; i < ns; i++)
+
+		if (inshapes[0].n_elems() == 1)
 		{
-			dest[i] = ad[i] + bd[i];
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[0] + bd[i];
+			}
+		}
+		else if (inshapes[1].n_elems() == 1)
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] + bd[0];
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] + bd[i];
+			}
 		}
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
@@ -475,7 +447,8 @@ varptr<T> operator - (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (b->good_status() && *b == (T)0) return constant<T>::get(a);
+	if (a == (T)0) return -b;
+	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -497,7 +470,8 @@ template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0) return constant<T>::get(-b);
+	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(-b);
+	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -519,22 +493,37 @@ template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0) return b;
-	else if (b->good_status() && *b == (T)0) return a;
-	else if (optional<T> ascalar = scalarize(a))
-		return (*ascalar) - b;
-	else if (optional<T> bscalar = scalarize(b))
-		return a - (*bscalar);
+	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return -b;
+	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& shape,
+		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
-		for (size_t i = 0; i < ns; i++)
+
+		if (inshapes[0].n_elems() == 1)
 		{
-			dest[i] = ad[i] - bd[i];
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[0] - bd[i];
+			}
+		}
+		else if (inshapes[1].n_elems() == 1)
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] - bd[0];
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] - bd[i];
+			}
 		}
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
@@ -552,8 +541,14 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (b->good_status() && (*b == (T)0 || 0 == a)) return constant<T>::get(0);
-	if (b->good_status() && *b == (T)1) return constant<T>::get(a);
+	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	// optimization only applies to constants
+	{
+		if (*b == (T)0) return constant<T>::get(0);
+		if (*b == (T)1) return constant<T>::get(a);
+	}
+	if (0 == a) return constant<T>::get(0);
+	if (1 == a) return b;
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -576,8 +571,14 @@ template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && (*a == (T)0 || 0 == b)) return constant<T>::get(0);
-	if (a->good_status() && *a == (T)1) return constant<T>::get(b);
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	// optimization only applies to constants
+	{
+		if (*a == (T)0) return constant<T>::get(0);
+		if (*a == (T)1) return constant<T>::get(b);
+	}
+	if (0 == b) return constant<T>::get(0);
+	if (1 == b) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -600,24 +601,47 @@ template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if ((a->good_status() && *a == (T)0) || (b->good_status() && *b == (T)0))
-		return constant<T>::get(0);
-	if (a->good_status() && *a == (T)1) return b;
-	if (b->good_status() && *b == (T)1) return a;
-	else if (optional<T> ascalar = scalarize(a))
-		return (*ascalar) * b;
-	else if (optional<T> bscalar = scalarize(b))
-		return a * (*bscalar);
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	// optimization only applies to constants
+	{
+		if (*a == (T)0) return constant<T>::get(0);
+		if (*a == (T)1) return b;
+	}
+	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	// optimization only applies to constants
+	{
+		if (*b == (T)0) return constant<T>::get(0);
+		if (*b == (T)1) return a;
+	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& shape,
+	   std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
-		for (size_t i = 0; i < ns; i++)
+
+		if (inshapes[0].n_elems() == 1)
 		{
-			dest[i] = ad[i] * bd[i];
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[0] * bd[i];
+			}
+		}
+		else if (inshapes[1].n_elems() == 1)
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] * bd[0];
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] * bd[i];
+			}
 		}
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
@@ -637,9 +661,14 @@ varptr<T> operator / (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	assert(!b->good_status() || *b != (T)0);
+	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	// optimization only applies to constants
+	{
+		if (*b == (T)0) throw std::exception();
+		if (*b == (T)1) return constant<T>::get(a);
+	}
+
 	if (a == (T)0) return constant<T>::get(0);
-	if (b->good_status() && *b == (T)1) return constant<T>::get(a);
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -663,8 +692,8 @@ template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	assert(b != 0);
-	if (a->good_status() && *a == (T)0) return constant<T>::get(0);
+	if (b != 0) throw std::exception();
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
 	if (b == (T)1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -688,23 +717,43 @@ template <typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	assert(!b->good_status() || *b != (T) 0); // don't allow infinity
-	if (a->good_status() && *a == (T)0) return constant<T>::get(0);
-	if (b->good_status() && *b == (T)1) return a;
-	else if (optional<T> ascalar = scalarize(a))
-		return (*ascalar) / b;
-	else if (optional<T> bscalar = scalarize(b))
-		return a / (*bscalar);
+	// don't allow infinity
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
+	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	// optimization only applies to constants
+	{
+		if (*b == (T)0) throw std::exception();
+		if (*b == (T)1) return a;
+	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& shape,
+		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
-		for (size_t i = 0; i < ns; i++)
+
+		if (inshapes[0].n_elems() == 1)
 		{
-			dest[i] = ad[i] / bd[i];
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[0] / bd[i];
+			}
+		}
+		else if (inshapes[1].n_elems() == 1)
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] / bd[0];
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = ad[i] / bd[i];
+			}
 		}
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)

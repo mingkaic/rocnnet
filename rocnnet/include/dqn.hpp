@@ -15,113 +15,112 @@
 #include "gd_net.hpp"
 
 #pragma once
-#ifdef ACTIVATE_GD_NET
+#ifdef DQN__ACTIVATE
 #ifndef dqn_hpp
 #define dqn_hpp
 
 namespace nnet {
 
 class dq_net {
-	private:
-		// argument memorization
-		size_t n_observations; // input
-		size_t n_actions; // output
+public:
+	dq_net (size_t n_input,
+		std::vector<IN_PAIR> hiddens,
+		size_t train_interval = 5,
+		double rand_action_prob = 0.05,
+		double discount_rate = 0.95,
+		double update_rate = 0.01,
+		// memory parameters
+		size_t store_interval = 5,
+		size_t mini_batch_size = 32,
+		size_t max_exp = 30000);
 
-		ml_perceptron* q_net;
-		ml_perceptron* target_net;
+	virtual ~dq_net (void) {
+		delete observation;
+		delete next_observation;
+		delete next_observation_mask;
+		delete rewards;
+		delete action_mask;
+	}
 
-		double rand_action_prob;
-		size_t exploration_period;
-		size_t store_interval;
-		size_t train_interval;
-		size_t mini_batch_size;
-		double discount_rate;
-		size_t max_exp;
-		double update_rate;
+	virtual dq_net* clone (std::string scope = "")
+	{
+		return new dq_net(*this);
+	}
 
-		// state
-		struct exp_batch {
-			std::vector<double> observation;
-			size_t action_idx;
-			double reward;
-			std::vector<double> new_observation;
-			exp_batch(
-				std::vector<double> observation,
-				size_t action_idx,
-				double reward,
-				std::vector<double> new_observation) :
-				observation(observation),
-				action_idx(action_idx),
-				reward(reward),
-				new_observation(new_observation) {}
-		};
+	std::vector<double> operator () (std::vector<double>& input);
 
-		std::vector<exp_batch> experiences;
-		size_t actions_executed;
-		size_t iteration;
-		size_t n_store_called;
-		size_t n_train_called;
+	// memory replay
+	void store (
+		std::vector<double> observation,
+		size_t action_idx,
+		double reward,
+		std::vector<double> new_obs);
 
-		// fanins
-		nnet::placeholder<double>* observation;
-		nnet::placeholder<double>* next_observation;
-		nnet::placeholder<double>* next_observation_mask;
-		nnet::placeholder<double>* rewards;
-		nnet::placeholder<double>* action_mask;
+	void train (std::vector<std::vector<double> > train_batch);
 
-		// fanouts
-		nnet::varptr<double> predicted_actions;
-		nnet::varptr<double> prediction_error;
-		// update
-		ioptimizer<double>* train_op_;
-		group<double> net_train;
+//	// persistence
+//	void save (void); // implement
+//	void restore (void); // implement
 
-		void variable_setup (void);
-		double get_random (void);
-		std::vector<exp_batch> get_sample (void);
+private:
+	// argument memorization
+	size_t n_observations; // input
+	size_t n_actions; // output
 
-		double linear_annealing (double initial_prob) const;
+	ml_perceptron* q_net;
+	ml_perceptron* target_net;
 
-	public:
-		dq_net (size_t n_input,
-				std::vector<IN_PAIR> hiddens,
-				nnet::ioptimizer<double>* optimizer = nullptr,
-				size_t train_interval = 5,
-				double rand_action_prob = 0.05,
-				double discount_rate = 0.95,
-				double update_rate = 0.01,
-				// memory parameters
-				size_t store_interval = 5,
-				size_t mini_batch_size = 32,
-				size_t max_exp = 30000);
+	double rand_action_prob;
+	size_t exploration_period;
+	size_t store_interval;
+	size_t train_interval;
+	size_t mini_batch_size;
+	double discount_rate;
+	size_t max_exp;
+	double update_rate;
 
-		virtual ~dq_net (void) {
-			delete observation;
-			delete next_observation;
-			delete next_observation_mask;
-			delete rewards;
-			delete action_mask;
-		}
-
-		virtual dq_net* clone (std::string scope = "")
-		{
-			return new dq_net(*this);
-		}
-
-		std::vector<double> operator () (std::vector<double>& input);
-
-		// memory replay
-		void store (
+	// state
+	struct exp_batch {
+		std::vector<double> observation;
+		size_t action_idx;
+		double reward;
+		std::vector<double> new_observation;
+		exp_batch(
 			std::vector<double> observation,
 			size_t action_idx,
 			double reward,
-			std::vector<double> new_obs);
+			std::vector<double> new_observation) :
+			observation(observation),
+			action_idx(action_idx),
+			reward(reward),
+			new_observation(new_observation) {}
+	};
 
-		void train (std::vector<std::vector<double> > train_batch);
+	std::vector<exp_batch> experiences;
+	size_t actions_executed;
+	size_t iteration;
+	size_t n_store_called;
+	size_t n_train_called;
 
-//		// persistence
-//		void save (void); // implement
-//		void restore (void); // implement
+	// fanins
+	nnet::placeholder<double>* observation;
+	nnet::placeholder<double>* next_observation;
+	nnet::placeholder<double>* next_observation_mask;
+	nnet::placeholder<double>* rewards;
+	nnet::placeholder<double>* action_mask;
+
+	// fanouts
+	nnet::varptr<double> predicted_actions;
+	nnet::varptr<double> prediction_error;
+	// update
+	ioptimizer<double>* train_op_;
+	group<double> net_train;
+
+	void variable_setup (void);
+	double get_random (void);
+	std::vector<exp_batch> get_sample (void);
+
+	double linear_annealing (double initial_prob) const;
 };
 
 }

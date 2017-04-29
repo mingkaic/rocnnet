@@ -74,6 +74,9 @@ public:
 	//! return update data function (add input node data to this)
 	variable_updater<T> assign_add (inode<T>* input) const;
 
+	//! return update data function (add input node data to this)
+	variable_updater<T> assign_sub (inode<T>* input) const;
+
 protected:
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;

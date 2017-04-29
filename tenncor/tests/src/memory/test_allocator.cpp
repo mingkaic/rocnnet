@@ -10,7 +10,6 @@
 #include "mocks/mock_allocator.h"
 
 
-//#define DISABLE_ALLOCATOR_TEST
 #ifndef DISABLE_ALLOCATOR_TEST
 
 

@@ -12,7 +12,6 @@
 #include "mocks/mock_tensor.h"
 
 
-//#define DISABLE_TENSOR_TEST
 #ifndef DISABLE_TENSOR_TEST
 
 

@@ -19,7 +19,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_BUILDER_TEST
 #ifndef DISABLE_BUILDER_TEST
 
 

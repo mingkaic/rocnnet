@@ -9,7 +9,6 @@
 #include "mocks/mock_leaf.h"
 
 
-//#define DISABLE_LEAF_TEST
 #ifndef DISABLE_LEAF_TEST
 
 

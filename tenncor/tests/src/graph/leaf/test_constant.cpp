@@ -17,7 +17,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_CONSTANT_TEST
 #ifndef DISABLE_CONSTANT_TEST
 
 

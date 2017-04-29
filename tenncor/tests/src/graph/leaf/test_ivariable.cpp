@@ -12,7 +12,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_IVARIABLE_TEST
 #ifndef DISABLE_IVARIABLE_TEST
 
 

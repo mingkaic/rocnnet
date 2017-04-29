@@ -17,7 +17,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_VARIABLE_TEST
 #ifndef DISABLE_VARIABLE_TEST
 
 

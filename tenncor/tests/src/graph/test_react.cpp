@@ -13,7 +13,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
 

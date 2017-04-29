@@ -8,11 +8,8 @@
 
 #include <vector>
 #include <map>
-#include "assign.hpp"
 #include "graph/leaf/variable.hpp"
-#include "group.hpp"
 #include "graph/connector/immutable/elementary.hpp"
-#include "gradient.hpp"
 #define optimizer_hpp
 #pragma once
 #ifndef optimizer_hpp

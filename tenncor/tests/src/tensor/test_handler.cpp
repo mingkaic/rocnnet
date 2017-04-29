@@ -18,7 +18,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_HANDLER_TEST
 #ifndef DISABLE_HANDLER_TEST
 
 

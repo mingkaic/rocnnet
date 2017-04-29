@@ -12,7 +12,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_NODE_TEST
 #ifndef DISABLE_NODE_TEST
 
 

@@ -59,9 +59,11 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::gd_net untrained_gdn(n_in, hiddens, 0.9);
+	nnet::bgd_utils bgd;
+	bgd.learning_rate_ = 0.9;
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	untrained_gdn.initialize();
 	trained_gdn->initialize();
 	pretrained_gdn.initialize(serialpath);

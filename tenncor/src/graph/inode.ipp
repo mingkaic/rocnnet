@@ -77,6 +77,7 @@ std::vector<T> expose (const inode<T>* var)
 {
 	if (nullptr == var) return std::vector<T>{};
 	const tensor<T>* ten = var->get_eval();
+	if (nullptr == ten) return std::vector<T>{};
 	return ten->expose();
 }
 

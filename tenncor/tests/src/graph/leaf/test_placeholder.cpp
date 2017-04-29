@@ -15,7 +15,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_PLACEHOLDER_TEST
 #ifndef DISABLE_PLACEHOLDER_TEST
 
 

@@ -12,7 +12,6 @@
 #include "gtest/gtest.h"
 
 
-//#define DISABLE_SHAPE_TEST
 #ifndef DISABLE_SHAPE_TEST
 
 

@@ -14,7 +14,6 @@
 #include "graph/leaf/variable.hpp"
 
 
-//#define DISABLE_IMMUTABLE_TEST
 #ifndef DISABLE_IMMUTABLE_TEST
 
 
