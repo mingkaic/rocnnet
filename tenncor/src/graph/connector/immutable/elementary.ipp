@@ -692,8 +692,8 @@ template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (b != 0) throw std::exception();
 	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
+	if (b == 0) throw std::exception();
 	if (b == (T)1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)

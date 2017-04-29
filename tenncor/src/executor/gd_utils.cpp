@@ -9,7 +9,7 @@
 namespace nnet
 {
 
-std::vector<nnet::variable_updater<double> > bgd_utils::calculate (inode<double>* root)
+std::vector<nnet::variable_updater<double> > vgb_updater::calculate (inode<double>* root)
 {
 	std::vector<nnet::variable_updater<double> > updates;
 	nnet::inode<double>::GRAD_CACHE leafset;
@@ -18,8 +18,8 @@ std::vector<nnet::variable_updater<double> > bgd_utils::calculate (inode<double>
 	{
 		nnet::variable<double>* Wb = lit.first;
 		nnet::varptr<double> gres = root->get_gradient(Wb);
-		// Wb = Wb + learning_rate * gres
-		updates.push_back(Wb->assign_add(gres * learning_rate_));
+		// Wb = Wb - learning_rate * gres
+		updates.push_back(Wb->assign_sub(gres * learning_rate_));
 	}
 	return updates;
 }

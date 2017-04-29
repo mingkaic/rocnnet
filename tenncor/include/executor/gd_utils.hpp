@@ -34,24 +34,24 @@ protected:
 	virtual gd_updater<T>* move_impl (void) = 0;
 };
 
-//! batch gradient descent algorithm
-struct bgd_utils : gd_updater<double>
+//! vanilla gradient descent algorithm
+struct vgb_updater : gd_updater<double>
 {
-	bgd_utils* clone (void) { return static_cast<bgd_utils*>(clone_impl()); }
+	vgb_updater* clone (void) { return static_cast<vgb_updater*>(clone_impl()); }
 
-	bgd_utils* move (void) { return static_cast<bgd_utils*>(move_impl()); }
+	vgb_updater* move (void) { return static_cast<vgb_updater*>(move_impl()); }
 
 	virtual std::vector<nnet::variable_updater<double> > calculate (inode<double>* root);
 
 protected:
 	virtual gd_updater<double>* clone_impl (void)
 	{
-		return new bgd_utils(*this);
+		return new vgb_updater(*this);
 	}
 
 	virtual gd_updater<double>* move_impl (void)
 	{
-		return new bgd_utils(std::move(*this));
+		return new vgb_updater(std::move(*this));
 	}
 };
 
