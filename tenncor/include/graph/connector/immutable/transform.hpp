@@ -21,10 +21,6 @@
 namespace nnet
 {
 
-//! obtain the mean of input data
-template <typename T>
-T mean (const std::vector<T>& data);
-
 //! transpose a
 template <typename T>
 varptr<T> transpose (const varptr<T> a);
@@ -39,10 +35,40 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch);
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 
-//! compression of index -1 compresses all elements in a (result is a scalar)
+//! compresses data along dimensions specified by index
+//! -1 index compresses all elements in the tensor (output is a scalar)
 template <typename T>
-varptr<T> compress (const varptr<T> a, int index = -1,
-	std::function<T(const std::vector<T>&)> collector = mean<T>);
+varptr<T> compress (const varptr<T> a, int index,
+	std::function<T(const std::vector<T>&)> collector);
+
+// Dimensionality Reduction Functions (Wrappers for compress)
+//! compress tensor by taking maximum value across specified dimension
+//! -1 dimension obtains maximum value in the entire tensor
+template <typename T>
+varptr<T> reduce_max (const varptr<T> a, int dimension = -1);
+
+//! compress tensor by taking the sum of values across specified dimension(s)
+//! -1 dimension obtains the sum of all values in the entire tensor
+template <typename T>
+varptr<T> reduce_sum (const varptr<T> a, int dimension = -1);
+
+//! compress tensor by taking the mean of values across specified dimension(s)
+//! -1 dimension obtains the mean of values in the entire tensor
+template <typename T>
+varptr<T> reduce_mean (const varptr<T> a, int dimension = -1);
+
+//! compresses data along dimensions specified by dimension
+//! by taking the index using the compare function
+//! -1 index compresses all elements in the tensor (output is a scalar)
+//! takes left argument of compare if compare evaluates to true
+template <typename T>
+varptr<T> arg_compress (const varptr<T> a, int dimension,
+	std::function<bool(T,T)> compare);
+
+//! obtains the indices of the maximum value across specified dimension
+//! -1 index looks returns a vector coordinate specifying max value in tensor a
+template <typename T>
+varptr<T> arg_max (const varptr<T> a, int dimension = -1);
 
 //! trace of a
 // todo: implement [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
@@ -53,7 +79,6 @@ varptr<T> trace (const varptr<T> a);
 // todo: implement
 template <typename T>
 varptr<T> inverse (const varptr<T> a);
-
 
 }
 

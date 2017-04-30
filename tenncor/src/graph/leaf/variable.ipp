@@ -142,7 +142,7 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 				size_t ns = shape.n_elems();
 				tensorshape& ins = inshapes.at(0);
 				assert((ins.is_fully_defined() && ns == ins.n_elems()) ||
-					   (!ins.is_fully_defined() && 0 == ns % ins.n_known()));
+					(!ins.is_fully_defined() && 0 == ns % ins.n_known()));
 				assert(nullptr != srcs[0]);
 				for (size_t i = 0; i < ns; i++)
 				{

@@ -110,7 +110,25 @@ void gd_net::train_setup (void)
 	nnet::varptr<double> error = diff * diff;
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
 
-	updates_ = updater_->calculate(error_);
+	std::unordered_set<nnet::variable<double>*> biases;
+	{
+		std::vector<WB_PAIR> wbs = this->get_variables();
+		for (WB_PAIR& wb : wbs)
+		{
+			biases.emplace(wb.second);
+		}
+	}
+
+	updates_ = updater_->calculate(error_,
+	[biases](nnet::varptr<double> grad, nnet::variable<double>* leaf)
+	{
+		if (biases.end() == biases.find(leaf))
+		{
+			return grad;
+		}
+		// average the batches
+		return nnet::reduce_mean(grad, {1});
+	});
 }
 
 void gd_net::copy_helper (const gd_net& other)

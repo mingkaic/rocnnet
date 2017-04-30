@@ -9,7 +9,7 @@
 #include <iostream> // for recording
 #include <unordered_set>
 #include "mlp.hpp"
-#include "executor/gd_utils.hpp"
+#include "utils/gd_utils.hpp"
 
 #pragma once
 #ifndef gd_net_hpp

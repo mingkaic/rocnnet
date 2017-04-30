@@ -143,9 +143,5 @@ K000 -
 // MATMUL BEHAVIOR
 L000 -
 
-- exposing operation nodes with null/invalid tensors will fail
-- elementary operations must error on exposure when not all of its leaves are initialized
-- binary operations must fail when its argument shapes are do not match (by the rules of the operation) at constructing if shape_eval is enabled, or at exposure on all others
-- elementary binary operations argument shapes must be equivalent (same rank, and dimensional values)
 - matrix operations only takes 2-D tensors
 - matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)

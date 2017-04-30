@@ -28,6 +28,13 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 }
 
 template <typename T>
+inline void elementary_check (const varptr<T>& a, const varptr<T>& b)
+{
+	if (a->good_status() && b->good_status())
+		elementary_shaper({a->get_shape(), b->get_shape()});
+}
+
+template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
@@ -400,8 +407,8 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return b;
-	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
-
+	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
+	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
@@ -495,7 +502,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return -b;
 	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
-
+	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
@@ -613,7 +620,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		if (*b == (T)0) return constant<T>::get(0);
 		if (*b == (T)1) return a;
 	}
-
+	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
 	   std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
@@ -667,7 +674,6 @@ varptr<T> operator / (T a, const varptr<T> b)
 		if (*b == (T)0) throw std::exception();
 		if (*b == (T)1) return constant<T>::get(a);
 	}
-
 	if (a == (T)0) return constant<T>::get(0);
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -725,7 +731,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		if (*b == (T)0) throw std::exception();
 		if (*b == (T)1) return a;
 	}
-
+	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)

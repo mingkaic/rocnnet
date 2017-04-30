@@ -97,7 +97,8 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	rand_uniform<double> rinit(2, 12);
 
 	std::vector<size_t> shapelist = shape.as_list();
-	shapelist[FUZZ::getInt(1, {0, inn-1})[0]]++;
+	size_t mutate_idx = FUZZ::getInt(1, {0, shapelist.size()-1})[0];
+	shapelist[mutate_idx]++;
 	tensorshape shape2 = shapelist;
 
 	// matching pair
@@ -110,7 +111,7 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	EXPECT_EQ(nullptr, func(varptr<double>(&var), varptr<double>(nullptr)));
 	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), varptr<double>(&var2)));
 
-	placeholder<double> p3(shape2, "unmatching_in");
+	variable<double> var3(shape2, rinit, "unmatching_in");
 	varptr<double> res = func(varptr<double>(&var), varptr<double>(&var2));
 	varptr<double> res1 = func1(varptr<double>(&var), scalars[1]);
 	varptr<double> res2 = func2(scalars[0], varptr<double>(&var2));
@@ -118,6 +119,7 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	// initialize
 	var.initialize();
 	var2.initialize();
+	var3.initialize();
 	std::vector<double> indata = expose<double>(&var);
 	std::vector<double> indata2 = expose<double>(&var2);
 
@@ -199,8 +201,8 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	}
 
 	// Behavior J002
-//	EXPECT_THROW(func(varptr<double>(&var), varptr<double>(&p3)), std::exception);
-//	EXPECT_THROW(func(varptr<double>(&p3), varptr<double>(&var2)), std::exception);
+	EXPECT_THROW(func(varptr<double>(&var), varptr<double>(&var3)), std::exception);
+	EXPECT_THROW(func(varptr<double>(&var3), varptr<double>(&var2)), std::exception);
 }
 
 
