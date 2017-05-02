@@ -19,35 +19,27 @@ namespace nnet
 template <typename T>
 void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tensorshape& inshape)
 {
+	assert(outshape.is_fully_defined() && inshape.is_fully_defined());
 	std::vector<size_t> outlist = outshape.as_list();
 	std::vector<size_t> inlist = inshape.as_list();
-	size_t total = outshape.n_elems();
+	size_t numout = outshape.n_elems();
 
-	memset(dest, 0, sizeof(T) * total);
-	std::vector<size_t> fittinglist;
-	for (size_t i = 0, n = std::min(total, inlist.size()); i < n; i++)
-	{
-		fittinglist.push_back(std::min(outlist[i], inlist[i]));
-	}
-	size_t basewidth = fittinglist[0];
-	size_t destidx = 0;
+	size_t minrank = std::min(outlist.size(), inlist.size());
+	tensorshape clippedshape = inshape.with_rank(minrank);
+	size_t numin = clippedshape.n_elems();
+
+	memset(dest, 0, sizeof(T) * numout);
+	size_t basewidth = std::min(outlist[0], inlist[0]);
 	size_t srcidx = 0;
-	size_t n = inshape.n_elems();
-	while (srcidx < n)
+	while (srcidx < numin)
 	{
 		// check source index to ensure it is within inlist bounds
-		std::vector<size_t> srccoord = inshape.coordinate_from_idx(srcidx);
+		std::vector<size_t> srccoord = clippedshape.coordinate_from_idx(srcidx);
 		bool srcinbound = true;
-		size_t extradest = 0;
 		size_t src_jump = 1;
-		size_t dest_jump = 1;
-		for (size_t i = 1, m = fittinglist.size(); srcinbound && i < m; i++)
+		for (size_t i = 1, m = minrank; srcinbound && i < m; i++)
 		{
-			srcinbound = srccoord[i] < fittinglist[i];
-			if (0 == extradest && srccoord[i] == fittinglist[i]-1 && outlist[i] > inlist[i])
-			{
-				extradest = dest_jump * outlist[0];
-			}
+			srcinbound = srccoord[i] < outlist[i];
 			if (false == srcinbound)
 			{
 				src_jump *= (inlist[i] - srccoord[i]);
@@ -56,7 +48,6 @@ void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tens
 			{
 				src_jump *= inlist[i];
 			}
-			dest_jump *= outlist[i-1];
 		}
 		if (false == srcinbound)
 		{
@@ -64,11 +55,10 @@ void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tens
 		}
 		else
 		{
+			size_t destidx = outshape.sequential_idx(srccoord);
 			memcpy(dest + destidx, src + srcidx, sizeof(T) * basewidth);
 			srcidx += inlist[0];
-			destidx += outlist[0];
 		}
-		destidx += extradest;
 	}
 }
 

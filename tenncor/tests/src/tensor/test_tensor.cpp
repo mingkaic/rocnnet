@@ -693,7 +693,8 @@ TEST(TENSOR, Reshape_B009)
 
 	double* p = comp.rawptr();
 	double* p2 = comp2.rawptr();
-	comp.set_shape(pshape);
+	tensorshape incmpshape = make_incompatible(comp.get_shape().as_list());
+	comp.set_shape(incmpshape);
 	comp2.set_shape(std::vector<size_t>{});
 	ASSERT_NE(p, comp.rawptr());
 	ASSERT_EQ(p2, comp2.rawptr());
@@ -844,7 +845,14 @@ TEST(TENSOR, CopyWithShape_B013)
 		bool b = true;
 		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
 		{
-			b = incoord[j] < c3list[j];
+			if (j >= c3list.size())
+			{
+				b = incoord[j] == 0;
+			}
+			else
+			{
+				b = incoord[j] < c3list[j];
+			}
 		}
 		if (b)
 		{
@@ -859,7 +867,14 @@ TEST(TENSOR, CopyWithShape_B013)
 		bool b = true;
 		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
 		{
-			b = incoord[j] < c3list[j];
+			if (j >= c3list.size())
+			{
+				b = incoord[j] == 0;
+			}
+			else
+			{
+				b = incoord[j] < c3list[j];
+			}
 		}
 		if (b)
 		{
