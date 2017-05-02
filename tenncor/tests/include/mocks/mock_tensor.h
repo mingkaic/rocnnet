@@ -15,17 +15,27 @@
 class mock_tensor : public tensor<double>
 {
 public:
-	mock_tensor (void) :
-		tensor<double>() { randinit(); }
+	mock_tensor (void) : tensor<double>() {}
+	mock_tensor (tensorshape shape, std::vector<double> initdata = {}) :
+		tensor<double>(shape)
+	{
+		if (is_alloc())
+		{
+			size_t n = alloc_shape_.n_elems();
+			if (initdata.empty())
+			{
+				initdata = FUZZ::getDouble(n);
+			}
+			std::memcpy(raw_data_, &initdata[0], sizeof(double) * n);
+		}
+	}
 	mock_tensor (double scalar) :
 		tensor<double>(scalar) {}
-	mock_tensor (tensorshape shape) :
-		tensor<double>(shape) { randinit(); }
 	mock_tensor* clone (void) const { return new mock_tensor(*this); }
 	mock_tensor (const mock_tensor& other, bool shapeonly = false) :
-		tensor<double>(other, shapeonly) { randinit(); }
+		tensor<double>(other, shapeonly) {}
 	mock_tensor (mock_tensor&& other) :
-		tensor<double>(std::move(other)) { randinit(); }
+		tensor<double>(std::move(other)) {}
 	mock_tensor& operator = (const mock_tensor& other) { tensor<double>::operator=(other); return *this; }
 	mock_tensor& operator = (mock_tensor&& other) { tensor<double>::operator=(std::move(other)); return *this; }
 
@@ -47,6 +57,11 @@ public:
 		size_t n = alloc_shape_.n_elems();
 		// crashes if we have shape, data inconsistency,
 		// assuming address sanitation works properly
+		for (size_t i = 0; i < n; i++)
+		{
+			if (raw_data_[i] != other.raw_data_[i])
+				std::cout << raw_data_[i] << " vs " << other.raw_data_[i] << "\n";
+		}
 		return std::equal(raw_data_, raw_data_ + n, other.raw_data_);
 	}
 
@@ -62,17 +77,6 @@ public:
 	double* rawptr (void) const { return raw_data_; }
 
 	bool allocshape_is (const tensorshape& shape) { return tensorshape_equal(alloc_shape_, shape); }
-
-protected:
-	void randinit (void)
-	{
-		if (is_alloc())
-		{
-			size_t n = alloc_shape_.n_elems();
-			std::vector<double> v = FUZZ::getDouble(n);
-			std::memcpy(raw_data_, &v[0], sizeof(double) * n);
-		}
-	}
 };
 
 

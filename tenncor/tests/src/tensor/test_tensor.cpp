@@ -798,12 +798,16 @@ TEST(TENSOR, CopyWithShape_B013)
 	tensorshape cshape2 = random_def_shape();
 	tensorshape cshape3 = random_def_shape();
 
+	size_t n = cshape3.n_elems();
+	std::vector<double> rawdata = FUZZ::getDouble(n);
 	mock_tensor undef;
 	mock_tensor pcom(pshape);
-	mock_tensor comp(cshape);
-	mock_tensor comp2(cshape2);
+	mock_tensor comp(cshape, rawdata);
+	mock_tensor comp2(cshape2, rawdata);
 	double* orig = comp.rawptr();
 	double* orig2 = comp2.rawptr();
+	std::vector<double> compdata = comp.expose();
+	std::vector<double> compdata2 = comp2.expose();
 
 	// copying from unallocated
 	EXPECT_FALSE(pcom.copy_from(undef, cshape));
@@ -826,10 +830,51 @@ TEST(TENSOR, CopyWithShape_B013)
 	EXPECT_TRUE(tensorshape_equal(cshape3, comp.get_shape()));
 	EXPECT_TRUE(tensorshape_equal(cshape3, comp2.get_shape()));
 
-	EXPECT_TRUE(undef.equal(pcom));
-	EXPECT_TRUE(undef.equal(comp));
-	EXPECT_TRUE(undef.equal(comp2));
+	std::vector<double> undefdata = undef.expose();
+	std::vector<double> pdefdata = pcom.expose();
+
+	std::vector<size_t> c1list = cshape.as_list();
+	std::vector<size_t> c2list = cshape2.as_list();
+	std::vector<size_t> c3list = cshape3.as_list();
+
+	// undef fitted with comp and cshape3
+	for (size_t i = 0, n = cshape.n_elems(); i < n; i++)
+	{
+		std::vector<size_t> incoord = cshape.coordinate_from_idx(i);
+		bool b = true;
+		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
+		{
+			b = incoord[j] < c3list[j];
+		}
+		if (b)
+		{
+			size_t outidx = cshape3.sequential_idx(incoord);
+			EXPECT_EQ(compdata[i], undefdata[outidx]);
+		}
+	}
+	// pdefdata fitted with comp2 and cshape 3
+	for (size_t i = 0, n = cshape2.n_elems(); i < n; i++)
+	{
+		std::vector<size_t> incoord = cshape2.coordinate_from_idx(i);
+		bool b = true;
+		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
+		{
+			b = incoord[j] < c3list[j];
+		}
+		if (b)
+		{
+			size_t outidx = cshape3.sequential_idx(incoord);
+			EXPECT_EQ(compdata2[i], pdefdata[outidx]);
+		}
+	}
 }
+
+
+// todo: implement
+//B014 - reading a valid tensor_proto should allocate the tensor if not already.
+//        data should be identical to the data saved in protobuf (check via some adhoc data values)
+//        both allowed and allocated shapes should be identical to the shape specified in protobuf
+//        allowedshape may change to accomodate new shape
 
 
 #endif /* DISABLE_TENSOR_TEST */

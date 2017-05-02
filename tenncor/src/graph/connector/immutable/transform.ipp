@@ -15,6 +15,7 @@ template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
+	assert(2 >= a->get_shape().rank());
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	[](std::vector<tensorshape> shapes)
 	{
@@ -54,11 +55,10 @@ varptr<T> transpose (const varptr<T> a)
 	}, "transpose");
 }
 
-// fit to watch
 template <typename T>
 varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
-	if (nullptr == a && nullptr == watch) return nullptr;
+	if (nullptr == a || nullptr == watch) return nullptr;
 	if (a->good_status() && *a == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
@@ -74,88 +74,11 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 		}
 		return watchshape;
 	},
-	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& outshape, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		const T* src = args[0];
-		tensorshape oshape = a->get_shape();
-		std::vector<size_t> orig = oshape.as_list();
-		std::vector<size_t> tv = shape.as_list();
-		size_t total = shape.n_elems();
-
-		T temp[total];
-		T temp2[total];
-
-		const T* super_src = src;
-		T* super_dest = temp;
-		size_t super_below = 1;
-		size_t ototal = oshape.n_elems(); // old total
-
-		for (size_t index = 0; index < tv.size(); index++)
-		{
-			size_t mult = 0;
-			if (index < orig.size())
-			{
-				// original dimension must be equal or less than the result dimension
-				assert(orig[index] <= tv[index]);
-				if (0 == tv[index] % orig[index])
-				{
-					mult = tv[index] / orig[index];
-					ototal *= mult;
-				}
-				else
-				{
-					// TODO: dimension expansion doesn't match nicely, implement later
-					throw std::bad_function_call();
-				}
-			}
-			else
-			{
-				mult = tv[index];
-			}
-
-			// below calculates all elements encompassed up to the index dimension
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// below = 1 * 2 * 3 = 6
-			size_t below = super_below * tv[index] / mult;
-			// above calculates the number of tensors (of index rank) within the original tensor
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
-			// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
-			// above is 4
-			// above = original total / below
-			// original total = resulting total / multiplier
-			// expand original across resulting dimension
-			size_t above = total / (mult * below);
-
-			// copy over data
-			size_t src_idx = 0;
-			size_t dest_idx = 0;
-			for (size_t i = 0; i < above; i++)
-			{
-				src_idx = i * below;
-				// copy data mult times
-				for (size_t j = 0; j < mult; j++)
-				{
-					dest_idx = below * (mult * i + j);
-					std::memcpy(super_dest + dest_idx, super_src + src_idx, below * sizeof(T));
-				}
-			}
-			// state update: below_dim, super_src, and super_dest
-			super_below *= tv[index];
-
-			// swap super buffers as long as it's not the last one
-			if (index < tv.size()-1)
-			{
-				if (super_src == temp) {
-					super_src = temp2;
-					super_dest = temp;
-				} else {
-					super_src = temp;
-					super_dest = temp2;
-				}
-			}
-		}
-		std::memcpy(dest, super_dest, total * sizeof(T));
+		tensorshape& inshape = inshapes[0];
+		fit_toshape(dest, outshape, src, inshape);
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -166,7 +89,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
-	if (nullptr == a && 1 >= multiplier) return nullptr;
+	if (nullptr == a) return nullptr;
+	if (multiplier == 0) return constant<T>::get(0);
+	if (multiplier == 1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	[index, multiplier](std::vector<tensorshape> shapes)
 	{
@@ -432,7 +357,7 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 	else
 	{
 		gatherer =
-		[compare, a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
+		[compare, a](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
 			const T* indata = args[0];
 			tensorshape& ins = inshapes[0];

@@ -15,7 +15,6 @@ A004 - detaching observer with index mean the above behavior will not hold for t
         detaching observer without index will prevent above behavior from holding
         for any specific index to observer
         detaching does nothing to update observer's dependency (not tested)
-
 A005 - constructing observer with dependencies should automatically attach
         constructed observer to designated subjects
 A006 - copying/moving observers copy/move over dependencies
@@ -40,6 +39,7 @@ C001 - leaf get_shape returns the shape specified at construction
 C002 - leaf get_eval returns a tensor of the shape specified at construction,
         the tensor's initialization status is uncertain
 C003 - leaf good_status is good if the tensor is initialized, otherwise bad
+C004 - reading a valid tensor_proto should initialize the leaf
 
 // CONSTANT BEHAVIOR
 D000 - constant scalar constructor initializes data as a scalar of the same value
@@ -138,7 +138,13 @@ J011 - a inode is equal (using operator ==) to a primitive value if it is scalar
         equality and inequality fails assertion if input node has bad status
 
 // TRANSFORM BEHAVIORS
-K000 -
+K000 - any operation accepting nullptr as any operand returns nullptr
+K001 - transpose accepts tensors of 1-D and 2-D, output tensor is always 2-D,
+        with 1-D shapes interpreted as shape <dim1, 1>
+K002 - fit pads data with zeros for elements not found in the initial shape,
+        and truncates elements not in the new shape
+K003 - extend duplicates data across a dimension (index) a number of times specified by input multiplier
+K004 - extend with multiplier 0 returns constant 0, multiplier 1 returns input node
 
 // MATMUL BEHAVIOR
 L000 -

@@ -74,37 +74,9 @@ public:
 	//! assert if shape is fully defined
 	void assert_is_fully_defined (void) const;
 
-	// >>>> COORDINATES <<<<
-	//! obtains the index of data should they be flatten to a vector
-	size_t sequential_idx (std::vector<size_t> coord) const
-	{
-		size_t n = std::min(dimensions_.size(), coord.size());
-		size_t index = 0;
-		for (size_t i = 1; i < n; i++)
-		{
-			index += coord[n-i];
-			index *= dimensions_[n-i-1];
-		}
-		return index + coord[0];
-	}
-
-	//! obtain the coordinates of the data in vector given a sequential index
-	std::vector<size_t> coordinate_from_idx (size_t idx) const
-	{
-		std::vector<size_t> coord;
-		size_t i = idx;
-		for (size_t d : dimensions_)
-		{
-			size_t xd = i % d;
-			coord.push_back(xd);
-			i = (i - xd) / d;
-		}
-		return coord;
-	}
-
 	// >>>> MUTATORS <<<<
 	//! invalidate shape
-	void undefine (void) { dimensions_.clear(); }
+	void undefine (void);
 
 	// >>>> SHAPE CREATORS <<<<
 	//! create the most defined shape from this and other
@@ -131,7 +103,12 @@ public:
 	//! value and at most the the specified rank
 	tensorshape with_rank_at_most (size_t rank) const;
 
-	// tensorshape_proto& as_proto (void) const; // serialize
+	// >>>> COORDINATES <<<<
+	//! obtains the index of data should they be flatten to a vector
+	size_t sequential_idx (std::vector<size_t> coord) const;
+
+	//! obtain the coordinates of the data in vector given a sequential index
+	std::vector<size_t> coordinate_from_idx (size_t idx) const;
 
 private:
 	// zero dimension denotes unknown/undefined value

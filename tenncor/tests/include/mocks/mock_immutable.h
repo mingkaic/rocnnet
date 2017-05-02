@@ -13,20 +13,17 @@
 using namespace nnet;
 
 
-tensorshape testshaper (std::vector<tensorshape>)
+SHAPER get_testshaper (void)
 {
-	return random_def_shape();
+	tensorshape shape = random_def_shape();
+	return [shape](std::vector<tensorshape>) { return shape; };
 }
-
 
 void testforward (double* out,const tensorshape& outs,std::vector<const double*>&,std::vector<tensorshape>&)
 {
 	size_t n = outs.n_elems();
 	std::vector<double> data = FUZZ::getDouble(n);
-	for (size_t i = 0; i < n; i++)
-	{
-		out[i] = data[i];
-	}
+	std::memcpy(out, &data[0], sizeof(double) * n);
 }
 
 
@@ -40,7 +37,7 @@ class mock_immutable : public immutable<double>
 {
 public:
 	mock_immutable (std::vector<inode<double>*> args, std::string label,
-		SHAPER shapes = testshaper,
+		SHAPER shapes = get_testshaper(),
 		FORWARD_OP<double> forward = testforward,
 		BACK_MAP<double> back = testback) :
 			immutable<double>(args, shapes, forward, back, label) {}

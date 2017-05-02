@@ -28,6 +28,12 @@
 namespace nnet
 {
 
+//! extremely common function fitting source data represented by inshape to
+//! destination data represented by outshape
+//! data not covered in source are padded with zero
+template <typename T>
+void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tensorshape& inshape);
+
 template <typename T>
 class itensor_handler;
 

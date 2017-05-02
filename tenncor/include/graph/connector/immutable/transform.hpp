@@ -21,7 +21,7 @@
 namespace nnet
 {
 
-//! transpose a
+//! transpose a, (1-2 D tensors only) todo: implement permute
 template <typename T>
 varptr<T> transpose (const varptr<T> a);
 
@@ -71,14 +71,12 @@ template <typename T>
 varptr<T> arg_max (const varptr<T> a, int dimension = -1);
 
 //! trace of a
-// todo: implement [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
 template <typename T>
-varptr<T> trace (const varptr<T> a);
+varptr<T> trace (const varptr<T> a); // todo: implement [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
 
 //! inverse of matrix a
-// todo: implement
 template <typename T>
-varptr<T> inverse (const varptr<T> a);
+varptr<T> inverse (const varptr<T> a); // todo: implement
 
 }
 

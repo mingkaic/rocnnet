@@ -563,8 +563,10 @@ TEST(TENSORSHAPE, WithRank_A012)
 }
 
 
-// TENSORSHAPE TO PROTOCOL BUFFER
-TEST(TENSORSHAPE, Proto) {}
+// todo: implement these
+//A013 - converting coordinates C to sequential index I on a tensorshape S takes form:
+//        I = SIGMA_i=0:n(C[i]*PI_j=0:i-1(S[i])) where n is rank of S, and S[-1] is 1
+//A014 - index from coordinate C on a tensorshape equals the initial index converted to C (reverse of A013)
 
 
 #endif /* DISABLE_SHAPE_TEST */

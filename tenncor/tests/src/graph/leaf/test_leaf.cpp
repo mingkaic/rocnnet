@@ -259,6 +259,10 @@ TEST(LEAF, GoodStatus_C003)
 }
 
 
+// todo: implement
+//C004 - reading a valid tensor_proto should initialize the leaf
+
+
 #endif /* DISABLE_LEAF_TEST */
 
 

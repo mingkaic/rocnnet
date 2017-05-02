@@ -612,7 +612,7 @@ TEST(IMMUTABLE, GetLeaf_I008)
 			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
 			mock_immutable* im = new mock_immutable(
 				std::vector<inode<double>*>(args.begin(), args.end()), nlabel,
-				testshaper, testforward, backer);
+				get_testshaper(), testforward, backer);
 			im->triggerOnDeath =
 				[&collector](mock_immutable* ded) {
 					collector.erase(ded);

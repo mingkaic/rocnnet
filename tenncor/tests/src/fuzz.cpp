@@ -5,6 +5,8 @@
 namespace FUZZ
 {
 
+static std::default_random_engine generator;
+
 void delim (void)
 {
     fuzzLogger.close();
@@ -26,7 +28,6 @@ std::vector<double> getDouble (size_t len,
 		min = range.first;
 		max = range.second;
 	}
-	std::default_random_engine generator;
 
 	std::vector<double> vec;
 	std::uniform_real_distribution<double> dis(min, max);
@@ -57,7 +58,6 @@ std::vector<size_t> getInt (size_t len,
 		min = range.first;
 		max = range.second;
 	}
-	std::default_random_engine generator;
 
 	std::vector<size_t> vec;
 	fuzzLogger << "int<";

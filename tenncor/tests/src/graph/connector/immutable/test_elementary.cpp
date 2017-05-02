@@ -518,6 +518,7 @@ TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 
 // TEST(ELEMENTARY, Pow)
 // {
+//	FUZZ::delim();
 // 	unaryElemTest(
 // 	[](varptr<double> in) { return pow(in); },
 // 	[](double var) { return exp(var); });

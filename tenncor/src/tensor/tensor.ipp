@@ -17,6 +17,62 @@ namespace nnet
 {
 
 template <typename T>
+void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tensorshape& inshape)
+{
+	std::vector<size_t> outlist = outshape.as_list();
+	std::vector<size_t> inlist = inshape.as_list();
+	size_t total = outshape.n_elems();
+
+	memset(dest, 0, sizeof(T) * total);
+	std::vector<size_t> fittinglist;
+	for (size_t i = 0, n = std::min(total, inlist.size()); i < n; i++)
+	{
+		fittinglist.push_back(std::min(outlist[i], inlist[i]));
+	}
+	size_t basewidth = fittinglist[0];
+	size_t destidx = 0;
+	size_t srcidx = 0;
+	size_t n = inshape.n_elems();
+	while (srcidx < n)
+	{
+		// check source index to ensure it is within inlist bounds
+		std::vector<size_t> srccoord = inshape.coordinate_from_idx(srcidx);
+		bool srcinbound = true;
+		size_t extradest = 0;
+		size_t src_jump = 1;
+		size_t dest_jump = 1;
+		for (size_t i = 1, m = fittinglist.size(); srcinbound && i < m; i++)
+		{
+			srcinbound = srccoord[i] < fittinglist[i];
+			if (0 == extradest && srccoord[i] == fittinglist[i]-1 && outlist[i] > inlist[i])
+			{
+				extradest = dest_jump * outlist[0];
+			}
+			if (false == srcinbound)
+			{
+				src_jump *= (inlist[i] - srccoord[i]);
+			}
+			else
+			{
+				src_jump *= inlist[i];
+			}
+			dest_jump *= outlist[i-1];
+		}
+		if (false == srcinbound)
+		{
+			srcidx += (src_jump * inlist[0]);
+		}
+		else
+		{
+			memcpy(dest + destidx, src + srcidx, sizeof(T) * basewidth);
+			srcidx += inlist[0];
+			destidx += outlist[0];
+		}
+		destidx += extradest;
+	}
+}
+
+template <typename T>
 tensor<T>::tensor (void) :
 	tensor<T>(std::vector<size_t>{})
 {
@@ -283,17 +339,7 @@ size_t tensor<T>::total_bytes (void) const
 template <typename T>
 T tensor<T>::get (std::vector<size_t> coord) const
 {
-	size_t rank = alloc_shape_.rank();
-	size_t ncoord = coord.size();
-	size_t n = std::min(rank, ncoord);
-	std::vector<size_t> dims = alloc_shape_.as_list();
-	size_t accum = 1;
-	size_t raw_idx = 0;
-	for (size_t i = 0; i < n; i++)
-	{
-		raw_idx += coord[i] * accum;
-		accum *= dims[i];
-	}
+	size_t raw_idx = alloc_shape_.sequential_idx(coord);
 	if (raw_idx >= alloc_shape_.n_elems())
 	{
 		throw std::out_of_range(nnutils::formatter() <<
@@ -419,7 +465,8 @@ bool tensor<T>::allocate (const tensorshape shape)
 			T* temp = alloc_->template allocate<T>(shape.n_elems());
 			// move raw_data to temp matching new shape
 			// we want to only copy over the minimum data to lower cost
-			raw_copy(temp, shape, raw_data_, alloc_shape_);
+			fit_toshape(temp, shape, raw_data_, alloc_shape_);
+//			raw_copy(temp, shape, raw_data_, alloc_shape_);
 			alloc_->dealloc(raw_data_, alloc_shape_.n_elems());
 			raw_data_ = temp;
 		}
@@ -448,7 +495,8 @@ bool tensor<T>::copy_from (const tensor<T>& other, const tensorshape shape)
 		success = true;
 		tensorshape olds = other.get_shape();
 		T* temp = alloc_->template allocate<T>(shape.n_elems());
-		raw_copy(temp, shape, other.raw_data_, olds);
+		fit_toshape(temp, shape, other.raw_data_, olds);
+//		raw_copy(temp, shape, other.raw_data_, olds);
 
 		if (is_alloc())
 		{

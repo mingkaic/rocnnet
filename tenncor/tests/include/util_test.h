@@ -8,6 +8,10 @@
 #include "tensor/tensorshape.hpp"
 
 
+#ifndef UTIL_TEST_H
+#define UTIL_TEST_H
+
+
 using namespace nnet;
 
 
@@ -43,4 +47,7 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 tensorshape random_shape (void);
 
 
-tensorshape random_def_shape (void);
+tensorshape random_def_shape (int lowerrank = 2, int upperrank = 7, size_t minn = 17, size_t maxn = 73241);
+
+
+#endif /* UTIL_TEST_H */

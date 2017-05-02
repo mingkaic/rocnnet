@@ -6,6 +6,9 @@
 #include "fuzz.h"
 
 
+#ifdef UTIL_TEST_H
+
+
 bool tensorshape_equal (
 	const tensorshape& ts1,
 	const tensorshape& ts2)
@@ -100,9 +103,23 @@ tensorshape random_shape (void)
 	return tensorshape(shape);
 }
 
-tensorshape random_def_shape (void)
+tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t maxn)
 {
-	size_t rank = FUZZ::getInt(1, {2, 10})[0];
-	std::vector<size_t> shape = FUZZ::getInt(rank, {2, 21});
+	size_t rank;
+	if (lowerrank == upperrank)
+	{
+		rank = lowerrank;
+	}
+	else
+	{
+		rank = FUZZ::getInt(1, {lowerrank, upperrank})[0];
+	}
+	size_t minvalue = std::pow((double)minn, 1 / (double)rank);
+	size_t maxvalue = std::pow((double)maxn, 1 / (double)rank);
+	if (minvalue > maxvalue) minvalue = maxvalue / 2;
+	std::vector<size_t> shape = FUZZ::getInt(rank, {minvalue, maxvalue});
 	return tensorshape(shape);
 }
+
+
+#endif
