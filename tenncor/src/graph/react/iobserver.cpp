@@ -77,7 +77,10 @@ void iobserver::add_dependency (subject* dep)
 
 void iobserver::remove_dependency (size_t idx)
 {
-	if (idx > dependencies_.size()) return;
+	if (idx >= dependencies_.size())
+	{
+		throw std::exception(); // todo: better exception
+	}
 	if (subject* sub = dependencies_[idx])
 	{
 		sub->detach(this);
@@ -109,7 +112,7 @@ void iobserver::replace_dependency (subject* dep, size_t idx)
 	dependencies_[idx] = dep;
 }
 
-void iobserver::update (std::unordered_set<size_t>& dep_indices, notification msg)
+void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg)
 {
 	for (size_t dep_idx : dep_indices)
 	{

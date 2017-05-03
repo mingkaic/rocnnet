@@ -799,12 +799,14 @@ TEST(TENSOR, CopyWithShape_B013)
 	tensorshape cshape2 = random_def_shape();
 	tensorshape cshape3 = random_def_shape();
 
-	size_t n = cshape3.n_elems();
-	std::vector<double> rawdata = FUZZ::getDouble(n);
+	size_t n1 = cshape.n_elems();
+	std::vector<double> rawdata1 = FUZZ::getDouble(n1);
+	size_t n2 = cshape2.n_elems();
+	std::vector<double> rawdata2 = FUZZ::getDouble(n2);
 	mock_tensor undef;
 	mock_tensor pcom(pshape);
-	mock_tensor comp(cshape, rawdata);
-	mock_tensor comp2(cshape2, rawdata);
+	mock_tensor comp(cshape, rawdata1);
+	mock_tensor comp2(cshape2, rawdata2);
 	double* orig = comp.rawptr();
 	double* orig2 = comp2.rawptr();
 	std::vector<double> compdata = comp.expose();

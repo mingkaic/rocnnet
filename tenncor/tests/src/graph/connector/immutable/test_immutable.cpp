@@ -291,33 +291,35 @@ TEST(IMMUTABLE, Tensor_I004)
 	n3->data_ = new mock_tensor(n3s);
 
 	// for this test, we care about data, grab the largest shape, and sum all data that fit in said array
-	auto maxshaper = [](std::vector<tensorshape> ts)
+	auto maxshaper = 
+	[](std::vector<tensorshape> ts)
+	{
+		tensorshape res = ts[0];
+		for (size_t i = 1, n = ts.size(); i < n; i++)
 		{
-			tensorshape res = ts[0];
-			for (size_t i = 1, n = ts.size(); i < n; i++)
+			if (res.n_elems() < ts[i].n_elems())
 			{
-				if (res.n_elems() > ts[i].n_elems())
-				{
-					res = ts[i];
-				}
+				res = ts[i];
 			}
-			return res;
-		};
+		}
+		return res;
+	};
 
-	auto maxadder = [](double* outdata, const tensorshape& outshape,
+	auto maxadder = 
+	[](double* outdata, const tensorshape& outshape,
 		std::vector<const double*>& indata, std::vector<tensorshape>& inshapes)
+	{
+		size_t outn = outshape.n_elems();
+		memset(outdata, 0, sizeof(double) * outn);
+		memcpy(outdata, indata[0], sizeof(double) * inshapes[0].n_elems());
+		for (size_t i = 1, n = inshapes.size(); i < n; i++)
 		{
-			size_t outn = outshape.n_elems();
-			memset(outdata, 0, sizeof(double) * outn);
-			memcpy(outdata, indata[0], sizeof(double) * inshapes[0].n_elems());
-			for (size_t i = 1, n = inshapes.size(); i < n; i++)
+			for (size_t j = 0, m = inshapes[i].n_elems(); j < m; j++)
 			{
-				for (size_t j = 0, m = inshapes[i].n_elems(); j < m; j++)
-				{
-					outdata[j] += indata[i][j];
-				}
+				outdata[j] += indata[i][j];
 			}
-		};
+		}
+	};
 
 	immutable<double>* conn = new mock_immutable(
 		{n1}, conname, maxshaper, maxadder);
@@ -379,7 +381,7 @@ TEST(IMMUTABLE, Tensor_I004)
 TEST(IMMUTABLE, ImmutableDeath_I005)
 {
 	FUZZ::delim();
-	size_t nnodes = FUZZ::getInt(1, {131, 297})[0];
+	size_t nnodes = FUZZ::getInt(1, {97, 152})[0];
 	std::unordered_set<immutable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
 

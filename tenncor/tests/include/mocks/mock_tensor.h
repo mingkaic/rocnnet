@@ -26,7 +26,7 @@ public:
 			{
 				initdata = FUZZ::getDouble(n);
 			}
-			std::memcpy(raw_data_, &initdata[0], sizeof(double) * n);
+			std::memcpy(raw_data_, &initdata[0], n * sizeof(double));
 		}
 	}
 	mock_tensor (double scalar) :
@@ -57,11 +57,6 @@ public:
 		size_t n = alloc_shape_.n_elems();
 		// crashes if we have shape, data inconsistency,
 		// assuming address sanitation works properly
-		for (size_t i = 0; i < n; i++)
-		{
-			if (raw_data_[i] != other.raw_data_[i])
-				std::cout << raw_data_[i] << " vs " << other.raw_data_[i] << "\n";
-		}
 		return std::equal(raw_data_, raw_data_ + n, other.raw_data_);
 	}
 

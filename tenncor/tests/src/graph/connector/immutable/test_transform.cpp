@@ -46,15 +46,31 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	rand_uniform<double> rinit(2, 12);
 	variable<double> var(shape, rinit, "unar_var");
 	var.initialize();
+	{
+		const nnet::tensor<double>* vartens = var.get_eval();
+		ASSERT_NE(nullptr, vartens);
+		ASSERT_TRUE(vartens->is_alloc());
+	}
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> expectout = expect_transfer(expose(&var), shape);
 	tensorshape gradoshape = grad_shape(var.get_gradient(&var)->get_shape());
-	std::vector<double> gradout = grad_transfer(expose(var.get_gradient(&var)), shape);
+	nnet::inode<double>* vgrad = var.get_gradient(&var);
+	{
+		const nnet::tensor<double>* vgradtens = vgrad->get_eval();
+		ASSERT_NE(nullptr, vgradtens);
+		ASSERT_TRUE(vgradtens->is_alloc());
+	}
+	std::vector<double> gradout = grad_transfer(expose(vgrad), shape);
 
 	// Behavior K000
 	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), paramer(shape)));
 
 	varptr<double> res = func(varptr<double>(&var), paramer(shape));
+	{
+		const nnet::tensor<double>* restens = res->get_eval();
+		ASSERT_NE(nullptr, restens);
+		ASSERT_TRUE(restens->is_alloc());
+	}
 	// test forward
 	tensorshape outshape = res->get_shape();
 	std::vector<double> rout = expose<double>(res);
@@ -118,7 +134,7 @@ TEST(TRANSFORM, Transpose_K001)
 TEST(TRANSFORM, Fit_K002)
 {
 	FUZZ::delim();
-	tensorshape realshape = random_def_shape(6, 6);
+	tensorshape realshape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
 	variable<double> shapeholder(realshape, rinit, "shapeholder");
 	shapeholder.initialize();
@@ -140,7 +156,14 @@ TEST(TRANSFORM, Fit_K002)
 			bool b = true;
 			for (size_t j = 0, o = incoord.size(); j < o && b; j++)
 			{
-				b = incoord[j] < outlist[j];
+				if (j >= outlist.size())
+				{
+					b = incoord[j] == 0;
+				}
+				else
+				{
+					b = incoord[j] < outlist[j];
+				}
 			}
 			if (b)
 			{
@@ -155,7 +178,7 @@ TEST(TRANSFORM, Fit_K002)
 	{
 		return realshape;
 	};
-	unaryTransTest<const varptr<double> >({2, 5},
+	unaryTransTest<const varptr<double> >({2, 13},
 	[](varptr<double> in, varptr<double> watch) { return nnet::fit(in, watch); },
 	transfer, shape, transfer, shape, fitparam);
 }

@@ -22,6 +22,7 @@ A007 - add_dependency with observer attaches observer to subject with index = de
         additionally, push subject back to dependencies
 A008 - remove_dependency with observer detaches observer from subject at specified index
         dependency at index is set to nullptr. trim all nullptrs from end of dependencies
+        removing out of index throws exception
 A009 - replace_dependency at index detaches the last subject at index, attaches new subject at index
         and replace subject in dependencies at index
 A010 - destroying an observer will detach the observer from its subjects via a detach call

@@ -65,14 +65,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
 	[](std::vector<tensorshape> shapes)
 	{
-		tensorshape orig = shapes[0];
-		tensorshape watchshape = shapes[1]; // watch is always argument 2
-		if (watchshape.is_fully_defined()
-			&& watchshape.n_elems() < orig.n_elems())
-		{
-			return tensorshape();
-		}
-		return watchshape;
+		return shapes[1]; // watch is always argument 2
 	},
 	[](T* dest, const tensorshape& outshape, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{

@@ -199,10 +199,6 @@ protected:
 	friend class itensor_handler<T>;
 
 private:
-	//! tensor reshape utility
-	void raw_copy (T* out, const tensorshape& outs,
-		const T* in, const tensorshape& ins) const;
-
 	//! copy utility helper
 	void copy_helper (const tensor<T>& other, bool shapeonly);
 

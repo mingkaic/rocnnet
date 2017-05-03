@@ -244,7 +244,7 @@ void print_shape (tensorshape ts)
 	std::vector<size_t> shape = ts.as_list();
 	if (shape.empty())
 	{
-		std::cout << "undefined\n";
+		std::cout << "undefined" << std::endl;
 	}
 	else
 	{
