@@ -46,6 +46,11 @@ tensorshape make_partial (std::vector<size_t> shapelist)
 	{
 		nzeros = FUZZ::getInt(1, "nzeros", {1, shapelist.size()-1})[0];
 	}
+	else if (shapelist.size() == 1)
+	{
+		shapelist.push_back(0);
+		return shapelist;
+	}
 	std::vector<size_t> zeros = FUZZ::getInt(nzeros, "zeros", {0, shapelist.size()-1});
 	for (size_t zidx : zeros)
 	{
