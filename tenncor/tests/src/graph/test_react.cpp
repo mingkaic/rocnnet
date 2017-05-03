@@ -230,10 +230,14 @@ TEST(REACT, Detach_A004)
 	EXPECT_TRUE(s2.no_audience());
 
 	EXPECT_FALSE(s3.no_audience());
-	s3.mock_detach(&o2, 1);
+	s3.mock_detach(&o3, 1);
 	EXPECT_FALSE(s3.no_audience());
-	s3.mock_detach(&o2, 0);
+	s3.mock_detach(&o3, 0);
 	EXPECT_TRUE(s3.no_audience());
+
+	o1.mock_clear_dependency();
+	o2.mock_clear_dependency();
+	o3.mock_clear_dependency();
 }
 
 

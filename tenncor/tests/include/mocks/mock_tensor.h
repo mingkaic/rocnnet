@@ -24,7 +24,7 @@ public:
 			size_t n = alloc_shape_.n_elems();
 			if (initdata.empty())
 			{
-				initdata = FUZZ::getDouble(n);
+				initdata = FUZZ::getDouble(n, "initdata");
 			}
 			std::memcpy(raw_data_, &initdata[0], n * sizeof(double));
 		}

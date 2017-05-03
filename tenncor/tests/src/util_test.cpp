@@ -44,9 +44,9 @@ tensorshape make_partial (std::vector<size_t> shapelist)
 	size_t nzeros = 1;
 	if (shapelist.size() > 2)
 	{
-		nzeros = FUZZ::getInt(1, {1, shapelist.size()-1})[0];
+		nzeros = FUZZ::getInt(1, "nzeros", {1, shapelist.size()-1})[0];
 	}
-	std::vector<size_t> zeros = FUZZ::getInt(nzeros, {0, shapelist.size()-1});
+	std::vector<size_t> zeros = FUZZ::getInt(nzeros, "zeros", {0, shapelist.size()-1});
 	for (size_t zidx : zeros)
 	{
 		shapelist[zidx] = 0;
@@ -102,8 +102,8 @@ std::vector<std::vector<double> > doubleDArr(std::vector<double> v, std::vector<
 
 tensorshape random_shape (void)
 {
-	size_t scalar = FUZZ::getInt(1, {2, 10})[0];
-	std::vector<size_t> shape = FUZZ::getInt(scalar, {0, 21});
+	size_t scalar = FUZZ::getInt(1, "scalar", {2, 10})[0];
+	std::vector<size_t> shape = FUZZ::getInt(scalar, "shape", {0, 21});
 	return tensorshape(shape);
 }
 
@@ -116,12 +116,16 @@ tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t 
 	}
 	else
 	{
-		rank = FUZZ::getInt(1, {lowerrank, upperrank})[0];
+		rank = FUZZ::getInt(1, "rank", {lowerrank, upperrank})[0];
 	}
 	size_t minvalue = std::pow((double)minn, 1 / (double)rank);
 	size_t maxvalue = std::pow((double)maxn, 1 / (double)rank);
+	if (3 > maxvalue - minvalue) // not enough variance
+	{
+		maxvalue += 2;
+	}
 	if (minvalue > maxvalue) minvalue = maxvalue / 2;
-	std::vector<size_t> shape = FUZZ::getInt(rank, {minvalue, maxvalue});
+	std::vector<size_t> shape = FUZZ::getInt(rank, "shape", {minvalue, maxvalue});
 	return tensorshape(shape);
 }
 

@@ -82,7 +82,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 	builder.registertype<mock_allocator>(GETTER_ID);
 	// getting invalid allocator
 	assert(156 < GETTER_ID/2);
-	size_t randid = FUZZ::getInt(1, {156, GETTER_ID/2})[0];
+	size_t randid = FUZZ::getInt(1, "randid", {156, GETTER_ID/2})[0];
 	EXPECT_EQ(nullptr, builder.get(randid));
 	// getting internal allocator
 	iallocator* def = builder.get(default_alloc::alloc_id);
@@ -92,7 +92,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 	mock_allocator* mock = dynamic_cast<mock_allocator*>(def);
 	EXPECT_NE(nullptr, mock);
 	mock->tracksize_ = true;
-	size_t id = mock->uid = FUZZ::getInt(1)[0];
+	size_t id = mock->uid = FUZZ::getInt(1, "id")[0];
 
 	def = builder.get(GETTER_ID);
 	mock_allocator* mock2 = dynamic_cast<mock_allocator*>(def);

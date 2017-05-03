@@ -97,12 +97,12 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	rand_uniform<double> rinit(2, 12);
 
 	std::vector<size_t> shapelist = shape.as_list();
-	size_t mutate_idx = FUZZ::getInt(1, {0, shapelist.size()-1})[0];
+	size_t mutate_idx = FUZZ::getInt(1, "mutate_idx", {0, shapelist.size()-1})[0];
 	shapelist[mutate_idx]++;
 	tensorshape shape2 = shapelist;
 
 	// matching pair
-	std::vector<double> scalars = FUZZ::getDouble(2, {3, 50});
+	std::vector<double> scalars = FUZZ::getDouble(2, "scalars", {3, 50});
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -320,7 +320,7 @@ TEST(ELEMENTARY, Exp_J000ToJ002)
 TEST(ELEMENTARY, ClipVal_J000ToJ002)
 {
 	FUZZ::delim();
-	std::vector<double> limits = FUZZ::getDouble(2, {-100, 200});
+	std::vector<double> limits = FUZZ::getDouble(2, "limits", {-100, 200});
 	double min = limits[0] > limits[1] ? limits[1] : limits[0];
 	double max = limits[0] > limits[1] ? limits[0] : limits[1];
 	unaryElemTest(

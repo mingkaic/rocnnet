@@ -22,7 +22,7 @@ SHAPER get_testshaper (void)
 void testforward (double* out,const tensorshape& outs,std::vector<const double*>&,std::vector<tensorshape>&)
 {
 	size_t n = outs.n_elems();
-	std::vector<double> data = FUZZ::getDouble(n);
+	std::vector<double> data = FUZZ::getDouble(n, "data");
 	std::memcpy(out, &data[0], sizeof(double) * n);
 }
 

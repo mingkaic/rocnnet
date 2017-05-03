@@ -30,6 +30,11 @@ public:
 		this->add_dependency(dep);
 	}
 
+	void mock_clear_dependency (void)
+	{
+		this->dependencies_.clear();
+	}
+
 	std::vector<subject*> expose_dependencies (void)
 	{
 		return this->dependencies_;
@@ -58,9 +63,17 @@ public:
 	mock_observer (subject* a, subject* b) : dummy_observer(a, b)  {}
 	mock_observer (std::vector<subject*> args) : dummy_observer(args)  {}
 	~mock_observer (void) {}
-	
-	virtual void update (std::unordered_set<size_t>,notification)
+
+	using dummy_observer::update;
+	virtual void update (std::unordered_set<size_t> callers, notification msg)
 	{
+		if (msg == notification::UNSUBSCRIBE)
+		{
+			for (size_t callidx : callers)
+			{
+				this->remove_dependency(callidx);
+			}
+		}
 		label_incr("update2");
 	}
 };

@@ -26,13 +26,16 @@ static std::ofstream fuzzLogger(FUZZ_FILE);
 
 void delim (void);
 
-std::vector<double> getDouble (size_t len, 
+std::vector<double> getDouble (size_t len,
+	std::string purpose = "getDouble",
 	std::pair<double,double> range={0,0});
 
-std::vector<size_t> getInt (size_t len, 
+std::vector<size_t> getInt (size_t len,
+	std::string purpose = "getInteger",
 	std::pair<size_t,size_t> range={0,0});
 
-std::string getString (size_t len, 
+std::string getString (size_t len,
+	std::string purpose = "getString",
 	std::string alphanum =
 	"0123456789!@#$%^&*"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -43,7 +46,7 @@ typename T::iterator rand_select (T container)
 {
 	size_t size = container.size();
 	auto it = container.begin();
-	for (size_t i = 0, n = getInt(1, {0, size-1})[0]; i < n; i++)
+	for (size_t i = 0, n = getInt(1, "rand_select::n", {0, size-1})[0]; i < n; i++)
 	{
 		it++;
 	}
@@ -58,7 +61,7 @@ N* buildNTree (size_t n, size_t nnodes,
 	std::function<N*()> buildleaf,
 	std::function<N*(std::vector<N*>)> connect)
 {
-	std::vector<size_t> nstrlen = FUZZ::getInt(nnodes, {14, 29});
+	std::vector<size_t> nstrlen = FUZZ::getInt(nnodes, "nstrlen", {14, 29});
 
 	std::vector<size_t> preds = {0, 0};
 	std::unordered_set<size_t> leaves = {1};
