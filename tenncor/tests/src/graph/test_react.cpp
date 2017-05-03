@@ -13,7 +13,6 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_REACT_TEST
 #ifndef DISABLE_REACT_TEST
 
 
@@ -26,9 +25,12 @@ TEST(REACT, CopySub_A000)
 	mock_subject sassign1;
 	mock_subject sassign2;
 
-	mock_observer o1;
 	mock_subject s1;
-	mock_subject s2(&o1);
+	mock_subject s2;
+	mock_observer o1(&s2);
+	
+	std::vector<subject*> subjects = o1.expose_dependencies();
+	ASSERT_EQ((size_t) 1, subjects.size());
 
 	EXPECT_TRUE(s1.no_audience());
 	EXPECT_FALSE(s2.no_audience());
@@ -63,9 +65,12 @@ TEST(REACT, MoveSub_A000)
 	mock_subject sassign1;
 	mock_subject sassign2;
 
-	mock_observer o1;
 	mock_subject s1;
-	mock_subject s2(&o1);
+	mock_subject s2;
+	mock_observer o1(&s2);
+
+	std::vector<subject*> subjects = o1.expose_dependencies();
+	ASSERT_EQ((size_t) 1, subjects.size());
 
 	EXPECT_TRUE(s1.no_audience());
 	EXPECT_FALSE(s2.no_audience());
@@ -102,19 +107,24 @@ TEST(REACT, Notify_A001)
 {
 	mocker::usage_.clear();
 	FUZZ::delim();
-	mock_observer o1;
-	mock_observer o2;
-	mock_subject s1(&o1);
-	mock_subject s2(&o2, &o1);
-
+	mock_subject s1;
+	mock_subject s2;
+	mock_observer o1(&s1, &s2);
+	mock_observer o2(&s2);
+	
 	o1.inst_ = "o1";
 	o2.inst_ = "o2";
 
+	std::vector<subject*> subjects = o1.expose_dependencies();
+	std::vector<subject*> subjects2 = o2.expose_dependencies();
+	ASSERT_EQ((size_t) 2, subjects.size());
+	ASSERT_EQ((size_t) 1, subjects2.size());
+
 	s1.notify(UPDATE); // o1 update gets s1 at idx 0
 	s2.notify(UPDATE);
+
 	// o2 update gets s2 at idx 0,
 	// o1 update gets s2 at idx 1
-
 	EXPECT_TRUE(mocker::EXPECT_CALL("o1::update2", 2)); // todo: check receiving argument UPDATE
 	EXPECT_TRUE(mocker::EXPECT_CALL("o2::update2", 1));
 	mocker::usage_.clear();
@@ -139,10 +149,15 @@ TEST(REACT, SUBDEATH_A002)
 {
 	mocker::usage_.clear();
 	FUZZ::delim();
-	mock_observer o1;
-	mock_observer o2;
-	mock_subject* s1 = new mock_subject(&o1);
-	mock_subject* s2 = new mock_subject(&o2, &o1);
+	mock_subject* s1 = new mock_subject;
+	mock_subject* s2 = new mock_subject;
+	mock_observer o1(s1, s2);
+	mock_observer o2(s2);
+
+	std::vector<subject*> subjects = o1.expose_dependencies();
+	std::vector<subject*> subjects2 = o2.expose_dependencies();
+	ASSERT_EQ((size_t) 2, subjects.size());
+	ASSERT_EQ((size_t) 1, subjects2.size());
 
 	o1.inst_ = "o1";
 	o2.inst_ = "o2";
@@ -197,11 +212,12 @@ TEST(REACT, Attach_A003)
 TEST(REACT, Detach_A004)
 {
 	FUZZ::delim();
-	mock_observer o1;
-	mock_observer o2;
-	mock_subject s1(&o1, &o2);
-	mock_subject s2(&o2, &o2);
-	mock_subject s3(&o2, &o2);
+	mock_subject s1;
+	mock_subject s2;
+	mock_subject s3;
+	mock_observer o1(&s1);
+	mock_observer o2({&s1, &s2, &s2});
+	mock_observer o3(&s3, &s3);
 
 	EXPECT_FALSE(s1.no_audience());
 	s1.mock_detach(&o1);
@@ -214,10 +230,14 @@ TEST(REACT, Detach_A004)
 	EXPECT_TRUE(s2.no_audience());
 
 	EXPECT_FALSE(s3.no_audience());
-	s3.mock_detach(&o2, 1);
+	s3.mock_detach(&o3, 1);
 	EXPECT_FALSE(s3.no_audience());
-	s3.mock_detach(&o2, 0);
+	s3.mock_detach(&o3, 0);
 	EXPECT_TRUE(s3.no_audience());
+
+	o1.mock_clear_dependency();
+	o2.mock_clear_dependency();
+	o3.mock_clear_dependency();
 }
 
 

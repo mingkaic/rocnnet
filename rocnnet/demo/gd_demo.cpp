@@ -53,15 +53,17 @@ int main (int argc, char** argv)
 	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;
-	size_t n_batch = 1;
+	size_t n_batch = 3;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::gd_net untrained_gdn(n_in, hiddens, 0.9);
+	nnet::vgb_updater bgd;
+	bgd.learning_rate_ = 0.9;
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	untrained_gdn.initialize();
 	trained_gdn->initialize();
 	pretrained_gdn.initialize(serialpath);
@@ -78,9 +80,9 @@ int main (int argc, char** argv)
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
-	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, 1}), "test_untrain_layerin");
-	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_train_layerin");
-	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, 1}), "test_pretrain_layerin");
+	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, n_batch}), "test_untrain_layerin");
+	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, n_batch}), "test_train_layerin");
+	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, n_batch}), "test_pretrain_layerin");
 	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
 	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
 	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);

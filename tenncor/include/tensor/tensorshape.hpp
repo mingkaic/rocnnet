@@ -76,7 +76,7 @@ public:
 
 	// >>>> MUTATORS <<<<
 	//! invalidate shape
-	void undefine (void) { dimensions_.clear(); }
+	void undefine (void);
 
 	// >>>> SHAPE CREATORS <<<<
 	//! create the most defined shape from this and other
@@ -103,7 +103,12 @@ public:
 	//! value and at most the the specified rank
 	tensorshape with_rank_at_most (size_t rank) const;
 
-	// tensorshape_proto& as_proto (void) const; // serialize
+	// >>>> COORDINATES <<<<
+	//! obtains the index of data should they be flatten to a vector
+	size_t sequential_idx (std::vector<size_t> coord) const;
+
+	//! obtain the coordinates of the data in vector given a sequential index
+	std::vector<size_t> coordinate_from_idx (size_t idx) const;
 
 private:
 	// zero dimension denotes unknown/undefined value

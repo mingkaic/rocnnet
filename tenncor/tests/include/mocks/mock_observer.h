@@ -14,34 +14,26 @@
 
 using namespace nnet;
 
-class dummy_observer : public iobserver
+class dummy_observer : public iobserver, public mocker
 {
 public:
 	dummy_observer (void) : iobserver() {}
 	dummy_observer (subject* arg) : iobserver({arg})  {}
 	dummy_observer (subject* a, subject* b) : iobserver({a, b})  {}
+	dummy_observer (std::vector<subject*> args) : iobserver(args)  {}
 	~dummy_observer (void) {}
 
 	dummy_observer (dummy_observer&& other) : iobserver(std::move(other)) {}
+	
+	void mock_add_dependency (subject* dep)
+	{
+		this->add_dependency(dep);
+	}
 
-	// dummy stops us from executing these real actions,
-	// since we test using dummy attach/detach procedures
-	virtual void update (subject*) {}
-	virtual void update (std::unordered_set<size_t>&, notification) {}
-	virtual void commit_sudoku (void) {}
-
-protected:
-	dummy_observer (const dummy_observer& other) : iobserver(other) {}
-};
-
-class mock_observer : public dummy_observer, public mocker
-{
-public:
-	// trust tester to allocate on stack
-	mock_observer (void) : dummy_observer() {}
-	mock_observer (subject* arg) : dummy_observer({arg})  {}
-	mock_observer (subject* a, subject* b) : dummy_observer({a, b})  {}
-	~mock_observer (void) {}
+	void mock_clear_dependency (void)
+	{
+		this->dependencies_.clear();
+	}
 
 	std::vector<subject*> expose_dependencies (void)
 	{
@@ -52,30 +44,52 @@ public:
 	{
 		label_incr("update1");
 	}
-
-	virtual void update (std::unordered_set<size_t>&,notification)
-	{
-		label_incr("update2");
-	}
-
+	
 	virtual void commit_sudoku (void)
 	{
 		label_incr("commit_sudoku");
 	}
+
+protected:
+	dummy_observer (const dummy_observer& other) : iobserver(other) {}
 };
 
-
-class mock_observer2 : public iobserver, public mocker
+class mock_observer : public dummy_observer
 {
 public:
 	// trust tester to allocate on stack
-	mock_observer2 (void) : iobserver() {}
-	mock_observer2 (subject* arg) : iobserver({arg})  {}
-	mock_observer2 (subject* a, subject* b) : iobserver({a, b})  {}
+	mock_observer (void) : dummy_observer() {}
+	mock_observer (subject* arg) : dummy_observer(arg)  {}
+	mock_observer (subject* a, subject* b) : dummy_observer(a, b)  {}
+	mock_observer (std::vector<subject*> args) : dummy_observer(args)  {}
+	~mock_observer (void) {}
+
+	using dummy_observer::update;
+	virtual void update (std::unordered_set<size_t> callers, notification msg)
+	{
+		if (msg == notification::UNSUBSCRIBE)
+		{
+			for (size_t callidx : callers)
+			{
+				this->remove_dependency(callidx);
+			}
+		}
+		label_incr("update2");
+	}
+};
+
+
+class mock_observer2 : public dummy_observer
+{
+public:
+	// trust tester to allocate on stack
+	mock_observer2 (void) : dummy_observer() {}
+	mock_observer2 (subject* arg) : dummy_observer(arg)  {}
+	mock_observer2 (subject* a, subject* b) : dummy_observer(a, b)  {}
 	~mock_observer2 (void) {}
 
-	mock_observer2 (const mock_observer2& other) : iobserver(other) {}
-	mock_observer2 (mock_observer2&& other) : iobserver(std::move(other)) {}
+	mock_observer2 (const mock_observer2& other) : dummy_observer(other) {}
+	mock_observer2 (mock_observer2&& other) : dummy_observer(std::move(other)) {}
 	mock_observer2& operator = (const mock_observer2& other)
 	{
 		iobserver::operator = (other);
@@ -87,11 +101,6 @@ public:
 		return *this;
 	}
 
-	void mock_add_dependency (subject* dep)
-	{
-		this->add_dependency(dep);
-	}
-
 	void mock_remove_dependency (size_t idx)
 	{
 		this->remove_dependency(idx);
@@ -100,21 +109,6 @@ public:
 	void mock_replace_dependency (subject* dep, size_t idx)
 	{
 		this->replace_dependency(dep, idx);
-	}
-
-	std::vector<subject*> expose_dependencies (void)
-	{
-		return this->dependencies_;
-	}
-
-	virtual void update (subject*)
-	{
-		label_incr("update1");
-	}
-
-	virtual void commit_sudoku (void)
-	{
-		label_incr("commit_sudoku");
 	}
 };
 

@@ -12,21 +12,10 @@ namespace nnet
 {
 
 template <typename T>
-T mean (const std::vector<T>& data)
-{
-	T ans = 0;
-	for (T raw : data)
-	{
-		ans += raw;
-	}
-	ans /= data.size();
-	return ans;
-}
-
-template <typename T>
 varptr<T> transpose (const varptr<T> a)
 {
 	if (nullptr == a) return nullptr;
+	assert(2 >= a->get_shape().rank());
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	[](std::vector<tensorshape> shapes)
 	{
@@ -66,108 +55,23 @@ varptr<T> transpose (const varptr<T> a)
 	}, "transpose");
 }
 
-// fit to watch
 template <typename T>
 varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
-	if (nullptr == a && nullptr == watch) return nullptr;
+	if (nullptr == a || nullptr == watch) return nullptr;
 	if (a->good_status() && *a == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
 	[](std::vector<tensorshape> shapes)
 	{
-		tensorshape orig = shapes[0];
-		tensorshape watchshape = shapes[1]; // watch is always argument 2
-		if (watchshape.is_fully_defined()
-			&& watchshape.n_elems() < orig.n_elems())
-		{
-			return tensorshape();
-		}
-		return watchshape;
+		return shapes[1]; // watch is always argument 2
 	},
-	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+	[](T* dest, const tensorshape& outshape, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		const T* src = args[0];
-		tensorshape oshape = a->get_shape();
-		std::vector<size_t> orig = oshape.as_list();
-		std::vector<size_t> tv = shape.as_list();
-		size_t total = shape.n_elems();
-
-		T temp[total];
-		T temp2[total];
-
-		const T* super_src = src;
-		T* super_dest = temp;
-		size_t super_below = 1;
-		size_t ototal = oshape.n_elems(); // old total
-
-		for (size_t index = 0; index < tv.size(); index++)
-		{
-			size_t mult = 0;
-			if (index < orig.size())
-			{
-				// original dimension must be equal or less than the result dimension
-				assert(orig[index] <= tv[index]);
-				if (0 == tv[index] % orig[index])
-				{
-					mult = tv[index] / orig[index];
-					ototal *= mult;
-				}
-				else
-				{
-					// TODO: dimension expansion doesn't match nicely, implement later
-					throw std::bad_function_call();
-				}
-			}
-			else
-			{
-				mult = tv[index];
-			}
-
-			// below calculates all elements encompassed up to the index dimension
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// below = 1 * 2 * 3 = 6
-			size_t below = super_below * tv[index] / mult;
-			// above calculates the number of tensors (of index rank) within the original tensor
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
-			// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
-			// above is 4
-			// above = original total / below
-			// original total = resulting total / multiplier
-			// expand original across resulting dimension
-			size_t above = total / (mult * below);
-
-			// copy over data
-			size_t src_idx = 0;
-			size_t dest_idx = 0;
-			for (size_t i = 0; i < above; i++)
-			{
-				src_idx = i * below;
-				// copy data mult times
-				for (size_t j = 0; j < mult; j++)
-				{
-					dest_idx = below * (mult * i + j);
-					std::memcpy(super_dest + dest_idx, super_src + src_idx, below * sizeof(T));
-				}
-			}
-			// state update: below_dim, super_src, and super_dest
-			super_below *= tv[index];
-
-			// swap super buffers as long as it's not the last one
-			if (index < tv.size()-1)
-			{
-				if (super_src == temp) {
-					super_src = temp2;
-					super_dest = temp;
-				} else {
-					super_src = temp;
-					super_dest = temp2;
-				}
-			}
-		}
-		std::memcpy(dest, super_dest, total * sizeof(T));
+		tensorshape& inshape = inshapes[0];
+		fit_toshape(dest, outshape, src, inshape);
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -178,7 +82,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
-	if (nullptr == a && 1 >= multiplier) return nullptr;
+	if (nullptr == a) return nullptr;
+	if (multiplier == 0) return constant<T>::get(0);
+	if (multiplier == 1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	[index, multiplier](std::vector<tensorshape> shapes)
 	{
@@ -322,15 +228,10 @@ varptr<T> compress (const varptr<T> a, int index,
 		gatherer =
 		[collector, a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
-			std::vector<size_t> tv = shape.as_list();
-			size_t total = shape.n_elems();
-			dest[0] = collector(std::vector<T>(args[0], args[0]+total));
+			dest[0] = collector(std::vector<T>(args[0], args[0]+shape.n_elems()));
 		};
-		shaper =
-		[index](std::vector<tensorshape>)
-		{
-			return std::vector<size_t>{1};
-		};
+		// scalar shape
+		shaper = [](std::vector<tensorshape>) { return std::vector<size_t>{1}; };
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
@@ -338,6 +239,154 @@ varptr<T> compress (const varptr<T> a, int index,
 		{
 			return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);
 		}, "compress");
+}
+
+template <typename T>
+varptr<T> reduce_max (const varptr<T> a, int dimension)
+{
+	return compress<T>(a, dimension,
+	[](const std::vector<T>& values) -> T
+	{
+		return *std::max_element(values.begin(), values.end());
+	});
+}
+
+template <typename T>
+varptr<T> reduce_sum (const varptr<T> a, int dimension)
+{
+	return compress<T>(a, dimension,
+	[](const std::vector<T>& values) -> T
+	{
+		return std::accumulate(values.begin(), values.end(), 0);
+	});
+}
+
+template <typename T>
+varptr<T> reduce_mean (const varptr<T> a, int dimension)
+{
+	return compress<T>(a, dimension,
+	[](const std::vector<T>& values) -> T
+	{
+		return std::accumulate(values.begin(), values.end(), 0) / values.size();
+	});
+}
+
+template <typename T>
+varptr<T> arg_compress (const varptr<T> a, int dimension,
+	std::function<bool(T,T)> compare)
+{
+	if (nullptr == a) return nullptr;
+	FORWARD_OP<T> gatherer;
+	SHAPER shaper;
+	if (dimension >= 0)
+	{
+		gatherer =
+		[a, dimension, compare](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>&)
+		{
+			const T* src = args[0];
+			// REMEMBER that ts is the resulting shape, not the original shape
+			// both above and below values are calculations based on the original shape
+			// original shape
+			tensorshape orig = a->get_shape();
+			assert((unsigned) dimension < orig.rank());
+			std::vector<size_t> tv = orig.as_list();
+			size_t idx_val = tv[dimension];
+			// below for compression calculates all elements below the index dimension
+			// that is for a shape of <1, 2, 3, 4> and index 2
+			// below = 1 * 2 = 2
+			size_t below = 1;
+			for (int i = 0; i < dimension; i++)
+			{
+				below *= tv[i];
+			}
+			// above denotes the same above as the one in extend
+			size_t above = orig.n_elems() / (below*idx_val);
+
+			// copy over data
+			for (size_t i = 0; i < above; i++)
+			{
+				for (size_t j = 0; j < below; j++)
+				{
+					// apply compression to each element along idx_val dimension
+					size_t dest_idx = j + i * below;
+					size_t idx = 0;
+					T val = src[j + i * below * idx_val];
+					for (size_t k = 1; k < idx_val; k++)
+					{
+						T temp = src[j + k * below + i * below * idx_val];
+						if (compare(temp, val))
+						{
+							idx = k;
+							val = temp;
+						}
+					}
+					dest[dest_idx] = (T)idx;
+				}
+			}
+		};
+		shaper =
+		[dimension](std::vector<tensorshape> shapes)
+		{
+			tensorshape ts = shapes[0];
+			ts.assert_is_fully_defined();
+			assert((unsigned) dimension < ts.rank());
+			std::vector<size_t> tv = ts.as_list();
+			if (0 == dimension)
+			{ // pop front
+				tv.front() = std::move(tv.back());
+				tv.pop_back();
+			}
+			else if (tv.size()-1 == (unsigned)dimension)
+			{
+				tv.pop_back();
+			}
+			else
+			{
+				tv[dimension] = 1;
+			}
+			return tv;
+		};
+	}
+	else
+	{
+		gatherer =
+		[compare, a](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
+		{
+			const T* indata = args[0];
+			tensorshape& ins = inshapes[0];
+			T val = indata[0];
+			size_t idx = 0;
+			for (size_t i = 1, n = ins.n_elems(); i < n; i++)
+			{
+				if (compare(indata[i], val))
+				{
+					val = indata[i];
+					idx = i;
+				}
+			}
+			std::vector<size_t> coord = ins.coordinate_from_idx(idx);
+			std::vector<T> tcoord(coord.begin(), coord.end());
+			memcpy(dest, &tcoord[0], ins.rank() * sizeof(T));
+		};
+		// scalar shape
+		shaper = [](std::vector<tensorshape> inshapes) { return std::vector<size_t>{inshapes[0].rank()}; };
+	}
+
+	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
+	[dimension, compare](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, compare);
+	}, "argcompress");
+}
+
+template <typename T>
+varptr<T> arg_max (const varptr<T> a, int dimension)
+{
+	return arg_compress<T>(a, dimension,
+	[](T bigger, T smaller)
+	{
+		return bigger > smaller;
+	});
 }
 
 }

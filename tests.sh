@@ -28,6 +28,9 @@ mkdir build && pushd build
 cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
 cmake --build .
 
+# valgrind check
+on_travis assert_cmd "valgrind --tool=memcheck ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_repeat=5 --gtest_shuffle"
+
 # tenncor tests
 on_travis assert_cmd "${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle && cat fuzz.out"
 

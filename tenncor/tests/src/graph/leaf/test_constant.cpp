@@ -17,7 +17,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_CONSTANT_TEST
 #ifndef DISABLE_CONSTANT_TEST
 
 
@@ -26,21 +25,21 @@ using namespace nnet;
 TEST(CONSTANT, Constructor_D000)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	tensorshape shape = random_def_shape();
 	tensorshape part = make_partial(shape.as_list());
 
 	size_t n = shape.n_elems();
 	size_t pn = part.n_known();
 	// defined shape
-	std::vector<double> v = FUZZ::getDouble(n);
-	std::vector<double> v2 = FUZZ::getDouble(n / 2);
-	std::vector<double> v3 = FUZZ::getDouble(n * 1.5);
+	std::vector<double> v = FUZZ::getDouble(n, "v");
+	std::vector<double> v2 = FUZZ::getDouble(n / 2, "v2");
+	std::vector<double> v3 = FUZZ::getDouble(n * 1.5, "v3");
 
 	// partially defined shape
-	std::vector<double> pv = FUZZ::getDouble(pn);
-	std::vector<double> pv2 = FUZZ::getDouble(pn * 0.6);
-	std::vector<double> pv3 = FUZZ::getDouble(pn * 1.5);
+	std::vector<double> pv = FUZZ::getDouble(pn, "pv");
+	std::vector<double> pv2 = FUZZ::getDouble(pn * 0.6, "pv2");
+	std::vector<double> pv3 = FUZZ::getDouble(pn * 1.5, "pv3");
 
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(v, shape);
@@ -128,16 +127,16 @@ TEST(CONSTANT, Constructor_D000)
 TEST(CONSTANT, CopyNMove_D001)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	tensorshape shape = random_def_shape();
 	tensorshape part = make_partial(shape.as_list());
 
 	size_t n = shape.n_elems();
 	size_t pn = part.n_known();
 	// defined shape
-	std::vector<double> v = FUZZ::getDouble(FUZZ::getInt(1, {0.5*n, 1.5*n})[0]);
+	std::vector<double> v = FUZZ::getDouble(FUZZ::getInt(1, "v.size", {0.5*n, 1.5*n})[0], "v");
 	// partially defined shape
-	std::vector<double> pv = FUZZ::getDouble(FUZZ::getInt(1, {0.5*pn, 1.5*pn})[0]);
+	std::vector<double> pv = FUZZ::getDouble(FUZZ::getInt(1, "pv.size", {0.5*pn, 1.5*pn})[0], "pv");
 
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(v, shape);
@@ -160,7 +159,7 @@ TEST(CONSTANT, CopyNMove_D001)
 TEST(CONSTANT, GetGradient_D002)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(c+1);
 
@@ -189,7 +188,7 @@ TEST(CONSTANT, GetGradient_D002)
 TEST(CONSTANT, GetLeaf_D003)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
 
 	inode<double>* g1 = res->get_leaf(nullptr);
@@ -204,7 +203,7 @@ TEST(CONSTANT, GetLeaf_D003)
 TEST(CONSTANT, GetLeaves_D004)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
 
 	typename inode<double>::GRAD_CACHE leafset;
@@ -220,7 +219,7 @@ TEST(CONSTANT, GetLeaves_D004)
 TEST(CONSTANT, SelfDestruct_D005)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(c);
 	res->is_managed_ = true;
@@ -238,16 +237,17 @@ TEST(CONSTANT, SelfDestruct_D005)
 TEST(CONSTANT, Allocated_D006)
 {
 	FUZZ::delim();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	tensorshape shape = random_def_shape();
 	tensorshape part = make_partial(shape.as_list());
 
 	size_t n = shape.n_elems();
 	size_t pn = part.n_known();
 	// defined shape
-	std::vector<double> v = FUZZ::getDouble(FUZZ::getInt(1, {0.5*n, 1.5*n})[0]);
+	std::vector<double> v = FUZZ::getDouble(FUZZ::getInt(1, "v.size", {0.5*n, 1.5*n})[0], "v");
 	// partially defined shape
-	std::vector<double> pv = FUZZ::getDouble(FUZZ::getInt(1, {0.5*pn, 1.5*pn})[0]);
+	std::cout << pn << std::endl;
+	std::vector<double> pv = FUZZ::getDouble(FUZZ::getInt(1, "pv.size", {0.5*pn, 1.5*pn})[0], "pv");
 
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(v, shape);

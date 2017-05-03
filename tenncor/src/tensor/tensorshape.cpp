@@ -116,6 +116,8 @@ void tensorshape::assert_is_fully_defined (void) const
 	assert(is_fully_defined());
 }
 
+void tensorshape::undefine (void) { dimensions_.clear(); }
+
 tensorshape tensorshape::merge_with (const tensorshape& other) const
 {
 	if (dimensions_.empty())
@@ -237,14 +239,12 @@ tensorshape tensorshape::with_rank_at_most (size_t rank) const
 	return ds;
 }
 
-// tensorshape_proto& tensorshape::as_proto (void) const;
-
 void print_shape (tensorshape ts)
 {
 	std::vector<size_t> shape = ts.as_list();
 	if (shape.empty())
 	{
-		std::cout << "undefined\n";
+		std::cout << "undefined" << std::endl;
 	}
 	else
 	{
@@ -254,6 +254,31 @@ void print_shape (tensorshape ts)
 		}
 		std::cout << std::endl;
 	}
+}
+
+size_t tensorshape::sequential_idx (std::vector<size_t> coord) const
+{
+	size_t n = std::min(dimensions_.size(), coord.size());
+	size_t index = 0;
+	for (size_t i = 1; i < n; i++)
+	{
+		index += coord[n-i];
+		index *= dimensions_[n-i-1];
+	}
+	return index + coord[0];
+}
+
+std::vector<size_t> tensorshape::coordinate_from_idx (size_t idx) const
+{
+	std::vector<size_t> coord;
+	size_t i = idx;
+	for (size_t d : dimensions_)
+	{
+		size_t xd = i % d;
+		coord.push_back(xd);
+		i = (i - xd) / d;
+	}
+	return coord;
 }
 
 }

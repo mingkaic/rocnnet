@@ -17,7 +17,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_VARIABLE_TEST
 #ifndef DISABLE_VARIABLE_TEST
 
 
@@ -26,13 +25,13 @@ using namespace nnet;
 TEST(VARIABLE, Constructor_F000)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
+	std::string label1 = FUZZ::getString(strns[0], "label1");
+	std::string label2 = FUZZ::getString(strns[1], "label2");
+	std::string label3 = FUZZ::getString(strns[2], "label3");
+	std::string label4 = FUZZ::getString(strns[3], "label4");
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -63,13 +62,13 @@ TEST(VARIABLE, Constructor_F000)
 TEST(VARIABLE, Copy_F001)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
+	std::string label1 = FUZZ::getString(strns[0], "label1");
+	std::string label2 = FUZZ::getString(strns[1], "label2");
+	std::string label3 = FUZZ::getString(strns[2], "label3");
+	std::string label4 = FUZZ::getString(strns[3], "label4");
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -129,13 +128,13 @@ TEST(VARIABLE, Copy_F001)
 TEST(VARIABLE, Move_F001)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
+	std::string label1 = FUZZ::getString(strns[0], "label1");
+	std::string label2 = FUZZ::getString(strns[1], "label2");
+	std::string label3 = FUZZ::getString(strns[2], "label3");
+	std::string label4 = FUZZ::getString(strns[3], "label4");
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -218,13 +217,13 @@ TEST(VARIABLE, Move_F001)
 TEST(VARIABLE, SetInit_F002)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
+	std::string label1 = FUZZ::getString(strns[0], "label1");
+	std::string label2 = FUZZ::getString(strns[1], "label2");
+	std::string label3 = FUZZ::getString(strns[2], "label3");
+	std::string label4 = FUZZ::getString(strns[3], "label4");
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -275,13 +274,13 @@ TEST(VARIABLE, SetInit_F002)
 TEST(VARIABLE, GetLeaf_F003)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
+	std::string label1 = FUZZ::getString(strns[0], "label1");
+	std::string label2 = FUZZ::getString(strns[1], "label2");
+	std::string label3 = FUZZ::getString(strns[2], "label3");
+	std::string label4 = FUZZ::getString(strns[3], "label3");
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -326,13 +325,13 @@ TEST(VARIABLE, GetLeaf_F003)
 TEST(VARIABLE, GetLeaves_F004)
 {
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(4, {14, 29});
+	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	std::string label3 = FUZZ::getString(strns[2]);
 	std::string label4 = FUZZ::getString(strns[3]);
 	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -360,7 +359,7 @@ TEST(VARIABLE, Initialize_F005)
 {
 	mocker::usage_.clear();
 	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(5, {14, 29});
+	std::vector<size_t> strns = FUZZ::getInt(5, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	std::string label3 = FUZZ::getString(strns[2]);
@@ -369,7 +368,7 @@ TEST(VARIABLE, Initialize_F005)
 	tensorshape shape = random_def_shape();
 	tensorshape shape2 = random_def_shape();
 	tensorshape part = make_partial(shape2.as_list());
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);

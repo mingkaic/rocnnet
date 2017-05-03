@@ -15,10 +15,10 @@ using namespace nnet;
 namespace rocnnet
 {
 
-gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, 
-	double learning_rate, std::string scope) :
+gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
+	nnet::gd_updater<double>& updater, std::string scope) :
 ml_perceptron(n_input, hiddens, scope),
-learning_rate_(learning_rate)
+updater_(updater.clone())
 {
 	size_t n_output = hiddens.back().first;
 	train_in_ = new nnet::placeholder<double>(
@@ -110,21 +110,32 @@ void gd_net::train_setup (void)
 	nnet::varptr<double> error = diff * diff;
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
 
-	nnet::inode<double>::GRAD_CACHE leafset;
-	error->get_leaves(leafset);
-	for (auto lit : leafset)
+	std::unordered_set<nnet::variable<double>*> biases;
 	{
-		nnet::variable<double>* Wb = lit.first;
-		nnet::varptr<double> gres = error->get_gradient(Wb);
-		// Wb = Wb + learning_rate * gres
-		updates_.push_back(Wb->assign_add(gres * learning_rate_));
+		std::vector<WB_PAIR> wbs = this->get_variables();
+		for (WB_PAIR& wb : wbs)
+		{
+			biases.emplace(wb.second);
+		}
 	}
+
+	updates_ = updater_->calculate(error_,
+	[biases](nnet::varptr<double> grad, nnet::variable<double>* leaf)
+	{
+		if (biases.end() == biases.find(leaf))
+		{
+			return grad;
+		}
+		// average the batches
+		return nnet::reduce_mean(grad, {1});
+	});
 }
 
 void gd_net::copy_helper (const gd_net& other)
 {
+	if (updater_) delete updater_;
+	updater_ = other.updater_->clone();
 	updates_.clear();
-	learning_rate_ = other.learning_rate_;
 	if (train_in_) delete train_in_;
 	if (expected_out_) delete expected_out_;
 	train_in_ = other.train_in_->clone();
@@ -134,8 +145,9 @@ void gd_net::copy_helper (const gd_net& other)
 
 void gd_net::move_helper (gd_net&& other)
 {
+	if (updater_) delete updater_;
+	updater_ = other.updater_->move();
 	updates_.clear();
-	learning_rate_ = std::move(other.learning_rate_);
 	if (train_in_) delete train_in_;
 	if (expected_out_) delete expected_out_;
 	train_in_ = other.train_in_->move();

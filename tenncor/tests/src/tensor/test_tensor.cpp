@@ -12,18 +12,17 @@
 #include "mocks/mock_tensor.h"
 
 
-//#define DISABLE_TENSOR_TEST
 #ifndef DISABLE_TENSOR_TEST
 
 
 static tensorshape random_partialshape ()
 {
-	size_t rank = FUZZ::getInt(1, {1, 5})[0];
-	size_t nzeros = FUZZ::getInt(1, {1, 5})[0];
-	std::vector<size_t> shape = FUZZ::getInt(rank, {2, 21});
+	size_t rank = FUZZ::getInt(1, "rank", {1, 5})[0];
+	size_t nzeros = FUZZ::getInt(1, "nzeros", {1, 5})[0];
+	std::vector<size_t> shape = FUZZ::getInt(rank, "shape", {2, 21});
 	for (size_t i = 0; i < nzeros; i++)
 	{
-		size_t zidx = FUZZ::getInt(1, {0, shape.size()})[0];
+		size_t zidx = FUZZ::getInt(1, "zidx", {0, shape.size()})[0];
 		shape.insert(shape.begin()+zidx, 0);
 	}
 	return tensorshape(shape);
@@ -34,7 +33,7 @@ static tensorshape random_partialshape ()
 TEST(TENSOR, ScalarConstructor_B000)
 {
 	FUZZ::delim();
-	std::vector<double> vals = FUZZ::getDouble(3);
+	std::vector<double> vals = FUZZ::getDouble(3, "vals");
 	double value = vals[0];
 	mock_tensor scalar(value);
 	EXPECT_TRUE(scalar.clean());
@@ -100,7 +99,7 @@ TEST(TENSOR, Copy_B002)
 	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
+	mock_tensor scalar(FUZZ::getDouble(1, "scalar.data")[0]);
 	mock_tensor incom(pshape);
 	mock_tensor comp(cshape);
 
@@ -148,7 +147,7 @@ TEST(TENSOR, Move_B002)
 
 	tensorshape sshape(std::vector<size_t>{1});
 	tensorshape cshape = random_def_shape();
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
+	mock_tensor scalar(FUZZ::getDouble(1, "scalar.data")[0]);
 	mock_tensor comp(cshape);
 
 	double* scalarptr = scalar.rawptr();
@@ -196,7 +195,7 @@ TEST(TENSOR, Shape_B003)
 	tensorshape cshape = random_def_shape();
 
 	mock_tensor undef;
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
+	mock_tensor scalar(FUZZ::getDouble(1, "scalar.data")[0]);
 	mock_tensor incom(pshape);
 	mock_tensor comp(cshape);
 
@@ -238,7 +237,7 @@ TEST(TENSOR, IsSameSize_B004)
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	mock_tensor bad(ishape);
 	mock_tensor undef;
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
+	mock_tensor scalar(FUZZ::getDouble(1, "scalar.data")[0]);
 	mock_tensor comp(cshape);
 
 	{
@@ -262,7 +261,7 @@ TEST(TENSOR, IsSameSize_B004)
 	// trimmed compatible
 	{
 		// padd cv
-		std::vector<size_t> npads = FUZZ::getInt(4, {3, 17});
+		std::vector<size_t> npads = FUZZ::getInt(4, "npads", {3, 17});
 		tensorshape p1 = padd(cv, npads[0], npads[1]); // same
 		tensorshape p2 = padd(cv, npads[2], npads[3]); // same
 		cv.push_back(2);
@@ -301,7 +300,7 @@ TEST(TENSOR, IsCompatibleWithTensor_B005)
 	tensorshape ishape = make_incompatible(cv); // not same as cshape
 	tensorshape pshape = make_partial(cv); // same as cshape
 	mock_tensor undef;
-	mock_tensor scalar(FUZZ::getDouble(1)[0]);
+	mock_tensor scalar(FUZZ::getDouble(1, "scalar.data")[0]);
 	mock_tensor comp(cshape);
 	mock_tensor pcom(pshape);
 	mock_tensor bad(ishape);
@@ -338,14 +337,14 @@ TEST(TENSOR, IsCompatibleWithVector_B006)
 	std::vector<double> lowerdata;
 	if (cp < 3)
 	{
-		lowerdata = FUZZ::getDouble(1);
+		lowerdata = FUZZ::getDouble(1, "lowerdata if cp < 3");
 	}
 	else
 	{
-		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, "cp-this", {1, cp-1})[0], "lowerdata if cp >= 3");
 	}
-	std::vector<double> exactdata = FUZZ::getDouble(cp);
-	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
+	std::vector<double> exactdata = FUZZ::getDouble(cp, "exact data");
+	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, "cp+this", {1, cp-1})[0], "upperdata");
 
 	EXPECT_TRUE(comp.is_compatible_with(exactdata));
 	EXPECT_FALSE(comp.is_compatible_with(lowerdata));
@@ -359,16 +358,16 @@ TEST(TENSOR, IsCompatibleWithVector_B006)
 	std::vector<double> lowerdata2;
 	if (np < 3)
 	{
-		lowerdata2 = FUZZ::getDouble(1);
+		lowerdata2 = FUZZ::getDouble(1, "lowerdata2 if np < 3");
 	}
 	else
 	{
-		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, "np-this", {1, np-1})[0], "lowerdata2 if np >= 3");
 	}
-	std::vector<double> exactdata2 = FUZZ::getDouble(np);
-	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
-	std::vector<double> moddata = FUZZ::getDouble(mod);
-	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
+	std::vector<double> exactdata2 = FUZZ::getDouble(np, "exactdata2");
+	size_t mod = np*FUZZ::getInt(1, "mod=np*this", {2, 15})[0];
+	std::vector<double> moddata = FUZZ::getDouble(mod, "moddata");
+	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1, "upperdata2");
 
 	EXPECT_TRUE(pcom.is_compatible_with(exactdata2));
 	EXPECT_TRUE(pcom.is_compatible_with(moddata));
@@ -415,14 +414,14 @@ TEST(TENSOR, GuessShape_B007)
 	std::vector<double> lowerdata;
 	if (cp < 3)
 	{
-		lowerdata = FUZZ::getDouble(1);
+		lowerdata = FUZZ::getDouble(1, "lowerdata if cp < 3");
 	}
 	else
 	{
-		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, {1, cp-1})[0]);
+		lowerdata = FUZZ::getDouble(cp-FUZZ::getInt(1, "cp-this", {1, cp-1})[0], "lowerdata if cp >= 3");
 	}
-	std::vector<double> exactdata = FUZZ::getDouble(cp);
-	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, {1, cp-1})[0]);
+	std::vector<double> exactdata = FUZZ::getDouble(cp, "exactdata");
+	std::vector<double> upperdata = FUZZ::getDouble(cp+FUZZ::getInt(1, "cp+this", {1, cp-1})[0], "upperdata");
 
 	// allowed are fully defined
 	optional<tensorshape> cres = comp.guess_shape(exactdata);
@@ -435,16 +434,16 @@ TEST(TENSOR, GuessShape_B007)
 	std::vector<double> lowerdata2;
 	if (np < 3)
 	{
-		lowerdata2 = FUZZ::getDouble(1);
+		lowerdata2 = FUZZ::getDouble(1, "lowerdata2 if np < 3");
 	}
 	else
 	{
-		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, {1, np-1})[0]);
+		lowerdata2 = FUZZ::getDouble(np-FUZZ::getInt(1, "np-this", {1, np-1})[0], "lowerdata2 if np >= 3");
 	}
-	std::vector<double> exactdata2 = FUZZ::getDouble(np);
-	size_t mod = np*FUZZ::getInt(1, {2, 15})[0];
-	std::vector<double> moddata = FUZZ::getDouble(mod);
-	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1);
+	std::vector<double> exactdata2 = FUZZ::getDouble(np, "exactdata2");
+	size_t mod = np*FUZZ::getInt(1, "mod=np*this", {2, 15})[0];
+	std::vector<double> moddata = FUZZ::getDouble(mod, "moddata");
+	std::vector<double> upperdata2 = FUZZ::getDouble(mod+1, "upperdata2");
 
 	std::vector<size_t> pv = pshape.as_list();
 	size_t unknown = pv.size();
@@ -517,16 +516,16 @@ TEST(TENSOR, Get_B008)
 	size_t pncoord = 1;
 	if (crank > 2)
 	{
-		pncoord = FUZZ::getInt(1, {crank/2, crank-1})[0];
+		pncoord = FUZZ::getInt(1, "pncoord if crank > 3", {crank/2, crank-1})[0];
 	}
 	size_t cncoord = crank;
-	size_t rncoord = FUZZ::getInt(1, {15, 127})[0];
+	size_t rncoord = FUZZ::getInt(1, "rncoord", {15, 127})[0];
 	// c coordinates have rank exactly fitting cshape
 	// p coordinates have rank less than rank of cshape
 	// r coordinates are random coordinates
-	std::vector<size_t> ccoord = FUZZ::getInt(cncoord);
-	std::vector<size_t> pcoord = FUZZ::getInt(pncoord);
-	std::vector<size_t> rcoord = FUZZ::getInt(rncoord);
+	std::vector<size_t> ccoord = FUZZ::getInt(cncoord, "ccoord");
+	std::vector<size_t> pcoord = FUZZ::getInt(pncoord, "pcoord");
+	std::vector<size_t> rcoord = FUZZ::getInt(rncoord, "rcoord");
 	EXPECT_THROW(undef.get(pcoord), std::out_of_range);
 	EXPECT_THROW(pcom.get(pcoord), std::out_of_range);
 	EXPECT_THROW(undef.get(ccoord), std::out_of_range);
@@ -589,7 +588,7 @@ TEST(TENSOR, Reshape_B009)
 	tensorshape pshape = random_partialshape();
 	// make cshape a 2d shape to make testing easy
 	// todo: improve to test higher dimensionality
-	tensorshape cshape = FUZZ::getInt(2, {11, 127});
+	tensorshape cshape = FUZZ::getInt(2, "cshape", {11, 127});
 	std::vector<size_t> cv = cshape.as_list();
 	size_t cols = cv[0];
 	size_t rows = cv[1];
@@ -694,7 +693,8 @@ TEST(TENSOR, Reshape_B009)
 
 	double* p = comp.rawptr();
 	double* p2 = comp2.rawptr();
-	comp.set_shape(pshape);
+	tensorshape incmpshape = make_incompatible(comp.get_shape().as_list());
+	comp.set_shape(incmpshape);
 	comp2.set_shape(std::vector<size_t>{});
 	ASSERT_NE(p, comp.rawptr());
 	ASSERT_EQ(p2, comp2.rawptr());
@@ -799,12 +799,18 @@ TEST(TENSOR, CopyWithShape_B013)
 	tensorshape cshape2 = random_def_shape();
 	tensorshape cshape3 = random_def_shape();
 
+	size_t n1 = cshape.n_elems();
+	std::vector<double> rawdata1 = FUZZ::getDouble(n1, "rawdata1");
+	size_t n2 = cshape2.n_elems();
+	std::vector<double> rawdata2 = FUZZ::getDouble(n2, "rawdata2");
 	mock_tensor undef;
 	mock_tensor pcom(pshape);
-	mock_tensor comp(cshape);
-	mock_tensor comp2(cshape2);
+	mock_tensor comp(cshape, rawdata1);
+	mock_tensor comp2(cshape2, rawdata2);
 	double* orig = comp.rawptr();
 	double* orig2 = comp2.rawptr();
+	std::vector<double> compdata = comp.expose();
+	std::vector<double> compdata2 = comp2.expose();
 
 	// copying from unallocated
 	EXPECT_FALSE(pcom.copy_from(undef, cshape));
@@ -827,10 +833,65 @@ TEST(TENSOR, CopyWithShape_B013)
 	EXPECT_TRUE(tensorshape_equal(cshape3, comp.get_shape()));
 	EXPECT_TRUE(tensorshape_equal(cshape3, comp2.get_shape()));
 
-	EXPECT_TRUE(undef.equal(pcom));
-	EXPECT_TRUE(undef.equal(comp));
-	EXPECT_TRUE(undef.equal(comp2));
+	std::vector<double> undefdata = undef.expose();
+	std::vector<double> pdefdata = pcom.expose();
+
+	std::vector<size_t> c1list = cshape.as_list();
+	std::vector<size_t> c2list = cshape2.as_list();
+	std::vector<size_t> c3list = cshape3.as_list();
+
+	// undef fitted with comp and cshape3
+	for (size_t i = 0, n = cshape.n_elems(); i < n; i++)
+	{
+		std::vector<size_t> incoord = cshape.coordinate_from_idx(i);
+		bool b = true;
+		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
+		{
+			if (j >= c3list.size())
+			{
+				b = incoord[j] == 0;
+			}
+			else
+			{
+				b = incoord[j] < c3list[j];
+			}
+		}
+		if (b)
+		{
+			size_t outidx = cshape3.sequential_idx(incoord);
+			EXPECT_EQ(compdata[i], undefdata[outidx]);
+		}
+	}
+	// pdefdata fitted with comp2 and cshape 3
+	for (size_t i = 0, n = cshape2.n_elems(); i < n; i++)
+	{
+		std::vector<size_t> incoord = cshape2.coordinate_from_idx(i);
+		bool b = true;
+		for (size_t j = 0, o = incoord.size(); j < o && b; j++)
+		{
+			if (j >= c3list.size())
+			{
+				b = incoord[j] == 0;
+			}
+			else
+			{
+				b = incoord[j] < c3list[j];
+			}
+		}
+		if (b)
+		{
+			size_t outidx = cshape3.sequential_idx(incoord);
+			EXPECT_EQ(compdata2[i], pdefdata[outidx]);
+		}
+	}
 }
+
+
+// todo: implement
+//B014 - reading a valid tensor_proto should allocate the tensor if not already.
+//        data should be identical to the data saved in protobuf (check via some adhoc data values)
+//        both allowed and allocated shapes should be identical to the shape specified in protobuf
+//        allowedshape may change to accomodate new shape
 
 
 #endif /* DISABLE_TENSOR_TEST */

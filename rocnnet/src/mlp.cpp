@@ -27,7 +27,7 @@ scope_(scope)
 	{
 		n_output = ip.first;
 		percept = new perceptron(n_input, n_output,
-			nnutils::formatter() << this->scope_ << ":hidden_" << level++);
+			nnutils::formatter() << scope_ << ":hidden_" << level++);
 		layers_.push_back(HID_PAIR(percept, ip.second));
 		n_input = n_output;
 	}
