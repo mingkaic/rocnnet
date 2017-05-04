@@ -263,6 +263,10 @@ TEST(TRANSFORM, Extend_K004To005)
 			}
 			out.push_back(multiplier);
 		}
+		else
+		{
+			out[extend_index] *= multiplier;
+		}
 		return out;
 	};
 	unaryTransTest<std::pair<size_t,size_t> >({2, 13},

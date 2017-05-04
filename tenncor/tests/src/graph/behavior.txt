@@ -146,6 +146,9 @@ K002 - fit pads data with zeros for elements not found in the initial shape,
         and truncates elements not in the new shape
 K003 - extend duplicates data across a dimension (index) a number of times specified by input multiplier
 K004 - extend with multiplier 0 returns constant 0, multiplier 1 returns input node
+K005 - compress aggregates elements along a specific dimension if dimension value > -1 otherwise aggregate all elements
+K006 - arg_compress obtains of the index of an element found by some search parameter of specific dimension if dimension value > -1
+        otherwise obtain the coordinate of the element
 
 // MATMUL BEHAVIOR
 L000 -

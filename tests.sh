@@ -10,8 +10,8 @@ assert_cmd() {
     eval $*
     if [ $? -ne 0 ]; then
         echo "Command $* failed"
-        cat fuzz.out
         cat tenncortest_out.txt
+        cat fuzz.out
         exit 1;
     fi
     return $!

@@ -246,6 +246,7 @@ TEST(CONSTANT, Allocated_D006)
 	// defined shape
 	std::vector<double> v = FUZZ::getDouble(FUZZ::getInt(1, "v.size", {0.5*n, 1.5*n})[0], "v");
 	// partially defined shape
+	if (1 == pn) pn = 2;
 	std::vector<double> pv = FUZZ::getDouble(FUZZ::getInt(1, "pv.size", {0.5*pn, 1.5*pn})[0], "pv");
 
 	constant<double>* res = constant<double>::get(c);
