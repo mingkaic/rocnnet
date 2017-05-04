@@ -5,14 +5,17 @@
 namespace FUZZ
 {
 
-void delim (void)
+static std::default_random_engine generator;
+
+void reset_logger (void)
 {
     fuzzLogger.close();
 	remove(FUZZ_FILE);
     fuzzLogger.open(FUZZ_FILE);
 }
 
-std::vector<double> getDouble (size_t len, 
+std::vector<double> getDouble (size_t len,
+	std::string purpose,
     std::pair<double,double> range)
 {
 	double min, max;
@@ -26,12 +29,11 @@ std::vector<double> getDouble (size_t len,
 		min = range.first;
 		max = range.second;
 	}
-	std::default_random_engine generator;
 
 	std::vector<double> vec;
 	std::uniform_real_distribution<double> dis(min, max);
 
-	fuzzLogger << "double<";
+	fuzzLogger << purpose << ": double<";
 	for (size_t i = 0; i < len; i++)
 	{
 		double val = dis(generator);
@@ -43,7 +45,8 @@ std::vector<double> getDouble (size_t len,
 	return vec;
 }
 
-std::vector<size_t> getInt (size_t len, 
+std::vector<size_t> getInt (size_t len,
+	std::string purpose,
     std::pair<size_t,size_t> range)
 {
 	size_t min, max;
@@ -57,10 +60,9 @@ std::vector<size_t> getInt (size_t len,
 		min = range.first;
 		max = range.second;
 	}
-	std::default_random_engine generator;
 
 	std::vector<size_t> vec;
-	fuzzLogger << "int<";
+	fuzzLogger << purpose << ": int<";
 	std::uniform_int_distribution<size_t> dis(min, max);
 	for (size_t i = 0; i < len; i++)
 	{
@@ -73,17 +75,18 @@ std::vector<size_t> getInt (size_t len,
 	return vec;
 }
 
-std::string getString (size_t len, 
+std::string getString (size_t len,
+	std::string purpose,
     std::string alphanum)
 {
-	std::vector<size_t> indices = FUZZ::getInt(len, {0, alphanum.size()-1});
+	std::vector<size_t> indices = FUZZ::getInt(len, "indices", {0, alphanum.size()-1});
 	std::string s(len, ' ');
 	std::transform(indices.begin(), indices.end(), s.begin(),
 	[&alphanum](size_t index)
 	{
 		return alphanum[index];
 	});
-	fuzzLogger << "string<" << s << ">" << std::endl;
+	fuzzLogger << purpose << ": string<" << s << ">" << std::endl;
 
 	return s;
 }

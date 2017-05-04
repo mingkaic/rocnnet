@@ -19,6 +19,9 @@ A010 - a tensorshape can have its leading and trailing 1s removed
 A011 - two tensorshapes can concatenate to form a tensorshape depending on the order of
         concatenation assuming both tensors are at least partially defined
 A012 - a tensorshape's rank can be manipulated by padding with ones or clipping
+A013 - converting coordinates C to sequential index I on a tensorshape S takes form:
+        I = SIGMA_i=0:n(C[i]*PI_j=0:i-1(S[i])) where n is rank of S, and S[-1] is 1
+A014 - index from coordinate C on a tensorshape equals the initial index converted to C (reverse of A013)
 
 // TENSOR
 B000 - scalar tensor constructrion creates allocates a tensor of rank 1, nelems = 1
@@ -56,6 +59,10 @@ B012 - allocate will fail if provided shape is not compatible with allowed shape
 B013 - copy_from another tensor will return true if other tensor is allocated
         and shape is fully defined. resulting tensor will have the same value as
         other within specified shape dimensions, data not specified by other is 0
+B014 - reading a valid tensor_proto should allocate the tensor if not already.
+        data should be identical to the data saved in protobuf (check via some adhoc data values)
+        both allowed and allocated shapes should be identical to the shape specified in protobuf
+        allowedshape may change to accomodate new shape
 
 // TENSOR_HANDLER
 C000 - transfer function takes output tensor and some argument tensors.

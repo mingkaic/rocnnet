@@ -15,18 +15,17 @@
 #include "fuzz.h"
 
 
-//#define DISABLE_PLACEHOLDER_TEST
 #ifndef DISABLE_PLACEHOLDER_TEST
 
 
 TEST(PLACHOLDER, Constructor_G000)
 {
-	FUZZ::delim();
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	FUZZ::reset_logger();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0]);
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> place(shape, label1);
-	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems(), "raw");
 
 	EXPECT_FALSE(place.good_status());
 }
@@ -34,15 +33,15 @@ TEST(PLACHOLDER, Constructor_G000)
 
 TEST(PLACHOLDER, Copy_G001)
 {
-	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	FUZZ::reset_logger();
+	std::vector<size_t> strns = FUZZ::getInt(2, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> assign(std::vector<size_t>{1});
 	placeholder<double> place(shape, label1);
-	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems(), "raw");
 	place = raw;
 	placeholder<double>* pcpy = place.clone();
 	assign = place;
@@ -60,7 +59,7 @@ TEST(PLACHOLDER, Copy_G001)
 	}
 
 	// check re-assignment after cloning
-	std::vector<double> raw2 = FUZZ::getDouble(n);
+	std::vector<double> raw2 = FUZZ::getDouble(n, "raw2");
 	placeholder<double> assign2(std::vector<size_t>{1});
 	placeholder<double> uninit(shape, label2);
 	placeholder<double>* uninitcpy = uninit.clone();
@@ -97,16 +96,16 @@ TEST(PLACHOLDER, Copy_G001)
 
 TEST(PLACHOLDER, Move_G001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	placeholder<double> assign(std::vector<size_t>{1});
 
-	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	std::vector<size_t> strns = FUZZ::getInt(2, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> place(shape, label1);
-	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems(), "raw");
 
 	size_t n = raw.size();
 	place = raw;
@@ -141,8 +140,8 @@ TEST(PLACHOLDER, Move_G001)
 TEST(PLACHOLDER, AssignRaw_G002)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(3, {14, 29});
+	FUZZ::reset_logger();
+	std::vector<size_t> strns = FUZZ::getInt(3, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	std::string label3 = FUZZ::getString(strns[2]);
@@ -151,7 +150,7 @@ TEST(PLACHOLDER, AssignRaw_G002)
 
 	placeholder<double> place(shape, label1);
 	placeholder<double> place2(part, label2);
-	std::vector<double> raw = FUZZ::getDouble(shape.n_elems());
+	std::vector<double> raw = FUZZ::getDouble(shape.n_elems(), "raw");
 
 	mock_connector conn({&place}, label3);
 	conn.inst_ = "conn";
@@ -187,15 +186,15 @@ TEST(PLACHOLDER, AssignRaw_G002)
 TEST(PLACHOLDER, AssignTensor_G003)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
-	std::vector<size_t> strns = FUZZ::getInt(2, {14, 29});
+	FUZZ::reset_logger();
+	std::vector<size_t> strns = FUZZ::getInt(2, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> place(shape, label1);
 
-	double c = FUZZ::getDouble(1)[0];
+	double c = FUZZ::getDouble(1, "c")[0];
 	const_init<double> cinit(c);
 	tensor<double> rawtens(shape);
 	cinit(rawtens);
@@ -222,8 +221,8 @@ TEST(PLACHOLDER, AssignTensor_G003)
 
 TEST(PLACHOLDER, GetLeaf_G004)
 {
-	FUZZ::delim();
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	FUZZ::reset_logger();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> place(shape, label1);
@@ -235,8 +234,8 @@ TEST(PLACHOLDER, GetLeaf_G004)
 
 TEST(PLACHOLDER, GetLeaves_G005)
 {
-	FUZZ::delim();
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, {14, 29})[0]);
+	FUZZ::reset_logger();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 
 	placeholder<double> place(shape, label1);

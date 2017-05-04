@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+PBX_CACHE=${1:-./prototxt}
+ERRORLOG=test_out.txt
+FUZZLOG=fuzz.out
+BUILDDIR=.
+
 on_travis() {
     if [ "$TRAVIS" == "true" ]; then
         "$@"
@@ -10,31 +15,51 @@ assert_cmd() {
     eval $*
     if [ $? -ne 0 ]; then
         echo "Command $* failed"
+        cat ${ERRORLOG}
+        cat ${FUZZLOG}
         exit 1;
     fi
     return $!
 }
 
-PBX_CACHE=${1:-./prototxt}
+if [ "$TRAVIS" == "true" ]; then
+    BUILDDIR=${TRAVIS_BUILD_DIR}
+fi
 
 if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
 fi
 
 # compilation
-on_travis pushd ${TRAVIS_BUILD_DIR}
+pushd ${BUILDDIR}
 lcov --directory . --zerocounters
 mkdir build && pushd build
 cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
 cmake --build .
 
+# valgrind check
+for _ in {1..5}
+do
+    echo "running tenncortest with memcheck"
+    assert_cmd "valgrind --tool=memcheck ${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_shuffle > ${ERRORLOG}"
+    echo "tenncortest valgrind check complete"
+done
+
 # tenncor tests
-on_travis assert_cmd "${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle && cat fuzz.out"
+for _ in {1..5}
+do
+    echo "running batch of 5 tenncortest"
+    assert_cmd "${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
+    echo "still running! 5 tests complete"
+done
 
 # rocnnet demos
-on_travis assert_cmd "${TRAVIS_BUILD_DIR}/bin/bin/gd_demo $PBX_CACHE"
+echo "running gd_demo"
+assert_cmd "${BUILDDIR}/bin/bin/gd_demo $PBX_CACHE"
+echo "gd_demo complete"
 
-on_travis pushd ${TRAVIS_BUILD_DIR}
+# coverage analysis
+pushd ${BUILDDIR}
 lcov --version
 gcov --version
 lcov --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info

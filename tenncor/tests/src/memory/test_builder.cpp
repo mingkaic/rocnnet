@@ -19,7 +19,6 @@
 using namespace nnet;
 
 
-//#define DISABLE_BUILDER_TEST
 #ifndef DISABLE_BUILDER_TEST
 
 
@@ -33,7 +32,7 @@ static const size_t CHECK_ID = 111112;
 // singleton property
 TEST(ALLOC_BUILDER, Singleton_B000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	// same thread
 	alloc_builder& inst1 = alloc_builder::get_instance();
 	alloc_builder& inst2 = alloc_builder::get_instance();
@@ -56,7 +55,7 @@ TEST(ALLOC_BUILDER, Singleton_B000)
 // registertype
 TEST(ALLOC_BUILDER, Register_A001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	const size_t realsetter = SETTER_ID + SETTER_ITER;
 	alloc_builder& builder = alloc_builder::get_instance();
 
@@ -77,13 +76,13 @@ TEST(ALLOC_BUILDER, Register_A001)
 // get, depends on registertype
 TEST(ALLOC_BUILDER, Get_A002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(GETTER_ID);
 	// getting invalid allocator
 	assert(156 < GETTER_ID/2);
-	size_t randid = FUZZ::getInt(1, {156, GETTER_ID/2})[0];
+	size_t randid = FUZZ::getInt(1, "randid", {156, GETTER_ID/2})[0];
 	EXPECT_EQ(nullptr, builder.get(randid));
 	// getting internal allocator
 	iallocator* def = builder.get(default_alloc::alloc_id);
@@ -93,7 +92,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 	mock_allocator* mock = dynamic_cast<mock_allocator*>(def);
 	EXPECT_NE(nullptr, mock);
 	mock->tracksize_ = true;
-	size_t id = mock->uid = FUZZ::getInt(1)[0];
+	size_t id = mock->uid = FUZZ::getInt(1, "id")[0];
 
 	def = builder.get(GETTER_ID);
 	mock_allocator* mock2 = dynamic_cast<mock_allocator*>(def);
@@ -106,7 +105,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 // check registry
 TEST(ALLOC_BUILDER, Check_A003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(CHECK_ID);

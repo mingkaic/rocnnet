@@ -53,15 +53,17 @@ int main (int argc, char** argv)
 	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;
-	size_t n_batch = 1;
+	size_t n_batch = 3;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	rocnnet::gd_net untrained_gdn(n_in, hiddens, 0.9);
+	nnet::vgb_updater bgd;
+	bgd.learning_rate_ = 0.9;
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, 0.9);
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	untrained_gdn.initialize();
 	trained_gdn->initialize();
 	pretrained_gdn.initialize(serialpath);
@@ -70,7 +72,7 @@ int main (int argc, char** argv)
 	start = std::clock();
 	for (size_t i = 0; i < n_train; i++)
 	{
-		std::cout << "training " << i << std::endl;
+		if (i % 10 == 9) std::cout << "training " << i+1 << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		trained_gdn->train(batch, batch_out);
@@ -78,9 +80,9 @@ int main (int argc, char** argv)
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
-	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, 1}), "test_untrain_layerin");
-	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, 1}), "test_train_layerin");
-	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, 1}), "test_pretrain_layerin");
+	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, n_batch}), "test_untrain_layerin");
+	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, n_batch}), "test_train_layerin");
+	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, n_batch}), "test_pretrain_layerin");
 	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
 	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
 	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);
@@ -90,7 +92,7 @@ int main (int argc, char** argv)
 	double pretrained_err = 0;
 	for (size_t i = 0; i < n_test; i++)
 	{
-		std::cout << "testing " << i << "\n";
+		if (i % 10 == 9) std::cout << "testing " << i+1 << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		untrained_in = batch;

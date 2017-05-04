@@ -19,12 +19,6 @@ class mock_subject : public subject, public mocker
 {
 public:
 	mock_subject (void) {}
-	mock_subject (iobserver* obs) { this->attach(obs, 0); }
-	mock_subject (iobserver* obs, iobserver* obs2)
-	{
-		this->attach(obs, 0);
-		this->attach(obs2, 1);
-	}
 	~mock_subject (void) {}
 
 	mock_subject (const mock_subject& other) : subject(other) {}
@@ -70,6 +64,7 @@ public:
 };
 
 
+// mock sub to expose subject constructor (which is protected by default)
 class mock_subject2 : public subject {};
 
 

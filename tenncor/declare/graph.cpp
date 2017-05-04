@@ -52,7 +52,7 @@ template varptr<double> cot (const varptr<double> a);
 template varptr<double> exp (const varptr<double> a);
 
 //template varptr<double> sqrt (const varptr<double> a); // TODO implement
-//
+
 //template varptr<double> pow (const varptr<double> a, double scalar); // TODO implement
 
 template varptr<double> clip_val (const varptr<double> a, double min, double max);
@@ -89,7 +89,22 @@ template varptr<double> fit (const varptr<double> a, const varptr<double> watch)
 
 template varptr<double> extend (const varptr<double> a, size_t index, size_t multiplier);
 
-template varptr<double> compress (const varptr<double> a, int index = -1,
-	std::function<double(const std::vector<double>&)> collector = mean<double>);
+template varptr<double> compress (const varptr<double> a, int index,
+	std::function<double(const std::vector<double>&)> collector);
+
+template varptr<double> reduce_max (const varptr<double> a, int dimension = -1);
+
+template varptr<double> reduce_sum (const varptr<double> a, int dimension = -1);
+
+template varptr<double> reduce_mean (const varptr<double> a, int dimension = -1);
+
+template varptr<double> arg_compress (const varptr<double> a, int dimension,
+	std::function<bool(double,double)> compare);
+
+template varptr<double> arg_max (const varptr<double> a, int dimension = -1);
+
+//template varptr<double> trace (const varptr<double> a);
+
+//template varptr<double> inverse (const varptr<double> a);
 
 }

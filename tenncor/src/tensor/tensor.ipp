@@ -17,6 +17,52 @@ namespace nnet
 {
 
 template <typename T>
+void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tensorshape& inshape)
+{
+	assert(outshape.is_fully_defined() && inshape.is_fully_defined());
+	std::vector<size_t> outlist = outshape.as_list();
+	std::vector<size_t> inlist = inshape.as_list();
+	size_t numout = outshape.n_elems();
+
+	size_t minrank = std::min(outlist.size(), inlist.size());
+	tensorshape clippedshape = inshape.with_rank(minrank);
+	size_t numin = clippedshape.n_elems();
+
+	memset(dest, 0, sizeof(T) * numout);
+	size_t basewidth = std::min(outlist[0], inlist[0]);
+	size_t srcidx = 0;
+	while (srcidx < numin)
+	{
+		// check source index to ensure it is within inlist bounds
+		std::vector<size_t> srccoord = clippedshape.coordinate_from_idx(srcidx);
+		bool srcinbound = true;
+		size_t src_jump = 1;
+		for (size_t i = 1, m = minrank; srcinbound && i < m; i++)
+		{
+			srcinbound = srccoord[i] < outlist[i];
+			if (false == srcinbound)
+			{
+				src_jump *= (inlist[i] - srccoord[i]);
+			}
+			else
+			{
+				src_jump *= inlist[i];
+			}
+		}
+		if (false == srcinbound)
+		{
+			srcidx += (src_jump * inlist[0]);
+		}
+		else
+		{
+			size_t destidx = outshape.sequential_idx(srccoord);
+			memcpy(dest + destidx, src + srcidx, sizeof(T) * basewidth);
+			srcidx += inlist[0];
+		}
+	}
+}
+
+template <typename T>
 tensor<T>::tensor (void) :
 	tensor<T>(std::vector<size_t>{})
 {
@@ -283,17 +329,7 @@ size_t tensor<T>::total_bytes (void) const
 template <typename T>
 T tensor<T>::get (std::vector<size_t> coord) const
 {
-	size_t rank = alloc_shape_.rank();
-	size_t ncoord = coord.size();
-	size_t n = std::min(rank, ncoord);
-	std::vector<size_t> dims = alloc_shape_.as_list();
-	size_t accum = 1;
-	size_t raw_idx = 0;
-	for (size_t i = 0; i < n; i++)
-	{
-		raw_idx += coord[i] * accum;
-		accum *= dims[i];
-	}
+	size_t raw_idx = alloc_shape_.sequential_idx(coord);
 	if (raw_idx >= alloc_shape_.n_elems())
 	{
 		throw std::out_of_range(nnutils::formatter() <<
@@ -419,7 +455,7 @@ bool tensor<T>::allocate (const tensorshape shape)
 			T* temp = alloc_->template allocate<T>(shape.n_elems());
 			// move raw_data to temp matching new shape
 			// we want to only copy over the minimum data to lower cost
-			raw_copy(temp, shape, raw_data_, alloc_shape_);
+			fit_toshape(temp, shape, raw_data_, alloc_shape_);
 			alloc_->dealloc(raw_data_, alloc_shape_.n_elems());
 			raw_data_ = temp;
 		}
@@ -448,8 +484,8 @@ bool tensor<T>::copy_from (const tensor<T>& other, const tensorshape shape)
 		success = true;
 		tensorshape olds = other.get_shape();
 		T* temp = alloc_->template allocate<T>(shape.n_elems());
-		raw_copy(temp, shape, other.raw_data_, olds);
-
+		fit_toshape(temp, shape, other.raw_data_, olds);
+		
 		if (is_alloc())
 		{
 			alloc_->dealloc(raw_data_, alloc_shape_.n_elems());
@@ -538,40 +574,6 @@ itensor<T>* tensor<T>::move_impl (void)
 }
 
 template <typename T>
-void tensor<T>::raw_copy (T* out, const tensorshape& outs,
-   const T* in, const tensorshape& ins) const
-{
-	size_t resnelem = outs.n_elems();
-	size_t oldnelem = ins.n_elems();
-	size_t resrow = outs.as_list()[0];
-	size_t oldrow = ins.as_list()[0];
-	size_t resn = resnelem / resrow;
-	size_t oldn = oldnelem / oldrow;
-	size_t n = std::min(resn, oldn);
-	size_t nrow = std::min(resrow, oldrow);
-	// iterate from dimension 2 to dimension n
-	// copying over dimension 1 from in to out
-	// resn is the product_i=1:n-1(out[i])
-	for (size_t i = 0; i < n; i++)
-	{
-		T* dest = out + i * resrow;
-		const T* orig = in + i * oldrow;
-		std::memcpy(dest, orig, sizeof(T) * nrow);
-		// expand by padding with 0s
-		if (resrow > nrow)
-		{
-			std::memset(dest + nrow, 0, sizeof(T) * (resrow - nrow));
-		}
-	}
-	// if resn is not n, then there are left over memory,
-	// fill the leftovers with 0
-	if (resn > n)
-	{
-		std::memset(out + n * resrow, 0, sizeof(T) * resrow * (resn - n));
-	}
-}
-
-template <typename T>
 void tensor<T>::copy_helper (const tensor<T>& other, bool shapeonly)
 {
 	if (raw_data_)
@@ -587,7 +589,9 @@ void tensor<T>::copy_helper (const tensor<T>& other, bool shapeonly)
 		size_t ns = alloc_shape_.n_elems();
 		raw_data_ = alloc_->template allocate<T>(ns);
 		if (false == shapeonly)
+		{
 			std::memcpy(raw_data_, other.raw_data_, sizeof(T) * ns);
+		}
 	}
 }
 

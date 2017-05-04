@@ -9,8 +9,7 @@
 #include <iostream> // for recording
 #include <unordered_set>
 #include "mlp.hpp"
-#include "executor/group.hpp"
-#include "executor/optimizer.hpp"
+#include "utils/gd_utils.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
@@ -26,8 +25,8 @@ namespace rocnnet
 class gd_net : public ml_perceptron
 {
 public:
-	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens, 
-		double learning_rate, std::string scope = "MLP");
+	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
+		nnet::gd_updater<double>& updater, std::string scope = "MLP");
 
 	~gd_net (void);
 
@@ -64,8 +63,8 @@ private:
 	nnet::placeholder<double>* expected_out_ = nullptr;
 
 	nnet::iconnector<double>* error_ = nullptr;
-	
-	double learning_rate_;
+
+	nnet::gd_updater<double>* updater_ = nullptr;
 };
 
 }

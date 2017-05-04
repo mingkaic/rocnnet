@@ -35,14 +35,19 @@ subject& subject::operator = (subject&& other)
 
 void subject::notify (notification msg) const
 {
-	auto it = audience_.begin();
-	while (audience_.end() != it)
+	std::vector<iobserver*> obs;
+	for (auto it = audience_.begin(), et = audience_.end(); it != et; it++)
 	{
-		iobserver* viewer = it->first;
-		std::unordered_set<size_t> indices = it->second;
-		// increment iterator before updating to account for audience_ modifications
-		it++;
-		viewer->update(indices, msg);
+		obs.push_back(it->first);
+	}
+
+	for (iobserver* viewer : obs)
+	{
+		auto it = audience_.find(viewer);
+		if (it != audience_.end())
+		{
+			viewer->update(it->second, msg);
+		}
 	}
 }
 
@@ -58,7 +63,6 @@ subject::subject (subject&& other) :
 
 void subject::attach (iobserver* viewer, size_t idx)
 {
-
 #ifdef EDGE_RCD
 // record subject-object edge
 rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
@@ -69,7 +73,6 @@ rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
 
 void subject::detach (iobserver* viewer)
 {
-
 #ifdef EDGE_RCD
 // record subject-object edge
 for (size_t idx : audience_[viewer])
@@ -87,7 +90,6 @@ for (size_t idx : audience_[viewer])
 
 void subject::detach (iobserver* viewer, size_t idx)
 {
-
 #ifdef EDGE_RCD
 // record subject-object edge
 rocnnet_record::erec::rec.edge_release(viewer, this, idx);
@@ -97,10 +99,10 @@ rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 	if (audience_.end() != it)
 	{
 		it->second.erase(idx);
-	}
-	if (it->second.empty())
-	{
-		audience_.erase(viewer);
+		if (it->second.empty())
+		{
+			audience_.erase(viewer);
+		}
 	}
 	if (audience_.empty())
 	{

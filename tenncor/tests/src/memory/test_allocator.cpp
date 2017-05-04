@@ -10,7 +10,6 @@
 #include "mocks/mock_allocator.h"
 
 
-//#define DISABLE_ALLOCATOR_TEST
 #ifndef DISABLE_ALLOCATOR_TEST
 
 
@@ -18,7 +17,7 @@
 // clone
 TEST(ALLOCATOR, Clone_A000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_allocator a(true);
 	mock_allocator b(false);
 	iallocator* aptr = &a;
@@ -40,12 +39,12 @@ TEST(ALLOCATOR, Clone_A000)
 // allocate
 TEST(ALLOCATOR, Allocate_A001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_allocator a(true);
 	mock_allocator b(false);
 
-	size_t numa = FUZZ::getInt(1, {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, {1, 127})[0];
+	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
+	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
 	char* ca = (char*)a.template allocate<double>(numa);
 	char* cb = (char*)b.template allocate<double>(numb);
 	size_t abytes = a.tracker[ca].num_bytes;
@@ -96,14 +95,14 @@ TEST(ALLOCATOR, Allocate_A001)
 // dealloc, dependent on allocate
 TEST(ALLOCATOR, Deallocate_A002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_allocator a(false);
 	mock_allocator b(true);
 	mock_allocator c(true);
 
-	size_t numa = FUZZ::getInt(1, {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, {1, 127})[0];
-	size_t numc = FUZZ::getInt(1, {25, 127})[0];
+	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
+	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
+	size_t numc = FUZZ::getInt(1, "numc", {25, 127})[0];
 
 	char* ca = (char*)a.template allocate<uint64_t>(numa);
 	char* cb = (char*)b.template allocate<uint64_t>(numb);
@@ -126,7 +125,7 @@ TEST(ALLOCATOR, Deallocate_A002)
 			size = potential;
 			if (potential > 5)
 			{
-				size = FUZZ::getInt(1, {1, potential/2})[0];
+				size = FUZZ::getInt(1, "size", {1, potential/2})[0];
 			}
 		}
 
@@ -140,15 +139,15 @@ TEST(ALLOCATOR, Deallocate_A002)
 // tracks_size, request_size
 TEST(ALLOCATOR, Track_A003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_allocator a(false);
 	mock_allocator b(true);
 
 	EXPECT_FALSE(a.tracks_size());
 	EXPECT_TRUE(b.tracks_size());
 
-	size_t numa = FUZZ::getInt(1, {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, {1, 127})[0];
+	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
+	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
 	char* ca = (char*)a.template allocate<uint64_t>(numa);
 	char* cb = (char*)b.template allocate<uint64_t>(numb);
 
