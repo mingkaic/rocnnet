@@ -72,7 +72,7 @@ int main (int argc, char** argv)
 	start = std::clock();
 	for (size_t i = 0; i < n_train; i++)
 	{
-		std::cout << "training " << i << std::endl;
+		if (i % 10 == 9) std::cout << "training " << i+1 << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		trained_gdn->train(batch, batch_out);
@@ -92,7 +92,7 @@ int main (int argc, char** argv)
 	double pretrained_err = 0;
 	for (size_t i = 0; i < n_test; i++)
 	{
-		std::cout << "testing " << i << "\n";
+		if (i % 10 == 9) std::cout << "testing " << i+1 << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		untrained_in = batch;
