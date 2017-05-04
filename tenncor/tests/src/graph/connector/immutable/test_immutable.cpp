@@ -216,33 +216,45 @@ TEST(IMMUTABLE, Shape_I003)
 	mock_node* n4 = new mock_node(label4); // status is bad
 
 	// mock tensors initialize with random data...
-	tensorshape n1s = random_def_shape();
-	tensorshape n2s = random_def_shape();
-	tensorshape n3s = random_def_shape();
+	tensorshape n1s = random_def_shape(2, 10, 17, 1372);
+	tensorshape n2s = random_def_shape(2, 10, 17, 1372);
+	tensorshape n3s = random_def_shape(2, 10, 17, 1372);
 	n1->data_ = new mock_tensor(n1s);
 	n2->data_ = new mock_tensor(n2s);
 	n3->data_ = new mock_tensor(n3s);
 
 	// for this test, we only care about shape
-	auto concatshaper = [](std::vector<tensorshape> ts)
+	auto fittershaper = [](std::vector<tensorshape> ts) -> tensorshape
 	{
-		tensorshape res;
+		std::vector<size_t> res;
 		for (tensorshape& s : ts)
 		{
-			res = res.concatenate(s);
+			std::vector<size_t> slist = s.as_list();
+			size_t minrank = std::min(slist.size(), res.size());
+			for (size_t i = 0; i < minrank; i++)
+			{
+				res[i] = std::max(res[i], slist[i]);
+			}
+			if (slist.size() > res.size())
+			{
+				for (size_t i = minrank; i < slist.size(); i++)
+				{
+					res.push_back(slist[i]);
+				}
+			}
 		}
 		return res;
 	};
 
-	immutable<double>* conn = new mock_immutable({n1}, conname, concatshaper);
-	immutable<double>* conn2 = new mock_immutable({n2, n3}, conname2, concatshaper);
+	immutable<double>* conn = new mock_immutable({n1}, conname, fittershaper);
+	immutable<double>* conn2 = new mock_immutable({n2, n3}, conname2, fittershaper);
 	// bad statuses
-	immutable<double>* conn3 = new mock_immutable({n4, n3}, conname3, concatshaper);
-	immutable<double>* conn4 = new mock_immutable({n1, n4}, conname4, concatshaper);
-	immutable<double>* conn5 = new mock_immutable({n2, n4}, conname5, concatshaper);
+	immutable<double>* conn3 = new mock_immutable({n4, n3}, conname3, fittershaper);
+	immutable<double>* conn4 = new mock_immutable({n1, n4}, conname4, fittershaper);
+	immutable<double>* conn5 = new mock_immutable({n2, n4}, conname5, fittershaper);
 
 	// sample expectations
-	tensorshape c2shape = concatshaper({n2s, n3s});
+	tensorshape c2shape = fittershaper({n2s, n3s});
 
 	EXPECT_TRUE(tensorshape_equal(n1s, conn->get_shape()));
 	EXPECT_TRUE(tensorshape_equal(c2shape, conn2->get_shape()));
