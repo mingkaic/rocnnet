@@ -44,6 +44,8 @@ GTESTDIR="$1/googletest-release-1.8.0"
 # install compilers
 exec_cmd "apt-add-repository -y ppa:ubuntu-toolchain-r/test"
 exec_cmd "apt-get update && apt-get install -y g++-6 gcc-6"
+exec_cmd "rm /usr/bin/g++ && mv /usr/bin/g++-6 /usr/bin/g++"
+exec_cmd "rm /usr/bin/gcc && mv /usr/bin/gcc-6 /usr/bin/gcc"
 
 # download protobuf3 and cache if necessary
 if [ ! -d $PROTODIR/ ]; then

@@ -34,7 +34,7 @@ fi
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
 mkdir build && pushd build
-cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
+cmake -DTENNCOR_TEST=ON ..
 cmake --build .
 
 # valgrind check
