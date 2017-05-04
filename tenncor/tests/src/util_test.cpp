@@ -123,14 +123,39 @@ tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t 
 	{
 		rank = FUZZ::getInt(1, "rank", {lowerrank, upperrank})[0];
 	}
-	size_t minvalue = std::pow((double)minn, 1 / (double)rank);
-	size_t maxvalue = std::pow((double)maxn, 1 / (double)rank);
-	if (3 > maxvalue - minvalue) // not enough variance
+	size_t maxvalue = 0;
+	size_t minvalue = 0;
+	for (size_t i = maxn; maxn > 0; maxn /= rank)
 	{
-		maxvalue += 2;
+		maxvalue++;
 	}
-	if (minvalue > maxvalue) minvalue = maxvalue / 2;
+	for (size_t i = minn; minn > 0; minn /= rank)
+	{
+		minvalue++;
+	}
+	// we don't care if minvalue overapproximates
+
+	size_t realmaxn = std::pow((double)maxvalue, (double)rank);
+	size_t error = realmaxn > maxn ? realmaxn - maxn : maxn - realmaxn;
+	size_t ncorrection = 0;
+	for (; error > 0; error /= maxvalue)
+	{
+		ncorrection++;
+	}
+
 	std::vector<size_t> shape = FUZZ::getInt(rank, "shape", {minvalue, maxvalue});
+	for (size_t i = 0; i < ncorrection && i < rank; i++)
+	{
+		size_t shapeidx = rank-i-1;
+		if (shape[shapeidx] > 1)
+		{
+			shape[shapeidx]++;
+		}
+		else
+		{
+			ncorrection++;
+		}
+	}
 	return tensorshape(shape);
 }
 
