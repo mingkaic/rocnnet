@@ -114,49 +114,81 @@ tensorshape random_shape (void)
 
 tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t maxn)
 {
-	size_t rank;
-	if (lowerrank == upperrank)
-	{
-		rank = lowerrank;
-	}
-	else
+	size_t rank = lowerrank;
+	if (lowerrank != upperrank)
 	{
 		rank = FUZZ::getInt(1, "rank", {lowerrank, upperrank})[0];
 	}
+	assert(rank > 0);
+	if (rank < 2)
+	{
+		return FUZZ::getInt(1, "shape", {minn, maxn});
+	}
+	// invariant: rank > 1
 	size_t maxvalue = 0;
 	size_t minvalue = 0;
-	for (size_t i = maxn; maxn > 0; maxn /= rank)
+	size_t lowercut = 0;
+	if (rank > 5) lowercut = 1;
+	for (size_t i = maxn; i > lowercut; i /= rank)
 	{
 		maxvalue++;
 	}
-	for (size_t i = minn; minn > 0; minn /= rank)
+	for (size_t i = minn; i > lowercut; i /= rank)
 	{
 		minvalue++;
 	}
+
 	// we don't care if minvalue overapproximates
-
-	size_t realmaxn = std::pow((double)maxvalue, (double)rank);
-	size_t error = realmaxn > maxn ? realmaxn - maxn : maxn - realmaxn;
 	size_t ncorrection = 0;
-	for (; error > 0; error /= maxvalue)
+	size_t realmaxn = std::pow((double)maxvalue, (double)rank);
+	if (realmaxn > maxn)
 	{
-		ncorrection++;
-	}
-
-	std::vector<size_t> shape = FUZZ::getInt(rank, "shape", {minvalue, maxvalue});
-	for (size_t i = 0; i < ncorrection && i < rank; i++)
-	{
-		size_t shapeidx = rank-i-1;
-		if (shape[shapeidx] > 1)
-		{
-			shape[shapeidx]++;
-		}
-		else
+		size_t error = realmaxn - maxn;
+		for (; error > 0; error /= maxvalue)
 		{
 			ncorrection++;
 		}
 	}
-	return tensorshape(shape);
+
+	std::vector<size_t> shape;
+	if (ncorrection == rank)
+	{
+		for (size_t i = 0; i < rank; i++)
+		{
+			std::stringstream ss;
+			ss << "shape i=" << i;
+			size_t shapei = maxvalue;
+			if (minvalue != maxvalue)
+			{
+				shapei = FUZZ::getInt(1, ss.str(), {minvalue, maxvalue})[0];
+			}
+			shape.push_back(shapei);
+			maxn /= shapei;
+			if (maxn < maxvalue)
+			{
+				break; // stop early
+			}
+		}
+	}
+	else
+	{
+		std::vector<size_t> shape2;
+		if (rank-ncorrection)
+		{
+			shape = FUZZ::getInt(rank-ncorrection, "shapepart1", {minvalue, maxvalue});
+		}
+		if (ncorrection)
+		{
+			shape2 = FUZZ::getInt(ncorrection, "shapepart2", {minvalue, maxvalue-1});
+		}
+		shape.insert(shape.end(), shape2.begin(), shape2.end());
+	}
+	tensorshape outshape(shape);
+	if (outshape.n_elems() > 10000)
+	{
+		// warn
+	}
+	return outshape;
 }
 
 
