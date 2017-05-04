@@ -22,7 +22,9 @@ assert_cmd() {
     return $!
 }
 
-on_travis "BUILDDIR=${TRAVIS_BUILD_DIR}"
+if [ "$TRAVIS" == "true" ]; then
+    BUILDDIR=${TRAVIS_BUILD_DIR}
+fi
 
 if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
