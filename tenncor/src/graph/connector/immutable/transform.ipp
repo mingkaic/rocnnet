@@ -163,14 +163,18 @@ varptr<T> compress (const varptr<T> a, int index,
 	if (index >= 0)
 	{
 		gatherer =
-		[a, index, collector](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>&)
+		[index, collector](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
 			const T* src = args[0];
+			tensorshape& orig = inshapes[0];
+			if ((unsigned) index >= orig.rank())
+			{
+				std::memcpy(dest, src, sizeof(T)*orig.n_elems());
+				return;
+			}
 			// REMEMBER that ts is the resulting shape, not the original shape
 			// both above and below values are calculations based on the original shape
 			// original shape
-			tensorshape orig = a->get_shape();
-			assert((unsigned) index < orig.rank());
 			std::vector<size_t> tv = orig.as_list();
 			size_t idx_val = tv[index];
 			// below for compression calculates all elements below the index dimension
@@ -203,11 +207,20 @@ varptr<T> compress (const varptr<T> a, int index,
 		shaper =
 		[index](std::vector<tensorshape> shapes)
 		{
-			tensorshape ts = shapes[0];
+			tensorshape& ts = shapes[0];
 			ts.assert_is_fully_defined();
-			assert((unsigned) index < ts.rank());
+
+			size_t srank = ts.rank();
+			if ((unsigned) index >= srank)
+			{
+				return ts;
+			}
 			std::vector<size_t> tv = ts.as_list();
-			if (0 == index)
+			if (1 == srank)
+			{
+				tv[0] = 1;
+			}
+			else if (0 == index)
 			{ // pop front
 				tv.front() = std::move(tv.back());
 				tv.pop_back();
@@ -220,13 +233,13 @@ varptr<T> compress (const varptr<T> a, int index,
 			{
 				tv[index] = 1;
 			}
-			return tv;
+			return tensorshape(tv);
 		};
 	}
 	else
 	{
 		gatherer =
-		[collector, a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
+		[collector](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 		{
 			dest[0] = collector(std::vector<T>(args[0], args[0]+shape.n_elems()));
 		};
@@ -273,7 +286,7 @@ varptr<T> reduce_mean (const varptr<T> a, int dimension)
 
 template <typename T>
 varptr<T> arg_compress (const varptr<T> a, int dimension,
-	std::function<bool(T,T)> compare)
+	std::function<size_t(const std::vector<T>&)> search)
 {
 	if (nullptr == a) return nullptr;
 	FORWARD_OP<T> gatherer;
@@ -281,14 +294,17 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 	if (dimension >= 0)
 	{
 		gatherer =
-		[a, dimension, compare](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>&)
+		[dimension, search](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
 			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
 			// both above and below values are calculations based on the original shape
 			// original shape
-			tensorshape orig = a->get_shape();
-			assert((unsigned) dimension < orig.rank());
+			tensorshape& orig = inshapes[0];
+			if ((unsigned) dimension >= orig.rank())
+			{
+				throw std::exception();
+			}
 			std::vector<size_t> tv = orig.as_list();
 			size_t idx_val = tv[dimension];
 			// below for compression calculates all elements below the index dimension
@@ -309,18 +325,12 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 				{
 					// apply compression to each element along idx_val dimension
 					size_t dest_idx = j + i * below;
-					size_t idx = 0;
-					T val = src[j + i * below * idx_val];
-					for (size_t k = 1; k < idx_val; k++)
+					std::vector<T> vals;
+					for (size_t k = 0; k < idx_val; k++)
 					{
-						T temp = src[j + k * below + i * below * idx_val];
-						if (compare(temp, val))
-						{
-							idx = k;
-							val = temp;
-						}
+						vals.push_back(src[j + k * below + i * below * idx_val]);
 					}
-					dest[dest_idx] = (T)idx;
+					dest[dest_idx] = (T)search(vals);
 				}
 			}
 		};
@@ -329,7 +339,10 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 		{
 			tensorshape ts = shapes[0];
 			ts.assert_is_fully_defined();
-			assert((unsigned) dimension < ts.rank());
+			if ((unsigned) dimension >= ts.rank())
+			{
+				throw std::exception();
+			}
 			std::vector<size_t> tv = ts.as_list();
 			if (0 == dimension)
 			{ // pop front
@@ -350,32 +363,23 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 	else
 	{
 		gatherer =
-		[compare, a](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
+		[search](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
+			tensorshape& shape = inshapes[0];
 			const T* indata = args[0];
-			tensorshape& ins = inshapes[0];
-			T val = indata[0];
-			size_t idx = 0;
-			for (size_t i = 1, n = ins.n_elems(); i < n; i++)
-			{
-				if (compare(indata[i], val))
-				{
-					val = indata[i];
-					idx = i;
-				}
-			}
-			std::vector<size_t> coord = ins.coordinate_from_idx(idx);
+			size_t idx = search(std::vector<T>(indata[0], indata[0]+shape.n_elems()));
+			std::vector<size_t> coord = shape.coordinate_from_idx(idx);
 			std::vector<T> tcoord(coord.begin(), coord.end());
-			memcpy(dest, &tcoord[0], ins.rank() * sizeof(T));
+			memcpy(dest, &tcoord[0], tcoord.size() * sizeof(T));
 		};
 		// scalar shape
 		shaper = [](std::vector<tensorshape> inshapes) { return std::vector<size_t>{inshapes[0].rank()}; };
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
-	[dimension, compare](std::vector<inode<T>*> args, variable<T>* leaf)
+	[dimension, search](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, compare);
+		return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, search);
 	}, "argcompress");
 }
 
@@ -383,9 +387,10 @@ template <typename T>
 varptr<T> arg_max (const varptr<T> a, int dimension)
 {
 	return arg_compress<T>(a, dimension,
-	[](T bigger, T smaller)
+	[](const std::vector<T>& vec) -> size_t
 	{
-		return bigger > smaller;
+		auto mit = std::max_element(vec.begin(), vec.end());
+		return std::distance(vec.begin(), mit);
 	});
 }
 

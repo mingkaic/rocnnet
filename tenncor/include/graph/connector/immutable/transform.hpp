@@ -63,7 +63,7 @@ varptr<T> reduce_mean (const varptr<T> a, int dimension = -1);
 //! takes left argument of compare if compare evaluates to true
 template <typename T>
 varptr<T> arg_compress (const varptr<T> a, int dimension,
-	std::function<bool(T,T)> compare);
+	std::function<size_t(const std::vector<T>&)> compare);
 
 //! obtains the indices of the maximum value across specified dimension
 //! -1 index looks returns a vector coordinate specifying max value in tensor a

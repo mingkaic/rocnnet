@@ -99,7 +99,7 @@ template varptr<double> reduce_sum (const varptr<double> a, int dimension = -1);
 template varptr<double> reduce_mean (const varptr<double> a, int dimension = -1);
 
 template varptr<double> arg_compress (const varptr<double> a, int dimension,
-	std::function<bool(double,double)> compare);
+	std::function<size_t(const std::vector<double>&)> compare);
 
 template varptr<double> arg_max (const varptr<double> a, int dimension = -1);
 
