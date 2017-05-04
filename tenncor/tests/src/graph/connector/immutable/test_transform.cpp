@@ -51,6 +51,13 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 		ASSERT_NE(nullptr, vartens);
 		ASSERT_TRUE(vartens->is_alloc());
 	}
+	varptr<double> res = func(varptr<double>(&var), paramer(shape));
+	{
+		const nnet::tensor<double>* restens = res->get_eval();
+		ASSERT_NE(nullptr, restens);
+		ASSERT_TRUE(restens->is_alloc());
+	}
+
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> expectout = expect_transfer(expose(&var), shape);
 	tensorshape gradoshape = grad_shape(var.get_gradient(&var)->get_shape());
@@ -60,17 +67,11 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 		ASSERT_NE(nullptr, vgradtens);
 		ASSERT_TRUE(vgradtens->is_alloc());
 	}
-	std::vector<double> gradout = grad_transfer(expose(vgrad), shape);
+	std::vector<double> gradout = grad_transfer(expose(vgrad), vgrad->get_shape());
 
 	// Behavior K000
 	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), paramer(shape)));
 
-	varptr<double> res = func(varptr<double>(&var), paramer(shape));
-	{
-		const nnet::tensor<double>* restens = res->get_eval();
-		ASSERT_NE(nullptr, restens);
-		ASSERT_TRUE(restens->is_alloc());
-	}
 	// test forward
 	tensorshape outshape = res->get_shape();
 	std::vector<double> rout = expose<double>(res);
@@ -184,125 +185,109 @@ TEST(TRANSFORM, Fit_K002)
 }
 
 
-//TEST(TRANSFORM, Extend)
-//{
-//	FUZZ::delim();
-//	placeholder<double> A((std::vector<size_t>{2, 1, 2}), "a");
-//	placeholder<double> B((std::vector<size_t>{2, 2, 1}), "b");
-//	placeholder<double> C((std::vector<size_t>{2, 2, 2}), "c");
-//
-//	std::vector<double> t1 = {
-//		0.4, 0.9,
-//		1.2, 3.1,
-//	};
-//	std::vector<double> t2 = {
-//		// layer 1
-//		0.4, 0.9,
-//		1.2, 3.1,
-//		// layer 2
-//		1.9, 1.0,
-//		2.5, 2.0,
-//	};
-//	std::vector<double> ex1 = {
-//		// layer 1
-//		0.4, 0.9, 0.4, 0.9,
-//		1.2, 3.1, 1.2, 3.1,
-//		// layer 2
-//		1.9, 1.0, 1.9, 1.0,
-//		2.5, 2.0, 2.5, 2.0,
-//	};
-//	std::vector<double> ex2 = {
-//		// layer 1
-//		0.4, 0.9,
-//		0.4, 0.9,
-//		// layer 2
-//		1.2, 3.1,
-//		1.2, 3.1,
-//	};
-//	std::vector<double> ex3 = {
-//		// layer 1
-//		0.4, 0.9,
-//		1.2, 3.1,
-//		// layer 2
-//		0.4, 0.9,
-//		1.2, 3.1,
-//	};
-//	std::vector<double> ex4 = {
-//		// layer A
-//		// layer 1
-//		0.4, 0.9,
-//		1.2, 3.1,
-//		// layer 2
-//		1.9, 1.0,
-//		2.5, 2.0,
-//		// layer B
-//		// layer 1
-//		0.4, 0.9,
-//		1.2, 3.1,
-//		// layer 2
-//		1.9, 1.0,
-//		2.5, 2.0,
-//	};
-//	A = t1;
-//	B = t1;
-//	C = t2;
-//
-//	varptr<double> e1 = extend<double>(&C, 0, 2);
-//	varptr<double> e2 = extend<double>(&A, 1, 2);
-//	varptr<double> e3 = extend<double>(&B, 2, 2);
-//	varptr<double> e4 = extend<double>(&C, 3, 2);
-//
-//	std::vector<double> raw = expose<double>(e1);
-//	std::vector<size_t> ts1 = e1->get_shape().as_list();
-//	ASSERT_EQ(3, ts1.size());
-//	ASSERT_EQ(4, ts1[0]);
-//	for (auto it = ++ts1.begin(); it != ts1.end(); it++)
-//	{
-//		ASSERT_EQ(2, *it);
-//	}
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(ex1[i], raw[i]);
-//	}
-//
-//	raw = expose<double>(e2);
-//	std::vector<size_t> ts2 = e2->get_shape().as_list();
-//	ASSERT_EQ(3, ts2.size());
-//	for (size_t s : ts2)
-//	{
-//		ASSERT_EQ(2, s);
-//	}
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(ex2[i], raw[i]);
-//	}
-//
-//	raw = expose<double>(e3);
-//	std::vector<size_t> ts3 = e3->get_shape().as_list();
-//	ASSERT_EQ(3, ts3.size());
-//	for (size_t s : ts3)
-//	{
-//		ASSERT_EQ(2, s);
-//	}
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(ex3[i], raw[i]);
-//	}
-//
-//	raw = expose<double>(e4);
-//	std::vector<size_t> ts4 = e4->get_shape().as_list();
-//	ASSERT_EQ(4, ts4.size());
-//	for (size_t s : ts4)
-//	{
-//		ASSERT_EQ(2, s);
-//	}
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(ex4[i], raw[i]);
-//	}
-//}
-//
-//
+TEST(TRANSFORM, Extend_K004To005)
+{
+	// K004
+	FUZZ::delim();
+	size_t extend_index;
+	size_t multiplier;
+	PARAM_EVAL<std::pair<size_t,size_t> > extendparam =
+	[&extend_index, &multiplier](tensorshape shape) -> std::pair<size_t,size_t>
+	{
+		size_t srank = shape.rank();
+		extend_index = FUZZ::getInt(1, "extend_index", {0, srank-1})[0];
+		multiplier = FUZZ::getInt(1, "multiplier", {2, 5})[0];
+		return {extend_index, multiplier};
+	};
+	DATA_CHANGE transfer =
+	[&extend_index, &multiplier](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	{
+		std::vector<size_t> invec = inshape.as_list();
+		std::vector<double> out;
+		size_t baselen = 1;
+		for (size_t i = 0; i <= extend_index; i++)
+		{
+			baselen *= invec[i];
+		}
+		auto it = in.begin();
+		auto et = in.end();
+		while (it != et)
+		{
+			for (size_t i = 0; i < multiplier; i++)
+			{
+				out.insert(out.end(), it, it+baselen);
+			}
+			it += baselen;
+		}
+		return out;
+	};
+	SHAPE_CHANGE shape =
+	[&extend_index, &multiplier](tensorshape inshape) -> tensorshape
+	{
+		std::vector<size_t> out = inshape.as_list();
+		out[extend_index] *= multiplier;
+		return out;
+	};
+	DATA_CHANGE grad_transfer =
+	[&extend_index, &multiplier](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	{
+		std::vector<size_t> invec = inshape.as_list();
+		std::vector<double> out;
+		size_t baselen = 1;
+		for (size_t i = 0; i <= extend_index && i < invec.size(); i++)
+		{
+			baselen *= invec[i];
+		}
+		auto it = in.begin();
+		auto et = in.end();
+		while (it != et)
+		{
+			for (size_t i = 0; i < multiplier; i++)
+			{
+				out.insert(out.end(), it, it+baselen);
+			}
+			it += baselen;
+		}
+		return out;
+	};
+	SHAPE_CHANGE grad_shape =
+	[&extend_index, &multiplier](tensorshape inshape) -> tensorshape
+	{
+		std::vector<size_t> out = inshape.as_list();
+		if (extend_index >= out.size())
+		{
+			size_t extra_dims = extend_index - out.size();
+			if (extra_dims)
+			{
+				out.insert(out.end(), extra_dims, 1);
+			}
+			out.push_back(multiplier);
+		}
+		return out;
+	};
+	unaryTransTest<std::pair<size_t,size_t> >({2, 13},
+	[](varptr<double> in, std::pair<size_t,size_t> idxnmult)
+	{
+		size_t index = idxnmult.first;
+		size_t multiplier = idxnmult.second;
+		return nnet::extend(in, index, multiplier);
+	},
+	transfer, shape, grad_transfer, grad_shape, extendparam);
+	// K005
+	tensorshape rshape = random_def_shape(2, 13);
+	rand_uniform<double> rinit(2, 12);
+	variable<double> var(rshape, rinit, "unar_var");
+	varptr<double> zaro = extend(varptr<double>(&var), extend_index, 0);
+	const tensor<double>* ztens = zaro->get_eval();
+	EXPECT_EQ((size_t) 1, ztens->get_shape().n_elems());
+	std::vector<double> zvec = ztens->expose();
+	ASSERT_EQ((size_t) 1, zvec.size());
+	EXPECT_EQ(0.0, zvec[0]);
+	varptr<double> same = extend(varptr<double>(&var), extend_index, 1);
+	EXPECT_EQ(&var, same.get());
+}
+
+
 //TEST(TRANSFORM, Compress)
 //{
 //	FUZZ::delim();

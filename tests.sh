@@ -10,6 +10,8 @@ assert_cmd() {
     eval $*
     if [ $? -ne 0 ]; then
         echo "Command $* failed"
+        cat fuzz.out
+        cat tenncortest_out.txt
         exit 1;
     fi
     return $!
@@ -29,10 +31,10 @@ cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
 cmake --build .
 
 # valgrind check
-on_travis assert_cmd "valgrind --tool=memcheck ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_repeat=5 --gtest_shuffle"
+on_travis assert_cmd "valgrind --tool=memcheck ${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_shuffle > tenncortest_out.txt"
 
 # tenncor tests
-on_travis assert_cmd "${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=50 --gtest_shuffle && cat fuzz.out"
+on_travis assert_cmd "${TRAVIS_BUILD_DIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=25 --gtest_shuffle > tenncortest_out.txt"
 
 # rocnnet demos
 on_travis assert_cmd "${TRAVIS_BUILD_DIR}/bin/bin/gd_demo $PBX_CACHE"
