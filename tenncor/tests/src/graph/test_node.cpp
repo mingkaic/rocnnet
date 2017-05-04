@@ -19,7 +19,7 @@
 // copy assignment and constructor
 TEST(NODE, Copy_B000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_node assign;
 
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
@@ -41,7 +41,7 @@ TEST(NODE, Copy_B000)
 // move assignment and constructor
 TEST(NODE, Move_B000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_node assign;
 
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
@@ -71,7 +71,7 @@ TEST(NODE, Move_B000)
 // get_uid
 TEST(NODE, UID_B001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::unordered_set<std::string> us;
 	size_t ns = FUZZ::getInt(1, "ns", {1412, 2922})[0];
 	for (size_t i = 0; i < ns; i++)
@@ -88,7 +88,7 @@ TEST(NODE, UID_B001)
 // get_label, get_name
 TEST(NODE, Label_B002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	mock_node n1(label1);
 

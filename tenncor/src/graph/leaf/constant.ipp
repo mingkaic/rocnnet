@@ -83,7 +83,8 @@ constant<T>::constant (T scalar) :
 
 template <typename T>
 constant<T>::constant (std::vector<T> raw, tensorshape shape) :
-	ileaf<T>(shape, nnutils::formatter() << raw.front() << ".." << raw.back())
+	ileaf<T>(shape, raw.empty() ? "<empty>" :
+		(nnutils::formatter() << raw.front() << ".." << raw.back()).str())
 {
 	zero = new constant<T>(0);
 	zero->is_managed_ = true;

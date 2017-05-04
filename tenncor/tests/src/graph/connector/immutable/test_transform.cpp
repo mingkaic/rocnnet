@@ -97,7 +97,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 
 TEST(TRANSFORM, Transpose_K001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	DATA_CHANGE transfer =
 	[](std::vector<double> in, tensorshape inshape) -> std::vector<double>
 	{
@@ -134,7 +134,7 @@ TEST(TRANSFORM, Transpose_K001)
 
 TEST(TRANSFORM, Fit_K002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	tensorshape realshape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
 	variable<double> shapeholder(realshape, rinit, "shapeholder");
@@ -188,7 +188,7 @@ TEST(TRANSFORM, Fit_K002)
 TEST(TRANSFORM, Extend_K004To005)
 {
 	// K004
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	size_t extend_index;
 	size_t multiplier;
 	PARAM_EVAL<std::pair<size_t,size_t> > extendparam =
@@ -294,7 +294,7 @@ TEST(TRANSFORM, Extend_K004To005)
 
 //TEST(TRANSFORM, Compress)
 //{
-//	FUZZ::delim();
+//	FUZZ::reset_logger();
 //	placeholder<double> A((std::vector<size_t>{5, 2}), "a");
 //	placeholder<double> B((std::vector<size_t>{2, 5}), "b");
 //	placeholder<double> C((std::vector<size_t>{2, 5, 2}), "c");

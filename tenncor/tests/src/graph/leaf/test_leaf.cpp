@@ -16,7 +16,7 @@
 // copy constructor and assignment
 TEST(LEAF, Copy_C000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_leaf assign("");
 	mock_leaf assign2("");
 	mock_leaf assign3("");
@@ -107,7 +107,7 @@ TEST(LEAF, Copy_C000)
 // move constructor and assignment
 TEST(LEAF, Move_C000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_leaf assign("");
 	mock_leaf assign2("");
 	mock_leaf assign3("");
@@ -196,7 +196,7 @@ TEST(LEAF, Move_C000)
 // covers ileaf get_shape
 TEST(LEAF, GetShape_C001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	std::string label2 = FUZZ::getString(FUZZ::getInt(1, "label2.size", {14, 29})[0], "label2");
 	tensorshape shape1 = random_shape();
@@ -219,7 +219,7 @@ TEST(LEAF, GetShape_C001)
 // covers ileaf get_eval
 TEST(LEAF, GetEval_C002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	std::string label2 = FUZZ::getString(FUZZ::getInt(1, "label2.size", {14, 29})[0], "label2");
 	tensorshape comp = random_def_shape();
@@ -245,7 +245,7 @@ TEST(LEAF, GetEval_C002)
 // covers ileaf good_status
 TEST(LEAF, GoodStatus_C003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0]);
 	std::string label2 = FUZZ::getString(FUZZ::getInt(1, "label2.size", {14, 29})[0]);
 	tensorshape comp = random_def_shape();

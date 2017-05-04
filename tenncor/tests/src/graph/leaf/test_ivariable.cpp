@@ -17,7 +17,7 @@
 
 TEST(IVARIABLE, Copy_E000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -55,7 +55,7 @@ TEST(IVARIABLE, Copy_E000)
 
 TEST(IVARIABLE, Move_E000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -103,7 +103,7 @@ TEST(IVARIABLE, Move_E000)
 
 TEST(IVARIABLE, Initialize_E001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -119,7 +119,7 @@ TEST(IVARIABLE, Initialize_E001)
 
 TEST(IVARIABLE, GetGradient_E002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
 	double c = FUZZ::getDouble(1, "c")[0];

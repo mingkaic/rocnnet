@@ -69,7 +69,7 @@ static tensorshape marked_shape (std::vector<tensorshape>)
 // operator ()
 TEST(HANDLER, Transfer_C000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	tensorshape c1 = random_def_shape();
 	tensorshape c2 = random_def_shape();
 	tensorshape resshape = c1.concatenate(c2);
@@ -108,7 +108,7 @@ TEST(HANDLER, Transfer_C000)
 // operator ()
 TEST(HANDLER, Constant_C001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
 	const_init<double> ci(scalar);
 	tensorshape shape = random_def_shape();
@@ -128,7 +128,7 @@ TEST(HANDLER, Constant_C001)
 // operator ()
 TEST(HANDLER, Random_C002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	double lo = FUZZ::getDouble(1, "lo", {127182, 12921231412323})[0];
 	double hi = lo+1;
 	double high = FUZZ::getDouble(1, "high", {lo*2, lo*3+50})[0];
@@ -160,7 +160,7 @@ TEST(HANDLER, Random_C002)
 // copy constructor and assignment
 TEST(HANDLER, Copy_C003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	SUPERMARK = 0;
 	transfer_func<double> tfassign(marked_shape, marked_forward);
 	const_init<double> ciassign(0);
@@ -246,7 +246,7 @@ TEST(HANDLER, Copy_C003)
 // move constructor and assignment
 TEST(HANDLER, Move_C003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	SUPERMARK = 0;
 	transfer_func<double> tfassign(marked_shape, marked_forward);
 	const_init<double> ciassign(0);

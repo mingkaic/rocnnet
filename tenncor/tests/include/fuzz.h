@@ -24,7 +24,7 @@ namespace FUZZ
 static const char* FUZZ_FILE = "fuzz.out";
 static std::ofstream fuzzLogger(FUZZ_FILE);
 
-void delim (void);
+void reset_logger (void);
 
 std::vector<double> getDouble (size_t len,
 	std::string purpose = "getDouble",

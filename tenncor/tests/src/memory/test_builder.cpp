@@ -32,7 +32,7 @@ static const size_t CHECK_ID = 111112;
 // singleton property
 TEST(ALLOC_BUILDER, Singleton_B000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	// same thread
 	alloc_builder& inst1 = alloc_builder::get_instance();
 	alloc_builder& inst2 = alloc_builder::get_instance();
@@ -55,7 +55,7 @@ TEST(ALLOC_BUILDER, Singleton_B000)
 // registertype
 TEST(ALLOC_BUILDER, Register_A001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	const size_t realsetter = SETTER_ID + SETTER_ITER;
 	alloc_builder& builder = alloc_builder::get_instance();
 
@@ -76,7 +76,7 @@ TEST(ALLOC_BUILDER, Register_A001)
 // get, depends on registertype
 TEST(ALLOC_BUILDER, Get_A002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(GETTER_ID);
@@ -105,7 +105,7 @@ TEST(ALLOC_BUILDER, Get_A002)
 // check registry
 TEST(ALLOC_BUILDER, Check_A003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	alloc_builder& builder = alloc_builder::get_instance();
 
 	builder.registertype<mock_allocator>(CHECK_ID);

@@ -21,7 +21,7 @@
 TEST(CONNECTOR, Copy_H000)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_connector* assign = new mock_connector({}, "");
 	mock_connector* assign2 = new mock_connector({}, "");
 	mock_connector* assign3 = new mock_connector({}, "");
@@ -122,7 +122,7 @@ TEST(CONNECTOR, Copy_H000)
 TEST(CONNECTOR, Move_H000)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_connector* assign = new mock_connector({}, "");
 	mock_connector* assign2 = new mock_connector({}, "");
 	mock_connector* assign3 = new mock_connector({}, "");
@@ -225,7 +225,7 @@ TEST(CONNECTOR, Move_H000)
 TEST(CONNECTOR, Name_H001)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	size_t nargs = FUZZ::getInt(1, "nargs", {2, 7})[0];
 	std::vector<inode<double>*> ns;
 	std::vector<size_t> nlens = FUZZ::getInt(nargs, "nlens", {14, 29});
@@ -257,7 +257,7 @@ TEST(CONNECTOR, Name_H001)
 TEST(CONNECTOR, Graph_H002)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string bossname = FUZZ::getString(FUZZ::getInt(1, "bossname.size", {14, 29})[0], "bossname");
@@ -300,7 +300,7 @@ TEST(CONNECTOR, Graph_H002)
 TEST(CONNECTOR, Descendent_H003)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string bossname = FUZZ::getString(FUZZ::getInt(1, "bossname.size", {14, 29})[0], "bossname");

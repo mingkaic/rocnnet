@@ -21,7 +21,7 @@
 // no audience, attach, detach
 TEST(REACT, CopySub_A000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject sassign1;
 	mock_subject sassign2;
 
@@ -61,7 +61,7 @@ TEST(REACT, CopySub_A000)
 // move constructor and assignment
 TEST(REACT, MoveSub_A000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject sassign1;
 	mock_subject sassign2;
 
@@ -106,7 +106,7 @@ TEST(REACT, MoveSub_A000)
 TEST(REACT, Notify_A001)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject s1;
 	mock_subject s2;
 	mock_observer o1(&s1, &s2);
@@ -148,7 +148,7 @@ TEST(REACT, Notify_A001)
 TEST(REACT, SUBDEATH_A002)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
 	mock_observer o1(s1, s2);
@@ -177,7 +177,7 @@ TEST(REACT, SUBDEATH_A002)
 // attach
 TEST(REACT, Attach_A003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_observer o1;
 	mock_observer o2;
 	mock_subject s1;
@@ -211,7 +211,7 @@ TEST(REACT, Attach_A003)
 // detach without index and with index
 TEST(REACT, Detach_A004)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject s1;
 	mock_subject s2;
 	mock_subject s3;
@@ -246,7 +246,7 @@ TEST(REACT, Detach_A004)
 TEST(REACT, ObsConstruct_A005)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
 	mock_observer2* o1 = new mock_observer2(s2);
@@ -281,7 +281,7 @@ TEST(REACT, ObsConstruct_A005)
 TEST(REACT, CopyObs_A006)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
 
@@ -341,7 +341,7 @@ TEST(REACT, CopyObs_A006)
 TEST(REACT, MoveObs_A006)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_observer2* sassign1 = new mock_observer2;
 	mock_observer2* sassign2 = new mock_observer2;
 
@@ -407,7 +407,7 @@ TEST(REACT, MoveObs_A006)
 TEST(REACT, AddDep_A007)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject* s1 = new mock_subject;
 	mock_subject* s2 = new mock_subject;
 	mock_observer2* o1 = new mock_observer2;
@@ -450,7 +450,7 @@ TEST(REACT, AddDep_A007)
 // remove_dependency
 TEST(REACT, RemDep_A008)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject2* s1 = new mock_subject2;
 	mock_subject2* s2 = new mock_subject2;
 	mock_observer2* o1 = new mock_observer2(s2);
@@ -483,7 +483,7 @@ TEST(REACT, RemDep_A008)
 TEST(REACT, RepDep_A009)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject2* s1 = new mock_subject2;
 	mock_subject2* s2 = new mock_subject2;
 	mock_observer2* o1 = new mock_observer2(s1);
@@ -515,7 +515,7 @@ TEST(REACT, RepDep_A009)
 TEST(REACT, ObsDeath_A010)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	mock_subject s1;
 	mock_subject2 s2;
 

@@ -24,7 +24,7 @@ using namespace nnet;
 // scalar, no init, and init constructors
 TEST(VARIABLE, Constructor_F000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0], "label1");
 	std::string label2 = FUZZ::getString(strns[1], "label2");
@@ -61,7 +61,7 @@ TEST(VARIABLE, Constructor_F000)
 // covers clone function
 TEST(VARIABLE, Copy_F001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0], "label1");
 	std::string label2 = FUZZ::getString(strns[1], "label2");
@@ -127,7 +127,7 @@ TEST(VARIABLE, Copy_F001)
 // covers move function
 TEST(VARIABLE, Move_F001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0], "label1");
 	std::string label2 = FUZZ::getString(strns[1], "label2");
@@ -216,7 +216,7 @@ TEST(VARIABLE, Move_F001)
 // set_initializer, initialize
 TEST(VARIABLE, SetInit_F002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0], "label1");
 	std::string label2 = FUZZ::getString(strns[1], "label2");
@@ -273,7 +273,7 @@ TEST(VARIABLE, SetInit_F002)
 // get_leaf
 TEST(VARIABLE, GetLeaf_F003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0], "label1");
 	std::string label2 = FUZZ::getString(strns[1], "label2");
@@ -324,7 +324,7 @@ TEST(VARIABLE, GetLeaf_F003)
 // get_leaves
 TEST(VARIABLE, GetLeaves_F004)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);
@@ -358,7 +358,7 @@ TEST(VARIABLE, GetLeaves_F004)
 TEST(VARIABLE, Initialize_F005)
 {
 	mocker::usage_.clear();
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<size_t> strns = FUZZ::getInt(5, "strns", {14, 29});
 	std::string label1 = FUZZ::getString(strns[0]);
 	std::string label2 = FUZZ::getString(strns[1]);

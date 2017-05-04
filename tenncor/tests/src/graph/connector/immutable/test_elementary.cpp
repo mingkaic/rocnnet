@@ -208,7 +208,7 @@ void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 
 TEST(ELEMENTARY, Abs_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return +in; },
 	[](double var) { return +var; },
@@ -218,7 +218,7 @@ TEST(ELEMENTARY, Abs_J000ToJ002)
 
 TEST(ELEMENTARY, Neg_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return -in; },
 	[](double var) { return -var; },
@@ -228,7 +228,7 @@ TEST(ELEMENTARY, Neg_J000ToJ002)
 
 TEST(ELEMENTARY, Sin_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return sin(in); },
 	[](double var) { return sin(var); },
@@ -238,7 +238,7 @@ TEST(ELEMENTARY, Sin_J000ToJ002)
 
 TEST(ELEMENTARY, Cos_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return cos(in); },
 	[](double var) { return cos(var); },
@@ -249,7 +249,7 @@ TEST(ELEMENTARY, Cos_J000ToJ002)
 
 TEST(ELEMENTARY, Tan_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return tan(in); },
 	[](double var) { return tan(var); },
@@ -263,7 +263,7 @@ TEST(ELEMENTARY, Tan_J000ToJ002)
 
 TEST(ELEMENTARY, Csc_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return csc(in); },
 	[](double var) { return 1/sin(var); },
@@ -276,7 +276,7 @@ TEST(ELEMENTARY, Csc_J000ToJ002)
 
 TEST(ELEMENTARY, Sec_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return sec(in); },
 	[](double var) { return 1/cos(var); },
@@ -286,7 +286,7 @@ TEST(ELEMENTARY, Sec_J000ToJ002)
 
 TEST(ELEMENTARY, Cot_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return cot(in); },
 	[](double var) { return cos(var) / sin(var); },
@@ -300,7 +300,7 @@ TEST(ELEMENTARY, Cot_J000ToJ002)
 
 TEST(ELEMENTARY, Exp_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	unaryElemTest(
 	[](varptr<double> in) { return exp(in); },
 	[](double var) { return exp(var); },
@@ -310,7 +310,7 @@ TEST(ELEMENTARY, Exp_J000ToJ002)
 
 // TEST(ELEMENTARY, Root_J000ToJ002)
 // {
-//FUZZ::delim();
+//FUZZ::reset_logger();
 // 	unaryElemTest(
 // 	[](varptr<double> in) { return root(in); },
 // 	[](double var) { return exp(var); });
@@ -319,7 +319,7 @@ TEST(ELEMENTARY, Exp_J000ToJ002)
 
 TEST(ELEMENTARY, ClipVal_J000ToJ002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::vector<double> limits = FUZZ::getDouble(2, "limits", {-100, 200});
 	double min = limits[0] > limits[1] ? limits[1] : limits[0];
 	double max = limits[0] > limits[1] ? limits[0] : limits[1];
@@ -342,7 +342,7 @@ TEST(ELEMENTARY, ClipVal_J000ToJ002)
 
 TEST(ELEMENTARY, Add_J000ToJ003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	binaryElemTest(
 	[](varptr<double> a, varptr<double> b) { return a+b; },
 	[](varptr<double> a, double b) { return a+b; },
@@ -374,7 +374,7 @@ TEST(ELEMENTARY, Add_J000ToJ003)
 
 TEST(ELEMENTARY, Sub_J000ToJ002_J004)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	binaryElemTest(
 	[](varptr<double> a, varptr<double> b) { return a-b; },
 	[](varptr<double> a, double b) { return a-b; },
@@ -423,7 +423,7 @@ TEST(ELEMENTARY, Sub_J000ToJ002_J004)
 
 TEST(ELEMENTARY, Mul_J000ToJ002_J005ToJ006)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	binaryElemTest(
 	[](varptr<double> a, varptr<double> b) { return a * b; },
 	[](varptr<double> a, double b) { return a * b; },
@@ -475,7 +475,7 @@ TEST(ELEMENTARY, Mul_J000ToJ002_J005ToJ006)
 
 TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	binaryElemTest(
 	[](varptr<double> a, varptr<double> b) { return a/b; },
 	[](varptr<double> a, double b) { return a/b; },
@@ -518,7 +518,7 @@ TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 
 // TEST(ELEMENTARY, Pow)
 // {
-//	FUZZ::delim();
+//	FUZZ::reset_logger();
 // 	unaryElemTest(
 // 	[](varptr<double> in) { return pow(in); },
 // 	[](double var) { return exp(var); });

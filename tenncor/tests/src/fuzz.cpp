@@ -7,7 +7,7 @@ namespace FUZZ
 
 static std::default_random_engine generator;
 
-void delim (void)
+void reset_logger (void)
 {
     fuzzLogger.close();
 	remove(FUZZ_FILE);

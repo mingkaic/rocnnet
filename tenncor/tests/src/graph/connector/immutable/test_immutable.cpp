@@ -40,7 +40,7 @@ static bool bottom_up (std::vector<iconnector<double>*> ordering)
 
 TEST(IMMUTABLE, Copy_I000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	immutable<double>* assign  = new mock_immutable({}, "");
 	immutable<double>* central = new mock_immutable({}, "");
 	const tensor<double>* res = central->get_eval();
@@ -69,7 +69,7 @@ TEST(IMMUTABLE, Copy_I000)
 
 TEST(IMMUTABLE, Move_I000)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	immutable<double>* assign  = new mock_immutable({}, "");
 	immutable<double>* central = new mock_immutable({}, "");
 	const tensor<double>* res = central->get_eval();
@@ -105,7 +105,7 @@ TEST(IMMUTABLE, Move_I000)
 
 TEST(IMMUTABLE, Descendent_I001)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string bossname = FUZZ::getString(FUZZ::getInt(1, "bossname.size", {14, 29})[0], "bossname");
@@ -149,7 +149,7 @@ TEST(IMMUTABLE, Descendent_I001)
 
 TEST(IMMUTABLE, Status_I002)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string conname3 = FUZZ::getString(FUZZ::getInt(1, "conname3.size", {14, 29})[0], "conname3");
@@ -199,7 +199,7 @@ TEST(IMMUTABLE, Status_I002)
 
 TEST(IMMUTABLE, Shape_I003)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string conname3 = FUZZ::getString(FUZZ::getInt(1, "conname3.size", {14, 29})[0], "conname3");
@@ -216,9 +216,9 @@ TEST(IMMUTABLE, Shape_I003)
 	mock_node* n4 = new mock_node(label4); // status is bad
 
 	// mock tensors initialize with random data...
-	tensorshape n1s = random_def_shape(2, 10, 17, 1372);
-	tensorshape n2s = random_def_shape(2, 10, 17, 1372);
-	tensorshape n3s = random_def_shape(2, 10, 17, 1372);
+	tensorshape n1s = random_def_shape(2, 10, 17, 4372);
+	tensorshape n2s = random_def_shape(2, 10, 17, 4372);
+	tensorshape n3s = random_def_shape(2, 10, 17, 4372);
 	n1->data_ = new mock_tensor(n1s);
 	n2->data_ = new mock_tensor(n2s);
 	n3->data_ = new mock_tensor(n3s);
@@ -279,7 +279,7 @@ TEST(IMMUTABLE, Shape_I003)
 
 TEST(IMMUTABLE, Tensor_I004)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
 	std::string conname3 = FUZZ::getString(FUZZ::getInt(1, "conname3.size", {14, 29})[0], "conname3");
@@ -392,7 +392,7 @@ TEST(IMMUTABLE, Tensor_I004)
 
 TEST(IMMUTABLE, ImmutableDeath_I005)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	size_t nnodes = FUZZ::getInt(1, "nnodes", {97, 152})[0];
 	std::unordered_set<immutable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
@@ -435,7 +435,7 @@ TEST(IMMUTABLE, ImmutableDeath_I005)
 
 TEST(IMMUTABLE, TemporaryEval_I006)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
 
 	std::unordered_set<inode<double>*> leaves;
@@ -525,7 +525,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 
 TEST(IMMUTABLE, GetLeaves_I007)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
 
 	std::unordered_set<variable<double>*> leaves;
@@ -584,7 +584,7 @@ TEST(IMMUTABLE, GetLeaves_I007)
 
 TEST(IMMUTABLE, GetLeaf_I008)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
@@ -662,7 +662,7 @@ TEST(IMMUTABLE, GetLeaf_I008)
 
 TEST(IMMUTABLE, GetGradient_I009)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 
 	tensorshape shape = random_def_shape();
 	double single_rando = FUZZ::getDouble(1, "single_rando", {1.1, 2.2})[0];
@@ -791,7 +791,7 @@ TEST(IMMUTABLE, GetGradient_I009)
 
 TEST(IMMUTABLE, Update_I010)
 {
-	FUZZ::delim();
+	FUZZ::reset_logger();
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 
