@@ -38,12 +38,7 @@ cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
 cmake --build .
 
 # valgrind check
-for _ in {1..5}
-do
-    echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_shuffle > ${ERRORLOG}"
-    echo "tenncortest valgrind check complete"
-done
+assert_cmd "valgrind --tool=memcheck ${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_shuffle"
 
 # tenncor tests
 for _ in {1..5}
