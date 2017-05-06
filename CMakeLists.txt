@@ -53,13 +53,17 @@ include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(rocnnet STATIC ${ROCNNET_SRC})
 target_link_libraries(rocnnet tenncor)
 
-#>>>>>>>>>>>>>>>>>>>> BUILD DEMO EXECUTABLE <<<<<<<<<<<<<<<<<<<<
+#>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
+# DEMO 1: gradient descent network
 if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
-add_executable(gd_demo ${ROCNNET_DIR}/demo/gd_demo.cpp)
+add_executable(gd_demo ${PROJECT_SOURCE_DIR}/demo/gd_demo.cpp)
 target_link_libraries(gd_demo rocnnet)
+
+# DEMO 2: deep q network
+add_subdirectory(${ROCNNET_DIR}/ipython)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY FOR VISER <<<<<<<<<<<<<<<<<<<<
 set(IO_INCLUDE ${IO_DIR}/include)
