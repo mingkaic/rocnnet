@@ -3,17 +3,22 @@
 //
 
 #include "dqn_agent.hpp"
+
+#ifdef ROCNNET_DQN_AGENT_HPP
+
+
 #include "dq_net.hpp"
 
+
 dqn_agent::dqn_agent (unsigned int n_input,
-	std::vector<unsigned int> nhiddens,
+	std::vector<unsigned int> hiddensizes,
 	double learning_rate,
 	std::string name)
 {
 	std::vector<rocnnet::IN_PAIR> hiddens;
-	for (unsigned int hid : nhiddens)
+	for (unsigned hid_size : hiddensizes)
 	{
-		hiddens.push_back({hid, nnet::sigmoid<double>});
+		hiddens.push_back({hid_size, nnet::sigmoid<double>});
 	}
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = learning_rate;
@@ -29,20 +34,20 @@ dqn_agent::~dqn_agent (void)
 }
 
 
-std::vector<double> dqn_agent::action (std::vector<double>& input)
+std::vector<double> dqn_agent::action (std::vector<double> input)
 {
 	rocnnet::dq_net* netbrain = (rocnnet::dq_net*)brain_;
 	return netbrain->action(input);
 }
 
 
-void dqn_agent::store (std::vector<double> observation,
+void dqn_agent::store (std::vector<double> observations,
 	unsigned int action_idx,
 	double reward,
 	std::vector<double> new_obs)
 {
 	rocnnet::dq_net* netbrain = (rocnnet::dq_net*)brain_;
-	netbrain->store(observation, action_idx, reward, new_obs);
+	netbrain->store(observations, action_idx, reward, new_obs);
 }
 
 
@@ -65,3 +70,6 @@ bool dqn_agent::save (std::string ofile) const
 	rocnnet::dq_net* netbrain = (rocnnet::dq_net*)brain_;
 	return netbrain->save(ofile);
 }
+
+
+#endif

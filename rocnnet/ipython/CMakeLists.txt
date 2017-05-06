@@ -14,8 +14,9 @@ include_directories(${PYTHON_INCLUDE_PATH} ${ROCNNET_INCLUDE} ${CMAKE_CURRENT_SO
 
 set(CMAKE_SWIG_FLAGS "-keyword")
 set(IFILE dqn_module.i)
-set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/python)
+# output must be same as library output to ensure .so and .py wrapping interface are together
+set(CMAKE_SWIG_OUTDIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 set_source_files_properties(${IFILE} PROPERTIES CPLUSPLUS ON)
 swig_add_module(dqn python ${IFILE} dqn_agent.cpp)
-swig_link_libraries(dqn ${PYTHON_LIBRARIES} rocnnet)
+swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})

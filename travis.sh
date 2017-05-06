@@ -56,9 +56,15 @@ fi
 # install protobuf3
 exec_cmd "pushd $PROTODIR && make install && popd"
 
+# install swig
+exec_cmd "apt-get update && apt-get install -y swig"
+
+# install PythonLibs
+exec_cmd "apt-get install -y python-dev"
+
 # ===== tests and analysis tools =====
 
-# download googletest (and gmock) and cachen if necessary
+# download googletest (and gmock) and cache if necessary
 if [ ! -d $GTESTDIR/ ]; then
     echo "Not Found: $GTESTDIR/"
     exec_cmd "pushd $1/ && wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && popd";

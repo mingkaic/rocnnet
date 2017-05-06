@@ -4,7 +4,10 @@ project(rocnnet C CXX)
 find_package(Threads REQUIRED)
 option(LCOVERAGE "Evaluate Coverage" ON)
 
-set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
+# turn off if swig is not set up correctly (setup is not trivial for all machines)
+option(SWIG_DQN "Train and test DQN on python" ON)
+
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -14,7 +17,7 @@ set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
 
 set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
@@ -42,28 +45,46 @@ if(BUILD_DOC)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
+set(TENNCOR_LIB tenncor)
 set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
+set(ROCNNET_SLIB rocnnet_static)
+set(ROCNNET_DLIB rocnnet_shared)
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)
 FILE(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
 
 include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
-add_library(rocnnet STATIC ${ROCNNET_SRC})
-target_link_libraries(rocnnet tenncor)
+add_library(${ROCNNET_SLIB} STATIC ${ROCNNET_SRC})
+target_link_libraries(${ROCNNET_SLIB} ${TENNCOR_LIB})
+
+include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
+add_library(${ROCNNET_DLIB} SHARED ${ROCNNET_SRC})
+target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
+set(DEMODIR ${PROJECT_SOURCE_DIR}/demo)
 # DEMO 1: gradient descent network
 if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
-add_executable(gd_demo ${PROJECT_SOURCE_DIR}/demo/gd_demo.cpp)
-target_link_libraries(gd_demo rocnnet)
+add_executable(gd_demo ${DEMODIR}/gd_demo.cpp)
+target_link_libraries(gd_demo ${ROCNNET_SLIB})
 
-# DEMO 2: deep q network
-add_subdirectory(${ROCNNET_DIR}/ipython)
+# DEMO 2.0: c++ deep q network rudimentary test
+if (LCOVERAGE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+endif(LCOVERAGE)
+include_directories(${ROCNNET_INCLUDE})
+add_executable(dq_demo ${DEMODIR}/dq_demo.cpp)
+target_link_libraries(dq_demo ${ROCNNET_SLIB})
+
+if (SWIG_DQN)
+	# DEMO 2.1: pythonize deep q network with swig
+	add_subdirectory(${ROCNNET_DIR}/ipython)
+endif()
 
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR_IO LIBRARY FOR VISER <<<<<<<<<<<<<<<<<<<<
 set(IO_INCLUDE ${IO_DIR}/include)

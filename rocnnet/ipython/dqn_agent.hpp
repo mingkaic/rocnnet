@@ -7,21 +7,22 @@
 
 
 #include <vector>
+#include <string>
 
 
 struct dqn_agent
 {
 	// builds dq_net using sigmoid activations, vanilla gradient descent and default parameters
-	dqn_agent (unsigned int n_input,
-		std::vector<unsigned int> nhiddens,
+	dqn_agent (unsigned int n_input, 
+		std::vector<unsigned int> hiddensizes,
 		double learning_rate,
 		std::string name);
 
 	~dqn_agent (void);
 
-	std::vector<double> action (std::vector<double>& input);
+	std::vector<double> action (std::vector<double> input);
 
-	void store (std::vector<double> observation,
+	void store (std::vector<double> observations,
 		unsigned int action_idx,
 		double reward,
 		std::vector<double> new_obs);
