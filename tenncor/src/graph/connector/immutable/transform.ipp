@@ -76,7 +76,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		return fit(varptr<T>(args.front()->get_leaf(leaf)), watch);
-	}, "fit", true);
+	}, "fit", watch);
 }
 
 template <typename T>

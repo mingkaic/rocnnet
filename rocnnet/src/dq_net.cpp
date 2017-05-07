@@ -190,6 +190,8 @@ void dq_net::tear_down (void)
 
 void dq_net::copy_helper (const dq_net& other, std::string scope)
 {
+	updater_ = other.updater_->clone();
+	updater_->clear_ignore();
 	n_input_ = other.n_input_;
 	n_input_ = other.n_input_;
 	params_  = other.params_;
@@ -214,6 +216,8 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 
 void dq_net::move_helper (dq_net&& other, std::string scope)
 {
+	updater_ = other.updater_->move();
+	updater_->clear_ignore();
 	n_input_ = std::move(other.n_input_);
 	n_input_ = std::move(other.n_input_);
 	params_  = std::move(other.params_);

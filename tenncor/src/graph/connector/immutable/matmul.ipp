@@ -132,8 +132,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 }, "matmul"),
 transposeA_(transposeA), transposeB_(transposeB)
 {
-	this->jacobians_.list_.push_back(
-	[a, b, transposeA, transposeB](
+	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
 		varptr<T> grada = a->get_leaf(wrt);
@@ -148,7 +147,15 @@ transposeA_(transposeA), transposeB_(transposeB)
 		varptr<T> mA = new matmul<T>(root, b, transposeA, !transposeB);
 		varptr<T> mB = new matmul<T>(a, root, !transposeA, transposeB);
 		return mA * grada + mB * gradb;
-	});
+	};
+
+	typename inode<T>::GRAD_CACHE leaves;
+	this->get_leaves(leaves);
+	for (auto leaf_pair : leaves)
+	{
+		variable<T>* leaf = leaf_pair.first;
+		this->jacobians_[leaf].list_.push_back(jtrans);
+	}
 }
 
 template <typename T>

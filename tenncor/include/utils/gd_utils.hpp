@@ -25,8 +25,9 @@ varptr<T> grad_identity (varptr<T> grad, variable<T>*)
 
 //! gradient descent algorithm abstraction
 template <typename T>
-struct gd_updater
+class gd_updater
 {
+public:
 	virtual ~gd_updater(void) {}
 
 	gd_updater<T>* clone (void) { return clone_impl(); }
@@ -62,6 +63,8 @@ struct gd_updater
 		}
 	}
 
+	void clear_ignore (void) { ignored_.clear(); }
+
 	double learning_rate_ = 0.5;
 
 protected:
@@ -77,22 +80,17 @@ private:
 };
 
 //! vanilla gradient descent algorithm
-struct vgb_updater : gd_updater<double>
+class vgb_updater : public gd_updater<double>
 {
-	vgb_updater* clone (void) { return static_cast<vgb_updater*>(clone_impl()); }
+public:
+	vgb_updater* clone (void);
 
-	vgb_updater* move (void) { return static_cast<vgb_updater*>(move_impl()); }
+	vgb_updater* move (void);
 
 protected:
-	virtual gd_updater<double>* clone_impl (void)
-	{
-		return new vgb_updater(*this);
-	}
+	virtual gd_updater<double>* clone_impl (void);
 
-	virtual gd_updater<double>* move_impl (void)
-	{
-		return new vgb_updater(std::move(*this));
-	}
+	virtual gd_updater<double>* move_impl (void);
 
 	virtual variable_updater<double> process_update (varptr<double>& gres,
 		variable<double>* leaf, grad_process<double> intermediate_process);
@@ -110,29 +108,20 @@ protected:
 // Nestrov momentum:
 // 1. delta(var) = velocity_t-1, update by gd
 // 2. velocity_t = discount * velocity_(t-1) - learning * J'[v]
-struct momentum_updater : gd_updater<double>
+class momentum_updater : public gd_updater<double>
 {
-	momentum_updater* clone (void) { return static_cast<momentum_updater*>(clone_impl()); }
+public:
+	momentum_updater* clone (void);
 
-	momentum_updater* move (void) { return static_cast<momentum_updater*>(move_impl()); }
+	momentum_updater* move (void);
 
 protected:
-	virtual gd_updater<double>* clone_impl (void)
-	{
-		return new momentum_updater(*this);
-	}
+	virtual gd_updater<double>* clone_impl (void);
 
-	virtual gd_updater<double>* move_impl (void)
-	{
-		return new momentum_updater(std::move(*this));
-	}
+	virtual gd_updater<double>* move_impl (void);
 
-	virtual variable_updater<double> process_update (varptr<double>& /*gres*/,
-		variable<double>* /*leaf*/, grad_process<double> /*intermediate_process*/)
-	{
-		throw std::bad_function_call();
-		return [](void) {};
-	}
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process<double> intermediate_process);
 };
 
 // Separate adaptive learning rates
@@ -141,60 +130,43 @@ protected:
 // if J'[v]_t * J'[v]_(t-1) > 0:
 // then local_gain[v] += 0.05
 // else local_gain[v] *= 0.95
-struct adadelta_updater : gd_updater<double>
+class adadelta_updater : public gd_updater<double>
 {
-	adadelta_updater* clone (void) { return static_cast<adadelta_updater*>(clone_impl()); }
+public:
+	adadelta_updater* clone (void);
 
-	adadelta_updater* move (void) { return static_cast<adadelta_updater*>(move_impl()); }
+	adadelta_updater* move (void);
 
 	double rho_ = 0.95;
 
 	double epsilon_ = std::numeric_limits<double>::epsilon();
 
 protected:
-	virtual gd_updater<double>* clone_impl (void)
-	{
-		return new adadelta_updater(*this);
-	}
+	virtual gd_updater<double>* clone_impl (void);
 
-	virtual gd_updater<double>* move_impl (void)
-	{
-		return new adadelta_updater(std::move(*this));
-	}
+	virtual gd_updater<double>* move_impl (void);
 
-	virtual variable_updater<double> process_update (varptr<double>& /*gres*/,
-		variable<double>* /*leaf*/, grad_process<double> /*intermediate_process*/)
-	{
-		throw std::bad_function_call();
-		return [](void) {};
-	}
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process<double> intermediate_process);
 };
 
-struct adagradupdater : gd_updater<double>
+// adaptive gradient
+class adagradupdater : public gd_updater<double>
 {
-	adagradupdater* clone (void) { return static_cast<adagradupdater*>(clone_impl()); }
+public:
+	adagradupdater* clone (void);
 
-	adagradupdater* move (void) { return static_cast<adagradupdater*>(move_impl()); }
+	adagradupdater* move (void);
 
 	double init_accum_ = 0.1;
 
 protected:
-	virtual gd_updater<double>* clone_impl (void)
-	{
-		return new adagradupdater(*this);
-	}
+	virtual gd_updater<double>* clone_impl (void);
 
-	virtual gd_updater<double>* move_impl (void)
-	{
-		return new adagradupdater(std::move(*this));
-	}
+	virtual gd_updater<double>* move_impl (void);
 
-	virtual variable_updater<double> process_update (varptr<double>& /*gres*/,
-		variable<double>* /*leaf*/, grad_process<double> /*intermediate_process*/)
-	{
-		throw std::bad_function_call();
-		return [](void) {};
-	}
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process<double> intermediate_process);
 };
 
 
@@ -202,11 +174,11 @@ protected:
 // rms_delta = J'(v)_t
 // rms_t = (1 - discount) * rms_t-1 + discount * rms_delta^2
 // delta(var) = v_t = learning * rms_delta / rms_t
-struct rmspropupdater : gd_updater<double>
+struct rmspropupdater : public gd_updater<double>
 {
-	rmspropupdater* clone (void) { return static_cast<rmspropupdater*>(clone_impl()); }
+	rmspropupdater* clone (void);
 
-	rmspropupdater* move (void) { return static_cast<rmspropupdater*>(move_impl()); }
+	rmspropupdater* move (void);
 
 	double discount_factor_ = 0.9;
 
@@ -215,22 +187,12 @@ struct rmspropupdater : gd_updater<double>
 	double epsilon_ = std::numeric_limits<double>::epsilon();
 
 protected:
-	virtual gd_updater<double>* clone_impl (void)
-	{
-		return new rmspropupdater(*this);
-	}
+	virtual gd_updater<double>* clone_impl (void);
 
-	virtual gd_updater<double>* move_impl (void)
-	{
-		return new rmspropupdater(std::move(*this));
-	}
+	virtual gd_updater<double>* move_impl (void);
 
-	virtual variable_updater<double> process_update (varptr<double>& /*gres*/,
-		variable<double>* /*leaf*/, grad_process<double> /*intermediate_process*/)
-	{
-		throw std::bad_function_call();
-		return [](void) {};
-	}
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process<double> intermediate_process);
 };
 
 }
