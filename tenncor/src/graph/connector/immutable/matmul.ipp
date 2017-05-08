@@ -95,6 +95,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		}
 	}
 	// warn user
+	std::cout << "warning: matmul shapes do not match" << std::endl;
 	return tensorshape();
 },
 [this](T* out, const tensorshape& outs, std::vector<const T*>& in, std::vector<tensorshape>&)

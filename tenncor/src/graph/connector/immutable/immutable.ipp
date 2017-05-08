@@ -121,7 +121,7 @@ void immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) 
 template <typename T>
 bool immutable<T>::good_status (void) const
 {
-	return data_ != nullptr;
+	return data_ != nullptr && data_->is_alloc();
 }
 
 template <typename T>

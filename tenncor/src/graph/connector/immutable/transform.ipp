@@ -75,7 +75,8 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return fit(varptr<T>(args.front()->get_leaf(leaf)), watch);
+		return args.front()->get_leaf(leaf);
+		// return fit(varptr<T>(args.front()->get_leaf(leaf)), watch);
 	}, "fit", watch);
 }
 
@@ -149,7 +150,8 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	},
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return extend(varptr<T>(args.front()->get_leaf(leaf)), index, multiplier);
+		return args.front()->get_leaf(leaf);
+		// return extend(varptr<T>(args.front()->get_leaf(leaf)), index, multiplier);
 	}, "extend");
 }
 
@@ -250,7 +252,8 @@ varptr<T> compress (const varptr<T> a, int index,
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 		[index, collector](std::vector<inode<T>*> args, variable<T>* leaf)
 		{
-			return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);
+			return args.front()->get_leaf(leaf);
+			// return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);
 		}, "compress");
 }
 
@@ -379,7 +382,8 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 	[dimension, search](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, search);
+		return args.front()->get_leaf(leaf);
+		// return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, search);
 	}, "argcompress");
 }
 

@@ -13,6 +13,7 @@
 dqn_agent::dqn_agent (unsigned int n_input,
 	std::vector<unsigned int> hiddensizes,
 	double learning_rate,
+	unsigned int mini_batch_size,
 	std::string name)
 {
 	std::vector<rocnnet::IN_PAIR> hiddens;
@@ -23,6 +24,7 @@ dqn_agent::dqn_agent (unsigned int n_input,
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = learning_rate;
 	rocnnet::dqn_param param;
+	param.mini_batch_size_ = mini_batch_size;
 	brain_ = new rocnnet::dq_net(n_input, hiddens, bgd, param, name);
 }
 
@@ -34,10 +36,10 @@ dqn_agent::~dqn_agent (void)
 }
 
 
-std::vector<double> dqn_agent::action (std::vector<double> input)
+unsigned int dqn_agent::action (std::vector<double> input)
 {
 	rocnnet::dq_net* netbrain = (rocnnet::dq_net*)brain_;
-	return netbrain->action(input);
+	return (unsigned int) netbrain->action(input);
 }
 
 

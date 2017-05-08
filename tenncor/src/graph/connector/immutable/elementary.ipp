@@ -340,6 +340,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 			l2norm += in[i] * in[i];
 		}
 		l2norm = std::sqrt(l2norm);
+		assert(l2norm != 0);
 		// clip
 		for (size_t i = 0; i < ns; i++)
 		{

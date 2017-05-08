@@ -16,11 +16,12 @@ struct dqn_agent
 	dqn_agent (unsigned int n_input, 
 		std::vector<unsigned int> hiddensizes,
 		double learning_rate,
+		unsigned int mini_batch_size,
 		std::string name);
 
 	~dqn_agent (void);
 
-	std::vector<double> action (std::vector<double> input);
+	unsigned int action (std::vector<double> input);
 
 	void store (std::vector<double> observations,
 		unsigned int action_idx,

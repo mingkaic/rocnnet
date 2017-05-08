@@ -7,6 +7,7 @@
 
 %include "std_vector.i"
 %include "std_string.i"
+
 namespace std {
    %template(IntVector) vector<unsigned int>;
    %template(DoubleVector) vector<double>;

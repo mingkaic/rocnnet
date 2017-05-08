@@ -22,9 +22,10 @@ updater_(updater.clone())
 	source_qnet_ = new ml_perceptron(n_input, hiddens, "source_"+scope);
 	target_qnet_ = source_qnet_->clone("target_"+scope);
 	n_output_ = hiddens.back().first;
-	input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 0}, "input");
+	input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 1}, "input");
 	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{n_output_, 0}, "output_mask");
 
+	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 0}, "input");
 	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 0}, "next_input");
 	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_output_mask");
 	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_reward");
@@ -64,19 +65,17 @@ dq_net& dq_net::operator = (dq_net&& other)
 	return *this;
 }
 
-std::vector<double> dq_net::action (std::vector<double>& input)
+double dq_net::action (std::vector<double>& input)
 {
 	actions_executed_++; // book keep
 	double exploration = linear_annealing(1.0);
 	// perform random exploration action
 	if (get_random() < exploration)
 	{
-		std::vector<double> act_score(n_output_);
-		std::generate(act_score.begin(), act_score.end(), [this](){ return get_random(); });
-		return act_score;
+		return std::floor(get_random() * n_output_);
 	}
 	*input_ = input;
-	return nnet::expose<double>(output_);
+	return nnet::expose<double>(best_output_)[0];
 }
 
 void dq_net::store (std::vector<double> observation, size_t action_idx,
@@ -133,7 +132,7 @@ void dq_net::train (void)
 		}
 
 		// enter processed batch data
-		*input_ = states;
+		*train_input_ = states;
 		*output_mask_ = action_mask;
 		*next_input_ = new_states;
 		*next_output_mask_ = new_states_mask;
@@ -151,7 +150,6 @@ void dq_net::train (void)
 			trainer();
 		}
 		error_->update_status(false); // update again
-
 		iteration_++;
 	}
 	n_train_called_++;
@@ -172,26 +170,47 @@ bool dq_net::save (std::string fname) const
 
 void dq_net::tear_down (void)
 {
+	// cascade delete all leaf nodes 
+	// (qnet for the variables, then local placeholders)
 	if (source_qnet_) delete source_qnet_;
 	if (target_qnet_) delete target_qnet_;
+	
 	if (input_) delete input_;
+	if (train_input_) delete train_input_;
 	if (output_mask_) delete output_mask_;
 	if (next_input_) delete next_input_;
 	if (next_output_mask_) delete next_output_mask_;
 	if (reward_) delete reward_;
+	
 	source_qnet_ = nullptr;
 	target_qnet_ = nullptr;
+	
+	// nullify leaf placeholders
 	input_ = nullptr;
+	train_input_ = nullptr;
 	output_mask_ = nullptr;
 	next_input_ = nullptr;
 	next_output_mask_ = nullptr;
 	reward_ = nullptr;
+	
+	// nullify graph roots
+	output_ = nullptr;
+	best_output_ = nullptr;
+	train_output_ = nullptr;
+	next_output_ = nullptr;
+	future_reward_ = nullptr;
+	score_ = nullptr;
+	error_ = nullptr;
+	
+	// clear updates
+	source_updates_.clear();
+	target_updates_.clear();
+	updater_ = nullptr;
 }
 
 void dq_net::copy_helper (const dq_net& other, std::string scope)
 {
-	updater_ = other.updater_->clone();
-	updater_->clear_ignore();
+	// copy over parameters
 	n_input_ = other.n_input_;
 	n_input_ = other.n_input_;
 	params_  = other.params_;
@@ -202,12 +221,17 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 	explore_ = other.explore_;
 	generator_ = other.generator_;
 
+	// copy over actors
 	tear_down();
+	updater_ = other.updater_->clone();
+	updater_->clear_ignore();
+	
 	source_qnet_ = other.source_qnet_->clone("source_"+scope);
 	target_qnet_ = other.target_qnet_->clone("target_"+scope);
 	input_ = other.input_->clone();
+	
+	train_input_ = other.train_input_->clone();
 	output_mask_ = other.output_mask_->clone();
-
 	next_input_ = other.next_input_->clone();
 	next_output_mask_ = other.next_output_mask_->clone();
 	reward_ = other.reward_->clone();
@@ -216,8 +240,7 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 
 void dq_net::move_helper (dq_net&& other, std::string scope)
 {
-	updater_ = other.updater_->move();
-	updater_->clear_ignore();
+	// move parameters
 	n_input_ = std::move(other.n_input_);
 	n_input_ = std::move(other.n_input_);
 	params_  = std::move(other.params_);
@@ -228,12 +251,17 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	explore_ = std::move(other.explore_);
 	generator_ = std::move(other.generator_);
 
+	// move over actors
 	tear_down();
+	updater_ = other.updater_->move();
+	updater_->clear_ignore();
+	
 	source_qnet_ = other.source_qnet_->move("source_"+scope);
 	target_qnet_ = other.target_qnet_->move("target_"+scope);
 	input_ = other.input_->move();
+	
+	train_input_ = other.train_input_->move();
 	output_mask_ = other.output_mask_->move();
-
 	next_input_ = other.next_input_->clone();
 	next_output_mask_ = other.next_output_mask_->move();
 	reward_ = other.reward_->move();
@@ -244,7 +272,10 @@ void dq_net::variable_setup (void)
 {
 	// output computation
 	output_ = (*source_qnet_)(input_);
-	best_output = nnet::arg_max(output_, 0);
+	best_output_ = nnet::arg_max(output_, 0);
+
+	// training input/output
+	train_output_ = (*source_qnet_)(train_input_);
 
 	// predict future reward
 	next_output_ = (*target_qnet_)(next_input_);
@@ -254,7 +285,7 @@ void dq_net::variable_setup (void)
 
 	// predict future error
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(
-		nnet::varptr<double>(output_) * nnet::varptr<double>(output_mask_), 0);
+		nnet::varptr<double>(train_output_) * nnet::varptr<double>(output_mask_), 0);
 	nnet::varptr<double> diff = masked_output_score - future_reward_;
 	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());

@@ -67,8 +67,8 @@ exec_cmd "apt-get install -y python-dev"
 # download googletest (and gmock) and cache if necessary
 if [ ! -d $GTESTDIR/ ]; then
     echo "Not Found: $GTESTDIR/"
-    exec_cmd "pushd $1/ && wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && popd";
-    exec_cmd "pushd $1/ && tar xf release-1.8.0.tar.gz && pushd $GTESTDIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd";
+    exec_cmd "pushd $1/ && wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && popd"
+    exec_cmd "pushd $1/ && tar xf release-1.8.0.tar.gz && pushd $GTESTDIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd"
 fi
 # move googletest to /usr
 exec_cmd "pushd $GTESTDIR && cp -a googlemock/include/gmock googletest/include/gtest /usr/include && popd"
@@ -85,3 +85,6 @@ make -C lcov-1.13/ install
 
 # download coverall-lconv (ruby)
 gem install coveralls-lcov
+
+# downlaod open-ai gym
+exec_cmd "pushd $1/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
