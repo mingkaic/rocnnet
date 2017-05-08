@@ -1,6 +1,7 @@
 // test dq_demo on c++ side
 
 #include "dq_net.hpp"
+#include "edgeinfo/comm_record.hpp"
 
 static std::default_random_engine generator;
 
@@ -44,6 +45,11 @@ int main (int argc, char** argv)
 	param.mini_batch_size_ = 10;
 	
 	rocnnet::dq_net untrained_dqn(n_in, hiddens, bgd, param, "untrained_dqn");
+
+#ifdef EDGE_RCD
+	rocnnet_record::erec::rec.to_csv<double>();
+#endif /* EDGE_RCD */
+
 	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
 	rocnnet::dq_net pretrained_dqn(n_in, hiddens, bgd, param, "pretrained_dqn");
 	untrained_dqn.initialize();

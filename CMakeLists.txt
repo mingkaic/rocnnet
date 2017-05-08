@@ -50,6 +50,11 @@ set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
+if (VIS_EDGE)
+	# visualize tenncor edges
+	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
+endif(VIS_EDGE)
+
 set(ROCNNET_SLIB rocnnet_static)
 set(ROCNNET_DLIB rocnnet_shared)
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)

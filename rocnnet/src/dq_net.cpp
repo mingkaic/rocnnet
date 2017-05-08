@@ -212,7 +212,7 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 {
 	// copy over parameters
 	n_input_ = other.n_input_;
-	n_input_ = other.n_input_;
+	n_output_ = other.n_output_;
 	params_  = other.params_;
 	actions_executed_ = other.actions_executed_;
 	iteration_ = other.iteration_;
@@ -242,7 +242,7 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 {
 	// move parameters
 	n_input_ = std::move(other.n_input_);
-	n_input_ = std::move(other.n_input_);
+	n_output_ = std::move(other.n_output_);
 	params_  = std::move(other.params_);
 	actions_executed_ = std::move(other.actions_executed_);
 	iteration_ = std::move(other.iteration_);

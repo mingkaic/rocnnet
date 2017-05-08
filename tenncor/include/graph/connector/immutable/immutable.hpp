@@ -119,8 +119,7 @@ protected:
 
 	//! list of jacobian transfer function
 	//! to be executed on resulting root node
-	//! execution order: front to back
-	//! insertion order: back to front
+	//! execution order: top-down
 	struct JList
 	{
 		JList (void) :

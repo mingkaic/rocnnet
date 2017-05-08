@@ -81,6 +81,11 @@ int main (int argc, char** argv)
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
 	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, n_batch}), "test_untrain_layerin");
+
+#ifdef EDGE_RCD
+	rocnnet_record::erec::rec.to_csv<double>();
+#endif /* EDGE_RCD */
+
 	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, n_batch}), "test_train_layerin");
 	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, n_batch}), "test_pretrain_layerin");
 	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
@@ -124,10 +129,6 @@ int main (int argc, char** argv)
 	trained_gdn->save(serialpath);
 	
 	delete trained_gdn;
-
-#ifdef EDGE_RCD
-	rocnnet_record::erec::rec.to_csv<double>();
-#endif /* EDGE_RCD */
 
 	return 0;
 }

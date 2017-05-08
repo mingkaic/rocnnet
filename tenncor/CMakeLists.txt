@@ -23,7 +23,7 @@ option(LCOVERAGE "Evaluate Coverage" ON)
 # enable modern c++
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # enable warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
@@ -31,6 +31,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
 if (VIS_EDGE)
 	# visualize tenncor edges
+	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
 	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 endif(VIS_EDGE)
 
