@@ -84,6 +84,8 @@ void perceptron::copy_helper (const perceptron& other, std::string scope)
 	this->scope = scope;
 	weights_ = other.weights_->clone();
 	bias_ = other.bias_->clone();
+	weights_->set_label(scope+"_weights");
+	bias_->set_label(scope+"_bias");
 }
 
 void perceptron::move_helper (perceptron&& other)

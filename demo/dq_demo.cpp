@@ -45,43 +45,54 @@ int main (int argc, char** argv)
 	param.mini_batch_size_ = 10;
 	
 	rocnnet::dq_net untrained_dqn(n_in, hiddens, bgd, param, "untrained_dqn");
-
-#ifdef EDGE_RCD
-	rocnnet_record::erec::rec.to_csv<double>();
-#endif /* EDGE_RCD */
+	untrained_dqn.initialize();
 
 	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
-	rocnnet::dq_net pretrained_dqn(n_in, hiddens, bgd, param, "pretrained_dqn");
-	untrained_dqn.initialize();
 	trained_dqn->initialize();
+
+	rocnnet::dq_net pretrained_dqn(n_in, hiddens, bgd, param, "pretrained_dqn");
 	pretrained_dqn.initialize(serialpath);
 	
 	// action and observations are randomly generated, so they're meaningless. 
 	// we're evaluating whether we hit any assertions/exceptions
-	std::vector<double> observations;
-	std::vector<double> new_observations;
-	double reward;
-	size_t action;
-	size_t n_observations = 4;
-	size_t n_actions = 2;
-	for (size_t i = 0; i < episode_count; i++)
+	int exit_code = 0;
+	try
 	{
-		observations = generate_observation(n_observations);
-		reward = 0;
-		for (size_t j = 0; j < max_steps; j++)
+		std::vector<double> observations;
+		std::vector<double> new_observations;
+		double reward;
+		size_t action;
+		size_t n_observations = 4;
+		size_t n_actions = 2;
+		for (size_t i = 0; i < episode_count; i++)
 		{
-			action = trained_dqn->action(observations);
-			new_observations = generate_observation(n_observations);
-			reward = generate_reward();
-			
-			trained_dqn->store(observations, action, reward, new_observations);
-			trained_dqn->train();
-			
-			observations = new_observations;
+			observations = generate_observation(n_observations);
+			reward = 0;
+			for (size_t j = 0; j < max_steps; j++)
+			{
+				action = trained_dqn->action(observations);
+				new_observations = generate_observation(n_observations);
+				reward = generate_reward();
+
+				trained_dqn->store(observations, action, reward, new_observations);
+				trained_dqn->train();
+
+				observations = new_observations;
+			}
 		}
+		exit_code = 0;
 	}
+	catch (std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		exit_code = 1;
+	}
+
+#ifdef EDGE_RCD
+	rocnnet_record::erec::rec.to_csv<double>();
+#endif /* EDGE_RCD */
 	
 	delete trained_dqn;
 
-	return 0;
+	return exit_code;
 }

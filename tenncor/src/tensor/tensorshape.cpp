@@ -239,20 +239,19 @@ tensorshape tensorshape::with_rank_at_most (size_t rank) const
 	return ds;
 }
 
-void print_shape (tensorshape ts)
+void print_shape (tensorshape ts, std::ostream& os)
 {
 	std::vector<size_t> shape = ts.as_list();
 	if (shape.empty())
 	{
-		std::cout << "undefined" << std::endl;
+		os << "undefined";
 	}
 	else
 	{
 		for (size_t dim : shape)
 		{
-			std::cout << dim << " ";
+			os << dim << " ";
 		}
-		std::cout << std::endl;
 	}
 }
 

@@ -116,7 +116,7 @@ private:
 };
 
 //! print a shape's dimension values
-void print_shape (tensorshape ts);
+void print_shape (tensorshape ts, std::ostream& os = std::cout);
 
 }
 

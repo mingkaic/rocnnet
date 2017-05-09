@@ -45,19 +45,16 @@ public:
 				nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector<T>*>(e.obs_);
 				nnet::inode<T>* sb = dynamic_cast<nnet::inode<T>*>(e.sub_);
 
-				std::string obname;
-				std::string sbname;
+				std::stringstream obstrm;
+				std::stringstream sbstrm;
 
 				if (verbose_)
 				{
-					obname = ob->get_name();
-					sbname = sb->get_name();
+					obstrm << ob->get_name();
+					sbstrm << sb->get_name();
 				}
 				else
 				{
-					obname = ob->get_label();
-					sbname = sb->get_label();
-
 					auto oit = num_corres.find(ob);
 					auto sit = num_corres.find(sb);
 
@@ -80,19 +77,27 @@ public:
 						sbidx = sit->second;
 					}
 
-					obname += '(' + std::to_string(obidx) + ')';
-					sbname += '(' + std::to_string(sbidx) + ')';
+					obstrm << '[' << obidx << ']' << ob->get_label();
+					sbstrm << '[' << sbidx << ']' << sb->get_label();
+				}
+				if (display_shape_)
+				{
+					obstrm << "(";
+					sbstrm << "(";
+					print_shape(ob->get_shape(), obstrm);
+					print_shape(sb->get_shape(), sbstrm);
+					obstrm << ")";
+					sbstrm << ")";
 				}
 
-				ofile << obname << ","
-					  << sbname << ","
-					  << e.sid_ << "\n";
+				ofile << obstrm.str() << "," << sbstrm.str() << "," << e.sid_ << "\n";
 			}
 		}
 		ofile.close();
 	}
 
 	bool verbose_ = false;
+	bool display_shape_ = true;
 
 private:
 	static ptr_record prec_;

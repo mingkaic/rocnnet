@@ -550,7 +550,6 @@ TEST(DERIVE, DISABLED_MatmulComplex)
 	grad.collect_grad(
 	[W1, W2, &w1vec, &w2vec](nnet::inode<double>* key, nnet::placeholder<double>* value)
 	{
-		nnet::print_shape(value->get_shape());
 		EXPECT_TRUE(key == W1 || key == W2);
 		if (key == W1)
 		{

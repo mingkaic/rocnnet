@@ -62,10 +62,12 @@ int main (int argc, char** argv)
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = 0.9;
 	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
-	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	untrained_gdn.initialize();
+
+	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
 	trained_gdn->initialize();
+
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	pretrained_gdn.initialize(serialpath);
 
 	// train mlp to output input
@@ -81,11 +83,6 @@ int main (int argc, char** argv)
 	std::cout << "training time: " << duration << " seconds" << std::endl;
 
 	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, n_batch}), "test_untrain_layerin");
-
-#ifdef EDGE_RCD
-	rocnnet_record::erec::rec.to_csv<double>();
-#endif /* EDGE_RCD */
-
 	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, n_batch}), "test_train_layerin");
 	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, n_batch}), "test_pretrain_layerin");
 	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
@@ -127,6 +124,10 @@ int main (int argc, char** argv)
 	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
 
 	trained_gdn->save(serialpath);
+
+#ifdef EDGE_RCD
+	rocnnet_record::erec::rec.to_csv<double>();
+#endif /* EDGE_RCD */
 	
 	delete trained_gdn;
 

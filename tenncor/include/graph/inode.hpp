@@ -84,8 +84,15 @@ public:
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
 
 	//! grab operational gradient node, used by other nodes
+	//! adds to internal caches if need be
 	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
-	
+
+	// >>>> META-DATA SETTER <<<<
+	//! set new label for this node
+	//! (mostly advised for leaf nodes,
+	//! since connectors should be informative enough)
+	void set_label (std::string label) { label_ = label; }
+
 	//! read tensor data from protobuf
 	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
 
