@@ -39,6 +39,10 @@ exec_cmd() {
 PROTODIR="$1/protobuf-3.2.0"
 GTESTDIR="$1/googletest-release-1.8.0"
 
+# ===== install installation dependencies =====
+sudo apt-get install ruby1.9.3
+gem1.9.1 --version
+
 # ===== build dependencies =====
 
 # install compilers
@@ -84,7 +88,7 @@ tar xf lcov_1.13.orig.tar.gz
 make -C lcov-1.13/ install
 
 # download coverall-lconv (ruby)
-gem install coveralls-lcov
+gem1.9.1 install coveralls-lcov
 
 # downlaod open-ai gym
 exec_cmd "pushd $2/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
