@@ -79,6 +79,7 @@ int main (int argc, char** argv)
 
 				observations = new_observations;
 			}
+			std::cout << "episode " << i << std::endl;
 		}
 		exit_code = 0;
 	}

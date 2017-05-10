@@ -84,10 +84,7 @@ public:
 	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
 	
 	//! calls shape transformer
-	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const
-	{
-		return shaper_(shapes);
-	}
+	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -98,10 +95,7 @@ protected:
 
 	//! calculate raw data using forward functor
 	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes) const
-	{
-		forward_(dest, outshape, srcs, inshapes);
-	}
+		std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes) const;
 
 	SHAPER shaper_; //! shape transformation
 	
@@ -123,11 +117,7 @@ public:
 	//! perform initialization
 	void operator () (tensor<T>& out) const;
 	
-	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const
-	{
-		if (shapes.empty()) return {};
-		return shapes[0];
-	}
+	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
 };
 
 //! Constant Initializer
@@ -153,11 +143,7 @@ protected:
 	
 	//! initialize data as constant
 	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>&, std::vector<tensorshape>&) const
-	{
-		size_t len = outshape.n_elems();
-		std::fill(dest, dest+len, value_);
-	}
+		std::vector<const T*>&, std::vector<tensorshape>&) const;
 		
 private:
 	T value_;

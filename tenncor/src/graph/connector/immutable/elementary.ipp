@@ -348,7 +348,11 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 			l2norm += in[i] * in[i];
 		}
 		l2norm = std::sqrt(l2norm);
-		assert(l2norm != 0);
+//		assert(l2norm != 0);
+		// if we have a 0 vector, we have no where to go
+		// which means we might as well not change anything
+		// todo: come up with a more elegant solution
+		if (l2norm == 0) return;
 		// clip
 		for (size_t i = 0; i < ns; i++)
 		{

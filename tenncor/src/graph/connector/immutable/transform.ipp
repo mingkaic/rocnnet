@@ -279,7 +279,7 @@ varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 	return compress<T>(a, dimension,
 	[](const std::vector<T>& values) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), 0);
+		return std::accumulate(values.begin(), values.end(), (T)0);
 	});
 }
 
@@ -289,7 +289,7 @@ varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 	return compress<T>(a, dimension,
 	[](const std::vector<T>& values) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), 0) / values.size();
+		return std::accumulate(values.begin(), values.end(), (T)0) / values.size();
 	});
 }
 

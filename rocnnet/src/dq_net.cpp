@@ -349,8 +349,9 @@ std::vector<dq_net::exp_batch> dq_net::random_sample (void)
 	std::iota(indices.begin(), indices.end(), 0);
 	std::random_shuffle(indices.begin(), indices.end());
 	std::vector<dq_net::exp_batch> res;
-	for (size_t idx : indices)
+	for (size_t i = 0; i < params_.mini_batch_size_; i++)
 	{
+		size_t idx = indices[i];
 		res.push_back(experiences_[idx]);
 	}
 	return res;

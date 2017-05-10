@@ -76,24 +76,61 @@ size_t tensorshape::rank (void) const
 
 bool tensorshape::is_compatible_with (const tensorshape& other) const
 {
-	bool incap = true;
+	bool incomp = true;
 	if (!dimensions_.empty() && !other.dimensions_.empty())
 	{
-		if (other.dimensions_.size() == dimensions_.size())
+		size_t thisn = dimensions_.size();
+		size_t othern = other.dimensions_.size();
+		size_t beginthis = 0;
+		size_t beginother = 0;
+		// invariant thisn and othern >= 1 (since dimensions are not empty)
+		size_t endthis = thisn-1;
+		size_t endother = othern-1;
+
+		if (thisn != othern)
 		{
-			for (size_t i = 0; i < dimensions_.size(); i++)
+			while (beginthis < thisn-1 && 1 == dimensions_[beginthis]) { beginthis++; }
+			while (endthis > beginthis && 1 == dimensions_[endthis]) { endthis--; }
+			while (beginother < othern-1 && 1 == other.dimensions_[beginother]) { beginother++; }
+			while (endother > beginother && 1 == other.dimensions_[endother]) { endother--; }
+			size_t lenthis = endthis - beginthis;
+			size_t lenother = endother - beginother;
+			if (lenthis > lenother)
 			{
-				incap = incap &&
-					(dimensions_[i] == other.dimensions_[i] ||
-					0 == (dimensions_[i] && other.dimensions_[i]));
+				// todo: improve this matching algorithm to account for cases where
+				// decrementing endthis before incrementing beginthis matches while the opposite order doesn't
+
+				// try to match this to other by searching for padding zeros to convert to 1 padding in this
+				while (endthis - beginthis > lenother && beginthis < endthis && 0 == dimensions_[beginthis]) { beginthis++; }
+				while (endthis - beginthis > lenother && endthis > beginthis && 0 == dimensions_[endthis]) { endthis--; }
+
+				if (endthis - beginthis > lenother)
+					// match unsuccessful, they are incompatible
+					return false;
+			}
+			else if (lenother > lenthis)
+			{
+				// try to match other to this by searching for padding zeros to convert to 1 padding in other
+				while (endother - beginother > lenthis && beginother < endother && 0 == other.dimensions_[beginother]) { beginother++; }
+				while (endother - beginother > lenthis && endother > beginother && 0 == other.dimensions_[endother]) { endother--; }
+
+				if (endother - beginother > lenthis)
+					// match unsuccessful, they are incompatible
+					return false;
 			}
 		}
-		else
+
+		// invariant: endthis - beginthis == endother - beginother
+		while (beginthis <= endthis && beginother <= endother)
 		{
-			incap = false;
+			incomp = incomp &&
+				(dimensions_[beginthis] == other.dimensions_[beginother] ||
+				0 == (dimensions_[beginthis] && other.dimensions_[beginother]));
+			beginthis++;
+			beginother++;
 		}
 	}
-	return incap;
+	return incomp;
 }
 
 bool tensorshape::is_part_defined (void) const
@@ -307,15 +344,15 @@ std::vector<size_t> tensorshape::memory_indices (size_t shapeidx) const
 		size_t multiplier = 1;
 		for (size_t i = 0; i < dim; i++)
 		{
-			multiplier *= dimensions_[i];
 			idx += multiplier * shapecoord[i];
+			multiplier *= dimensions_[i];
 		}
 		size_t lowermultiplier = multiplier;
 		multiplier *= groupsize;
 		for (size_t i = dim+1, n = dimensions_.size(); i < n; i++)
 		{
-			multiplier *= dimensions_[i];
 			idx += multiplier * shapecoord[i];
+			multiplier *= dimensions_[i];
 		}
 		// upper + lower = memory index with memory coord at dim = 0
 		for (size_t i = 0; i < groupsize; i++)

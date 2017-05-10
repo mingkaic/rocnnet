@@ -26,8 +26,7 @@ itensor_handler<T>* itensor_handler<T>::move (void)
 }
 
 template <typename T>
-void itensor_handler<T>::operator () (
-	tensor<T>& out,
+void itensor_handler<T>::operator () (tensor<T>& out,
 	std::vector<const tensor<T>*> args) const
 {
 	std::vector<tensorshape> ts;
@@ -65,6 +64,12 @@ transfer_func<T>::transfer_func (SHAPER shaper, FORWARD_OP<T> forward) :
 	shaper_(shaper), forward_(forward) {}
 
 template <typename T>
+tensorshape transfer_func<T>::calc_shape (std::vector<tensorshape> shapes) const
+{
+	return shaper_(shapes);
+}
+
+template <typename T>
 transfer_func<T>* transfer_func<T>::clone (void) const
 {
 	return static_cast<transfer_func<T>*>(clone_impl());
@@ -96,6 +101,13 @@ itensor_handler<T>* transfer_func<T>::move_impl (void)
 }
 
 template <typename T>
+void transfer_func<T>::calc_data (T* dest, const tensorshape& outshape,
+	std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes) const
+{
+	forward_(dest, outshape, srcs, inshapes);
+}
+
+template <typename T>
 initializer<T>* initializer<T>::clone (void) const
 {
 	return static_cast<initializer<T>*>(this->clone_impl());
@@ -111,6 +123,13 @@ template <typename T>
 void initializer<T>::operator () (tensor<T>& out) const
 {
 	itensor_handler<T>::operator ()(out, {&out});
+}
+
+template <typename T>
+tensorshape initializer<T>::calc_shape (std::vector<tensorshape> shapes) const
+{
+	if (shapes.empty()) return {};
+	return shapes[0];
 }
 
 template <typename T>
@@ -138,6 +157,14 @@ template <typename T>
 itensor_handler<T>* const_init<T>::move_impl (void)
 {
 	return new const_init(std::move(*this));
+}
+
+template <typename T>
+void const_init<T>::calc_data (T* dest, const tensorshape& outshape,
+	std::vector<const T*>&, std::vector<tensorshape>&) const
+{
+	size_t len = outshape.n_elems();
+	std::fill(dest, dest+len, value_);
 }
 
 template <typename T>
