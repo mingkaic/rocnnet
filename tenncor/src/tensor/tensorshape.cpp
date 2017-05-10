@@ -24,7 +24,12 @@ tensorshape& tensorshape::operator = (const std::vector<size_t>& dims)
 
 std::vector<size_t> tensorshape::as_list (void) const
 {
-	return dimensions_;
+	std::vector<size_t> sampleout = dimensions_;
+	if (dim_group_)
+	{
+		sampleout[(*dim_group_).first] = (*dim_group_).second;
+	}
+	return sampleout;
 }
 
 size_t tensorshape::n_elems (void) const
@@ -33,8 +38,13 @@ size_t tensorshape::n_elems (void) const
 	{
 		return 0;
 	}
-	return std::accumulate(dimensions_.begin(), dimensions_.end(),
+	size_t elems = std::accumulate(dimensions_.begin(), dimensions_.end(),
 	(size_t) 1, std::multiplies<size_t>());
+	if (dim_group_)
+	{
+		elems *= (*dim_group_).second;
+	}
+	return elems;
 }
 
 size_t tensorshape::n_known (void) const
@@ -43,7 +53,7 @@ size_t tensorshape::n_known (void) const
 	{
 		return 0;
 	}
-	return std::accumulate(dimensions_.begin(), dimensions_.end(),
+	size_t elems = std::accumulate(dimensions_.begin(), dimensions_.end(),
 	(size_t) 1,
 	[](size_t a, size_t b) {
 		if (b != 0)
@@ -52,6 +62,11 @@ size_t tensorshape::n_known (void) const
 		}
 		return a;
 	});
+	if (dim_group_)
+	{
+		elems *= (*dim_group_).second;
+	}
+	return elems;
 }
 
 size_t tensorshape::rank (void) const
@@ -278,6 +293,60 @@ std::vector<size_t> tensorshape::coordinate_from_idx (size_t idx) const
 		i = (i - xd) / d;
 	}
 	return coord;
+}
+
+std::vector<size_t> tensorshape::memory_indices (size_t shapeidx) const
+{
+	std::vector<size_t> outcoord;
+	if (dim_group_)
+	{
+		size_t dim = (*dim_group_).first;
+		size_t groupsize = (*dim_group_).second;
+		std::vector<size_t> shapecoord = coordinate_from_idx(shapeidx);
+		size_t idx = 0;
+		size_t multiplier = 1;
+		for (size_t i = 0; i < dim; i++)
+		{
+			multiplier *= dimensions_[i];
+			idx += multiplier * shapecoord[i];
+		}
+		size_t lowermultiplier = multiplier;
+		multiplier *= groupsize;
+		for (size_t i = dim+1, n = dimensions_.size(); i < n; i++)
+		{
+			multiplier *= dimensions_[i];
+			idx += multiplier * shapecoord[i];
+		}
+		// upper + lower = memory index with memory coord at dim = 0
+		for (size_t i = 0; i < groupsize; i++)
+		{
+			outcoord.push_back(idx + i * lowermultiplier);
+		}
+	}
+	else
+	{
+		outcoord = {shapeidx};
+	}
+	return outcoord;
+}
+
+std::vector<size_t> tensorshape::shape_dimensions (void) const
+{
+	return dimensions_;
+}
+
+bool tensorshape::is_grouped (void) const
+{
+	return (bool)dim_group_;
+}
+
+void tensorshape::group_dim (size_t dim)
+{
+	if (dim >= dimensions_.size()) return;
+	size_t dimvalue = dimensions_[dim];
+	if (dimvalue < 2) return;
+	dim_group_ = std::pair<size_t,size_t>{dim, dimvalue};
+	dimensions_[dim] = 1;
 }
 
 }

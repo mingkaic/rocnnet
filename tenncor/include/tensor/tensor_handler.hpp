@@ -65,7 +65,7 @@ protected:
 		std::vector<const T*>&,std::vector<tensorshape>&) const = 0;
 };
 
-//! Transfer function
+//! Transfer Function
 template <typename T>
 class transfer_func : public itensor_handler<T>
 {
@@ -108,6 +108,7 @@ protected:
 	FORWARD_OP<T> forward_; //! raw data transformation function
 };
 
+//! Initializer Handler
 template <typename T>
 class initializer : public itensor_handler<T>
 {

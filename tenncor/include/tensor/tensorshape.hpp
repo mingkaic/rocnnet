@@ -16,12 +16,15 @@
 #include <stdexcept>
 #include <vector>
 #include <numeric>
+#include <experimental/optional>
 
 #include "utils/utils.hpp"
 
 #pragma once
 #ifndef TENNCOR_TENSORSHAPE_HPP
 #define TENNCOR_TENSORSHAPE_HPP
+
+using namespace std::experimental;
 
 namespace nnet
 {
@@ -40,20 +43,24 @@ public:
 
 	// >>>> ACCESSORS <<<<
 	//! get a copy of the shape as a list
+	//! accounts for grouping
 	std::vector<size_t> as_list (void) const;
 
 	//! get number of elems that can fit in shape if known,
 	//! 0 if unknown
+	//! accounts for grouping
 	size_t n_elems (void) const;
 
 	//! get the minimum number of elements that can fit in shape
 	//! return the product of all known dimensions
+	//! accounts for grouping
 	size_t n_known (void) const;
 
 	//! get shape rank
 	size_t rank (void) const;
 
 	//! check if the shape is compatible with other
+	//! does not accounts for grouping
 	bool is_compatible_with (const tensorshape& other) const;
 
 	//! check if shape is partially defined
@@ -103,16 +110,38 @@ public:
 	//! value and at most the the specified rank
 	tensorshape with_rank_at_most (size_t rank) const;
 
+	// (UNTESTED)
 	// >>>> COORDINATES <<<<
-	//! obtains the index of data should they be flatten to a vector
+	//! obtains the index of data should they be flatten to a vector given dimensions_
 	size_t sequential_idx (std::vector<size_t> coord) const;
 
-	//! obtain the coordinates of the data in vector given a sequential index
+	//! obtain the coordinates of the data in vector given a sequential index given dimensions_
 	std::vector<size_t> coordinate_from_idx (size_t idx) const;
 
+	//! obtains the set of indices corresponding to elements in memory (grouped elements)
+	//! shapeidx is index obtained from sequential_idx based on dimensions_
+	std::vector<size_t> memory_indices (size_t shapeidx) const;
+
+	//! obtains the dimensional values not accounting for grouping
+	std::vector<size_t> shape_dimensions (void) const;
+
+	//! determine whether shape is grouped at some diemnsion
+	bool is_grouped (void) const;
+
+	//! group shape at specified dimension
+	void group_dim (size_t dim);
+
 private:
-	// zero dimension denotes unknown/undefined value
+	//! zero values denotes unknown/undefined value
+	//! emtpy dimension_ denotes undefined shape
 	std::vector<size_t> dimensions_;
+
+	//! determines which dimension the shape is grouped and by how much
+	//! having a dim_group indicates that shape index and memory index do not correspond 1 to 1
+	//! first value denotes the dimensional index where grouping is occurring
+	//! second value denotes the number of real elements per grouping
+	//! (where the real dimension is dimensions_[first] *= second)
+	optional<std::pair<size_t,size_t> > dim_group_;
 };
 
 //! print a shape's dimension values

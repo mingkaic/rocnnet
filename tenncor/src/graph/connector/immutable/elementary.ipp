@@ -13,16 +13,24 @@ namespace nnet
 
 inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 {
+	tensorshape trueshape;
 	tensorshape lastshape;
 	for (size_t i = 0, nshapes = shapes.size(); i < nshapes; ++i)
 	{
 		if (shapes[i].n_elems() == 1) continue;
-		if (false == shapes[i].is_compatible_with(lastshape))
+		if (false == shapes[i].is_compatible_with(lastshape.shape_dimensions()))
 		{
 			throw std::exception(); // TODO: make better exception
 		}
 		lastshape = shapes[i];
+		if (lastshape.is_grouped())
+		{
+			// there can only be 1 defined true shape
+			assert(false == trueshape.is_part_defined());
+			trueshape = lastshape;
+		}
 	}
+	if (trueshape.is_fully_defined()) return trueshape.as_list();
 	if (false == lastshape.is_part_defined()) return std::vector<size_t>{1};
 	return lastshape;
 }
@@ -415,21 +423,47 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
+		tensorshape& ashape = inshapes[0];
+		tensorshape& bshape = inshapes[1];
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
 
-		if (inshapes[0].n_elems() == 1)
+		if (ashape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[0] + bd[i];
 			}
 		}
-		else if (inshapes[1].n_elems() == 1)
+		else if (bshape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[i] + bd[0];
+			}
+		}
+		else if (ashape.is_grouped())
+		{
+			for (size_t i = 0, bn = bshape.n_elems(); i < bn; i++)
+			{
+				std::vector<size_t> aindices = ashape.memory_indices(i);
+				T bval = bd[i] / aindices.size(); // spread b's value across all mapped a elements
+				for (size_t aidx : aindices)
+				{
+					dest[aidx] = ad[aidx] + bval;
+				}
+			}
+		}
+		else if (bshape.is_grouped())
+		{
+			for (size_t i = 0, an = ashape.n_elems(); i < an; i++)
+			{
+				std::vector<size_t> bindices = bshape.memory_indices(i);
+				T aval = ad[i] / bindices.size(); // spread a's value across all mapped b elements
+				for (size_t bidx : bindices)
+				{
+					dest[bidx] = aval + bd[bidx];
+				}
 			}
 		}
 		else
@@ -509,21 +543,47 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
+		tensorshape& ashape = inshapes[0];
+		tensorshape& bshape = inshapes[1];
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
 
-		if (inshapes[0].n_elems() == 1)
+		if (ashape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[0] - bd[i];
 			}
 		}
-		else if (inshapes[1].n_elems() == 1)
+		else if (bshape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[i] - bd[0];
+			}
+		}
+		else if (ashape.is_grouped())
+		{
+			for (size_t i = 0, bn = bshape.n_elems(); i < bn; i++)
+			{
+				std::vector<size_t> aindices = ashape.memory_indices(i);
+				T bval = bd[i] / aindices.size(); // spread b's value across all mapped a elements
+				for (size_t aidx : aindices)
+				{
+					dest[aidx] = ad[aidx] - bval;
+				}
+			}
+		}
+		else if (bshape.is_grouped())
+		{
+			for (size_t i = 0, an = ashape.n_elems(); i < an; i++)
+			{
+				std::vector<size_t> bindices = bshape.memory_indices(i);
+				T aval = ad[i] / bindices.size(); // spread a's value across all mapped b elements
+				for (size_t bidx : bindices)
+				{
+					dest[bidx] = aval - bd[bidx];
+				}
 			}
 		}
 		else
@@ -627,21 +687,45 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	   std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
+		tensorshape& ashape = inshapes[0];
+		tensorshape& bshape = inshapes[1];
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
 
-		if (inshapes[0].n_elems() == 1)
+		if (ashape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[0] * bd[i];
 			}
 		}
-		else if (inshapes[1].n_elems() == 1)
+		else if (bshape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[i] * bd[0];
+			}
+		}
+		else if (ashape.is_grouped())
+		{
+			for (size_t i = 0, bn = bshape.n_elems(); i < bn; i++)
+			{
+				std::vector<size_t> aindices = ashape.memory_indices(i);
+				for (size_t aidx : aindices)
+				{
+					dest[aidx] = ad[aidx] * bd[i];
+				}
+			}
+		}
+		else if (bshape.is_grouped())
+		{
+			for (size_t i = 0, an = ashape.n_elems(); i < an; i++)
+			{
+				std::vector<size_t> bindices = bshape.memory_indices(i);
+				for (size_t bidx : bindices)
+				{
+					dest[bidx] = ad[i] * bd[bidx];
+				}
 			}
 		}
 		else
@@ -738,21 +822,45 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
 		size_t ns = shape.n_elems();
+		tensorshape& ashape = inshapes[0];
+		tensorshape& bshape = inshapes[1];
 		const T* ad = args.at(0);
 		const T* bd = args.at(1);
 
-		if (inshapes[0].n_elems() == 1)
+		if (ashape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[0] / bd[i];
 			}
 		}
-		else if (inshapes[1].n_elems() == 1)
+		else if (bshape.n_elems() == 1)
 		{
 			for (size_t i = 0; i < ns; i++)
 			{
 				dest[i] = ad[i] / bd[0];
+			}
+		}
+		else if (ashape.is_grouped())
+		{
+			for (size_t i = 0, bn = bshape.n_elems(); i < bn; i++)
+			{
+				std::vector<size_t> aindices = ashape.memory_indices(i);
+				for (size_t aidx : aindices)
+				{
+					dest[aidx] = ad[aidx] / bd[i];
+				}
+			}
+		}
+		else if (bshape.is_grouped())
+		{
+			for (size_t i = 0, an = ashape.n_elems(); i < an; i++)
+			{
+				std::vector<size_t> bindices = bshape.memory_indices(i);
+				for (size_t bidx : bindices)
+				{
+					dest[bidx] = ad[i] / bd[bidx];
+				}
 			}
 		}
 		else

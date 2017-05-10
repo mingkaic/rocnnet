@@ -89,19 +89,19 @@ template varptr<double> fit (const varptr<double> a, const varptr<double> watch)
 
 template varptr<double> extend (const varptr<double> a, size_t index, size_t multiplier);
 
-template varptr<double> compress (const varptr<double> a, int index,
+template varptr<double> compress (const varptr<double> a, optional<size_t> index,
 	std::function<double(const std::vector<double>&)> collector);
 
-template varptr<double> reduce_max (const varptr<double> a, int dimension = -1);
+template varptr<double> reduce_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
-template varptr<double> reduce_sum (const varptr<double> a, int dimension = -1);
+template varptr<double> reduce_sum (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
-template varptr<double> reduce_mean (const varptr<double> a, int dimension = -1);
+template varptr<double> reduce_mean (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
-template varptr<double> arg_compress (const varptr<double> a, int dimension,
+template varptr<double> arg_compress (const varptr<double> a, optional<size_t> dimension,
 	std::function<size_t(const std::vector<double>&)> compare);
 
-template varptr<double> arg_max (const varptr<double> a, int dimension = -1);
+template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
 //template varptr<double> trace (const varptr<double> a);
 

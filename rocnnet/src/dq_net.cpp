@@ -282,6 +282,7 @@ void dq_net::variable_setup (void)
 	nnet::varptr<double> target_values = nnet::varptr<double>(next_output_mask_) *
 		nnet::reduce_max(nnet::varptr<double>(next_output_), 0);
 	future_reward_ = nnet::varptr<double>(reward_) + params_.discount_rate_ * target_values; // reward for each instance in batch
+	future_reward_->set_label("future_reward");
 
 	// predict future error
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(

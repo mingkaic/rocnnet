@@ -29,17 +29,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
-if (VIS_EDGE)
-	# visualize tenncor edges
-	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
-	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
-endif(VIS_EDGE)
-
 include(FindProtobuf)
 add_subdirectory(proto)
 
 FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
 FILE(GLOB_RECURSE DB_DECLARE declare/*.cpp)
+
+#>>>>>>>>>>>>>>>>>>>> MAKE TENNCOR LIB <<<<<<<<<<<<<<<<<<<<
+if (VIS_EDGE)
+	# visualize tenncor edges
+	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
+	add_definitions(-DEDGE_RCD="op-profile.csv")
+endif()
 
 # static version
 include_directories(${TENNCOR_INCLUDE})
@@ -47,7 +48,7 @@ add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
 target_link_libraries(${TENNCOR_LIB} proto ${PROTOBUF_LIBRARY})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
-if (TENNCOR_TEST)
+if (TENNCOR_TEST AND NOT VIS_EDGE)
 	#todo: remove to enable tests
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TENSOR_MODULE_TESTS -DDISABLE_MEMORY_MODULE_TESTS")
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_REACT_TEST")
@@ -62,6 +63,7 @@ if (TENNCOR_TEST)
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ELEMENTARY_TEST")
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TRANSFORM_TEST")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_MATMUL_TEST")
+
 	# coverage
 	if (LCOVERAGE)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0") # debug, no optimisation
@@ -73,4 +75,4 @@ if (TENNCOR_TEST)
 
 	add_subdirectory(ext/gtest)
 	add_subdirectory(tests)
-endif(TENNCOR_TEST)
+endif()

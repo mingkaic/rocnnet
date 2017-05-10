@@ -19,9 +19,13 @@ A010 - a tensorshape can have its leading and trailing 1s removed
 A011 - two tensorshapes can concatenate to form a tensorshape depending on the order of
         concatenation assuming both tensors are at least partially defined
 A012 - a tensorshape's rank can be manipulated by padding with ones or clipping
+
 A013 - converting coordinates C to sequential index I on a tensorshape S takes form:
         I = SIGMA_i=0:n(C[i]*PI_j=0:i-1(S[i])) where n is rank of S, and S[-1] is 1
 A014 - index from coordinate C on a tensorshape equals the initial index converted to C (reverse of A013)
+A015 - n_elems and n_known account for shapes with groupings
+A016 - groupings on unknown dimensions (ones with value of 0) do not set grouping (is_grouped returns false)
+A017 - memory_indices maps shape index obtained from sequential index to every element along grouped dimension
 
 // TENSOR
 B000 - scalar tensor constructrion creates allocates a tensor of rank 1, nelems = 1
