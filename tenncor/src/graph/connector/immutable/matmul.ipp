@@ -35,37 +35,13 @@ matmul<T>* matmul<T>::move (void)
 }
 
 template <typename T>
-matmul<T>& matmul<T>::operator = (const matmul<T>& other)
-{
-	if (this != &other)
-	{
-		transposeA_ = other.transposeA_;
-		transposeB_ = other.transposeB_;
-		immutable<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
-matmul<T>& matmul<T>::operator = (matmul<T>&& other)
-{
-	if (this != &other)
-	{
-		transposeA_ = std::move(other.transposeA_);
-		transposeB_ = std::move(other.transposeB_);
-		immutable<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
 matmul<T>::matmul (inode<T>* a, inode<T>* b,
 	bool transposeA, bool transposeB) :
 immutable<T>((std::vector<inode<T>*>{a, b}),
 [transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
 {
-	tensorshape t1s = shapes[0];
-	tensorshape t2s = shapes[1];
+	tensorshape& t1s = shapes[0];
+	tensorshape& t2s = shapes[1];
 
 	if (5 > (t1s.rank() + t2s.rank()))
 	{
@@ -95,17 +71,19 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		}
 	}
 	// warn user
+	std::cout << "warning: matmul shapes do not match" << std::endl;
 	return tensorshape();
 },
-[this](T* out, const tensorshape& outs, std::vector<const T*>& in, std::vector<tensorshape>&)
+[transposeA, transposeB](T* out, const tensorshape& outs,
+	std::vector<const T*>& in, std::vector<tensorshape>& inshapes)
 {
 	outs.assert_is_fully_defined();
 	std::vector<size_t> dims = outs.as_list();
 	size_t dimX = dims[0]; size_t dimY = dims[1];
 
-	std::vector<size_t> t = static_cast<inode<T>*>(this->dependencies_[0])->get_shape().as_list();
+	std::vector<size_t> t = inshapes[0].as_list();
 	size_t dimZ = t[0];
-	if (transposeA_)
+	if (transposeA)
 	{
 		dimZ = 2 == t.size() ? t[1] : 1;
 	}
@@ -119,21 +97,21 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 			out[x+y*dimX] = 0;
 			for (size_t z = 0; z < dimZ; z++)
 			{
-				size_t aidx = transposeA_ ? y+z*dimY : z+y*dimZ;
-				size_t bidx = transposeB_ ? z+x*dimZ : x+z*dimX;
+				size_t aidx = transposeA ? y+z*dimY : z+y*dimZ;
+				size_t bidx = transposeB ? z+x*dimZ : x+z*dimX;
 				out[x+y*dimX] += rawa[aidx] * rawb[bidx];
 			}
 		}
 	}
 },
+// todo: remove this from capture (if we copy this, this still refers to original node)
+// meaning deleting original breaks the copy
 [this](std::vector<inode<T>*>, variable<T>*)
 {
 	return this->one.get();
-}, "matmul"),
-transposeA_(transposeA), transposeB_(transposeB)
+}, "matmul")
 {
-	this->jacobians_.list_.push_back(
-	[a, b, transposeA, transposeB](
+	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
 		varptr<T> grada = a->get_leaf(wrt);
@@ -148,20 +126,16 @@ transposeA_(transposeA), transposeB_(transposeB)
 		varptr<T> mA = new matmul<T>(root, b, transposeA, !transposeB);
 		varptr<T> mB = new matmul<T>(a, root, !transposeA, transposeB);
 		return mA * grada + mB * gradb;
-	});
+	};
+
+	typename inode<T>::GRAD_CACHE leaves;
+	this->get_leaves(leaves);
+	for (auto leaf_pair : leaves)
+	{
+		variable<T>* leaf = leaf_pair.first;
+		this->jacobians_[leaf].list_.push_back(jtrans);
+	}
 }
-
-template <typename T>
-matmul<T>::matmul (const matmul<T>& other) :
-	immutable<T>(other),
-	transposeA_(other.transposeA_),
-	transposeB_(other.transposeB_) {}
-
-template <typename T>
-matmul<T>::matmul (matmul<T>&& other) :
-	immutable<T>(std::move(other)),
-	transposeA_(std::move(other.transposeA_)),
-	transposeB_(std::move(other.transposeB_)) {}
 
 template <typename T>
 inode<T>* matmul<T>::clone_impl (void) const

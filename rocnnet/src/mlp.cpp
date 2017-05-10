@@ -156,7 +156,7 @@ void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 		delete hp.first;
 	}
 	layers_.clear();
-	if (0 == scope_.size())
+	if (0 == scope.size())
 	{
 		scope_ = other.scope_ + "_cpy";
 	}

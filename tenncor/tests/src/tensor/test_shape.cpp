@@ -236,7 +236,7 @@ TEST(TENSORSHAPE, Compatible_A004)
 	std::vector<size_t> cds_cpy2 = cds;
 	std::vector<size_t> cds2_cpy2 = cds2;
 	std::vector<size_t> brank = cds2;
-	brank.push_back(0);
+	brank.push_back(2);
 	size_t idx1 = FUZZ::getInt(1, "idx1", {0, cds_cpy.size()-1})[0];
 	size_t idx2 = FUZZ::getInt(1, "idx2", {0, cds2_cpy.size()-1})[0];
 	cds_cpy[idx1] = 0;

@@ -37,7 +37,7 @@ public:
 	//! builder for immutables
 	static immutable<T>* get (std::vector<inode<T>*> args,
 		SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
-		std::string name, bool ignore_jacobian = false);
+		std::string name, inode<T>* ignore_jacobian = nullptr);
 
 	//! destructor
 	virtual ~immutable (void);
@@ -117,6 +117,9 @@ protected:
 	//! declare move constructor to move over transfer functions
 	immutable (immutable<T>&& other);
 
+	//! list of jacobian transfer function
+	//! to be executed on resulting root node
+	//! execution order: top-down
 	struct JList
 	{
 		JList (void) :
@@ -126,11 +129,9 @@ protected:
 		std::list<JTRANSFER<T> > list_;
 	};
 
-	//! list of jacobian transfer function
-	//! to be executed on resulting root node
-	//! execution order: front to back
-	//! insertion order: back to front
-	JList jacobians_;
+	//! jacobian for each variable
+	using JCACHE = std::unordered_map<variable<T>*,JList>;
+	JCACHE jacobians_;
 
 	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
 	std::unique_ptr<constant<T> > one; //! commonly used one constant

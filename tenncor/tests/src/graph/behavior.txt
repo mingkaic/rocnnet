@@ -149,6 +149,7 @@ K004 - extend with multiplier 0 returns constant 0, multiplier 1 returns input n
 K005 - compress aggregates elements along a specific dimension if dimension value > -1 otherwise aggregate all elements
 K006 - arg_compress obtains of the index of an element found by some search parameter of specific dimension if dimension value > -1
         otherwise obtain the coordinate of the element
+K007 - arg_compress will throw when dimension is greater than or equal to rank
 
 // MATMUL BEHAVIOR
 L000 -

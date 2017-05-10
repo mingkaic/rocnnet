@@ -34,14 +34,16 @@ fi
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
 mkdir build && pushd build
-cmake -DTENNCOR_TEST=ON -DCMAKE_CXX_COMPILER=g++-6 ..
+cmake -DTENNCOR_TEST=ON ..
 cmake --build .
+
+BINDIR=${BUILDDIR}/bin/bin
 
 # valgrind check
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_shuffle > ${ERRORLOG}"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle > ${ERRORLOG}"
     echo "tenncortest valgrind check complete"
 done
 
@@ -49,13 +51,13 @@ done
 for _ in {1..5}
 do
     echo "running batch of 5 tenncortest"
-    assert_cmd "${BUILDDIR}/tenncor/bin/bin/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
+    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
     echo "still running! 5 tests complete"
 done
 
 # rocnnet demos
 echo "running gd_demo"
-assert_cmd "${BUILDDIR}/bin/bin/gd_demo $PBX_CACHE"
+assert_cmd "${BINDIR}/gd_demo $PBX_CACHE"
 echo "gd_demo complete"
 
 # coverage analysis

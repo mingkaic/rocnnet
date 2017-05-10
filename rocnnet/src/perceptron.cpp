@@ -67,6 +67,8 @@ nnet::varptr<double> perceptron::operator () (nnet::inode<double>* input)
 {
 	// weights are n_output column by n_input rows
 	nnet::varptr<double> weighed = nnet::matmul<double>::get(input, weights_);
+	// bias are natively n_output column by 1 rows
+	// todo: replace fit operator by mappable
 	nnet::varptr<double> bias = nnet::fit<double>(bias_, weighed); // adjust shape based on mres shape
 	return weighed + bias;
 }
@@ -84,6 +86,8 @@ void perceptron::copy_helper (const perceptron& other, std::string scope)
 	this->scope = scope;
 	weights_ = other.weights_->clone();
 	bias_ = other.bias_->clone();
+	weights_->set_label(scope+"_weights");
+	bias_->set_label(scope+"_bias");
 }
 
 void perceptron::move_helper (perceptron&& other)

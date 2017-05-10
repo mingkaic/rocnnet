@@ -62,10 +62,12 @@ int main (int argc, char** argv)
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = 0.9;
 	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
-	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	untrained_gdn.initialize();
+
+	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
 	trained_gdn->initialize();
+
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
 	pretrained_gdn.initialize(serialpath);
 
 	// train mlp to output input
@@ -122,12 +124,12 @@ int main (int argc, char** argv)
 	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
 
 	trained_gdn->save(serialpath);
-	
-	delete trained_gdn;
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();
 #endif /* EDGE_RCD */
+	
+	delete trained_gdn;
 
 	return 0;
 }

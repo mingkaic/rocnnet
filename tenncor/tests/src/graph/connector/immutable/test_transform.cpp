@@ -37,10 +37,20 @@ template <typename T>
 T no_param (tensorshape) { return (T)0; }
 
 
+tensorshape as_is (tensorshape in) { return in; }
+
+
+std::vector<double> onescalar (std::vector<double>, tensorshape)
+{
+	return std::vector<double>(1, 1);
+}
+
+
 template <typename T=double>
 static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	DATA_CHANGE expect_transfer, SHAPE_CHANGE expect_shape,
-	DATA_CHANGE grad_transfer, SHAPE_CHANGE grad_shape, PARAM_EVAL<T> paramer = no_param<T>)
+	optional<DATA_CHANGE> grad_transfer, optional<SHAPE_CHANGE> grad_shape,
+	PARAM_EVAL<T> paramer = no_param<T>)
 {
 	tensorshape shape = random_def_shape(ranklimit.first, ranklimit.second);
 	rand_uniform<double> rinit(2, 12);
@@ -60,17 +70,12 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> expectout = expect_transfer(expose(&var), shape);
-	tensorshape gradoshape = grad_shape(var.get_gradient(&var)->get_shape());
 	nnet::inode<double>* vgrad = var.get_gradient(&var);
 	{
 		const nnet::tensor<double>* vgradtens = vgrad->get_eval();
 		ASSERT_NE(nullptr, vgradtens);
 		ASSERT_TRUE(vgradtens->is_alloc());
 	}
-	std::vector<double> gradout = grad_transfer(expose(vgrad), vgrad->get_shape());
-
-	// Behavior K000
-	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), paramer(shape)));
 
 	// test forward
 	tensorshape outshape = res->get_shape();
@@ -83,15 +88,27 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	}
 
 	// test derivative
-	const tensor<double>* backt = res->get_gradient(&var)->get_eval();
-	tensorshape outgshape = backt->get_shape();
-	std::vector<double> rgout = backt->expose();
-	EXPECT_TRUE(tensorshape_equal(gradoshape, outgshape));
-	ASSERT_EQ(gradout.size(), rgout.size());
-	for (size_t i = 0, n = rgout.size(); i < n; i++)
+	if ((bool) grad_transfer && (bool) grad_shape)
 	{
-		EXPECT_EQ(gradout[i], rgout[i]);
+		tensorshape gradoshape = (*grad_shape)(var.get_gradient(&var)->get_shape());
+		std::vector<double> gradout = (*grad_transfer)(expose(vgrad), vgrad->get_shape());
+		const tensor<double>* backt = res->get_gradient(&var)->get_eval();
+		tensorshape outgshape = backt->get_shape();
+		std::vector<double> rgout = backt->expose();
+		EXPECT_TRUE(tensorshape_equal(gradoshape, outgshape));
+		ASSERT_EQ(gradout.size(), rgout.size());
+		for (size_t i = 0, n = rgout.size(); i < n; i++)
+		{
+			EXPECT_EQ(gradout[i], rgout[i]);
+		}
 	}
+	else
+	{
+		EXPECT_THROW(res->get_gradient(&var), std::exception);
+	}
+
+	// Behavior K000
+	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), paramer(shape)));
 }
 
 
@@ -174,18 +191,18 @@ TEST(TRANSFORM, Fit_K002)
 		}
 		return out;
 	};
-	SHAPE_CHANGE shape =
-	[&realshape](tensorshape) -> tensorshape
-	{
-		return realshape;
-	};
+	SHAPE_CHANGE shape = [&realshape](tensorshape) { return realshape; };
+
+	optional<DATA_CHANGE> gradtransfer = (DATA_CHANGE) onescalar;
+	optional<SHAPE_CHANGE> gradshape = (SHAPE_CHANGE) as_is;
+
 	unaryTransTest<const varptr<double> >({2, 13},
 	[](varptr<double> in, varptr<double> watch) { return nnet::fit(in, watch); },
-	transfer, shape, transfer, shape, fitparam);
+	transfer, shape, gradtransfer, gradshape, fitparam);
 }
 
 
-TEST(TRANSFORM, Extend_K004To005)
+TEST(TRANSFORM, Extend_K003To004)
 {
 	// K004
 	FUZZ::reset_logger();
@@ -228,47 +245,10 @@ TEST(TRANSFORM, Extend_K004To005)
 		out[extend_index] *= multiplier;
 		return out;
 	};
-	DATA_CHANGE grad_transfer =
-	[&extend_index, &multiplier](std::vector<double> in, tensorshape inshape) -> std::vector<double>
-	{
-		std::vector<size_t> invec = inshape.as_list();
-		std::vector<double> out;
-		size_t baselen = 1;
-		for (size_t i = 0; i <= extend_index && i < invec.size(); i++)
-		{
-			baselen *= invec[i];
-		}
-		auto it = in.begin();
-		auto et = in.end();
-		while (it != et)
-		{
-			for (size_t i = 0; i < multiplier; i++)
-			{
-				out.insert(out.end(), it, it+baselen);
-			}
-			it += baselen;
-		}
-		return out;
-	};
-	SHAPE_CHANGE grad_shape =
-	[&extend_index, &multiplier](tensorshape inshape) -> tensorshape
-	{
-		std::vector<size_t> out = inshape.as_list();
-		if (extend_index >= out.size())
-		{
-			size_t extra_dims = extend_index - out.size();
-			if (extra_dims)
-			{
-				out.insert(out.end(), extra_dims, 1);
-			}
-			out.push_back(multiplier);
-		}
-		else
-		{
-			out[extend_index] *= multiplier;
-		}
-		return out;
-	};
+
+	optional<DATA_CHANGE> gradtransfer = (DATA_CHANGE) onescalar;
+	optional<SHAPE_CHANGE> gradshape = (SHAPE_CHANGE) as_is;
+
 	unaryTransTest<std::pair<size_t,size_t> >({2, 13},
 	[](varptr<double> in, std::pair<size_t,size_t> idxnmult)
 	{
@@ -276,7 +256,7 @@ TEST(TRANSFORM, Extend_K004To005)
 		size_t multiplier = idxnmult.second;
 		return nnet::extend(in, index, multiplier);
 	},
-	transfer, shape, grad_transfer, grad_shape, extendparam);
+	transfer, shape, gradtransfer, gradshape, extendparam);
 	// K005
 	tensorshape rshape = random_def_shape(2, 13);
 	rand_uniform<double> rinit(2, 12);
@@ -292,89 +272,161 @@ TEST(TRANSFORM, Extend_K004To005)
 }
 
 
-//TEST(TRANSFORM, Compress)
-//{
-//	FUZZ::reset_logger();
-//	placeholder<double> A((std::vector<size_t>{5, 2}), "a");
-//	placeholder<double> B((std::vector<size_t>{2, 5}), "b");
-//	placeholder<double> C((std::vector<size_t>{2, 5, 2}), "c");
-//
-//	std::vector<double> in1 = {
-//		1, 2, 3, 4, 5,
-//		2, 10, 23, 1, 2,
-//	};
-//
-//	std::vector<double> exp1 = { 3, 7.6 };
-//
-//	std::vector<double> in2 = {
-//		3, 2,
-//		10, 23,
-//		2, 1.2,
-//		0.5, 0.1,
-//		1, 2,
-//	};
-//
-//	std::vector<double> exp2 = { 3.3, 5.66 };
-//
-//	std::vector<double> in3 = {
-//		// layer 1
-//		3, 2,
-//		10, 23,
-//		2, 1.2,
-//		0.5, 0.1,
-//		1, 2,
-//		// layer 2
-//		2, 1.8,
-//		12, 84,
-//		92, 1.9,
-//		9, 3.14,
-//		70, 17.1,
-//	};
-//
-//	std::vector<double> exp3 = {
-//		// layer 1
-//		3.3, 5.66,
-//		// layer 2
-//		37, 21.588,
-//	};
-//
-//	A = in1;
-//	B = in2;
-//	C = in3;
-//
-//	varptr<double> c1 = compress<double>(varptr<double>(&A), 0); // expect vector of 2
-//	varptr<double> c2 = compress<double>(varptr<double>(&B), 1); // expect vector of 2
-//	varptr<double> c3 = compress<double>(varptr<double>(&C), 1); // expect shape of 2, 1, 2
-//
-//	std::vector<double> raw = expose<double>(c1);
-//	std::vector<size_t> v1 = c1->get_shape().as_list();
-//	ASSERT_EQ(1, v1.size());
-//	ASSERT_EQ(2, v1[0]);
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(exp1[i], raw[i]);
-//	}
-//
-//	raw = expose<double>(c2);
-//	std::vector<size_t> v2 = c2->get_shape().as_list();
-//	ASSERT_EQ(1, v2.size());
-//	ASSERT_EQ(2, v2[0]);
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(exp2[i], raw[i]);
-//	}
-//
-//	raw = expose<double>(c3);
-//	std::vector<size_t> v3 = c3->get_shape().as_list();
-//	ASSERT_EQ(3, v3.size());
-//	ASSERT_EQ(2, v3[0]);
-//	ASSERT_EQ(1, v3[1]);
-//	ASSERT_EQ(2, v3[2]);
-//	for (size_t i = 0; i < raw.size(); i++)
-//	{
-//		EXPECT_EQ(exp3[i], raw[i]);
-//	}
-//}
+TEST(TRANSFORM, Compress_K005)
+{
+	FUZZ::reset_logger();
+	size_t compress_index;
+	std::function<double(const std::vector<double>&)> compression =
+	[](const std::vector<double>& vec) -> double
+	{
+		return vec.at(0);
+	};
+
+	PARAM_EVAL<size_t> compressparam =
+	[&compress_index, &compression](tensorshape shape) -> size_t
+	{
+		size_t srank = shape.rank();
+		compress_index = FUZZ::getInt(1, "compress_index", {0, srank-1})[0];
+		return compress_index;
+	};
+	DATA_CHANGE transfer =
+	[&compress_index](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	{
+		std::vector<size_t> outlist = inshape.as_list();
+		if (compress_index >= outlist.size()) return in;
+		outlist[compress_index] = 1;
+		tensorshape outshape(outlist);
+		std::vector<double> out(outshape.n_elems(), 0);
+		for (size_t i = 0, m = in.size(); i < m; i++)
+		{
+			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
+			if (incoord[compress_index] == 0)
+			{
+				size_t outidx = outshape.sequential_idx(incoord);
+				out[outidx] = in[i];
+			}
+		}
+		return out;
+	};
+	SHAPE_CHANGE shape =
+	[&compress_index](tensorshape inshape) -> tensorshape
+	{
+		std::vector<size_t> out = inshape.as_list();
+		if (compress_index >= out.size()) return inshape;
+		if (compress_index == 0)
+		{
+			out.front() = std::move(out.back());
+			out.pop_back();
+		}
+		else if (out.size()-1 == (unsigned) compress_index)
+		{
+			out.pop_back();
+		}
+		else
+		{
+			out[compress_index] = 1;
+		}
+		return out;
+	};
+
+	optional<DATA_CHANGE> gradtransfer = (DATA_CHANGE) onescalar;
+	optional<SHAPE_CHANGE> gradshape = (SHAPE_CHANGE) as_is;
+
+	unaryTransTest<size_t>({2, 13},
+	[&compression](varptr<double> in, size_t compidx) { return compress(in, compidx, compression); },
+	transfer, shape, gradtransfer, gradshape, compressparam);
+}
+
+
+TEST(TRANSFORM, ArgCompress_K006To007)
+{
+	FUZZ::reset_logger();
+	size_t arg_index;
+	std::function<size_t(const std::vector<double>&)> search =
+	[](const std::vector<double>& vec) -> size_t
+	{
+		double denom = vec.size();
+		double mean = 0;
+		for (double d : vec)
+		{
+			mean += d / denom;
+		}
+		double error = std::abs(vec[0] - mean);
+		size_t idx = 0;
+		for (size_t i = 1; i < denom; i++)
+		{
+			double potent_error = std::abs(vec[i] - mean);
+			if (potent_error < error)
+			{
+				error = potent_error;
+				idx = i;
+			}
+		}
+		return (double)idx;
+	};
+
+	PARAM_EVAL<size_t> argcompressparam =
+	[&arg_index, &search](tensorshape shape) -> size_t
+	{
+		size_t srank = shape.rank();
+		arg_index = FUZZ::getInt(1, "arg_index", {0, srank-1})[0];
+		return arg_index;
+	};
+	DATA_CHANGE transfer =
+	[&arg_index, &search](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	{
+		std::vector<size_t> outlist = inshape.as_list();
+		size_t n = outlist[arg_index];
+		assert(arg_index < outlist.size());
+		outlist[arg_index] = 1;
+		tensorshape outshape(outlist);
+		std::vector<double> out(outshape.n_elems(), 0);
+		for (size_t i = 0, m = in.size(); i < m; i++)
+		{
+			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
+			if (incoord[arg_index] == 0)
+			{
+				std::vector<double> vecs;
+				size_t outidx = outshape.sequential_idx(incoord);
+				for (size_t i = 0; i < n; i++)
+				{
+					incoord[arg_index] = i;
+					size_t inidx = inshape.sequential_idx(incoord);
+					vecs.push_back(in[inidx]);
+				}
+				out[outidx] = search(vecs);
+			}
+		}
+		return out;
+	};
+	SHAPE_CHANGE shape =
+	[&arg_index](tensorshape inshape) -> tensorshape
+	{
+		std::vector<size_t> out = inshape.as_list();
+		assert(arg_index < out.size());
+		if (arg_index == 0)
+		{
+			out.front() = std::move(out.back());
+			out.pop_back();
+		}
+		else if (out.size()-1 == (unsigned) arg_index)
+		{
+			out.pop_back();
+		}
+		else
+		{
+			out[arg_index] = 1;
+		}
+		return out;
+	};
+
+	optional<DATA_CHANGE> gradtransfer;
+	optional<SHAPE_CHANGE> gradshape;
+
+	unaryTransTest<size_t>({3, 13},
+	[&search](varptr<double> in, size_t arg_index) { return arg_compress(in, arg_index, search); },
+	transfer, shape, gradtransfer, gradshape, argcompressparam);
+}
 
 
 #endif /* DISABLE_TRANSFORM_TEST */
