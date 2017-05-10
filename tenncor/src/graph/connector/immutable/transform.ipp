@@ -8,6 +8,8 @@
 
 #ifdef TENNCOR_TRANSFORM_HPP
 
+#include "graph/connector/immutable/mappable.hpp"
+
 namespace nnet
 {
 
@@ -75,8 +77,8 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return fit(varptr<T>(args.front()->get_leaf(leaf)), watch);
-	}, "fit", true);
+		return args.front()->get_leaf(leaf);
+	}, "fit", watch);
 }
 
 template <typename T>
@@ -149,25 +151,26 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	},
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return extend(varptr<T>(args.front()->get_leaf(leaf)), index, multiplier);
+		return args.front()->get_leaf(leaf);
 	}, "extend");
 }
 
 template <typename T>
-varptr<T> compress (const varptr<T> a, int index,
+varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	std::function<T(const std::vector<T>&)> collector)
 {
 	if (nullptr == a) return nullptr;
 	FORWARD_OP<T> gatherer;
 	SHAPER shaper;
-	if (index >= 0)
+	if (index)
 	{
 		gatherer =
 		[index, collector](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
+			size_t idx = *index;
 			const T* src = args[0];
 			tensorshape& orig = inshapes[0];
-			if ((unsigned) index >= orig.rank())
+			if (idx >= orig.rank())
 			{
 				std::memcpy(dest, src, sizeof(T)*orig.n_elems());
 				return;
@@ -176,12 +179,12 @@ varptr<T> compress (const varptr<T> a, int index,
 			// both above and below values are calculations based on the original shape
 			// original shape
 			std::vector<size_t> tv = orig.as_list();
-			size_t idx_val = tv[index];
+			size_t idx_val = tv[idx];
 			// below for compression calculates all elements below the index dimension
 			// that is for a shape of <1, 2, 3, 4> and index 2
 			// below = 1 * 2 = 2
 			size_t below = 1;
-			for (int i = 0; i < index; i++)
+			for (size_t i = 0; i < idx; i++)
 			{
 				below *= tv[i];
 			}
@@ -207,11 +210,12 @@ varptr<T> compress (const varptr<T> a, int index,
 		shaper =
 		[index](std::vector<tensorshape> shapes)
 		{
+			size_t idx = *index;
 			tensorshape& ts = shapes[0];
 			ts.assert_is_fully_defined();
 
 			size_t srank = ts.rank();
-			if ((unsigned) index >= srank)
+			if (idx >= srank)
 			{
 				return ts;
 			}
@@ -220,18 +224,18 @@ varptr<T> compress (const varptr<T> a, int index,
 			{
 				tv[0] = 1;
 			}
-			else if (0 == index)
+			else if (0 == idx)
 			{ // pop front
 				tv.front() = std::move(tv.back());
 				tv.pop_back();
 			}
-			else if (tv.size()-1 == (unsigned) index)
+			else if (tv.size()-1 == idx)
 			{
 				tv.pop_back();
 			}
 			else
 			{
-				tv[index] = 1;
+				tv[idx] = 1;
 			}
 			return tensorshape(tv);
 		};
@@ -248,14 +252,19 @@ varptr<T> compress (const varptr<T> a, int index,
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
-		[index, collector](std::vector<inode<T>*> args, variable<T>* leaf)
+	[index, collector](std::vector<inode<T>*> args, variable<T>* leaf) -> inode<T>*
+	{
+		inode<T>* gradn = args.front()->get_leaf(leaf);
+		if (index)
 		{
-			return compress(varptr<T>(args.front()->get_leaf(leaf)), index, collector);
-		}, "compress");
+			return mappable<T>::get(gradn, *index);
+		}
+		return gradn;
+	}, "compress");
 }
 
 template <typename T>
-varptr<T> reduce_max (const varptr<T> a, int dimension)
+varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
 	[](const std::vector<T>& values) -> T
@@ -265,53 +274,54 @@ varptr<T> reduce_max (const varptr<T> a, int dimension)
 }
 
 template <typename T>
-varptr<T> reduce_sum (const varptr<T> a, int dimension)
+varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
 	[](const std::vector<T>& values) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), 0);
+		return std::accumulate(values.begin(), values.end(), (T)0);
 	});
 }
 
 template <typename T>
-varptr<T> reduce_mean (const varptr<T> a, int dimension)
+varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
 	[](const std::vector<T>& values) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), 0) / values.size();
+		return std::accumulate(values.begin(), values.end(), (T)0) / values.size();
 	});
 }
 
 template <typename T>
-varptr<T> arg_compress (const varptr<T> a, int dimension,
+varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	std::function<size_t(const std::vector<T>&)> search)
 {
 	if (nullptr == a) return nullptr;
 	FORWARD_OP<T> gatherer;
 	SHAPER shaper;
-	if (dimension >= 0)
+	if (dimension)
 	{
 		gatherer =
 		[dimension, search](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 		{
+			size_t dim = *dimension;
 			const T* src = args[0];
 			// REMEMBER that ts is the resulting shape, not the original shape
 			// both above and below values are calculations based on the original shape
 			// original shape
 			tensorshape& orig = inshapes[0];
-			if ((unsigned) dimension >= orig.rank())
+			if (dim >= orig.rank())
 			{
 				throw std::exception();
 			}
 			std::vector<size_t> tv = orig.as_list();
-			size_t idx_val = tv[dimension];
+			size_t idx_val = tv[dim];
 			// below for compression calculates all elements below the index dimension
 			// that is for a shape of <1, 2, 3, 4> and index 2
 			// below = 1 * 2 = 2
 			size_t below = 1;
-			for (int i = 0; i < dimension; i++)
+			for (size_t i = 0; i < dim; i++)
 			{
 				below *= tv[i];
 			}
@@ -337,25 +347,26 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 		shaper =
 		[dimension](std::vector<tensorshape> shapes)
 		{
+			size_t dim = *dimension;
 			tensorshape ts = shapes[0];
 			ts.assert_is_fully_defined();
-			if ((unsigned) dimension >= ts.rank())
+			if (dim >= ts.rank())
 			{
 				throw std::exception();
 			}
 			std::vector<size_t> tv = ts.as_list();
-			if (0 == dimension)
+			if (0 == dim)
 			{ // pop front
 				tv.front() = std::move(tv.back());
 				tv.pop_back();
 			}
-			else if (tv.size()-1 == (unsigned)dimension)
+			else if (tv.size()-1 == dim)
 			{
 				tv.pop_back();
 			}
 			else
 			{
-				tv[dimension] = 1;
+				tv[dim] = 1;
 			}
 			return tv;
 		};
@@ -377,14 +388,16 @@ varptr<T> arg_compress (const varptr<T> a, int dimension,
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
-	[dimension, search](std::vector<inode<T>*> args, variable<T>* leaf)
+	[dimension, search](std::vector<inode<T>*>, variable<T>*)
 	{
-		return arg_compress(varptr<T>(args.front()->get_leaf(leaf)), dimension, search);
+		// arg_compression's gradient has no intrinsic meaning
+		throw std::exception();
+		return nullptr;
 	}, "argcompress");
 }
 
 template <typename T>
-varptr<T> arg_max (const varptr<T> a, int dimension)
+varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return arg_compress<T>(a, dimension,
 	[](const std::vector<T>& vec) -> size_t

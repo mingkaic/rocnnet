@@ -64,8 +64,10 @@ subject::subject (subject&& other) :
 void subject::attach (iobserver* viewer, size_t idx)
 {
 #ifdef EDGE_RCD
+
 // record subject-object edge
 rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
+
 #endif /* EDGE_RCD */
 
 	audience_[viewer].emplace(idx);
@@ -74,11 +76,13 @@ rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
 void subject::detach (iobserver* viewer)
 {
 #ifdef EDGE_RCD
+
 // record subject-object edge
 for (size_t idx : audience_[viewer])
 {
 	rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 }
+
 #endif /* EDGE_RCD */
 
 	audience_.erase(viewer);
@@ -91,8 +95,10 @@ for (size_t idx : audience_[viewer])
 void subject::detach (iobserver* viewer, size_t idx)
 {
 #ifdef EDGE_RCD
+
 // record subject-object edge
 rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+
 #endif /* EDGE_RCD */
 
 	auto it = audience_.find(viewer);

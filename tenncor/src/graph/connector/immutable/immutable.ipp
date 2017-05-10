@@ -14,12 +14,17 @@ namespace nnet
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
-	std::string name, bool ignore_jacobian)
+	std::string name, inode<T>* ignore_jacobian)
 {
 	immutable<T>* imm = new immutable<T>(args, shaper, Nf, F, name);
-	if (ignore_jacobian)
+	if (nullptr != ignore_jacobian)
 	{
-		imm->jacobians_.list_.clear();
+		typename inode<T>::GRAD_CACHE leaves;
+		ignore_jacobian->get_leaves(leaves);
+		for (auto leafpair : leaves)
+		{
+			imm->jacobians_.erase(leafpair.first);
+		}
 	}
 	return imm;
 }
@@ -116,7 +121,7 @@ void immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) 
 template <typename T>
 bool immutable<T>::good_status (void) const
 {
-	return data_ != nullptr;
+	return data_ != nullptr && data_->is_alloc();
 }
 
 template <typename T>
@@ -165,8 +170,8 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	{
 		out = get_leaf(leaf);
 		// modify res with jacobian
-		for (auto it = jacobians_.list_.rbegin(),
-			et = jacobians_.list_.rend(); it != et; it++)
+		JList& j = jacobians_[leaf];
+		for (auto it = j.list_.rbegin(), et = j.list_.rend(); it != et; it++)
 		{
 			out = (*it)(out, leaf);
 		}
@@ -179,11 +184,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		// todo: implement top-down garabage cleanup
 		this->temporary_eval(conn, out);
 		// todo: apply jacobian (and test)
-//		for (auto it = jacobians_.list_.rbegin(),
-//			et = jacobians_.list_.rend(); it != et; it++)
-//		{
-//			out = (*it)(out, leaf);
-//		}
+
 	}
 	// is zero
 	else
@@ -269,20 +270,28 @@ Nf_(shaper, forward),
 ginit_(F)
 {
 	std::unordered_set<inode<T>*> deps;
-	std::string jlabel = "";
 	// todo: test for jacobian, and leaf transfer
+	// if we have more than 1 jacobian, separate the operators for each branch
 	for (subject* sub : this->dependencies_)
 	{
-		inode<T>* arg = dynamic_cast<inode<T>*>(sub);
+		inode<T>* arg = static_cast<inode<T>*>(sub);
+		// only perform following on unique dependent nodes:
 		if (deps.end() == deps.find(arg))
 		{
-			immutable<T>* imm = dynamic_cast<immutable<T>*>(arg);
-			if (nullptr != imm && false == imm->jacobians_.list_.empty())
+			if (immutable<T>* imm = dynamic_cast<immutable<T>*>(arg))
 			{
-				jacobians_ = imm->jacobians_; // copy over
-				// test for jacobian conflict across branches
-				assert(jlabel.empty() || jlabel == jacobians_.uid_);
-				jlabel = jacobians_.uid_;
+				for (auto jpair : imm->jacobians_)
+				{
+					variable<T>* leaf = jpair.first;
+					auto jit = jacobians_.find(leaf);
+					// different jacobians originating from the same leaf cannot overlap
+					JList& j = jpair.second;
+					if (!j.list_.empty())
+					{
+						assert (jacobians_.end() == jit || jit->second.uid_ == j.uid_);
+						jacobians_[leaf] = j;
+					}
+				}
 			}
 			arg->get_leaves(gcache_);
 			deps.emplace(arg);

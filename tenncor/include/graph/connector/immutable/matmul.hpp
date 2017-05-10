@@ -40,12 +40,6 @@ public:
 	//! Move function
 	matmul<T>* move (void);
 
-	//! Declare copy assignment to copy over transfer functions
-	virtual matmul<T>& operator = (const matmul<T>& other);
-
-	//! Declare move assignment to move over transfer functions
-	virtual matmul<T>& operator = (matmul<T>&& other);
-
 protected:
 	// >>>> CONSTRUCTOR <<<<
 	//! matrix multiplication constructor
@@ -53,23 +47,11 @@ protected:
 		bool transposeA, bool transposeB);
 
 	// >>>> COPY && MOVE CONSTRUCTOR <<<<
-	//! Declare copy constructor to copy over transfer functions
-	matmul (const matmul<T>& other);
-
-	//! Declare move constructor to move over transfer functions
-	matmul (matmul<T>&& other);
-
 	//! Implement clone function
 	virtual inode<T>* clone_impl (void) const;
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
-
-private:
-	//! whether we transpose argument 1 before multiplication
-	bool transposeA_;
-	//! whether we transpose argument 2 before multiplication
-	bool transposeB_;
 };
 
 }

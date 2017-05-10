@@ -35,6 +35,7 @@ struct dqn_param
 	size_t max_exp_ = 30000;
 };
 
+// todo: refactor as agent, instead of "net" class
 class dq_net
 {
 public:
@@ -53,7 +54,9 @@ public:
 
 	dq_net& operator = (dq_net&& other);
 
-	std::vector<double> action (std::vector<double>& input);
+	double action (std::vector<double>& input);
+	
+	std::vector<double> direct_out (std::vector<double>& input);
 
 	void store (std::vector<double> observation, size_t action_idx,
 		double reward, std::vector<double> new_obs);
@@ -63,6 +66,8 @@ public:
 	void initialize (std::string serialname = "");
 
 	bool save (std::string fname) const;
+	
+	size_t get_numtrained (void) const { return iteration_; }
 
 	// feel free to seed it
 	std::default_random_engine generator_;
@@ -102,14 +107,21 @@ private:
 	ml_perceptron* target_qnet_;
 
 	// === forward computation ===
-	// fanin: shape <ninput, batchsize>
+	// fanin: shape <ninput>
 	nnet::placeholder<double>* input_ = nullptr;
 
-	// fanout: shape <noutput, batchsize>
+	// fanout: shape <noutput>
 	nnet::varptr<double> output_ = nullptr;
 
 	// fanout: scalar shape
-	nnet::varptr<double> best_output = nullptr;
+	nnet::varptr<double> best_output_ = nullptr;
+	
+	// === backward computation ===
+	// train fanin: shape <ninput, batchsize>
+	nnet::placeholder<double>* train_input_ = nullptr;
+
+	// train fanout: shape <noutput, batchsize>
+	nnet::varptr<double> train_output_ = nullptr;
 
 	// === prediction computation ===
 	// train_fanin: shape <ninput, batchsize>

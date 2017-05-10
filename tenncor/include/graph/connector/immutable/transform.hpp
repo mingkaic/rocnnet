@@ -38,37 +38,37 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 //! compresses data along dimensions specified by index
 //! -1 index compresses all elements in the tensor (output is a scalar)
 template <typename T>
-varptr<T> compress (const varptr<T> a, int index,
+varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	std::function<T(const std::vector<T>&)> collector);
 
 // Dimensionality Reduction Functions (Wrappers for compress)
 //! compress tensor by taking maximum value across specified dimension
 //! -1 dimension obtains maximum value in the entire tensor
 template <typename T>
-varptr<T> reduce_max (const varptr<T> a, int dimension = -1);
+varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compress tensor by taking the sum of values across specified dimension(s)
 //! -1 dimension obtains the sum of all values in the entire tensor
 template <typename T>
-varptr<T> reduce_sum (const varptr<T> a, int dimension = -1);
+varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compress tensor by taking the mean of values across specified dimension(s)
 //! -1 dimension obtains the mean of values in the entire tensor
 template <typename T>
-varptr<T> reduce_mean (const varptr<T> a, int dimension = -1);
+varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compresses data along dimensions specified by dimension
 //! by taking the index using the compare function
 //! -1 index compresses all elements in the tensor (output is a scalar)
 //! takes left argument of compare if compare evaluates to true
 template <typename T>
-varptr<T> arg_compress (const varptr<T> a, int dimension,
+varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	std::function<size_t(const std::vector<T>&)> compare);
 
 //! obtains the indices of the maximum value across specified dimension
 //! -1 index looks returns a vector coordinate specifying max value in tensor a
 template <typename T>
-varptr<T> arg_max (const varptr<T> a, int dimension = -1);
+varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! trace of a
 template <typename T>

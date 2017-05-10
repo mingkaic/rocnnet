@@ -36,6 +36,8 @@ public:
 	{
 		std::ofstream ofile;
 		ofile.open(outname_);
+		size_t num_des = 0;
+		std::unordered_map<nnet::inode<T>*, size_t> num_corres;
 		if (ofile.is_open())
 		{
 			for (subinfo e : edges_)
@@ -43,19 +45,59 @@ public:
 				nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector<T>*>(e.obs_);
 				nnet::inode<T>* sb = dynamic_cast<nnet::inode<T>*>(e.sub_);
 
-				std::string obname = ob->get_name();
-				std::string sbname = sb->get_name();
+				std::stringstream obstrm;
+				std::stringstream sbstrm;
 
-				std::replace(obname.begin(), obname.end(), ',', '|');
-				std::replace(sbname.begin(), sbname.end(), ',', '|');
+				if (verbose_)
+				{
+					obstrm << ob->get_name();
+					sbstrm << sb->get_name();
+				}
+				else
+				{
+					auto oit = num_corres.find(ob);
+					auto sit = num_corres.find(sb);
 
-				ofile << obname << ","
-					  << sbname << ","
-					  << e.sid_ << "\n";
+					size_t obidx;
+					if (num_corres.end() == oit)
+					{
+						num_corres[ob] = obidx = num_des++;
+					}
+					else
+					{
+						obidx = oit->second;
+					}
+					size_t sbidx;
+					if (num_corres.end() == sit)
+					{
+						num_corres[sb] = sbidx = num_des++;
+					}
+					else
+					{
+						sbidx = sit->second;
+					}
+
+					obstrm << '[' << obidx << ']' << ob->get_label();
+					sbstrm << '[' << sbidx << ']' << sb->get_label();
+				}
+				if (display_shape_)
+				{
+					obstrm << "(";
+					sbstrm << "(";
+					print_shape(ob->get_shape(), obstrm);
+					print_shape(sb->get_shape(), sbstrm);
+					obstrm << ")";
+					sbstrm << ")";
+				}
+
+				ofile << obstrm.str() << "," << sbstrm.str() << "," << e.sid_ << "\n";
 			}
 		}
 		ofile.close();
 	}
+
+	bool verbose_ = false;
+	bool display_shape_ = true;
 
 private:
 	static ptr_record prec_;

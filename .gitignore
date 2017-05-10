@@ -52,7 +52,6 @@ bin/
 docs/
 build/
 cmake-build-*/
-scripts/
 
 # whitelist
 !.gitignore
