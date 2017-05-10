@@ -3,20 +3,31 @@
 #include "dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
-static std::default_random_engine generator;
-
-std::vector<double> generate_observation (size_t n_obs)
+static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
-	std::uniform_real_distribution<double> dis(-1, 1);
-	std::vector<double> output(n_obs);
-	std::generate(output.begin(), output.end(), [&dis](){ return dis(generator); });
-	return output;
+	size_t total = n * batchsize;
+
+//	std::random_device rnd_device;
+	std::default_random_engine rnd_device;
+	// Specify the engine and distribution.
+	std::mt19937 mersenne_engine(rnd_device());
+	std::uniform_real_distribution<double> dist(0, 1);
+
+	auto gen = std::bind(dist, mersenne_engine);
+	std::vector<double> vec(total);
+	std::generate(std::begin(vec), std::end(vec), gen);
+	return vec;
 }
 
-double generate_reward (void)
+static std::vector<double> avgevry2 (std::vector<double>& in)
 {
-	std::uniform_real_distribution<double> dis(0, 2);
-	return dis(generator);
+	std::vector<double> out;
+	for (size_t i = 0, n = in.size()/2; i < n; i++)
+	{
+		double val = (in.at(2*i) + in.at(2*i+1)) / 2;
+		out.push_back(val);
+	}
+	return out;
 }
 
 int main (int argc, char** argv)
@@ -60,26 +71,39 @@ int main (int argc, char** argv)
 	{
 		std::vector<double> observations;
 		std::vector<double> new_observations;
-		double reward;
+		std::vector<double> expect_out;
+		std::vector<double> output;
 		size_t action;
+		double reward;
 		size_t n_observations = 4;
 		size_t n_actions = 2;
 		for (size_t i = 0; i < episode_count; i++)
 		{
-			observations = generate_observation(n_observations);
+			observations = batch_generate(n_observations, 1);
+			expect_out = avgevry2(observations);
 			reward = 0;
 			for (size_t j = 0; j < max_steps; j++)
 			{
-				action = trained_dqn->action(observations);
-				new_observations = generate_observation(n_observations);
-				reward = generate_reward();
+				output = trained_dqn->direct_out(observations);
+				action = output[0] > output[1] ? 0 : 1;
+				double err = 0;
+				for (size_t i = 0; i < n_actions; i++)
+				{
+					err += std::abs(output[i] - expect_out[i]);
+				}
+				err /= n_actions;
+				std::cout << "error " << err << " turn " << j << std::endl;
+				reward = 2*(1.0 - err) - 1;
+				
+				new_observations = batch_generate(n_observations, 1);
+				expect_out = avgevry2(observations);
 
 				trained_dqn->store(observations, action, reward, new_observations);
 				trained_dqn->train();
 
 				observations = new_observations;
 			}
-			std::cout << "episode " << i << std::endl;
+			std::cout << "episode " << i << " trained " << trained_dqn->get_numtrained() << " times" << std::endl;
 		}
 		exit_code = 0;
 	}

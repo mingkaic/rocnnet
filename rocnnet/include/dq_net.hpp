@@ -55,6 +55,8 @@ public:
 	dq_net& operator = (dq_net&& other);
 
 	double action (std::vector<double>& input);
+	
+	std::vector<double> direct_out (std::vector<double>& input);
 
 	void store (std::vector<double> observation, size_t action_idx,
 		double reward, std::vector<double> new_obs);
@@ -64,6 +66,8 @@ public:
 	void initialize (std::string serialname = "");
 
 	bool save (std::string fname) const;
+	
+	size_t get_numtrained (void) const { return iteration_; }
 
 	// feel free to seed it
 	std::default_random_engine generator_;

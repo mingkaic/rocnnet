@@ -77,6 +77,21 @@ double dq_net::action (std::vector<double>& input)
 	*input_ = input;
 	return nnet::expose<double>(best_output_)[0];
 }
+	
+std::vector<double> dq_net::direct_out (std::vector<double>& input)
+{
+	actions_executed_++; // book keep
+	double exploration = linear_annealing(1.0);
+	// perform random exploration action
+	if (get_random() < exploration)
+	{
+		std::vector<double> act_score(n_output_); 
+	    std::generate(act_score.begin(), act_score.end(), [this](){ return get_random(); }); 
+	    return act_score; 
+	}
+	*input_ = input;
+	return nnet::expose<double>(output_);
+}
 
 void dq_net::store (std::vector<double> observation, size_t action_idx,
 	double reward, std::vector<double> new_obs)
