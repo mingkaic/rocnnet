@@ -51,10 +51,10 @@ exec_cmd "rm /usr/bin/gcc && mv /usr/bin/gcc-6 /usr/bin/gcc"
 if [ ! -d $PROTODIR/ ]; then
     echo "Not Found: $PROTODIR/"
     exec_cmd "pushd $1/ && wget https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz && popd";
-    exec_cmd "pushd $1/ && tar xvfz $1/protobuf-cpp-3.2.0.tar.gz && pushd $PROTODIR && ./configure && make && popd";
+    exec_cmd "pushd $1/ && tar xvfz $1/protobuf-cpp-3.2.0.tar.gz && pushd $PROTODIR && ./configure --prefix=/usr && make && popd";
 fi
 # install protobuf3
-exec_cmd "pushd $PROTODIR && make install && popd"
+exec_cmd "pushd $PROTODIR && make install && ldconfig && popd"
 
 # install swig
 exec_cmd "apt-get update && apt-get install -y swig"
@@ -87,4 +87,4 @@ make -C lcov-1.13/ install
 gem install coveralls-lcov
 
 # downlaod open-ai gym
-exec_cmd "pushd $1/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
+exec_cmd "pushd $2/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
