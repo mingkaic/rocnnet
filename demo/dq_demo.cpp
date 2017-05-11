@@ -41,32 +41,33 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t episode_count = 250;
-	size_t max_steps = 100; 
-	size_t n_in = 4;
-	size_t n_out = 2;
-	size_t n_batch = 3;
+	size_t max_steps = 100;
+	size_t n_observations = 10;
+	size_t n_actions = 5;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
-		rocnnet::IN_PAIR(3, nnet::sigmoid<double>),
-		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
+		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
+		rocnnet::IN_PAIR(n_actions, nnet::sigmoid<double>)
 	};
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = 0.9;
 	rocnnet::dqn_param param;
 	param.mini_batch_size_ = 10;
+	param.max_exp_ = 100;
 	
-	rocnnet::dq_net untrained_dqn(n_in, hiddens, bgd, param, "untrained_dqn");
+	rocnnet::dq_net untrained_dqn(n_observations, hiddens, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 
 	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
-	trained_dqn->initialize();
+	trained_dqn->initialize(serialpath);
 
-	rocnnet::dq_net pretrained_dqn(n_in, hiddens, bgd, param, "pretrained_dqn");
-	pretrained_dqn.initialize(serialpath);
-	
 	// action and observations are randomly generated, so they're meaningless. 
 	// we're evaluating whether we hit any assertions/exceptions
 	int exit_code = 0;
+	// exit code:
+	//	0 = fine
+	//	1 = internal error
+	//	2 = overfitting
 	try
 	{
 		std::vector<double> observations;
@@ -75,24 +76,19 @@ int main (int argc, char** argv)
 		std::vector<double> output;
 		size_t action;
 		double reward;
-		size_t n_observations = 4;
-		size_t n_actions = 2;
+		double last_episode_error = 1;
 		for (size_t i = 0; i < episode_count; i++)
 		{
 			observations = batch_generate(n_observations, 1);
 			expect_out = avgevry2(observations);
 			reward = 0;
+			double episode_err = 0;
 			for (size_t j = 0; j < max_steps; j++)
 			{
 				output = trained_dqn->direct_out(observations);
-				action = output[0] > output[1] ? 0 : 1;
-				double err = 0;
-				for (size_t i = 0; i < n_actions; i++)
-				{
-					err += std::abs(output[i] - expect_out[i]);
-				}
-				err /= n_actions;
-				std::cout << "error " << err << " turn " << j << std::endl;
+				auto mit = (std::max_element(output.begin(), output.end()));
+				action = std::distance(output.begin(), mit);
+				double err = std::abs(output[action] - expect_out[action]);
 				reward = 2*(1.0 - err) - 1;
 				
 				new_observations = batch_generate(n_observations, 1);
@@ -102,10 +98,38 @@ int main (int argc, char** argv)
 				trained_dqn->train();
 
 				observations = new_observations;
+				episode_err += err;
 			}
-			std::cout << "episode " << i << " trained " << trained_dqn->get_numtrained() << " times" << std::endl;
+			episode_err /= max_steps;
+			// allow ~15% decrease in accuracy (15% increase in error) since last episode
+			// otherwise declare that we overfitted and quit
+			if (episode_err - last_episode_error > 0.2)
+			{
+				std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
+				exit_code = 2;
+			}
+
+			if (std::isnan(episode_err)) throw std::exception();
+			std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error" << std::endl;
 		}
-		exit_code = 0;
+
+		double total_err = 0;
+		for (size_t j = 0; j < max_steps; j++)
+		{
+			observations = batch_generate(n_observations, 1);
+			output = untrained_dqn.direct_out(observations);
+			action = output[0] > output[1] ? 0 : 1;
+			double err = 0;
+			for (size_t i = 0; i < n_actions; i++)
+			{
+				err += std::abs(output[i] - expect_out[i]);
+			}
+			err /= n_actions;
+			total_err += err;
+		}
+		total_err /= max_steps;
+
+		std::cout << "untrained performance: " << total_err * 100 << "% average error" << std::endl;
 	}
 	catch (std::exception& e)
 	{
@@ -116,6 +140,11 @@ int main (int argc, char** argv)
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();
 #endif /* EDGE_RCD */
+
+	if (exit_code == 0)
+	{
+		trained_dqn->save(serialname);
+	}
 	
 	delete trained_dqn;
 

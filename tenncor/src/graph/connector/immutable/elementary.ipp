@@ -334,6 +334,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 template <typename T>
 varptr<T> clip_norm (const varptr<T> a, T cap)
 {
+	assert(cap > 0); // todo: maybe throw to indicate usage error
 	if (nullptr == a) return nullptr;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[cap](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -348,15 +349,17 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 			l2norm += in[i] * in[i];
 		}
 		l2norm = std::sqrt(l2norm);
-//		assert(l2norm != 0);
-		// if we have a 0 vector, we have no where to go
-		// which means we might as well not change anything
-		// todo: come up with a more elegant solution
-		if (l2norm == 0) return;
-		// clip
-		for (size_t i = 0; i < ns; i++)
+		if (l2norm > cap)
 		{
-			dest[i] = in[i] * cap / l2norm;
+			// normalize
+			for (size_t i = 0; i < ns; i++)
+			{
+				dest[i] = in[i] * cap / l2norm;
+			}
+		}
+		else
+		{
+			std::memcpy(dest, in, sizeof(T) * ns);
 		}
 	},
 	[cap](std::vector<inode<T>*> args, variable<T>* leaf)

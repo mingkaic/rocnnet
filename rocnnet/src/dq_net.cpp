@@ -287,13 +287,16 @@ void dq_net::variable_setup (void)
 {
 	// output computation
 	output_ = (*source_qnet_)(input_);
+	output_->set_label("output");
 	best_output_ = nnet::arg_max(output_, 0);
 
 	// training input/output
 	train_output_ = (*source_qnet_)(train_input_);
+	train_output_->set_label("train_output");
 
 	// predict future reward
 	next_output_ = (*target_qnet_)(next_input_);
+	next_output_->set_label("next_output");
 	nnet::varptr<double> target_values = nnet::varptr<double>(next_output_mask_) *
 		nnet::reduce_max(nnet::varptr<double>(next_output_), 0);
 	future_reward_ = nnet::varptr<double>(reward_) + params_.discount_rate_ * target_values; // reward for each instance in batch
@@ -305,6 +308,7 @@ void dq_net::variable_setup (void)
 	nnet::varptr<double> diff = masked_output_score - future_reward_;
 	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
+	error_->set_label("error");
 
 	// updates for source network
 	std::unordered_set<nnet::variable<double>*> biases;
@@ -328,20 +332,20 @@ void dq_net::variable_setup (void)
 	});
 
 	// updates for target network
-	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
 	std::vector<WB_PAIR> target_vars = target_qnet_->get_variables();
-	assert(source_vars.size() == target_vars.size()); // must be identical, since they're copies
-	for (size_t i = 0, n = source_vars.size(); i < n; i++)
+	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
+	size_t nvars = target_vars.size();
+	assert(source_vars.size() == nvars); // must be identical, since they're copies
+	for (size_t i = 0; i < nvars; i++)
 	{
 		// this is equivalent to target = (1-alpha) * target + alpha * source
 		nnet::varptr<double> tarweight = target_vars[i].first;
 		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(
-			target_vars[i].first->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
+		target_updates_.push_back(target_vars[i].first->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
+
 		nnet::varptr<double> tarbias = target_vars[i].second;
 		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(
-			target_vars[i].second->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
+		target_updates_.push_back(target_vars[i].second->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
 	}
 }
 
