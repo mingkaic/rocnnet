@@ -11,17 +11,15 @@
  *
  */
 
-#include <list>
-#include <ctime>
-#include <random>
-#include <new>
-#include <memory>
-
 #include "graph/leaf/ivariable.hpp"
 
 #pragma once
 #ifndef TENNCOR_VARIABLE_HPP
 #define TENNCOR_VARIABLE_HPP
+
+#include <list>
+#include <new>
+#include <memory>
 
 namespace nnet
 {

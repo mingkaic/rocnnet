@@ -8,7 +8,9 @@
 
 #include "dq_net.hpp"
 
-#ifdef dqn_hpp
+#ifdef ROCNNET_DQN_HPP
+
+#include "memory/shared_rand.hpp"
 
 namespace rocnnet
 {
@@ -17,6 +19,7 @@ dq_net::dq_net (size_t n_input, std::vector<IN_PAIR> hiddens,
 	nnet::gd_updater<double>& updater,
 	dqn_param param, std::string scope) :
 n_input_(n_input), params_(param),
+scope_(scope),
 updater_(updater.clone())
 {
 	source_qnet_ = new ml_perceptron(n_input, hiddens, "source_"+scope);
@@ -170,10 +173,11 @@ void dq_net::train (void)
 	n_train_called_++;
 }
 
-void dq_net::initialize (std::string serialname)
+void dq_net::initialize (std::string serialname, std::string readscope)
 {
-	source_qnet_->initialize(serialname);
-	target_qnet_->initialize(serialname);
+	if (readscope.empty()) readscope = scope_;
+	source_qnet_->initialize(serialname, "source_" + readscope);
+	target_qnet_->initialize(serialname, "target_" + readscope);
 }
 
 bool dq_net::save (std::string fname) const
@@ -225,6 +229,8 @@ void dq_net::tear_down (void)
 
 void dq_net::copy_helper (const dq_net& other, std::string scope)
 {
+	scope_ = other.scope_;
+
 	// copy over parameters
 	n_input_ = other.n_input_;
 	n_output_ = other.n_output_;
@@ -255,6 +261,8 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 
 void dq_net::move_helper (dq_net&& other, std::string scope)
 {
+	scope_ = std::move(other.scope_);
+
 	// move parameters
 	n_input_ = std::move(other.n_input_);
 	n_output_ = std::move(other.n_output_);
@@ -306,7 +314,7 @@ void dq_net::variable_setup (void)
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(
 		nnet::varptr<double>(train_output_) * nnet::varptr<double>(output_mask_), 0);
 	nnet::varptr<double> diff = masked_output_score - future_reward_;
-	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
+	nnet::varptr<double> error = diff * diff;//nnet::reduce_mean(diff * diff);
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
 	error_->set_label("error");
 
@@ -326,7 +334,7 @@ void dq_net::variable_setup (void)
 		if (biases.end() != biases.find(leaf))
 		{
 			// average the batches
-			grad = nnet::reduce_mean(grad, {1});
+			grad = nnet::reduce_mean(grad, 1);
 		}
 		return nnet::clip_norm(grad, 5.0);
 	});
@@ -359,7 +367,7 @@ double dq_net::linear_annealing (double initial_prob) const
 
 double dq_net::get_random(void)
 {
-	return explore_(generator_);
+	return explore_(nnet::get_generator());
 }
 
 std::vector<dq_net::exp_batch> dq_net::random_sample (void)

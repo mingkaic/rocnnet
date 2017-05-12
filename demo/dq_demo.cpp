@@ -3,12 +3,12 @@
 #include "dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
+static std::default_random_engine rnd_device;//(std::time(NULL));
+
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
 	size_t total = n * batchsize;
 
-//	std::random_device rnd_device;
-	std::default_random_engine rnd_device;
 	// Specify the engine and distribution.
 	std::mt19937 mersenne_engine(rnd_device());
 	std::uniform_real_distribution<double> dist(0, 1);
@@ -37,7 +37,7 @@ int main (int argc, char** argv)
 	{
 		outdir = std::string(argv[1]);
 	}
-	std::string serialname = "dqntest.pbx";
+	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t episode_count = 250;
@@ -88,9 +88,9 @@ int main (int argc, char** argv)
 				output = trained_dqn->direct_out(observations);
 				auto mit = (std::max_element(output.begin(), output.end()));
 				action = std::distance(output.begin(), mit);
-				double err = std::abs(output[action] - expect_out[action]);
-				reward = 2*(1.0 - err) - 1;
-				
+				double err = output[action] - expect_out[action];
+				reward = std::round(2*(1.0 - err) - 1);
+
 				new_observations = batch_generate(n_observations, 1);
 				expect_out = avgevry2(observations);
 
@@ -113,23 +113,29 @@ int main (int argc, char** argv)
 			std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error" << std::endl;
 		}
 
-		double total_err = 0;
+		double total_untrained_err = 0;
+		double total_trained_err = 0;
 		for (size_t j = 0; j < max_steps; j++)
 		{
 			observations = batch_generate(n_observations, 1);
 			output = untrained_dqn.direct_out(observations);
-			action = output[0] > output[1] ? 0 : 1;
-			double err = 0;
-			for (size_t i = 0; i < n_actions; i++)
-			{
-				err += std::abs(output[i] - expect_out[i]);
-			}
-			err /= n_actions;
-			total_err += err;
-		}
-		total_err /= max_steps;
+			std::vector<double> train_output = trained_dqn->direct_out(observations);
+			auto mit = (std::max_element(output.begin(), output.end()));
+			action = std::distance(output.begin(), mit);
+			double untrained_err = std::abs(output[action] - expect_out[action]);
 
-		std::cout << "untrained performance: " << total_err * 100 << "% average error" << std::endl;
+			mit = (std::max_element(train_output.begin(), train_output.end()));
+			action = std::distance(train_output.begin(), mit);
+			double trained_err = std::abs(train_output[action] - expect_out[action]);
+
+			total_untrained_err += untrained_err;
+			total_trained_err += trained_err;
+		}
+		total_untrained_err /= max_steps;
+		total_trained_err /= max_steps;
+
+		std::cout << "untrained performance: " << total_untrained_err * 100 << "% average error" << std::endl;
+		std::cout << "trained performance: " << total_trained_err * 100 << "% average error" << std::endl;
 	}
 	catch (std::exception& e)
 	{

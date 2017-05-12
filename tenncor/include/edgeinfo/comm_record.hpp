@@ -6,8 +6,6 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include <unordered_set>
-#include <fstream>
 #include "edgeinfo/ptrinfo.hpp"
 #include "graph/react/subject.hpp"
 #include "graph/inode.hpp"
@@ -18,6 +16,9 @@
 
 #ifndef comm_record_hpp
 #define comm_record_hpp
+
+#include <unordered_set>
+#include <fstream>
 
 namespace rocnnet_record
 {

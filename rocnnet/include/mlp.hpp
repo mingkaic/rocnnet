@@ -38,7 +38,7 @@ public:
 
 	ml_perceptron& operator = (ml_perceptron&& other);
 
-	void initialize (std::string serialname = "");
+	void initialize (std::string serialname = "", std::string readscope = "");
 
 	// PLACEHOLDER CONNECTION
 	// input are expected to have shape n_input by batch_size

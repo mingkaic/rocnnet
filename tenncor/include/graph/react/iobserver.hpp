@@ -12,15 +12,15 @@
  *
  */
 
-#include <vector>
-#include <functional>
-#include <algorithm>
-
 #include "subject.hpp"
 
 #pragma once
 #ifndef TENNCOR_IOBSERVER_HPP
 #define TENNCOR_IOBSERVER_HPP
+
+#include <vector>
+#include <functional>
+#include <algorithm>
 
 namespace nnet
 {

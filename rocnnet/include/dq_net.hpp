@@ -6,18 +6,17 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <cassert>
-#include <random>
-
 #include "mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
-#ifndef dqn_hpp
-#define dqn_hpp
+#ifndef ROCNNET_DQN_HPP
+#define ROCNNET_DQN_HPP
+
+#include <algorithm>
+#include <numeric>
+#include <vector>
+#include <cassert>
 
 namespace rocnnet
 {
@@ -63,7 +62,7 @@ public:
 
 	void train (void);
 
-	void initialize (std::string serialname = "");
+	void initialize (std::string serialname = "", std::string readscope = "");
 
 	bool save (std::string fname) const;
 	
@@ -180,8 +179,10 @@ private:
 	std::uniform_real_distribution<double> explore_;
 
 	std::vector<exp_batch> experiences_;
+
+	std::string scope_;
 };
 
 }
 
-#endif /* dqn_hpp */
+#endif /* ROCNNET_DQN_HPP */

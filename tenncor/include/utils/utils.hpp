@@ -11,6 +11,10 @@
  *
  */
 
+#pragma once
+#ifndef TENNCOR_UTILS_HPP
+#define TENNCOR_UTILS_HPP
+
 #include <string>
 #include <sstream>
 #include <unordered_set>
@@ -20,10 +24,6 @@
 #include <vector>
 #include <ctime>
 #include <chrono>
-
-#pragma once
-#ifndef TENNCOR_UTILS_HPP
-#define TENNCOR_UTILS_HPP
 
 namespace nnutils
 {

@@ -7,11 +7,12 @@
 //
 
 #include "graph/connector/iconnector.hpp"
-#include <functional>
 
 #pragma once
 #ifndef mutable_connect_hpp
 #define mutable_connect_hpp
+
+#include <functional>
 
 namespace nnet
 {

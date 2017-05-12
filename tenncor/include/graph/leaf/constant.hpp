@@ -11,17 +11,15 @@
  *
  */
 
-#include <list>
-#include <ctime>
-#include <random>
-#include <new>
-#include <memory>
-
 #include "graph/leaf/ileaf.hpp"
 
 #pragma once
 #ifndef TENNCOR_CONSTANT_HPP
 #define TENNCOR_CONSTANT_HPP
+
+#include <list>
+#include <new>
+#include <memory>
 
 namespace nnet
 {

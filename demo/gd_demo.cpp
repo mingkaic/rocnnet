@@ -10,12 +10,12 @@
 #include "gd_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
+static std::default_random_engine rnd_device(std::time(NULL));
+
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
 	size_t total = n * batchsize;
 
-//	std::random_device rnd_device;
-	std::default_random_engine rnd_device;
 	// Specify the engine and distribution.
 	std::mt19937 mersenne_engine(rnd_device());
 	std::uniform_real_distribution<double> dist(0, 1);
@@ -44,7 +44,7 @@ int main (int argc, char** argv)
 	{
 		outdir = std::string(argv[1]);
 	}
-	std::string serialname = "demotest.pbx";
+	std::string serialname = "gd_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
 	std::clock_t start;
@@ -61,14 +61,14 @@ int main (int argc, char** argv)
 	};
 	nnet::vgb_updater bgd;
 	bgd.learning_rate_ = 0.9;
-	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd);
+	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
 
-	rocnnet::gd_net* trained_gdn = untrained_gdn.clone();
+	rocnnet::gd_net* trained_gdn = untrained_gdn.clone("trained_gd_net");
 	trained_gdn->initialize();
 
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd);
-	pretrained_gdn.initialize(serialpath);
+	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd, "pretrained_gd_net");
+	pretrained_gdn.initialize(serialpath, "trained_gd_net");
 
 	// train mlp to output input
 	start = std::clock();
