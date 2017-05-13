@@ -96,6 +96,12 @@ std::vector<double> dq_net::direct_out (std::vector<double>& input)
 	return nnet::expose<double>(output_);
 }
 
+std::vector<double> dq_net::never_random (std::vector<double>& input)
+{
+	*input_ = input;
+	return nnet::expose<double>(output_);
+}
+
 void dq_net::store (std::vector<double> observation, size_t action_idx,
 	double reward, std::vector<double> new_obs)
 {
@@ -314,7 +320,7 @@ void dq_net::variable_setup (void)
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(
 		nnet::varptr<double>(train_output_) * nnet::varptr<double>(output_mask_), 0);
 	nnet::varptr<double> diff = masked_output_score - future_reward_;
-	nnet::varptr<double> error = diff * diff;//nnet::reduce_mean(diff * diff);
+	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
 	error_->set_label("error");
 
@@ -336,7 +342,9 @@ void dq_net::variable_setup (void)
 			// average the batches
 			grad = nnet::reduce_mean(grad, 1);
 		}
-		return nnet::clip_norm(grad, 5.0);
+		grad = nnet::clip_norm(grad, 5.0);
+		grad->set_label("grad_"+leaf->get_label());
+		return grad;
 	});
 
 	// updates for target network
@@ -347,13 +355,15 @@ void dq_net::variable_setup (void)
 	for (size_t i = 0; i < nvars; i++)
 	{
 		// this is equivalent to target = (1-alpha) * target + alpha * source
-		nnet::varptr<double> tarweight = target_vars[i].first;
+		nnet::variable<double>* tweight;
+		nnet::varptr<double> tarweight = tweight = target_vars[i].first;
 		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(target_vars[i].first->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
+		target_updates_.push_back(tweight->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
 
-		nnet::varptr<double> tarbias = target_vars[i].second;
+		nnet::variable<double>* tbias;
+		nnet::varptr<double> tarbias = tbias = target_vars[i].second;
 		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(target_vars[i].second->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
+		target_updates_.push_back(tbias->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
 	}
 }
 

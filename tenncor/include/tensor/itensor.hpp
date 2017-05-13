@@ -18,6 +18,7 @@
 #define TENNCOR_ITENSOR_HPP
 
 #include <vector>
+#include <cstddef>
 
 namespace nnet
 {

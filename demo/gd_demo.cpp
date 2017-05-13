@@ -49,7 +49,7 @@ int main (int argc, char** argv)
 
 	std::clock_t start;
 	double duration;
-	size_t n_train = 600;
+	size_t n_train = 3000;
 	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;

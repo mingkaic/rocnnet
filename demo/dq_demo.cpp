@@ -41,7 +41,7 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t episode_count = 250;
-	size_t max_steps = 100;
+	size_t max_steps = 1000;
 	size_t n_observations = 10;
 	size_t n_actions = 5;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
@@ -74,22 +74,22 @@ int main (int argc, char** argv)
 		std::vector<double> new_observations;
 		std::vector<double> expect_out;
 		std::vector<double> output;
-		size_t action;
-		double reward;
-		double last_episode_error = 1;
+		std::list<double> error_queue;
+		size_t err_queue_size = 10;
 		for (size_t i = 0; i < episode_count; i++)
 		{
+			double avgreward = 0;
 			observations = batch_generate(n_observations, 1);
 			expect_out = avgevry2(observations);
-			reward = 0;
 			double episode_err = 0;
 			for (size_t j = 0; j < max_steps; j++)
 			{
 				output = trained_dqn->direct_out(observations);
 				auto mit = (std::max_element(output.begin(), output.end()));
-				action = std::distance(output.begin(), mit);
-				double err = output[action] - expect_out[action];
-				reward = std::round(2*(1.0 - err) - 1);
+				size_t action = std::distance(output.begin(), mit);
+				double err = std::abs(output[action] - expect_out[action]);
+				double reward = 2 * (1.0 - err) - 1;
+				avgreward += reward;
 
 				new_observations = batch_generate(n_observations, 1);
 				expect_out = avgevry2(observations);
@@ -100,17 +100,31 @@ int main (int argc, char** argv)
 				observations = new_observations;
 				episode_err += err;
 			}
+			avgreward /= max_steps;
 			episode_err /= max_steps;
+
+			error_queue.push_back(episode_err);
+			if (error_queue.size() > err_queue_size)
+			{
+				error_queue.pop_front();
+			}
+
 			// allow ~15% decrease in accuracy (15% increase in error) since last episode
 			// otherwise declare that we overfitted and quit
-			if (episode_err - last_episode_error > 0.2)
+			double avgerr = 0;
+			for (double last_error : error_queue)
+			{
+				avgerr += last_error;
+			}
+			avgerr /= err_queue_size;
+			if (avgerr - episode_err > 0.1)
 			{
 				std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
 				exit_code = 2;
 			}
 
 			if (std::isnan(episode_err)) throw std::exception();
-			std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error" << std::endl;
+			std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error, reward: " << avgreward << std::endl;
 		}
 
 		double total_untrained_err = 0;
@@ -121,7 +135,7 @@ int main (int argc, char** argv)
 			output = untrained_dqn.direct_out(observations);
 			std::vector<double> train_output = trained_dqn->direct_out(observations);
 			auto mit = (std::max_element(output.begin(), output.end()));
-			action = std::distance(output.begin(), mit);
+			size_t action = std::distance(output.begin(), mit);
 			double untrained_err = std::abs(output[action] - expect_out[action]);
 
 			mit = (std::max_element(train_output.begin(), train_output.end()));
