@@ -18,6 +18,7 @@ ml_perceptron::ml_perceptron (
 	std::vector<IN_PAIR> hiddens,
     std::string scope) :
 n_input_(n_input),
+n_output_(hiddens.back().first),
 scope_(scope)
 {
 	size_t level = 0;
@@ -152,6 +153,7 @@ ml_perceptron* ml_perceptron::move_impl (std::string& scope)
 void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 {
 	n_input_ = other.n_input_;
+	n_output_ = other.n_output_;
 	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;
@@ -178,6 +180,7 @@ void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 void ml_perceptron::move_helper (ml_perceptron&& other, std::string& scope)
 {
 	n_input_ = std::move(other.n_input_);
+	n_output_ = std::move(other.n_output_);
 	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;

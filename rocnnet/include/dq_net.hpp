@@ -38,7 +38,7 @@ struct dqn_param
 class dq_net
 {
 public:
-	dq_net (size_t n_input, std::vector<IN_PAIR> hiddens,
+	dq_net (ml_perceptron* brain,
 		nnet::gd_updater<double>& updater,
 		dqn_param param = dqn_param(),
 		std::string scope = "DQN");
@@ -54,10 +54,8 @@ public:
 	dq_net& operator = (dq_net&& other);
 
 	double action (std::vector<double>& input);
-	
-	std::vector<double> direct_out (std::vector<double>& input);
 
-	std::vector<double> never_random (std::vector<double>& input);
+	double never_random (std::vector<double>& input);
 
 	void store (std::vector<double> observation, size_t action_idx,
 		double reward, std::vector<double> new_obs);
@@ -161,11 +159,6 @@ private:
 	nnet::gd_updater<double>* updater_ = nullptr;
 
 	// === scalar parameters ===
-	// argument memorization
-	size_t n_input_; // input size
-
-	size_t n_output_; // output size
-
 	// training parameters
 	dqn_param params_;
 

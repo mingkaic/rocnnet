@@ -98,6 +98,9 @@ variable_updater<double> adagradupdater::process_update (varptr<double>& /*gres*
 }
 
 
+//rmspropupdater::rmspropupdater (void) :
+//	momentum_() {}
+
 rmspropupdater* rmspropupdater::clone (void) { return static_cast<rmspropupdater*>(clone_impl()); }
 
 rmspropupdater* rmspropupdater::move (void) { return static_cast<rmspropupdater*>(move_impl()); }
@@ -112,11 +115,16 @@ gd_updater<double>* rmspropupdater::move_impl (void)
 	return new rmspropupdater(std::move(*this));
 }
 
-variable_updater<double> rmspropupdater::process_update (varptr<double>& /*gres*/,
-	variable<double>* /*leaf*/, grad_process<double> /*intermediate_process*/)
+variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
+	variable<double>* leaf, grad_process<double> intermediate_process)
 {
-	throw std::bad_function_call();
-	return [](void) {};
+	// momentum = discount_factor_ * momentum + (1 - discount_factor_) * gres^2
+	// leaf = leaf - learning_rate * gres / sqrt(momentum) + epsilon
+//	varptr<double> dres = intermediate_process(gres, leaf);
+//	varptr<double> momentumstep = ;
+//	varptr<double> leafstep = - dres * learning_rate_ / sqrt<double>(momentum_) + epsilon_;
+//
+//	return leaf->assign_add(leafstep);
 }
 
 

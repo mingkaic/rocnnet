@@ -30,6 +30,13 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 	return out;
 }
 
+// calculates the circumference distance between A and B assuming A and B represent positions on a circle with circumference wrap_size
+inline size_t wrapdist (size_t A, size_t B, size_t wrap_size){
+	double within_dist = std::min(A - B, B - A);
+	double edge_dist = std::min(A + 5 - B, B + 5 - A);
+	return std::min(within_dist, edge_dist);
+}
+
 int main (int argc, char** argv)
 {
 	std::string outdir = ".";
@@ -41,132 +48,141 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t episode_count = 250;
-	size_t max_steps = 1000;
+	size_t max_steps = 5000;
 	size_t n_observations = 10;
-	size_t n_actions = 5;
+	size_t n_actions = 7;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::sigmoid<double>)
 	};
 	nnet::vgb_updater bgd;
-	bgd.learning_rate_ = 0.9;
+	bgd.learning_rate_ = 0.0001;
 	rocnnet::dqn_param param;
 	param.mini_batch_size_ = 10;
-	param.max_exp_ = 100;
-	
-	rocnnet::dq_net untrained_dqn(n_observations, hiddens, bgd, param, "untrained_dqn");
+	param.discount_rate_ = 0.99;
+
+	rocnnet::ml_perceptron brain(n_observations, hiddens);
+	rocnnet::dq_net untrained_dqn(&brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
-
 	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
-	trained_dqn->initialize(serialpath);
+	trained_dqn->initialize(serialpath, "trained_dqn");
 
-	// action and observations are randomly generated, so they're meaningless. 
-	// we're evaluating whether we hit any assertions/exceptions
-	int exit_code = 0;
+	rocnnet::dq_net pretrained_dqn(&brain, bgd, param, "pretrained_dqn");
+	pretrained_dqn.initialize(serialpath, "trained_dqn");
+
+	int exit_status = 0;
 	// exit code:
 	//	0 = fine
-	//	1 = internal error
-	//	2 = overfitting
-	try
+	//	1 = overfitting
+	//	2 = training error rate is wrong
+
+	std::vector<double> observations;
+	std::vector<double> new_observations;
+	std::vector<double> expect_out;
+	std::list<double> error_queue;
+	size_t err_queue_size = 10;
+	size_t action_dist = n_actions / 2;
+	for (size_t i = 0; i < episode_count; i++)
 	{
-		std::vector<double> observations;
-		std::vector<double> new_observations;
-		std::vector<double> expect_out;
 		std::vector<double> output;
-		std::list<double> error_queue;
-		size_t err_queue_size = 10;
-		for (size_t i = 0; i < episode_count; i++)
-		{
-			double avgreward = 0;
-			observations = batch_generate(n_observations, 1);
-			expect_out = avgevry2(observations);
-			double episode_err = 0;
-			for (size_t j = 0; j < max_steps; j++)
-			{
-				output = trained_dqn->direct_out(observations);
-				auto mit = (std::max_element(output.begin(), output.end()));
-				size_t action = std::distance(output.begin(), mit);
-				double err = std::abs(output[action] - expect_out[action]);
-				double reward = 2 * (1.0 - err) - 1;
-				avgreward += reward;
-
-				new_observations = batch_generate(n_observations, 1);
-				expect_out = avgevry2(observations);
-
-				trained_dqn->store(observations, action, reward, new_observations);
-				trained_dqn->train();
-
-				observations = new_observations;
-				episode_err += err;
-			}
-			avgreward /= max_steps;
-			episode_err /= max_steps;
-
-			error_queue.push_back(episode_err);
-			if (error_queue.size() > err_queue_size)
-			{
-				error_queue.pop_front();
-			}
-
-			// allow ~15% decrease in accuracy (15% increase in error) since last episode
-			// otherwise declare that we overfitted and quit
-			double avgerr = 0;
-			for (double last_error : error_queue)
-			{
-				avgerr += last_error;
-			}
-			avgerr /= err_queue_size;
-			if (avgerr - episode_err > 0.1)
-			{
-				std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
-				exit_code = 2;
-			}
-
-			if (std::isnan(episode_err)) throw std::exception();
-			std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error, reward: " << avgreward << std::endl;
-		}
-
-		double total_untrained_err = 0;
-		double total_trained_err = 0;
+		double avgreward = 0;
+		observations = batch_generate(n_observations, 1);
+		expect_out = avgevry2(observations);
+		double episode_err = 0;
 		for (size_t j = 0; j < max_steps; j++)
 		{
-			observations = batch_generate(n_observations, 1);
-			output = untrained_dqn.direct_out(observations);
-			std::vector<double> train_output = trained_dqn->direct_out(observations);
-			auto mit = (std::max_element(output.begin(), output.end()));
-			size_t action = std::distance(output.begin(), mit);
-			double untrained_err = std::abs(output[action] - expect_out[action]);
+			size_t action = trained_dqn->action(observations);
+			auto mit = std::max_element(expect_out.begin(), expect_out.end());
+			size_t expect_action = std::distance(expect_out.begin(), mit);
 
-			mit = (std::max_element(train_output.begin(), train_output.end()));
-			action = std::distance(train_output.begin(), mit);
-			double trained_err = std::abs(train_output[action] - expect_out[action]);
+			// err = [0, 1, 2]
+			double err = wrapdist(expect_action, action, n_actions);
 
-			total_untrained_err += untrained_err;
-			total_trained_err += trained_err;
+			double reward = 1 - err;
+			avgreward += reward;
+
+			new_observations = batch_generate(n_observations, 1);
+			expect_out = avgevry2(observations);
+
+			trained_dqn->store(observations, action, reward, new_observations);
+			trained_dqn->train();
+
+			observations = new_observations;
+			episode_err += err / action_dist;
 		}
-		total_untrained_err /= max_steps;
-		total_trained_err /= max_steps;
+		avgreward /= max_steps;
+		episode_err /= max_steps;
 
-		std::cout << "untrained performance: " << total_untrained_err * 100 << "% average error" << std::endl;
-		std::cout << "trained performance: " << total_trained_err * 100 << "% average error" << std::endl;
+		error_queue.push_back(episode_err);
+		if (error_queue.size() > err_queue_size)
+		{
+			error_queue.pop_front();
+		}
+
+		// allow ~15% decrease in accuracy (15% increase in error) since last episode
+		// otherwise declare that we overfitted and quit
+		double avgerr = 0;
+		for (double last_error : error_queue)
+		{
+			avgerr += last_error;
+		}
+		avgerr /= error_queue.size();
+		if (avgerr - episode_err > 0.15)
+		{
+			std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
+			exit_status = 1;
+		}
+
+		if (std::isnan(episode_err)) throw std::exception();
+		std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error, reward: " << avgreward << std::endl;
 	}
-	catch (std::exception& e)
+
+	std::vector<double> untrained_output;
+	std::vector<double> trained_output;
+	std::vector<double> pretrained_output;
+	double total_untrained_err = 0;
+	double total_trained_err = 0;
+	double total_pretrained_err = 0;
+	for (size_t j = 0; j < max_steps; j++)
 	{
-		std::cerr << e.what() << std::endl;
-		exit_code = 1;
+		observations = batch_generate(n_observations, 1);
+		expect_out = avgevry2(observations);
+
+		double untrained_action = untrained_dqn.never_random(observations);
+		double trained_action = trained_dqn->never_random(observations);
+		double pretrained_action = pretrained_dqn.never_random(observations);
+
+		auto mit = std::max_element(expect_out.begin(), expect_out.end());
+		size_t expect_action = std::distance(expect_out.begin(), mit);
+
+		double untrained_err = wrapdist(expect_action, untrained_action, n_actions);
+		double trained_err = wrapdist(expect_action, trained_action, n_actions);
+		double pretrained_err = wrapdist(expect_action, pretrained_action, n_actions);
+
+		total_untrained_err += untrained_err / action_dist;
+		total_trained_err += trained_err / action_dist;
+		total_pretrained_err += pretrained_err / action_dist;
+	}
+	total_untrained_err /= max_steps;
+	total_trained_err /= max_steps;
+	total_pretrained_err /= max_steps;
+	std::cout << "untrained performance: " << total_untrained_err * 100 << "% average error" << std::endl;
+	std::cout << "trained performance: " << total_trained_err * 100 << "% average error" << std::endl;
+	std::cout << "pretrained performance: " << total_pretrained_err * 100 << "% average error" << std::endl;
+
+	if (total_untrained_err < total_trained_err) exit_status = 2;
+
+	if (exit_status == 0)
+	{
+		trained_dqn->save(serialname);
 	}
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();
 #endif /* EDGE_RCD */
-
-	if (exit_code == 0)
-	{
-		trained_dqn->save(serialname);
-	}
 	
 	delete trained_dqn;
 
-	return exit_code;
+	return exit_status;
 }

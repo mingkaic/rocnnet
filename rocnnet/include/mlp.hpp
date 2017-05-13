@@ -49,6 +49,10 @@ public:
 
 	bool save (std::string fname) const;
 
+	size_t get_ninput (void) const { return n_input_; }
+
+	size_t get_noutput (void) const { return n_output_; }
+
 protected:
 	ml_perceptron (const ml_perceptron& other, std::string& scope);
 
@@ -64,6 +68,8 @@ private:
 	void move_helper (ml_perceptron&& other, std::string& scope);
 
 	size_t n_input_;
+
+	size_t n_output_;
 
 	std::string scope_;
 

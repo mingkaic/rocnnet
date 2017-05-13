@@ -63,9 +63,7 @@ int main (int argc, char** argv)
 	bgd.learning_rate_ = 0.9;
 	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
-
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone("trained_gd_net");
-	trained_gdn->initialize();
 
 	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd, "pretrained_gd_net");
 	pretrained_gdn.initialize(serialpath, "trained_gd_net");
@@ -88,6 +86,11 @@ int main (int argc, char** argv)
 	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
 	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
 	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);
+
+	int exit_status = 0;
+	// exit code:
+	//	0 = fine
+	//	1 = training error rate is wrong
 
 	double untrained_err = 0;
 	double trained_err = 0;
@@ -116,14 +119,19 @@ int main (int argc, char** argv)
 		trained_err += trained_avgerr / trained_res.size();
 		pretrained_err += pretrained_avgerr / pretrained_res.size();
 	}
-	untrained_err *= 100.0 / (double) n_test;
-	trained_err *= 100.0 / (double) n_test;
-	pretrained_err *= 100.0 / (double) n_test;
-	std::cout << "untrained mlp error rate: " << untrained_err << "%\n";
-	std::cout << "trained mlp error rate: " << trained_err << "%\n";
-	std::cout << "pretrained mlp error rate: " << pretrained_err << "%\n";
+	untrained_err /= (double) n_test;
+	trained_err /= (double) n_test;
+	pretrained_err /= (double) n_test;
+	std::cout << "untrained mlp error rate: " << untrained_err * 100 << "%\n";
+	std::cout << "trained mlp error rate: " << trained_err * 100 << "%\n";
+	std::cout << "pretrained mlp error rate: " << pretrained_err * 100 << "%\n";
 
-	trained_gdn->save(serialpath);
+	if (untrained_err < trained_err) exit_status = 1;
+
+	if (exit_status == 0)
+	{
+		trained_gdn->save(serialpath);
+	}
 
 #ifdef EDGE_RCD
 	rocnnet_record::erec::rec.to_csv<double>();
@@ -131,5 +139,5 @@ int main (int argc, char** argv)
 	
 	delete trained_gdn;
 
-	return 0;
+	return exit_status;
 }
