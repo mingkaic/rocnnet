@@ -271,7 +271,7 @@ varptr<T> sqrt (const varptr<T> a)
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
 		varptr<T> a = args.front();
 		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad / (2 * std::sqrt(a));
+		return grad / ((T)2 * sqrt(a));
 	}, "sqrt");
 }
 
@@ -356,6 +356,12 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 			{
 				dest[i] = in[i] * cap / l2norm;
 			}
+			T newl2norm = 0;
+			for (size_t i = 0; i < ns; i++)
+			{
+				newl2norm += dest[i] * dest[i];
+			}
+			newl2norm = std::sqrt(newl2norm);
 		}
 		else
 		{

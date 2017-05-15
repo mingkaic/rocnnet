@@ -33,7 +33,7 @@ void itensor_handler<T>::operator () (tensor<T>& out,
 	std::vector<const T*> raws;
 	for (const tensor<T>* arg : args)
 	{
-		assert(arg->is_alloc());
+		assert(arg && arg->is_alloc());
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}

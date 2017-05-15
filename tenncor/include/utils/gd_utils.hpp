@@ -176,7 +176,7 @@ protected:
 // delta(var) = v_t = learning * rms_delta / rms_t
 struct rmspropupdater : public gd_updater<double>
 {
-	rmspropupdater (void);
+	virtual ~rmspropupdater (void);
 
 	rmspropupdater* clone (void);
 
@@ -184,7 +184,7 @@ struct rmspropupdater : public gd_updater<double>
 
 	double discount_factor_ = 0.9;
 
-//	variable<double> momentum_;
+	std::vector<variable<double>*> momentums_;
 
 	double epsilon_ = std::numeric_limits<double>::epsilon();
 

@@ -338,12 +338,12 @@ void dq_net::variable_setup (void)
 		nnet::variable<double>* tweight;
 		nnet::varptr<double> tarweight = tweight = target_vars[i].first;
 		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(tweight->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
+		target_updates_.push_back(tweight->assign_sub(params_.target_update_rate_ * (tarweight - srcweight)));
 
 		nnet::variable<double>* tbias;
 		nnet::varptr<double> tarbias = tbias = target_vars[i].second;
 		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(tbias->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
+		target_updates_.push_back(tbias->assign_sub(params_.target_update_rate_ * (tarbias - srcbias)));
 	}
 }
 

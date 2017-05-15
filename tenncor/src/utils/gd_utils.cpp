@@ -98,8 +98,13 @@ variable_updater<double> adagradupdater::process_update (varptr<double>& /*gres*
 }
 
 
-//rmspropupdater::rmspropupdater (void) :
-//	momentum_() {}
+rmspropupdater::~rmspropupdater (void)
+{
+	for (variable<double>* momentum : momentums_)
+	{
+		delete momentum;
+	}
+}
 
 rmspropupdater* rmspropupdater::clone (void) { return static_cast<rmspropupdater*>(clone_impl()); }
 
@@ -118,13 +123,30 @@ gd_updater<double>* rmspropupdater::move_impl (void)
 variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	variable<double>* leaf, grad_process<double> intermediate_process)
 {
+	const_init<double> zaroinit(0);
+	variable<double>* momentum = new variable<double>({}, zaroinit, "momentum");
+	momentums_.push_back(momentum); // updater manages momentum variable
+
 	// momentum = discount_factor_ * momentum + (1 - discount_factor_) * gres^2
 	// leaf = leaf - learning_rate * gres / sqrt(momentum) + epsilon
-//	varptr<double> dres = intermediate_process(gres, leaf);
-//	varptr<double> momentumstep = ;
-//	varptr<double> leafstep = - dres * learning_rate_ / sqrt<double>(momentum_) + epsilon_;
-//
-//	return leaf->assign_add(leafstep);
+	varptr<double> dres = intermediate_process(gres, leaf);
+	varptr<double> momentumstep = discount_factor_ * varptr<double>(momentum) + (1-discount_factor_) * dres * dres;
+	varptr<double> leafstep = - dres * learning_rate_ / sqrt<double>(momentum) + epsilon_;
+
+	auto momentumupdate = momentum->assign(momentumstep);
+	auto leafupdate = leaf->assign_add(leafstep);
+	return [momentumupdate, leafupdate, momentum, dres, momentumstep]()
+	{
+		if (!momentum->good_status())
+		{
+			momentum->initialize(dres->get_shape());
+		}
+		iconnector<double>* conner = dynamic_cast<iconnector<double>*>(momentumstep.get());
+		conner->update_status(false);
+		conner->update_status(true);
+		momentumupdate();
+		leafupdate();
+	};
 }
 
 

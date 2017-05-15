@@ -33,7 +33,7 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 // calculates the circumference distance between A and B assuming A and B represent positions on a circle with circumference wrap_size
 inline size_t wrapdist (size_t A, size_t B, size_t wrap_size){
 	double within_dist = std::min(A - B, B - A);
-	double edge_dist = std::min(A + 5 - B, B + 5 - A);
+	double edge_dist = std::min(A + wrap_size - B, B + wrap_size - A);
 	return std::min(within_dist, edge_dist);
 }
 
@@ -48,25 +48,28 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t episode_count = 250;
-	size_t max_steps = 5000;
+//	size_t max_steps = 5000;
+	size_t max_steps = 100;
 	size_t n_observations = 10;
-	size_t n_actions = 7;
+	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::sigmoid<double>)
 	};
-	nnet::vgb_updater bgd;
-	bgd.learning_rate_ = 0.0001;
+	nnet::rmspropupdater bgd;
+	bgd.learning_rate_ = 0.1;
 	rocnnet::dqn_param param;
+	param.store_interval_ = 1;
 	param.mini_batch_size_ = 10;
 	param.discount_rate_ = 0.99;
+	param.exploration_period_ = 0;
 
 	rocnnet::ml_perceptron brain(n_observations, hiddens);
 	rocnnet::dq_net untrained_dqn(&brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
-	trained_dqn->initialize(serialpath, "trained_dqn");
+//	trained_dqn->initialize(serialpath, "trained_dqn");
 
 	rocnnet::dq_net pretrained_dqn(&brain, bgd, param, "pretrained_dqn");
 	pretrained_dqn.initialize(serialpath, "trained_dqn");
@@ -96,10 +99,10 @@ int main (int argc, char** argv)
 			auto mit = std::max_element(expect_out.begin(), expect_out.end());
 			size_t expect_action = std::distance(expect_out.begin(), mit);
 
-			// err = [0, 1, 2]
+			// err = [0, 1, 2, 3]
 			double err = wrapdist(expect_action, action, n_actions);
 
-			double reward = 1 - err;
+			double reward = 1 - 2.0 * err / action_dist;
 			avgreward += reward;
 
 			new_observations = batch_generate(n_observations, 1);

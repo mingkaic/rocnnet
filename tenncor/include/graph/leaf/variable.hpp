@@ -69,6 +69,8 @@ public:
 	virtual void get_leaves (
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
+	variable_updater<T> assign (inode<T>* input) const;
+
 	//! return update data function (add input node data to this)
 	variable_updater<T> assign_add (inode<T>* input) const;
 

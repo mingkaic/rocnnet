@@ -26,7 +26,7 @@ struct dqn_param
 	size_t train_interval_ = 5;
 	double rand_action_prob_ = 0.05;
 	double discount_rate_ = 0.95;
-	double update_rate_ = 0.01;
+	double target_update_rate_ = 0.01;
 	double exploration_period_ = 1000;
 	// memory parameters
 	size_t store_interval_ = 5;
