@@ -182,7 +182,8 @@ int main (int argc, char** argv)
 	}
 
 #ifdef EDGE_RCD
-	rocnnet_record::erec::rec.to_csv<double>();
+	rocnnet_record::erec::rec.to_csv<double>(
+		static_cast<nnet::iconnector<double>*>(trained_dqn->get_trainout().get()));
 #endif /* EDGE_RCD */
 	
 	delete trained_dqn;

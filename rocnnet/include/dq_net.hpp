@@ -68,6 +68,8 @@ public:
 	
 	size_t get_numtrained (void) const { return iteration_; }
 
+	nnet::varptr<double> get_trainout (void) const { return train_output_; }
+
 	// feel free to seed it
 	std::default_random_engine generator_;
 
