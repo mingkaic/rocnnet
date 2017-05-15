@@ -11,18 +11,18 @@
  *
  */
 
+#include "utils/utils.hpp"
+
+#pragma once
+#ifndef TENNCOR_TENSORSHAPE_HPP
+#define TENNCOR_TENSORSHAPE_HPP
+
 #include <iostream>
 #include <cassert>
 #include <stdexcept>
 #include <vector>
 #include <numeric>
 #include <experimental/optional>
-
-#include "utils/utils.hpp"
-
-#pragma once
-#ifndef TENNCOR_TENSORSHAPE_HPP
-#define TENNCOR_TENSORSHAPE_HPP
 
 using namespace std::experimental;
 

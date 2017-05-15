@@ -38,7 +38,7 @@ public:
 
 	ml_perceptron& operator = (ml_perceptron&& other);
 
-	void initialize (std::string serialname = "");
+	void initialize (std::string serialname = "", std::string readscope = "");
 
 	// PLACEHOLDER CONNECTION
 	// input are expected to have shape n_input by batch_size
@@ -48,6 +48,10 @@ public:
 	std::vector<WB_PAIR> get_variables (void) const;
 
 	bool save (std::string fname) const;
+
+	size_t get_ninput (void) const { return n_input_; }
+
+	size_t get_noutput (void) const { return n_output_; }
 
 protected:
 	ml_perceptron (const ml_perceptron& other, std::string& scope);
@@ -64,6 +68,8 @@ private:
 	void move_helper (ml_perceptron&& other, std::string& scope);
 
 	size_t n_input_;
+
+	size_t n_output_;
 
 	std::string scope_;
 

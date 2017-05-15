@@ -11,13 +11,15 @@
  *
  */
 
+#pragma once
+#ifndef TENNCOR_SUBJECT_HPP
+#define TENNCOR_SUBJECT_HPP
+
 #include <unordered_map>
 #include <unordered_set>
 #include <experimental/optional>
 
-#pragma once
-#ifndef TENNCOR_SUBJECT_HPP
-#define TENNCOR_SUBJECT_HPP
+using namespace std::experimental;
 
 namespace nnet
 {

@@ -18,6 +18,7 @@ ml_perceptron::ml_perceptron (
 	std::vector<IN_PAIR> hiddens,
     std::string scope) :
 n_input_(n_input),
+n_output_(hiddens.back().first),
 scope_(scope)
 {
 	size_t level = 0;
@@ -70,8 +71,9 @@ ml_perceptron& ml_perceptron::operator = (ml_perceptron&& other)
 	return *this;
 }
 
-void ml_perceptron::initialize (std::string serialname)
+void ml_perceptron::initialize (std::string serialname, std::string readscope)
 {
+	if (readscope.empty()) readscope = scope_;
 	std::vector<nnet::inode<double>*> vars;
 	for (HID_PAIR hp : layers_)
 	{
@@ -80,7 +82,7 @@ void ml_perceptron::initialize (std::string serialname)
 		vars.push_back(wb.second);
 	}
 
-	if (nnet::read<double>(vars, serialname) && vars.empty()) return;
+	if (nnet::read_inorder<double>(vars, readscope, serialname) && vars.empty()) return;
 
 	for (nnet::inode<double>* v : vars)
 	{
@@ -125,7 +127,7 @@ bool ml_perceptron::save (std::string fname) const
 		vars.push_back(wb.first);
 		vars.push_back(wb.second);
 	}
-	return nnet::write<double>(vars, fname);
+	return nnet::write_inorder<double>(vars, scope_, fname);
 }
 
 ml_perceptron::ml_perceptron (const ml_perceptron& other, std::string& scope)
@@ -151,6 +153,7 @@ ml_perceptron* ml_perceptron::move_impl (std::string& scope)
 void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 {
 	n_input_ = other.n_input_;
+	n_output_ = other.n_output_;
 	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;
@@ -177,6 +180,7 @@ void ml_perceptron::copy_helper (const ml_perceptron& other, std::string& scope)
 void ml_perceptron::move_helper (ml_perceptron&& other, std::string& scope)
 {
 	n_input_ = std::move(other.n_input_);
+	n_output_ = std::move(other.n_output_);
 	for (HID_PAIR hp : layers_)
 	{
 		delete hp.first;

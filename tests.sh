@@ -60,11 +60,18 @@ echo "running gd_demo"
 assert_cmd "${BINDIR}/gd_demo $PBX_CACHE"
 echo "gd_demo complete"
 
+echo "running C++ dq_demo"
+assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
+echo "C++ dq_demo complete"
+
+echo "running python dq_demo"
+assert_cmd "python ${BUILDDIR}/demo/dq_demo.py"
+
 # coverage analysis
 pushd ${BUILDDIR}
 lcov --version
 gcov --version
 lcov --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
-lcov --remove coverage.info '**/gtest*' '**/tests/*' '/usr/*' --output-file coverage.info # filter out system and test code
+lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '/usr/*' --output-file coverage.info # filter out system and test code
 lcov --list coverage.info # debug < see coverage here
 on_travis coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls

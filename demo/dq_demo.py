@@ -4,9 +4,10 @@ import _init_paths
 import gym
 from dqn import *
 
-serializedname = 'dqntest.pbx'
+specname = 'CartPole-v0'
+serializedname = 'dqntest_'+specname+'.pbx'
 
-spec = gym.spec('CartPole-v0')
+spec = gym.spec(specname)
 env = spec.make()
 episode_count = 250
 max_steps = 10000

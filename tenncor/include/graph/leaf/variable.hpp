@@ -11,17 +11,15 @@
  *
  */
 
-#include <list>
-#include <ctime>
-#include <random>
-#include <new>
-#include <memory>
-
 #include "graph/leaf/ivariable.hpp"
 
 #pragma once
 #ifndef TENNCOR_VARIABLE_HPP
 #define TENNCOR_VARIABLE_HPP
+
+#include <list>
+#include <new>
+#include <memory>
 
 namespace nnet
 {
@@ -70,6 +68,8 @@ public:
 	//! merge/update the gradient/leaf info
 	virtual void get_leaves (
 		typename inode<T>::GRAD_CACHE& leaves) const;
+
+	variable_updater<T> assign (inode<T>* input) const;
 
 	//! return update data function (add input node data to this)
 	variable_updater<T> assign_add (inode<T>* input) const;

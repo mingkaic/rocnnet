@@ -16,7 +16,6 @@
 #ifndef TENNCOR_DEFAULT_ALLOC_HPP
 #define TENNCOR_DEFAULT_ALLOC_HPP
 
-
 namespace nnet
 {
 

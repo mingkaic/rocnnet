@@ -1,9 +1,9 @@
 ## Synopsis
           
 Tenncor library abstracts away tensor functions. 
-A tensor is an N-dimensional container. 
+A tensor is an N-dimensional geometric object. 
 
-These containers are often used in machine learning models.
+These objects are often used in machine learning models.
 Quite often, the such system will need some derivative of the function. 
 
 Tenncor simplifies the process by applying automatic differentiation, 

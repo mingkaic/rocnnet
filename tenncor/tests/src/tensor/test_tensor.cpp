@@ -15,17 +15,16 @@
 #ifndef DISABLE_TENSOR_TEST
 
 
-static tensorshape random_partialshape ()
+static tensorshape random_partialshape (void)
 {
-	size_t rank = FUZZ::getInt(1, "rank", {1, 5})[0];
+	std::vector<size_t> rlist = random_def_shape().as_list();
 	size_t nzeros = FUZZ::getInt(1, "nzeros", {1, 5})[0];
-	std::vector<size_t> shape = FUZZ::getInt(rank, "shape", {2, 21});
 	for (size_t i = 0; i < nzeros; i++)
 	{
-		size_t zidx = FUZZ::getInt(1, "zidx", {0, shape.size()})[0];
-		shape.insert(shape.begin()+zidx, 0);
+		size_t zidx = FUZZ::getInt(1, "zidx", {0, rlist.size()})[0];
+		rlist.insert(rlist.begin()+zidx, 0);
 	}
-	return tensorshape(shape);
+	return tensorshape(rlist);
 }
 
 

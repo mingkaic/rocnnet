@@ -11,13 +11,13 @@
  *  Copyright © 2017 Mingkai Chen. All rights reserved.
  */
 
-#include <unordered_map>
-
 #include "memory/iallocator.hpp"
 #include "memory/default_alloc.hpp"
 
 #ifndef TENNCOR_ALLOC_BUILDER_HPP
 #define TENNCOR_ALLOC_BUILDER_HPP
+
+#include <unordered_map>
 
 namespace nnet
 {

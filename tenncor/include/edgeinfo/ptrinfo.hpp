@@ -2,12 +2,12 @@
 // Created by Mingkai Chen on 2017-01-30.
 //
 
-#include <unordered_map>
-#include <stack>
-
 #pragma once
 #ifndef ptrinfo_hpp
 #define ptrinfo_hpp
+
+#include <unordered_map>
+#include <stack>
 
 namespace rocnnet_record
 {

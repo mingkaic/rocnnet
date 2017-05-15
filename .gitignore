@@ -38,6 +38,7 @@ Desktop.ini
 
 # Any databases
 *.db
+*.svg
 
 # Compiled Python files
 *.pyc

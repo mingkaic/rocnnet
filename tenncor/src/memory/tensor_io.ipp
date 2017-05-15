@@ -11,9 +11,8 @@
 namespace nnet
 {
 
-// inodes should be ordered (bottom-up)
 template <typename T>
-bool write (std::vector<inode<T>*> serialvec, std::string fname)
+bool write_inorder (std::vector<inode<T>*>& serialvec, std::string label, std::string fname)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	tenncor::repository repo;
@@ -32,24 +31,15 @@ bool write (std::vector<inode<T>*> serialvec, std::string fname)
 		}
 	}
 
-	std::unordered_set<std::string> existing_labels;
 	for (size_t i = 0, n = serialvec.size(); i < n; i++)
 	{
+		std::string node_label = label + ":" + std::to_string(i);
 		nnet::inode<T>* serialelem = serialvec[i];
 		tenncor::tensor_proto proto;
 		const nnet::tensor<T>* serialtens = serialelem->get_eval();
 		if (nullptr == serialtens) continue; // we can't serialize something not initialized
 		serialtens->serialize(&proto);
-
-		std::string label = serialelem->get_label();
-		std::string index_extension = std::to_string(i);
-		// we will eventually find a non-conflicting key
-		while (existing_labels.end() != existing_labels.find(label))
-		{
-			label += ":" + index_extension;
-		}
-
-		(*repo.mutable_node_map())[label] = proto;
+		(*repo.mutable_node_map())[node_label] = proto;
 	}
 
 	{
@@ -68,7 +58,7 @@ bool write (std::vector<inode<T>*> serialvec, std::string fname)
 using node_map_t = google::protobuf::Map<std::string,tenncor::tensor_proto>;
 
 template<typename T>
-bool read (std::vector<inode<T>*>& deserialvec, std::string fname)
+bool read_inorder (std::vector<inode<T>*>& deserialvec, std::string label, std::string fname)
 {
 	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	tenncor::repository repo;
@@ -85,16 +75,10 @@ bool read (std::vector<inode<T>*>& deserialvec, std::string fname)
 	std::vector<inode<T>*> unfound;
 	for (size_t i = 0, n = deserialvec.size(); i < n; i++)
 	{
+		std::string node_label = label + ":" + std::to_string(i);
 		nnet::inode<T>* deserelem = deserialvec[i];
-		std::string label = deserelem->get_label();
-		std::string index_extension = std::to_string(i);
-		// we will eventually find a non-conflicting key
-		while (existing_labels.end() != existing_labels.find(label))
-		{
-			label += ":" + index_extension;
-		}
 
-		node_map_t::const_iterator it = repo.node_map().find(label);
+		node_map_t::const_iterator it = repo.node_map().find(node_label);
 		if (repo.node_map().end() == it)
 		{
 			// warn

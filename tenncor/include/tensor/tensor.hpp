@@ -11,11 +11,6 @@
  *
  */
 
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <cstring>
-
 #include "tensor/itensor.hpp"
 #include "tensor/tensorshape.hpp"
 #include "memory/default_alloc.hpp"
@@ -24,6 +19,11 @@
 #pragma once
 #ifndef TENNCOR_TENSOR_HPP
 #define TENNCOR_TENSOR_HPP
+
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <cstring>
 
 namespace nnet
 {
