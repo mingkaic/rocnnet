@@ -8,10 +8,10 @@
 
 #ifdef TENNCOR_TENSOR_HANDLER_HPP
 
+#include "memory/shared_rand.hpp"
+
 namespace nnet
 {
-
-static std::default_random_engine generator(std::time(NULL));
 
 template <typename T>
 itensor_handler<T>* itensor_handler<T>::clone (void) const
@@ -33,7 +33,7 @@ void itensor_handler<T>::operator () (tensor<T>& out,
 	std::vector<const T*> raws;
 	for (const tensor<T>* arg : args)
 	{
-		assert(arg->is_alloc());
+		assert(arg && arg->is_alloc());
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}
@@ -200,7 +200,7 @@ void rand_uniform<T>::calc_data (T* dest, const tensorshape& outshape,
 	std::vector<const T*>&, std::vector<tensorshape>&) const
 {
 	size_t len = outshape.n_elems();
-	auto gen = std::bind(distribution_, generator);
+	auto gen = std::bind(distribution_, get_generator());
 	std::generate(dest, dest+len, gen);
 }
 

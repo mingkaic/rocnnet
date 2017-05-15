@@ -6,18 +6,17 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <cassert>
-#include <random>
-
 #include "mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
-#ifndef dqn_hpp
-#define dqn_hpp
+#ifndef ROCNNET_DQN_HPP
+#define ROCNNET_DQN_HPP
+
+#include <algorithm>
+#include <numeric>
+#include <vector>
+#include <cassert>
 
 namespace rocnnet
 {
@@ -27,7 +26,7 @@ struct dqn_param
 	size_t train_interval_ = 5;
 	double rand_action_prob_ = 0.05;
 	double discount_rate_ = 0.95;
-	double update_rate_ = 0.01;
+	double target_update_rate_ = 0.01;
 	double exploration_period_ = 1000;
 	// memory parameters
 	size_t store_interval_ = 5;
@@ -39,7 +38,7 @@ struct dqn_param
 class dq_net
 {
 public:
-	dq_net (size_t n_input, std::vector<IN_PAIR> hiddens,
+	dq_net (ml_perceptron* brain,
 		nnet::gd_updater<double>& updater,
 		dqn_param param = dqn_param(),
 		std::string scope = "DQN");
@@ -55,19 +54,21 @@ public:
 	dq_net& operator = (dq_net&& other);
 
 	double action (std::vector<double>& input);
-	
-	std::vector<double> direct_out (std::vector<double>& input);
+
+	double never_random (std::vector<double>& input);
 
 	void store (std::vector<double> observation, size_t action_idx,
 		double reward, std::vector<double> new_obs);
 
 	void train (void);
 
-	void initialize (std::string serialname = "");
+	void initialize (std::string serialname = "", std::string readscope = "");
 
 	bool save (std::string fname) const;
 	
 	size_t get_numtrained (void) const { return iteration_; }
+
+	nnet::varptr<double> get_trainout (void) const { return train_output_; }
 
 	// feel free to seed it
 	std::default_random_engine generator_;
@@ -160,11 +161,6 @@ private:
 	nnet::gd_updater<double>* updater_ = nullptr;
 
 	// === scalar parameters ===
-	// argument memorization
-	size_t n_input_; // input size
-
-	size_t n_output_; // output size
-
 	// training parameters
 	dqn_param params_;
 
@@ -180,8 +176,10 @@ private:
 	std::uniform_real_distribution<double> explore_;
 
 	std::vector<exp_batch> experiences_;
+
+	std::string scope_;
 };
 
 }
 
-#endif /* dqn_hpp */
+#endif /* ROCNNET_DQN_HPP */

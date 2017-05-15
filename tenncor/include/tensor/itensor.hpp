@@ -13,11 +13,12 @@
  *
  */
 
-#include <vector>
-
 #pragma once
 #ifndef TENNCOR_ITENSOR_HPP
 #define TENNCOR_ITENSOR_HPP
+
+#include <vector>
+#include <cstddef>
 
 namespace nnet
 {

@@ -6,8 +6,6 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include <unordered_set>
-#include <fstream>
 #include "edgeinfo/ptrinfo.hpp"
 #include "graph/react/subject.hpp"
 #include "graph/inode.hpp"
@@ -18,6 +16,9 @@
 
 #ifndef comm_record_hpp
 #define comm_record_hpp
+
+#include <unordered_set>
+#include <fstream>
 
 namespace rocnnet_record
 {
@@ -32,7 +33,7 @@ public:
 	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
 	template <typename T>
-	void to_csv (void)
+	void to_csv (nnet::iconnector<T>* consider_graph = nullptr)
 	{
 		std::ofstream ofile;
 		ofile.open(outname_);
@@ -43,6 +44,10 @@ public:
 			for (subinfo e : edges_)
 			{
 				nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector<T>*>(e.obs_);
+				if (consider_graph && !ob->is_same_graph(consider_graph))
+				{
+					continue; // skip connectors that aren't in the considered graph
+				}
 				nnet::inode<T>* sb = dynamic_cast<nnet::inode<T>*>(e.sub_);
 
 				std::stringstream obstrm;

@@ -355,18 +355,19 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				throw std::exception();
 			}
 			std::vector<size_t> tv = ts.as_list();
-			if (0 == dim)
-			{ // pop front
-				tv.front() = std::move(tv.back());
-				tv.pop_back();
-			}
-			else if (tv.size()-1 == dim)
+			tv[dim] = 1;
+			if (tv.size() > 1)
 			{
-				tv.pop_back();
-			}
-			else
-			{
-				tv[dim] = 1;
+				if (0 == dim)
+				// pop front
+				{
+					tv.front() = std::move(tv.back());
+					tv.pop_back();
+				}
+				else if (tv.size()-1 == dim)
+				{
+					tv.pop_back();
+				}
 			}
 			return tv;
 		};

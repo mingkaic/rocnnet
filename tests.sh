@@ -60,6 +60,13 @@ echo "running gd_demo"
 assert_cmd "${BINDIR}/gd_demo $PBX_CACHE"
 echo "gd_demo complete"
 
+echo "running C++ dq_demo"
+assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
+echo "C++ dq_demo complete"
+
+echo "running python dq_demo"
+assert_cmd "python ${BINDIR}/dq_demo.py"
+
 # coverage analysis
 pushd ${BUILDDIR}
 lcov --version

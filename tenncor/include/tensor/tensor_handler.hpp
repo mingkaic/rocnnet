@@ -11,9 +11,6 @@
  *
  */
 
-#include <random>
-#include <ctime>
-
 #include "tensor/tensor.hpp"
 
 #pragma once

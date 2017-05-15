@@ -8,25 +8,27 @@
 
 #include "dq_net.hpp"
 
-#ifdef dqn_hpp
+#ifdef ROCNNET_DQN_HPP
+
+#include "memory/shared_rand.hpp"
 
 namespace rocnnet
 {
 
-dq_net::dq_net (size_t n_input, std::vector<IN_PAIR> hiddens,
+dq_net::dq_net (ml_perceptron* brain,
 	nnet::gd_updater<double>& updater,
 	dqn_param param, std::string scope) :
-n_input_(n_input), params_(param),
+params_(param),
+scope_(scope),
 updater_(updater.clone())
 {
-	source_qnet_ = new ml_perceptron(n_input, hiddens, "source_"+scope);
+	source_qnet_ = brain->clone("source_"+scope);
 	target_qnet_ = source_qnet_->clone("target_"+scope);
-	n_output_ = hiddens.back().first;
-	input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 1}, "input");
-	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{n_output_, 0}, "output_mask");
+	input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 1}, "input");
+	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_noutput(), 0}, "output_mask");
 
-	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 0}, "input");
-	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{n_input, 0}, "next_input");
+	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 0}, "input");
+	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 0}, "next_input");
 	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_output_mask");
 	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_reward");
 	variable_setup();
@@ -72,25 +74,16 @@ double dq_net::action (std::vector<double>& input)
 	// perform random exploration action
 	if (get_random() < exploration)
 	{
-		return std::floor(get_random() * n_output_);
+		return std::floor(get_random() * source_qnet_->get_noutput());
 	}
 	*input_ = input;
 	return nnet::expose<double>(best_output_)[0];
 }
-	
-std::vector<double> dq_net::direct_out (std::vector<double>& input)
+
+double dq_net::never_random (std::vector<double>& input)
 {
-	actions_executed_++; // book keep
-	double exploration = linear_annealing(1.0);
-	// perform random exploration action
-	if (get_random() < exploration)
-	{
-		std::vector<double> act_score(n_output_); 
-	    std::generate(act_score.begin(), act_score.end(), [this](){ return get_random(); }); 
-	    return act_score; 
-	}
 	*input_ = input;
-	return nnet::expose<double>(output_);
+	return nnet::expose<double>(best_output_)[0];
 }
 
 void dq_net::store (std::vector<double> observation, size_t action_idx,
@@ -129,14 +122,14 @@ void dq_net::train (void)
 			exp_batch batch = samples[i];
 			states.insert(states.end(), batch.observation_.begin(), batch.observation_.end());
 			{
-				std::vector<double> local_act_mask(n_output_, 0);
+				std::vector<double> local_act_mask(source_qnet_->get_noutput(), 0);
 				local_act_mask[batch.action_idx_] = 1.0;
 				action_mask.insert(action_mask.end(), local_act_mask.begin(), local_act_mask.end());
 			}
 			rewards.push_back(batch.reward_);
 			if (batch.new_observation_.empty())
 			{
-				new_states.insert(new_states.end(), n_input_, 0);
+				new_states.insert(new_states.end(), source_qnet_->get_ninput(), 0);
 				new_states_mask.push_back(0);
 			}
 			else
@@ -170,10 +163,11 @@ void dq_net::train (void)
 	n_train_called_++;
 }
 
-void dq_net::initialize (std::string serialname)
+void dq_net::initialize (std::string serialname, std::string readscope)
 {
-	source_qnet_->initialize(serialname);
-	target_qnet_->initialize(serialname);
+	if (readscope.empty()) readscope = scope_;
+	source_qnet_->initialize(serialname, "source_" + readscope);
+	target_qnet_->initialize(serialname, "target_" + readscope);
 }
 
 bool dq_net::save (std::string fname) const
@@ -225,9 +219,9 @@ void dq_net::tear_down (void)
 
 void dq_net::copy_helper (const dq_net& other, std::string scope)
 {
+	scope_ = other.scope_;
+
 	// copy over parameters
-	n_input_ = other.n_input_;
-	n_output_ = other.n_output_;
 	params_  = other.params_;
 	actions_executed_ = other.actions_executed_;
 	iteration_ = other.iteration_;
@@ -255,9 +249,9 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 
 void dq_net::move_helper (dq_net&& other, std::string scope)
 {
+	scope_ = std::move(other.scope_);
+
 	// move parameters
-	n_input_ = std::move(other.n_input_);
-	n_output_ = std::move(other.n_output_);
 	params_  = std::move(other.params_);
 	actions_executed_ = std::move(other.actions_executed_);
 	iteration_ = std::move(other.iteration_);
@@ -287,13 +281,16 @@ void dq_net::variable_setup (void)
 {
 	// output computation
 	output_ = (*source_qnet_)(input_);
+	output_->set_label("output");
 	best_output_ = nnet::arg_max(output_, 0);
 
 	// training input/output
 	train_output_ = (*source_qnet_)(train_input_);
+	train_output_->set_label("train_output");
 
 	// predict future reward
 	next_output_ = (*target_qnet_)(next_input_);
+	next_output_->set_label("next_output");
 	nnet::varptr<double> target_values = nnet::varptr<double>(next_output_mask_) *
 		nnet::reduce_max(nnet::varptr<double>(next_output_), 0);
 	future_reward_ = nnet::varptr<double>(reward_) + params_.discount_rate_ * target_values; // reward for each instance in batch
@@ -305,6 +302,7 @@ void dq_net::variable_setup (void)
 	nnet::varptr<double> diff = masked_output_score - future_reward_;
 	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
+	error_->set_label("error");
 
 	// updates for source network
 	std::unordered_set<nnet::variable<double>*> biases;
@@ -322,26 +320,30 @@ void dq_net::variable_setup (void)
 		if (biases.end() != biases.find(leaf))
 		{
 			// average the batches
-			grad = nnet::reduce_mean(grad, {1});
+			grad = nnet::reduce_mean(grad, 1);
 		}
-		return nnet::clip_norm(grad, 5.0);
+		grad = nnet::clip_norm(grad, 5.0);
+		grad->set_label("grad_"+leaf->get_label());
+		return grad;
 	});
 
 	// updates for target network
-	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
 	std::vector<WB_PAIR> target_vars = target_qnet_->get_variables();
-	assert(source_vars.size() == target_vars.size()); // must be identical, since they're copies
-	for (size_t i = 0, n = source_vars.size(); i < n; i++)
+	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
+	size_t nvars = target_vars.size();
+	assert(source_vars.size() == nvars); // must be identical, since they're copies
+	for (size_t i = 0; i < nvars; i++)
 	{
 		// this is equivalent to target = (1-alpha) * target + alpha * source
-		nnet::varptr<double> tarweight = target_vars[i].first;
+		nnet::variable<double>* tweight;
+		nnet::varptr<double> tarweight = tweight = target_vars[i].first;
 		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(
-			target_vars[i].first->assign_sub(params_.update_rate_ * (tarweight - srcweight)));
-		nnet::varptr<double> tarbias = target_vars[i].second;
+		target_updates_.push_back(tweight->assign_sub(params_.target_update_rate_ * (tarweight - srcweight)));
+
+		nnet::variable<double>* tbias;
+		nnet::varptr<double> tarbias = tbias = target_vars[i].second;
 		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(
-			target_vars[i].second->assign_sub(params_.update_rate_ * (tarbias - srcbias)));
+		target_updates_.push_back(tbias->assign_sub(params_.target_update_rate_ * (tarbias - srcbias)));
 	}
 }
 
@@ -355,7 +357,7 @@ double dq_net::linear_annealing (double initial_prob) const
 
 double dq_net::get_random(void)
 {
-	return explore_(generator_);
+	return explore_(nnet::get_generator());
 }
 
 std::vector<dq_net::exp_batch> dq_net::random_sample (void)

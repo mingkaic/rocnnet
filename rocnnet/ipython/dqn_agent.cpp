@@ -25,7 +25,8 @@ dqn_agent::dqn_agent (unsigned int n_input,
 	bgd.learning_rate_ = learning_rate;
 	rocnnet::dqn_param param;
 	param.mini_batch_size_ = mini_batch_size;
-	brain_ = new rocnnet::dq_net(n_input, hiddens, bgd, param, name);
+	rocnnet::ml_perceptron brain(n_input, hiddens);
+	brain_ = new rocnnet::dq_net(&brain, bgd, param, name);
 }
 
 

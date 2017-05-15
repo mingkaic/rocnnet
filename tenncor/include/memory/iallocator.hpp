@@ -14,6 +14,10 @@
  *  Copyright © 2016 Mingkai Chen. All rights reserved.
  */
 
+#pragma once
+#ifndef TENNCOR_ALLOCATOR_HPP
+#define TENNCOR_ALLOCATOR_HPP
+
 #include <functional>
 #include <algorithm>
 #include <complex>
@@ -21,10 +25,6 @@
 #include <experimental/optional>
 
 using namespace std::experimental;
-
-#pragma once
-#ifndef TENNCOR_ALLOCATOR_HPP
-#define TENNCOR_ALLOCATOR_HPP
 
 namespace nnet
 {
