@@ -33,7 +33,7 @@ public:
 	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
 	template <typename T>
-	void to_csv (nnet::iconnector<T>* consider_graph = nullptr)
+	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr)
 	{
 		std::ofstream ofile;
 		ofile.open(outname_);

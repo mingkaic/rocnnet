@@ -40,6 +40,9 @@ public:
 
 	void train (std::vector<double>& train_in, std::vector<double>& expected_out);
 
+	// expose error to analyze graph
+	const nnet::iconnector<double>* get_error (void) const { return error_; }
+
 protected:
 	gd_net (const gd_net& other, std::string& scope);
 
