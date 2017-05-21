@@ -9,7 +9,10 @@ endif()
 
 find_package(PythonLibs 2 REQUIRED)
 message("Python version is ${PYTHONLIBS_VERSION_STRING}")
-messagE("Python lib found at ${PYTHON_LIBRARIES}")
+message("Python include found at ${PYTHON_INCLUDE_PATH}")
+message("Python library found at ${PYTHON_LIBRARIES}")
+message("Python executable found at ${PYTHON_EXECUTABLE}")
+message("Python path is ${PYTHONPATH}")
 include_directories(${PYTHON_INCLUDE_PATH} ${ROCNNET_INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_SWIG_FLAGS "-keyword")

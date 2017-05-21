@@ -21,6 +21,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
+# build dynamic path without setting off warnings
+set(CMAKE_MACOSX_RPATH 1)
+
+# manual relink python library on OSX
+if(APPLE)
+	message("relinking _dqn.so to ${PYTHON_LIBRARY}")
+	add_custom_command(OUTPUT dqn POST_BUILD
+		COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif(APPLE)
+
 #>>>>>>>>>>>>>>>>>>>> DOXYGEN OPTION && SETUP <<<<<<<<<<<<<<<<<<<<
 OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
@@ -55,15 +66,15 @@ if (VIS_EDGE)
 	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
 endif(VIS_EDGE)
 
-set(ROCNNET_SLIB rocnnet_static)
-set(ROCNNET_DLIB rocnnet_shared)
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)
 FILE(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
 
+set(ROCNNET_SLIB rocnnet_static)
 include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(${ROCNNET_SLIB} STATIC ${ROCNNET_SRC})
 target_link_libraries(${ROCNNET_SLIB} ${TENNCOR_LIB})
 
+set(ROCNNET_DLIB rocnnet_shared)
 include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(${ROCNNET_DLIB} SHARED ${ROCNNET_SRC})
 target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})

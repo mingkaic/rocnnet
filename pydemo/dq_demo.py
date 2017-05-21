@@ -2,7 +2,7 @@
 
 import _init_paths
 import gym
-from dqn import *
+from tf_rl.controller import DiscreteDeepQ, NL
 
 specname = 'CartPole-v0'
 serializedname = 'dqntest_'+specname+'.pbx'
@@ -18,9 +18,11 @@ maxaction = action_space.n
 observation_space = env.observation_space
 maxobservation = observation_space.shape[0]
 
-hiddens = [5, 5, maxaction]
 batchsize = 12 # store at least 12 times before training
-controller = dqn_agent(maxobservation, hiddens, 0.9, batchsize, 'pybrain')
+controller = DiscreteDeepQ(maxobservation, [5, 5, maxaction],
+    [NL.SIGMOID, NL.SIGMOID, NL.IDENTITY], learning_rate=0.001, decay=0.9,
+    minibatch_size=batchsize, discount_rate=0.99, exploration_period=5000,
+    max_experience=10000, store_every_nth=4, train_every_nth=4)
 controller.initialize(serializedname)
 
 # training step
