@@ -51,9 +51,9 @@ template varptr<double> cot (const varptr<double> a);
 
 template varptr<double> exp (const varptr<double> a);
 
-//template varptr<double> sqrt (const varptr<double> a); // TODO implement
+template varptr<double> sqrt (const varptr<double> a);
 
-//template varptr<double> pow (const varptr<double> a, double scalar); // TODO implement
+template varptr<double> pow (const varptr<double> a, double scalar);
 
 template varptr<double> clip_val (const varptr<double> a, double min, double max);
 

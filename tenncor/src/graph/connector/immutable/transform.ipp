@@ -313,7 +313,8 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			tensorshape& orig = inshapes[0];
 			if (dim >= orig.rank())
 			{
-				throw std::exception();
+				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
+					<< dim << " on a " << orig.rank() << " tensor");
 			}
 			std::vector<size_t> tv = orig.as_list();
 			size_t idx_val = tv[dim];
@@ -352,7 +353,8 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			ts.assert_is_fully_defined();
 			if (dim >= ts.rank())
 			{
-				throw std::exception();
+				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
+					<< dim << " on a " << ts.rank() << " tensor");
 			}
 			std::vector<size_t> tv = ts.as_list();
 			tv[dim] = 1;
@@ -392,7 +394,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	[dimension, search](std::vector<inode<T>*>, variable<T>*)
 	{
 		// arg_compression's gradient has no intrinsic meaning
-		throw std::exception();
+		throw std::logic_error("attempting to get gradient of arg compression: undefined and meaningless operation");
 		return nullptr;
 	}, "argcompress");
 }

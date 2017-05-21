@@ -13,7 +13,6 @@
 
 #include "tensor/tensor_handler.hpp"
 #include "tensor/tensor.hpp"
-#include "utils/utils.hpp"
 #include "graph/react/subject.hpp"
 
 #pragma once

@@ -47,7 +47,11 @@ void itensor_handler<T>::operator () (tensor<T>& out,
 			tensorshape oshape = out.get_shape();
 			if (false == s.is_compatible_with(oshape))
 			{
-				throw std::exception(); // TODO: better exception
+				std::stringstream ss;
+				print_shape(s, ss);
+				ss << " is incompatible with output shape ";
+				print_shape(oshape, ss);
+				throw std::runtime_error(ss.str());
 			}
 		}
 		// otherwise allocate out

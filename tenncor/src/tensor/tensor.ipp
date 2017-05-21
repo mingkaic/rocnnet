@@ -372,7 +372,7 @@ void tensor<T>::set_allocator (size_t alloc_id)
 	}
 	else
 	{
-		throw std::exception(); // todo: better exception
+		throw std::runtime_error(nnutils::formatter() << "allocator with id " << alloc_id << " not found");
 	}
 }
 

@@ -194,7 +194,7 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 			}
 			else
 			{
-				throw std::exception(); // todo: better exception, bad iconnector
+				throw std::runtime_error(args[0]->get_label()+" has a null gid");
 			}
 		}
 		else
@@ -209,7 +209,7 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 				}
 				else
 				{
-					throw std::exception(); // todo: better exception, bad iconnector
+					throw std::runtime_error(arg->get_label()+" has a null gid");
 				}
 			}
 		}

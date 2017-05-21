@@ -77,9 +77,11 @@ void iobserver::add_dependency (subject* dep)
 
 void iobserver::remove_dependency (size_t idx)
 {
-	if (idx >= dependencies_.size())
+	size_t depsize = dependencies_.size();
+	if (idx >= depsize)
 	{
-		throw std::exception(); // todo: better exception
+		throw std::logic_error(nnutils::formatter() << "attempting to remove argument index "
+			<< idx << " from observer with " << depsize << " arguments");
 	}
 	if (subject* sub = dependencies_[idx])
 	{

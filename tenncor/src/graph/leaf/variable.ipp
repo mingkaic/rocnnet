@@ -58,7 +58,7 @@ tensor<T>& variable<T>::initialize (void)
 	if (false == this->data_->is_alloc() &&
 		false == this->data_->allocate())
 	{
-		throw std::exception(); // todo: better exception
+		throw std::runtime_error(this->get_label() + " data is not allocated");
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;
@@ -72,7 +72,11 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 	assert(this->init_ != nullptr);
 	if (false == this->data_->allocate(shape))
 	{
-		throw std::exception(); // todo: better exception
+		std::stringstream ss;
+		ss << "shape ";
+		print_shape(shape, ss);
+		ss << " failed to allocate " << this->get_label();
+		throw std::runtime_error(ss.str());
 	}
 	(*this->init_)(*this->data_);
 	this->is_init_ = true;

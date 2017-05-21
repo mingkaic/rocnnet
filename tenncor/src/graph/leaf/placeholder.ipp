@@ -66,7 +66,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 		// we would reach here if data is empty... (todo: test)
 		else
 		{
-			throw std::exception(); // todo: better exception or warning + handling (loosely guess, then clip or pad with zero)
+			throw std::logic_error("attempting to assign no data to an unallocated tensor");
 		}
 	}
 	typename ileaf<T>::assignment* assigner =

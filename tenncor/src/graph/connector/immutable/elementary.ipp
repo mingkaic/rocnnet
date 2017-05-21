@@ -20,7 +20,12 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 		if (shapes[i].n_elems() == 1) continue;
 		if (false == shapes[i].is_compatible_with(lastshape.shape_dimensions()))
 		{
-			throw std::exception(); // TODO: make better exception
+			std::stringstream ss;
+			ss << "shape ";
+			print_shape(shapes[i], ss);
+			ss << " is incompatible with shape ";
+			print_shape(lastshape);
+			throw std::runtime_error(ss.str());
 		}
 		lastshape = shapes[i];
 		if (lastshape.is_grouped())
@@ -769,7 +774,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
 	// optimization only applies to constants
 	{
-		if (*b == (T)0) throw std::exception();
+		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
 		if (*b == (T)1) return constant<T>::get(a);
 	}
 	if (a == (T)0) return constant<T>::get(0);
@@ -797,7 +802,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
 	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
-	if (b == 0) throw std::exception();
+	if (b == 0) throw std::logic_error("divide by zero");
 	if (b == (T)1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -826,7 +831,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
 	// optimization only applies to constants
 	{
-		if (*b == (T)0) throw std::exception();
+		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
 		if (*b == (T)1) return a;
 	}
 	elementary_check(a, b);

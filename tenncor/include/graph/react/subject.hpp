@@ -11,6 +11,8 @@
  *
  */
 
+#include "utils/utils.hpp"
+
 #pragma once
 #ifndef TENNCOR_SUBJECT_HPP
 #define TENNCOR_SUBJECT_HPP
