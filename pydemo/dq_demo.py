@@ -36,7 +36,7 @@ for ep in xrange(episode_count):
         new_observation, reward, done, _ = env.step(action)
         
         controller.store(observation, action, reward, new_observation)
-        controller.train()
+        controller.training_step()
         
         observation = new_observation
         total_reward = total_reward + reward
