@@ -91,7 +91,7 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 template <typename T>
 inode<T>* placeholder<T>::get_leaf (variable<T>*)
 {
-	return this->zero.get();
+	return get_shared_zero<T>();
 }
 
 template <typename T>

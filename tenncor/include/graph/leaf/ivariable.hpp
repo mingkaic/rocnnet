@@ -55,9 +55,6 @@ public:
 	virtual inode<T>* get_gradient (inode<T>* wrt);
 
 protected:
-	std::unique_ptr<constant<T> > zero; //! commonly used constant zero
-	std::unique_ptr<constant<T> > one; //! commonly used constant one
-
 	// >>>> CONSTRUCTORS <<<<
 	//! construct to init zero and one
 	ivariable (const tensorshape& shape,
@@ -74,9 +71,6 @@ private:
 
 	//! move helper
 	void move_helper (ivariable<T>&& other);
-
-	//! common init
-	void common (void);
 };
 
 }

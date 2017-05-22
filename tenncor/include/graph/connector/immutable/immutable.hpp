@@ -133,13 +133,7 @@ protected:
 	using JCACHE = std::unordered_map<variable<T>*,JList>;
 	JCACHE jacobians_;
 
-	std::unique_ptr<constant<T> > zero; //! commonly used zero constant
-	std::unique_ptr<constant<T> > one; //! commonly used one constant
-
 private:
-	//! initialization helper
-	void common (void);
-
 	//! copy helper
 	void copy_helper (const immutable& other);
 

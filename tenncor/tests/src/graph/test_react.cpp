@@ -524,7 +524,7 @@ TEST(REACT, ObsDeath_A010)
 	mock_observer2* o1 = new mock_observer2(&s1, &s2);
 	iobserver* tempptr = o1;
 	delete o1;
-	EXPECT_TRUE(mocker::EXPECT_CALL("s1::detach1", 1)); // todo: verify detach argument is o1
+	EXPECT_TRUE(mocker::EXPECT_CALL("s1::detach2", 1)); // todo: verify detach argument is o1
 
 	EXPECT_TRUE(s2.no_audience());
 	s1.mock_detach(tempptr);

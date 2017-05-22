@@ -34,9 +34,6 @@ public:
 	//! builder for data and shape
 	static constant<T>* get (std::vector<T> raw, tensorshape shape);
 
-	//! destructor to kill zero
-	~constant (void);
-
 	// >>>> CLONE, COPY, & MOVE <<<<
 	//! clone function
 	constant<T>* clone (void) const;
@@ -72,8 +69,6 @@ public:
 	bool is_managed_ = false; //! if constant is managed, it will not suicide if it lacks audiences
 
 protected:
-	constant<T>* zero = nullptr; //! commonly used constant zero
-
 	//! scalar constructor
 	constant (T scalar);
 
@@ -92,6 +87,12 @@ protected:
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 };
+
+template <typename T>
+constant<T>* get_shared_zero (void);
+
+template <typename T>
+constant<T>* get_shared_one (void);
 
 }
 

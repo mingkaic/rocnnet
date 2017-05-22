@@ -23,3 +23,11 @@ set(CMAKE_SWIG_OUTDIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set_source_files_properties(${IFILE} PROPERTIES CPLUSPLUS ON)
 swig_add_module(dqn python ${IFILE} dqn_agent.cpp)
 swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})
+
+# manual relink python library on OSX
+if(APPLE)
+    add_custom_target(run ALL
+        DEPENDS _dqn
+        COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif(APPLE)

@@ -85,7 +85,7 @@ void iobserver::remove_dependency (size_t idx)
 	}
 	if (subject* sub = dependencies_[idx])
 	{
-		sub->detach(this);
+		sub->detach(this, idx);
 		// update dependencies
 		dependencies_[idx] = nullptr;
 		while (false == dependencies_.empty() &&
@@ -136,9 +136,9 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 
 void iobserver::copy_helper (const iobserver& other)
 {
-	for (subject* sub : dependencies_)
+	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		sub->detach(this);
+		dependencies_[i]->detach(this, i);
 	}
 	dependencies_.clear();
 	for (subject* dep : other.dependencies_)
@@ -149,22 +149,18 @@ void iobserver::copy_helper (const iobserver& other)
 
 void iobserver::move_helper (iobserver&& other)
 {
-	for (subject* sub : dependencies_)
+	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		sub->detach(this);
+		dependencies_[i]->detach(this, i);
 	}
 	dependencies_ = std::move(other.dependencies_);
 	// replace subs audience from other to this
 	for (size_t i = 0, n = dependencies_.size();
 		i < n; i++)
 	{
+		// attach before detaching to ensure dep i doesn't suicide
+		dependencies_[i]->attach(this, i);
 		dependencies_[i]->detach(&other, i);
-		dependencies_[i]->attach(this, i);
-	}
-	size_t ndeps = dependencies_.size();
-	for (size_t i = 0; i < ndeps; i++)
-	{
-		dependencies_[i]->attach(this, i);
 	}
 }
 

@@ -24,7 +24,7 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 			ss << "shape ";
 			print_shape(shapes[i], ss);
 			ss << " is incompatible with shape ";
-			print_shape(lastshape);
+			print_shape(lastshape, ss);
 			throw std::runtime_error(ss.str());
 		}
 		lastshape = shapes[i];

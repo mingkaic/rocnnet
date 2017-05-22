@@ -43,36 +43,77 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	tensorshape& t1s = shapes[0];
 	tensorshape& t2s = shapes[1];
 
-	if (5 > (t1s.rank() + t2s.rank()))
+	std::vector<size_t> al = t1s.as_list();
+	std::vector<size_t> bl = t2s.as_list();
+	size_t rank1 = t1s.rank();
+	size_t rank2 = t2s.rank();
+
+	size_t ax = rank1 ? al[0] : 0;
+	size_t ay = rank1 > 1 ? al[1] : 1;
+	size_t bx = rank1 ? bl[0] : 0;
+	size_t by = rank1 > 1 ? bl[1] : 1;
+
+	// ensure the dimensions beyond 2d are equal
+	size_t minend = std::min(rank1, rank2);
+	std::vector<size_t> beyond2d;
+	if (minend > 2)
 	{
-		std::vector<size_t> al = t1s.as_list();
-		std::vector<size_t> bl = t2s.as_list();
-
-		size_t ax = t1s.rank() ? al[0] : 0;
-		size_t ay = t1s.rank() > 1 ? al[1] : 1;
-		size_t bx = t2s.rank() ? bl[0] : 0;
-		size_t by = t2s.rank() > 1 ? bl[1] : 1;
-
-		if (ay == bx && transposeA && transposeB)
+		auto ait = al.begin()+2;
+		auto aet = al.begin()+minend;
+		if (std::equal(ait, aet, bl.begin()+2))
 		{
-			return std::vector<size_t>{by, ax};
+			beyond2d.insert(beyond2d.end(), ait, aet);
 		}
-		else if (ay == by && transposeA)
+		else
 		{
-			return std::vector<size_t>{bx, ax};
+			std::stringstream ss;
+			ss << "attempting to matrix multiple shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
 		}
-		else if (ax == bx && transposeB)
+		// check that remaining shape values are ones,
+		// otherwise one shape is larger than the other
+		auto it = rank1 > rank2 ? al.begin() : bl.begin();
+		auto et = rank1 > rank2 ? al.end() : bl.end();
+		if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
 		{
-			return std::vector<size_t>{by, ay};
-		}
-		else if (ax == by && !transposeA && !transposeB)
-		{
-			return std::vector<size_t>{bx, ay};
+			std::stringstream ss;
+			ss << "attempting to matrix multiple different sized shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
 		}
 	}
-	// warn user
-	std::cout << "warning: matmul shapes do not match" << std::endl;
-	return tensorshape();
+
+	std::vector<size_t> res_shape;
+	if (ay == bx && transposeA && transposeB)
+	{
+		res_shape = {by, ax};
+	}
+	else if (ay == by && transposeA)
+	{
+		res_shape = {bx, ax};
+	}
+	else if (ax == bx && transposeB)
+	{
+		res_shape = {by, ay};
+	}
+	else if (ax == by && !transposeA && !transposeB)
+	{
+		res_shape = {bx, ay};
+	}
+	else
+	{
+		// warn user (do not throw, this may be fixable)
+		std::cout << "warning: matmul shapes do not match" << std::endl;
+		return tensorshape();
+	}
+
+	res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
+	return res_shape;
 },
 [transposeA, transposeB](T* out, const tensorshape& outs,
 	std::vector<const T*>& in, std::vector<tensorshape>& inshapes)
@@ -82,33 +123,37 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	size_t dimX = dims[0]; size_t dimY = dims[1];
 
 	std::vector<size_t> t = inshapes[0].as_list();
-	size_t dimZ = t[0];
+	size_t shared_dim = t[0];
 	if (transposeA)
 	{
-		dimZ = 2 == t.size() ? t[1] : 1;
+		shared_dim = t.size() > 1 ? t[1] : 1;
 	}
 
-	const T* rawa = in[0];
-	const T* rawb = in[1];
-	for (size_t y = 0; y < dimY; y++)
+	size_t nbeyond2d = std::accumulate(dims.begin()+2, dims.end(),
+		(size_t) 1, std::multiplies<size_t>());
+	size_t nmat = dimX * dimY;
+	for (size_t i = 0; i < nbeyond2d; i++)
 	{
-		for (size_t x = 0; x < dimX; x++)
+		const T* rawa = in[0] + i * nmat;
+		const T* rawb = in[1] + i * nmat;
+		for (size_t y = 0; y < dimY; y++)
 		{
-			out[x+y*dimX] = 0;
-			for (size_t z = 0; z < dimZ; z++)
+			for (size_t x = 0; x < dimX; x++)
 			{
-				size_t aidx = transposeA ? y+z*dimY : z+y*dimZ;
-				size_t bidx = transposeB ? z+x*dimZ : x+z*dimX;
-				out[x+y*dimX] += rawa[aidx] * rawb[bidx];
+				out[x+y*dimX] = 0;
+				for (size_t z = 0; z < shared_dim; z++)
+				{
+					size_t aidx = transposeA ? y+z*dimY : z+y*shared_dim;
+					size_t bidx = transposeB ? z+x*shared_dim : x+z*dimX;
+					out[x+y*dimX] += rawa[aidx] * rawb[bidx];
+				}
 			}
 		}
 	}
 },
-// todo: remove this from capture (if we copy this, this still refers to original node)
-// meaning deleting original breaks the copy
-[this](std::vector<inode<T>*>, variable<T>*)
+[](std::vector<inode<T>*>, variable<T>*)
 {
-	return this->one.get();
+	return get_shared_one<T>();
 }, "matmul")
 {
 	auto jtrans = [a, b, transposeA, transposeB](

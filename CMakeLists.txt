@@ -24,14 +24,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 # build dynamic path without setting off warnings
 set(CMAKE_MACOSX_RPATH 1)
 
-# manual relink python library on OSX
-if(APPLE)
-	message("relinking _dqn.so to ${PYTHON_LIBRARY}")
-	add_custom_command(OUTPUT dqn POST_BUILD
-		COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-endif(APPLE)
-
 #>>>>>>>>>>>>>>>>>>>> DOXYGEN OPTION && SETUP <<<<<<<<<<<<<<<<<<<<
 OPTION (BUILD_DOC "Build doxygen documents?" OFF)
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)

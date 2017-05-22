@@ -140,7 +140,7 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 	auto it = gcache_.find(leaf);
 	if (gcache_.end() == it)
 	{
-		return zero.get();
+		return get_shared_zero<T>();
 	}
 	if (nullptr == it->second)
 	{
@@ -163,7 +163,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	// check self
 	if (wrt == this)
 	{
-		out = one.get();
+		out = get_shared_one<T>();
 	}
 	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
@@ -189,7 +189,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	// is zero
 	else
 	{
-		out = zero.get();
+		out = get_shared_zero<T>();
 	}
 	return out;
 }
@@ -297,7 +297,6 @@ ginit_(F)
 			deps.emplace(arg);
 		}
 	}
-	common();
 	update(nullptr); // update data_ initially
 }
 
@@ -335,7 +334,6 @@ immutable<T>::immutable (const immutable<T>& other) :
 	iconnector<T>(other),
 	Nf_(other.Nf_)
 {
-	common();
 	copy_helper(other);
 }
 
@@ -344,23 +342,17 @@ immutable<T>::immutable (immutable<T>&& other) :
 	iconnector<T>(std::move(other)),
 	Nf_(std::move(other.Nf_))
 {
-	common();
 	move_helper(std::move(other));
-}
-
-template <typename T>
-void immutable<T>::common (void)
-{
-	zero = std::unique_ptr<constant<T> >(constant<T>::get(0));
-	one = std::unique_ptr<constant<T> >(constant<T>::get(1));
-	zero->is_managed_ = true;
-	one->is_managed_ = true;
 }
 
 template <typename T>
 void immutable<T>::copy_helper (const immutable& other)
 {
-	data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
+	data_ = nullptr;
+	if (other.data_)
+	{
+		data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
+	}
 	ginit_ = other.ginit_;
 }
 

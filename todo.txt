@@ -1,0 +1,25 @@
+tenncor:
+- optimize matrix multiplication for speed
+- add optimization option to merge unary nodes
+- add optimization option to merge n-nary nodes
+- remove move and clone functions for classes that don't need it
+- define alloc shape as mutable and allowed shape as immutable (enforce this rule)
+	placeholder of (4, 0) should accept input of size of any multiple of 4
+- refine shape flexibility e.g: (4,) == (4,1)
+	also any shape padded by 0 or 1 maybe “optimized” for lower dimensional shape
+	(this should be an option, since some applications may not want to lose this information)
+- improve tests
+
+evaluate rocnnet principles:
+- practicality
+- efficiency
+– logical correctness
+- testability/program transparency
+
+interesting ideas:
+- scalable batch size (increasing batch size over generations)
+
+tests:
+- copying and moving observers on multiple unmanaged constants
+- detaching unmanaged constants from observers
+- copying immutable of uninitialized variables

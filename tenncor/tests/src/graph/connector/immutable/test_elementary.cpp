@@ -493,8 +493,8 @@ TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 	// Behavior J005
 	varptr<double> zaro = 0.0 / varptr<double>(&var2);
 	varptr<double> zaro2 = varptr<double>(zero) * varptr<double>(&var2);
-	EXPECT_THROW(varptr<double>(&var) /  0.0, std::exception);
-	EXPECT_THROW(varptr<double>(&var) / varptr<double>(zero), std::exception);
+	EXPECT_THROW(varptr<double>(&var) /  0.0, std::logic_error);
+	EXPECT_THROW(varptr<double>(&var) / varptr<double>(zero), std::logic_error);
 
 	std::vector<double> exp01 = expose<double>(zaro);
 	std::vector<double> exp02 = expose<double>(zaro2);

@@ -12,6 +12,22 @@ namespace nnet
 {
 
 template <typename T>
+constant<T>* get_shared_zero (void)
+{
+	static constant<T>* zero = constant<T>::get(0);
+	zero->is_managed_ = true;
+	return zero;
+}
+
+template <typename T>
+constant<T>* get_shared_one (void)
+{
+	static constant<T>* one = constant<T>::get(1);
+	one->is_managed_ = true;
+	return one;
+}
+
+template <typename T>
 constant<T>* constant<T>::get (T scalar)
 {
 	return new constant<T>(scalar);
@@ -21,15 +37,6 @@ template <typename T>
 constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 {
 	return new constant<T>(raw, shape);
-}
-
-template <typename T>
-constant<T>::~constant (void)
-{
-	if (zero != this)
-	{
-		delete zero;
-	}
 }
 
 template <typename T>
@@ -47,13 +54,13 @@ constant<T>* constant<T>::move (void)
 template <typename T>
 inode<T>* constant<T>::get_gradient (inode<T>*)
 {
-	return zero;
+	return get_shared_zero<T>();
 }
 
 template <typename T>
 inode<T>* constant<T>::get_leaf (variable<T>*)
 {
-	return zero;
+	return get_shared_zero<T>();
 }
 
 template <typename T>
@@ -65,16 +72,6 @@ constant<T>::constant (T scalar) :
 	ileaf<T>(std::vector<size_t>{1},
 		 nnutils::formatter() << scalar)
 {
-	if (scalar == 0)
-	{
-		zero = this;
-	}
-	else
-	{
-		zero = new constant<T>(0);
-		zero->is_managed_ = true;
-	}
-
 	const_init<T> init(scalar);
 	this->data_->allocate();
 	init(*this->data_);
@@ -86,9 +83,6 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 	ileaf<T>(shape, raw.empty() ? "<empty>" :
 		(nnutils::formatter() << raw.front() << ".." << raw.back()).str())
 {
-	zero = new constant<T>(0);
-	zero->is_managed_ = true;
-
 	size_t rawn = raw.size();
 	typename ileaf<T>::assignment assigner;
 	if (false == this->data_->is_alloc())
