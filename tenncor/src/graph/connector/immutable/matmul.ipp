@@ -268,9 +268,13 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	}
 	else
 	{
-		// warn user (do not throw, this may be fixable)
-		std::cout << "warning: matmul shapes do not match" << std::endl;
-		return tensorshape();
+		std::stringstream ss;
+		ss << "matmul shapes ";
+		print_shape(t1s, ss);
+		ss << " and ";
+		print_shape(t2s, ss);
+		ss << " do not match";
+		throw std::logic_error(ss.str());
 	}
 
 	res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());

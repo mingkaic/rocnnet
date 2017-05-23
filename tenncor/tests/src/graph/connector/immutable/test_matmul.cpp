@@ -19,6 +19,101 @@
 using namespace nnet;
 
 
+using TWODV = std::vector<std::vector<signed> >;
+
+
+TWODV create2D (std::vector<signed> juanD, tensorshape mats, bool transpose = false)
+{
+	std::vector<size_t> dims = mats.as_list();
+	size_t C = dims[0];
+	size_t R = dims[1];
+	TWODV res;
+
+	size_t resC = transpose ? R : C;
+	size_t resR = transpose ? C : R;
+ 	for (size_t y = 0; y < resR; y++)
+	{
+		res.push_back(std::vector<signed>(resC, 0));
+	}
+
+	for (size_t y = 0; y < R; y++)
+	{
+		for (size_t x = 0; x < C; x++)
+		{
+			size_t juan_coord = x + y * C;
+			if (transpose)
+			{
+				res[x][y] = juanD[juan_coord];
+			}
+			else
+			{
+				res[y][x] = juanD[juan_coord];
+			}
+		}
+	}
+	return res;
+}
+
+
+bool freivald (TWODV a, TWODV b, TWODV c)
+{
+	assert(!b.empty());
+	size_t rlen = b[0].size();
+	// probability of false positive = 1/2^n
+	// Pr(fp) = 0.1% ~~> n = 10
+	size_t m = 10;
+	for (size_t i = 0; i < m; i++)
+	{
+		// generate r of len b[0].size() or c[0].size()
+		std::vector<size_t> r = FUZZ::getInt(rlen, nnutils::formatter() << "freivald_vec" << i, {0, 1});
+
+		// p = a @ (b @ r) - c @ r
+		std::vector<signed> br;
+		for (size_t y = 0, n = b.size(); y < n; y++)
+		{
+			signed bri = 0;
+			for (size_t x = 0; x < rlen; x++)
+			{
+				bri += b[y][x] * r[x];
+			}
+			br.push_back(bri);
+		}
+
+		std::vector<signed> cr;
+		for (size_t y = 0, n = c.size(); y < n; y++)
+		{
+			signed cri = 0;
+			for (size_t x = 0; x < rlen; x++)
+			{
+				cri += c[y][x] * r[x];
+			}
+			cr.push_back(cri);
+		}
+
+		std::vector<signed> p;
+		size_t n = a.size();
+		for (size_t y = 0; y < n; y++)
+		{
+			signed ari = 0;
+			for (size_t x = 0, m = a[y].size(); x < m; x++)
+			{
+				ari += a[y][x] * br[x];
+			}
+			p.push_back(ari);
+		}
+		for (size_t j = 0; j < n; j++)
+		{
+			p[j] -= cr[j];
+		}
+
+		// if p != 0 -> return false
+		if (!std::all_of(p.begin(), p.end(), [](signed d) { return d == 0; }))
+			return false;
+	}
+	return true;
+}
+
+
 TEST(MATMUL, Copy_L000)
 {
 	FUZZ::reset_logger();
@@ -139,15 +234,86 @@ TEST(MATMUL, NullptrRet_L001)
 }
 
 
-TEST(MATMUL, DISABLED_Matmul_L002)
+TEST(MATMUL, Matmul_L002)
 {
 	FUZZ::reset_logger();
+	// we get at most 49 elements per matrix
+	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {3, 7});
+	rand_uniform<signed> rinit(-12, 12);
+
+	tensorshape shapeA = std::vector<size_t>{dims[0], dims[1]};
+	tensorshape shapeB = std::vector<size_t>{dims[2], dims[0]};
+	tensorshape shapetA = std::vector<size_t>{dims[1], dims[0]}; // transpose A
+	tensorshape shapetB = std::vector<size_t>{dims[0], dims[2]}; // transpose B
+
+	variable<signed> A(shapeA, rinit, "A"); // shape <m, n>
+	variable<signed> B(shapeB, rinit, "B"); // shape <k, m>
+	variable<signed> tA(shapetA, rinit, "tA");
+	variable<signed> tB(shapetB, rinit, "tB");
+
+	// shapes of <k, n>
+	matmul<signed>* res = matmul<signed>::get(&A, &B);
+	matmul<signed>* restA = matmul<signed>::get(&tA, &B, true);
+	matmul<signed>* restB = matmul<signed>::get(&A, &tB, false, true);
+	matmul<signed>* resT = matmul<signed>::get(&tA, &tB, true, true);
+
+	A.initialize();
+	B.initialize();
+	tA.initialize();
+	tB.initialize();
+
+	tensorshape expectshape = std::vector<size_t>{dims[2], dims[1]};
+	tensorshape resshape = res->get_shape();
+	tensorshape restAshape = restA->get_shape();
+	tensorshape restBshape = restB->get_shape();
+	tensorshape resTshape = resT->get_shape();
+
+	ASSERT_TRUE(tensorshape_equal(expectshape, resshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, restAshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, restBshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, resTshape));
+
+	TWODV matA = create2D(expose(&A), A.get_shape());
+	TWODV matB = create2D(expose(&B), B.get_shape());
+	TWODV mattA = create2D(expose(&tA), tA.get_shape(), true);
+	TWODV mattB = create2D(expose(&tB), tB.get_shape(), true);
+
+	TWODV matres = create2D(expose(res), resshape);
+	TWODV matrestA = create2D(expose(restA), restAshape);
+	TWODV matrestB = create2D(expose(restB), restBshape);
+	TWODV matresT = create2D(expose(resT), resTshape);
+	// Freivald's algorithm
+
+	EXPECT_TRUE(freivald(matA, matB, matres));
+	EXPECT_TRUE(freivald(mattA, matB, matrestA));
+	EXPECT_TRUE(freivald(matA, mattB, matrestB));
+	EXPECT_TRUE(freivald(mattA, mattB, matresT));
+
+	// we delete top nodes, because this case is not testing for observer self-destruction
+	delete res;
+	delete restA;
+	delete restB;
+	delete resT;
 }
 
 
-TEST(MATMUL, DISABLED_Incompatible_L003)
+TEST(MATMUL, Incompatible_L003)
 {
 	FUZZ::reset_logger();
+	// we get at most 49 elements per matrix
+	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {3, 7});
+	rand_uniform<signed> rinit(-12, 12);
+
+	tensorshape shapeA = std::vector<size_t>{dims[0], dims[1]};
+	tensorshape shapeB = std::vector<size_t>{dims[2], dims[0]+1};
+
+	variable<signed> A(shapeA, rinit, "A"); // shape <m, n>
+	variable<signed> B(shapeB, rinit, "B"); // shape <k, m+1>
+
+	A.initialize();
+	B.initialize();
+
+	EXPECT_THROW(matmul<signed>::get(&A, &B), std::logic_error);
 }
 
 
