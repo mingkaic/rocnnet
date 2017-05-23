@@ -173,7 +173,7 @@ void const_init<T>::calc_data (T* dest, const tensorshape& outshape,
 
 template <typename T>
 rand_uniform<T>::rand_uniform (T min, T max) :
-	distribution_(std::uniform_real_distribution<T>(min, max)) {}
+	distribution_(min, max) {}
 
 template <typename T>
 rand_uniform<T>* rand_uniform<T>::clone (void) const

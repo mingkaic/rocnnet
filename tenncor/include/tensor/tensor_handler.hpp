@@ -146,6 +146,12 @@ private:
 	T value_;
 };
 
+template <typename T>
+using general_distribution = std::conditional_t<
+	std::is_integral<T>::value, std::uniform_int_distribution<T>,
+	std::conditional_t<
+		std::is_floating_point<T>::value, std::uniform_real_distribution<T>, void> >;
+
 //! Uniformly Random Initializer
 template <typename T>
 class rand_uniform : public initializer<T>
@@ -172,7 +178,7 @@ protected:
 		std::vector<const T*>&, std::vector<tensorshape>&) const;
 
 private:
-	std::uniform_real_distribution<T>  distribution_;
+	general_distribution<T>  distribution_;
 };
 
 }

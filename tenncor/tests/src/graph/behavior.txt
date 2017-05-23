@@ -163,5 +163,6 @@ L003 - matrix multiplying incompatible shapes throws logic_error
 (UNTESTED)
 L004 - matmul(a, b) appends a jacobian operator to it's observers (and super-observers)
         the jacobian operator is defined as: a' * matmul(k, b^T) + b' * matmul(a^T, k) where k is the graph root
+(TESTED)
 L005 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
         matmul shape X, Y (X=?, Y=?) takes at most N seconds

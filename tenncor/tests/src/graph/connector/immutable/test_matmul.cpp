@@ -297,6 +297,13 @@ TEST(MATMUL, Matmul_L002)
 }
 
 
+// tests matrix multiplication but for n dimensions, matrix sizes reduced to 2-5, (we get at most 5x25 matmuls)
+TEST(MATMUL, DISABLED_NDim_Matmul_L002)
+{
+	FUZZ::reset_logger();
+}
+
+
 TEST(MATMUL, Incompatible_L003)
 {
 	FUZZ::reset_logger();
@@ -323,9 +330,82 @@ TEST(MATMUL, DISABLED_Jacobian_L004)
 }
 
 
-TEST(MATMUL, DISABLED_Strassen_L005)
+// tests large matrices sizes (100-112), 2D only
+TEST(MATMUL, Strassen_L005)
 {
 	FUZZ::reset_logger();
+	// we get at most 12996 elements per matrix
+	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {100, 112});
+	rand_uniform<signed> rinit(-12, 12);
+
+	tensorshape shapeA = std::vector<size_t>{dims[0], dims[1]};
+	tensorshape shapeB = std::vector<size_t>{dims[2], dims[0]};
+	tensorshape shapetA = std::vector<size_t>{dims[1], dims[0]}; // transpose A
+	tensorshape shapetB = std::vector<size_t>{dims[0], dims[2]}; // transpose B
+
+	variable<signed> A(shapeA, rinit, "A"); // shape <m, n>
+	variable<signed> B(shapeB, rinit, "B"); // shape <k, m>
+	variable<signed> tA(shapetA, rinit, "tA");
+	variable<signed> tB(shapetB, rinit, "tB");
+
+	A.initialize();
+	B.initialize();
+	tA.initialize();
+	tB.initialize();
+
+	// shapes of <k, n>
+	clock_t t = clock();
+	matmul<signed>* res = matmul<signed>::get(&A, &B);
+	const double work_time1 = (clock() - t) / double(CLOCKS_PER_SEC);
+
+	t = clock();
+	matmul<signed>* restA = matmul<signed>::get(&tA, &B, true);
+	const double work_time2 = (clock() - t) / double(CLOCKS_PER_SEC);
+
+	t = clock();
+	matmul<signed>* restB = matmul<signed>::get(&A, &tB, false, true);
+	const double work_time3 = (clock() - t) / double(CLOCKS_PER_SEC);
+
+	t = clock();
+	matmul<signed>* resT = matmul<signed>::get(&tA, &tB, true, true);
+	const double work_time4 = (clock() - t) / double(CLOCKS_PER_SEC);
+	ASSERT_LT(0.003, work_time1);
+	ASSERT_LT(0.003, work_time2);
+	ASSERT_LT(0.003, work_time3);
+	ASSERT_LT(0.003, work_time4);
+
+	tensorshape expectshape = std::vector<size_t>{dims[2], dims[1]};
+	tensorshape resshape = res->get_shape();
+	tensorshape restAshape = restA->get_shape();
+	tensorshape restBshape = restB->get_shape();
+	tensorshape resTshape = resT->get_shape();
+
+	ASSERT_TRUE(tensorshape_equal(expectshape, resshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, restAshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, restBshape));
+	ASSERT_TRUE(tensorshape_equal(expectshape, resTshape));
+
+	TWODV matA = create2D(expose(&A), A.get_shape());
+	TWODV matB = create2D(expose(&B), B.get_shape());
+	TWODV mattA = create2D(expose(&tA), tA.get_shape(), true);
+	TWODV mattB = create2D(expose(&tB), tB.get_shape(), true);
+
+	TWODV matres = create2D(expose(res), resshape);
+	TWODV matrestA = create2D(expose(restA), restAshape);
+	TWODV matrestB = create2D(expose(restB), restBshape);
+	TWODV matresT = create2D(expose(resT), resTshape);
+	// Freivald's algorithm
+
+	EXPECT_TRUE(freivald(matA, matB, matres));
+	EXPECT_TRUE(freivald(mattA, matB, matrestA));
+	EXPECT_TRUE(freivald(matA, mattB, matrestB));
+	EXPECT_TRUE(freivald(mattA, mattB, matresT));
+
+	// we delete top nodes, because this case is not testing for observer self-destruction
+	delete res;
+	delete restA;
+	delete restB;
+	delete resT;
 }
 
 

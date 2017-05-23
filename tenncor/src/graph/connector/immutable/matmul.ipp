@@ -8,7 +8,7 @@
 
 #ifdef TENNCOR_MATMUL_HPP
 
-#define STRASSEN_THRESHOLD 50 //100
+#define STRASSEN_THRESHOLD 100
 
 namespace nnet
 {
@@ -93,7 +93,8 @@ void strassen (T* c, const T* a, const T* b, size_t dimPad)
 			temp[11 * quadSize + quadidx] += b[idx11];
 
 			// 12
-			size_t idx12 = x + dimPad * (y + quadRC);
+			size_t idx12 = x + quadRC + dimPad * y;
+
 			// A12 used in M5L, M7L
 			temp[8 * quadSize + quadidx] += a[idx12];
 			temp[12 * quadSize + quadidx] += a[idx12];
@@ -103,7 +104,8 @@ void strassen (T* c, const T* a, const T* b, size_t dimPad)
 			temp[11 * quadSize + quadidx] += b[idx12];
 
 			// 21
-			size_t idx21 = x + quadRC + dimPad * y;
+			size_t idx21 = x + dimPad * (y + quadRC);
+
 			// A21 used in M2L, M6L
 			temp[2 * quadSize + quadidx] += a[idx21];
 			temp[10 * quadSize + quadidx] += a[idx21];
@@ -114,6 +116,7 @@ void strassen (T* c, const T* a, const T* b, size_t dimPad)
 
 			// 22
 			size_t idx22 = x + quadRC + dimPad * (y + quadRC);
+
 			// A22 used in M1L, M2L, M4L, M7L
 			temp[quadidx] += a[idx22];
 			temp[2 * quadSize + quadidx] += a[idx22];
@@ -122,8 +125,8 @@ void strassen (T* c, const T* a, const T* b, size_t dimPad)
 
 			// B22 used in M1R, M3R, M5R, M7R
 			temp[quadSize + quadidx] += b[idx22];
-			temp[5 * quadSize + quadidx] += b[idx22];
-			temp[9 * quadSize + quadidx] -= b[idx22];
+			temp[5 * quadSize + quadidx] -= b[idx22];
+			temp[9 * quadSize + quadidx] += b[idx22];
 			temp[13 * quadSize + quadidx] += b[idx22];
 		}
 	}
@@ -153,19 +156,19 @@ void strassen (T* c, const T* a, const T* b, size_t dimPad)
 		{
 			size_t quadidx = x + quadRC * y;
 
-			// 11
+			// C11
 			size_t idx11 = x + dimPad * y;
 			c[idx11] = temp[14 * quadSize + quadidx] + temp[17 * quadSize + quadidx] - temp[18 * quadSize + quadidx] + temp[20 * quadSize + quadidx];
 
-			// 12
-			size_t idx12 = x + dimPad * (y + quadRC);
+			// C12
+			size_t idx12 = x + quadRC + dimPad * y;
 			c[idx12] = temp[16 * quadSize + quadidx] + temp[18 * quadSize + quadidx];
 
-					// 21
-			size_t idx21 = x + quadRC + dimPad * y;
+			// C21
+			size_t idx21 = x + dimPad * (y + quadRC);
 			c[idx21] = temp[15 * quadSize + quadidx] + temp[17 * quadSize + quadidx];
 
-					// 22
+			// C22
 			size_t idx22 = x + quadRC + dimPad * (y + quadRC);
 			c[idx22] = temp[14 * quadSize + quadidx] - temp[15 * quadSize + quadidx] + temp[16 * quadSize + quadidx] + temp[19 * quadSize + quadidx];
 		}
@@ -334,7 +337,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 				for (size_t x = 0; x < dimX; x++)
 				{
 					size_t bidx = coord_map[2] * x + coord_map[3] * z;
-					b[z + dimPad * x] = rawb[bidx];
+					b[x + dimPad * z] = rawb[bidx];
 				}
 			}
 			strassen(out, a, b, dimPad);
