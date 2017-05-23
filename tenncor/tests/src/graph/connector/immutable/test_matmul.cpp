@@ -157,6 +157,12 @@ TEST(MATMUL, DISABLED_Jacobian_L004)
 }
 
 
+TEST(MATMUL, DISABLED_Strassen_L005)
+{
+	FUZZ::reset_logger();
+}
+
+
 #endif /* DISABLE_MATMUL_TEST */
 
 

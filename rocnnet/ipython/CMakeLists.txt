@@ -26,7 +26,7 @@ swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})
 
 # manual relink python library on OSX
 if(APPLE)
-    add_custom_target(run ALL
+    add_custom_target(py_relink ALL
         DEPENDS _dqn
         COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

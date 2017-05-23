@@ -151,13 +151,17 @@ K006 - arg_compress obtains of the index of an element found by some search para
         otherwise obtain the coordinate of the element
 K007 - arg_compress will throw when dimension is greater than or equal to rank
 
-// MATMUL BEHAVIOR (UNTESTED)
+// MATMUL BEHAVIOR
 L000 - cloning and moving matmul copies and moves over transpose information
 L001 - matmul with nullptr arguments returns nullptr
+(UNTESTED)
 L002 - matmul matrix multiplies the first 2 dimensions of tensors
         shapes must match by according to the following (<m, n, a, b, c, ...>, <k, m, a, b, c, ...>)
         where m is shape value of index 0, and 1 for first and second argument respectively (note: column is index 0)
         any shape value following the first two must be identical
+        (probabilistically verified by Freivald's algorithm)
 L003 - matrix multiplying incompatible shapes throws logic_error
 L004 - matmul(a, b) appends a jacobian operator to it's observers (and super-observers)
         the jacobian operator is defined as: a' * matmul(k, b^T) + b' * matmul(a^T, k) where k is the graph root
+L005 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
+        matmul shape X, Y (X=?, Y=?) takes at most N seconds
