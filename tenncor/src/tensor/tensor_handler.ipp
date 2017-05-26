@@ -26,7 +26,7 @@ itensor_handler<T>* itensor_handler<T>::move (void)
 }
 
 template <typename T>
-void itensor_handler<T>::operator () (tensor<T>& out,
+void itensor_handler<T>::operator () (tensor<T>*& out,
 	std::vector<const tensor<T>*> args) const
 {
 	std::vector<tensorshape> ts;
@@ -37,14 +37,18 @@ void itensor_handler<T>::operator () (tensor<T>& out,
 		ts.push_back(arg->get_shape());
 		raws.push_back(arg->raw_data_);
 	}
-	tensorshape s = this->calc_shape(ts);
+	tensorshape s = calc_shape(ts);
+	if (nullptr == out)
+	{
+		out = new tensor<T>(s);
+	}
 
 	if (s.is_fully_defined())
 	{
 		// if out is allocated, verify shape with out
-		if (out.is_alloc())
+		if (out->is_alloc())
 		{
-			tensorshape oshape = out.get_shape();
+			tensorshape oshape = out->get_shape();
 			if (false == s.is_compatible_with(oshape))
 			{
 				std::stringstream ss;
@@ -57,9 +61,9 @@ void itensor_handler<T>::operator () (tensor<T>& out,
 		// otherwise allocate out
 		else
 		{
-			out.allocate(s);
+			out->allocate(s);
 		}
-		calc_data(out.raw_data_, s, raws, ts);
+		calc_data(out->raw_data_, s, raws, ts);
 	}
 }
 
@@ -86,8 +90,7 @@ transfer_func<T>* transfer_func<T>::move (void)
 }
 
 template <typename T>
-void transfer_func<T>::operator () (
-	tensor<T>& out, std::vector<const tensor<T>*> args) const
+void transfer_func<T>::operator () (tensor<T>*& out, std::vector<const tensor<T>*> args) const
 {
 	itensor_handler<T>::operator () (out, args);
 }
@@ -124,9 +127,9 @@ initializer<T>* initializer<T>::move (void)
 }
 
 template <typename T>
-void initializer<T>::operator () (tensor<T>& out) const
+void initializer<T>::operator () (tensor<T>*& out) const
 {
-	itensor_handler<T>::operator ()(out, {&out});
+	itensor_handler<T>::operator ()(out, {out});
 }
 
 template <typename T>

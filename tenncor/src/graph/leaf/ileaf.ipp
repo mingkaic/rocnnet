@@ -12,7 +12,10 @@ namespace nnet
 {
 
 template <typename T>
-ileaf<T>::~ileaf (void) {}
+ileaf<T>::~ileaf (void)
+{
+	delete data_;
+}
 
 template <typename T>
 ileaf<T>* ileaf<T>::clone (void) const
@@ -67,7 +70,7 @@ const tensor<T>* ileaf<T>::get_eval (void) const
 	{
 		return nullptr;
 	}
-	return data_.get();
+	return data_;
 }
 
 template <typename T>
@@ -110,17 +113,29 @@ ileaf<T>::ileaf (ileaf<T>&& other) :
 template <typename T>
 void ileaf<T>::copy_helper (const ileaf<T>& other)
 {
+	if (data_)
+	{
+		delete data_;
+		data_ = nullptr;
+	}
 	is_init_ = other.is_init_;
 	// copy over data if other has good_status (we want to ignore uninitialized data)
-	data_ = std::unique_ptr<tensor<T> >(
-		other.data_->clone(!other.good_status()));
+	if (other.data_)
+	{
+		data_ = other.data_->clone(!other.good_status());
+	}
 }
 
 template <typename T>
 void ileaf<T>::move_helper (ileaf<T>&& other)
 {
+	if (data_)
+	{
+		delete data_;
+	}
 	is_init_ = std::move(other.is_init_);
 	data_ = std::move(other.data_);
+	other.data_ = nullptr;
 }
 
 template <typename T>
@@ -138,11 +153,11 @@ public:
 	}
 
 	// perform assignment
-	void operator () (tensor<T>& out, std::vector<T>& data)
+	void operator () (tensor<T>*& out, std::vector<T>& data)
 	{
 		// update temp_
 		temp_ = data;
-		itensor_handler<T>::operator ()(out, {&out});
+		itensor_handler<T>::operator ()(out, {out});
 	}
 
 protected:

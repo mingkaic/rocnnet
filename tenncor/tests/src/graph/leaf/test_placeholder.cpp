@@ -197,7 +197,8 @@ TEST(PLACHOLDER, AssignTensor_G003)
 	double c = FUZZ::getDouble(1, "c")[0];
 	const_init<double> cinit(c);
 	tensor<double> rawtens(shape);
-	cinit(rawtens);
+	tensor<double>* rawtenptr = &rawtens;
+	cinit(rawtenptr);
 
 	mock_connector conn({&place}, label2);
 	conn.inst_ = "conn";

@@ -214,8 +214,8 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 
 	size_t ax = rank1 ? al[0] : 0;
 	size_t ay = rank1 > 1 ? al[1] : 1;
-	size_t bx = rank1 ? bl[0] : 0;
-	size_t by = rank1 > 1 ? bl[1] : 1;
+	size_t bx = rank2 ? bl[0] : 0;
+	size_t by = rank2 > 1 ? bl[1] : 1;
 
 	// ensure the dimensions beyond 2d are equal
 	size_t minend = std::min(rank1, rank2);
@@ -274,9 +274,11 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		std::stringstream ss;
 		ss << "matmul shapes ";
 		print_shape(t1s, ss);
-		ss << " and ";
+		if (transposeA) ss << "transposed ";
+		ss << "and ";
 		print_shape(t2s, ss);
-		ss << " do not match";
+		if (transposeB) ss << "transposed ";
+		ss << "do not match";
 		throw std::logic_error(ss.str());
 	}
 
@@ -368,9 +370,17 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		{
 			return root;
 		}
-
-		varptr<T> mA = new matmul<T>(root, b, transposeA, !transposeB);
-		varptr<T> mB = new matmul<T>(a, root, !transposeA, transposeB);
+		varptr<T> mA = new matmul<T>(root, b, false, !transposeB);
+		varptr<T> mB = new matmul<T>(a, root, !transposeA, false);
+		// todo: make N-dimensional. use permute: transpose first 2 dimensions only.
+		if (transposeA)
+		{
+			mA = transpose<T>(mA);
+		}
+		if (transposeB)
+		{
+			mB = transpose<T>(mB);
+		}
 		return mA * grada + mB * gradb;
 	};
 

@@ -22,13 +22,8 @@
 namespace nnet
 {
 
-//! backward transfer function, get gradient nodes; F: Nf -> Nb
 template <typename T>
-using BACK_MAP = std::function<inode<T>*(std::vector<inode<T>*>,variable<T>*)>;
-
-//! jacobian transfer function
-template <typename T>
-using JTRANSFER = std::function<inode<T>*(inode<T>*,variable<T>*)>;
+class merged_immutable;
 
 template <typename T>
 class immutable : public iconnector<T>
@@ -73,7 +68,7 @@ public:
 	virtual void get_leaves (
 		typename inode<T>::GRAD_CACHE& leaves) const;
 
-	// >>>> MUTATORS
+	// >>>> MUTATORS <<<<
 	//! grab operational gradient node, used by other nodes
 	//! delay instantiate gcache elements if target leaf was never instantiated
 	virtual inode<T>* get_leaf (variable<T>* leaf);
@@ -88,6 +83,9 @@ public:
 
 	//! Inherited from inode: data_ takes data from proto
 	virtual bool read_proto (const tenncor::tensor_proto&);
+
+	//! summarize this immutable
+	virtual void summarize (std::vector<typename iconnector<T>::conn_summary>& conn_list) const;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -117,21 +115,11 @@ protected:
 	//! declare move constructor to move over transfer functions
 	immutable (immutable<T>&& other);
 
-	//! list of jacobian transfer function
-	//! to be executed on resulting root node
-	//! execution order: top-down
-	struct JList
-	{
-		JList (void) :
-			uid_(nnutils::uuid(this)) {}
+	//! forward pass step: populate data_ (overridden by merged_immutable)
+	virtual void forward_pass (std::vector<const tensor<T>*> tens);
 
-		std::string uid_;
-		std::list<JTRANSFER<T> > list_;
-	};
-
-	//! jacobian for each variable
-	using JCACHE = std::unordered_map<variable<T>*,JList>;
-	JCACHE jacobians_;
+	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
+	virtual void backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf);
 
 private:
 	//! copy helper
@@ -142,7 +130,7 @@ private:
 
 	// >>>> FORWARD OPERATIONS <<<<
 	//! inner tensor to cache forward evaluated values
-	std::unique_ptr<tensor<T> > data_ = nullptr;
+	tensor<T>* data_ = nullptr;
 
 	//! forward transfer function
 	transfer_func<T> Nf_; //! calculates forward passing data

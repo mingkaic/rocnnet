@@ -71,7 +71,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 	}
 	typename ileaf<T>::assignment* assigner =
 		dynamic_cast<typename ileaf<T>::assignment*>(this->init_);
-	(*assigner)(*this->data_, data);
+	(*assigner)(this->data_, data);
 
 	this->is_init_ = true;
 	this->notify(UPDATE);

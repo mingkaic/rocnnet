@@ -74,7 +74,7 @@ constant<T>::constant (T scalar) :
 {
 	const_init<T> init(scalar);
 	this->data_->allocate();
-	init(*this->data_);
+	init(this->data_);
 	this->is_init_ = true;
 }
 
@@ -105,7 +105,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		size_t deficiency = n - rawn;
 		raw.insert(raw.end(), deficiency, 0);
 	}
-	assigner(*this->data_, raw);
+	assigner(this->data_, raw);
 	this->is_init_ = true;
 }
 

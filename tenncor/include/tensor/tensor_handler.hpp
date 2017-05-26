@@ -55,7 +55,7 @@ protected:
 	virtual itensor_handler<T>* move_impl (void) = 0;
 
 	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
+	void operator () (tensor<T>*& out, std::vector<const tensor<T>*> args) const;
 
 	//! calculate raw data from output shape, input shapes, and input data 
 	virtual void calc_data (T*,const tensorshape&,
@@ -78,7 +78,7 @@ public:
 	transfer_func<T>* move (void);
 
 	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>& out, std::vector<const tensor<T>*> args) const;
+	void operator () (tensor<T>*& out, std::vector<const tensor<T>*> args) const;
 	
 	//! calls shape transformer
 	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
@@ -112,7 +112,7 @@ public:
 	initializer<T>* move (void);
 
 	//! perform initialization
-	void operator () (tensor<T>& out) const;
+	void operator () (tensor<T>*& out) const;
 	
 	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
 };

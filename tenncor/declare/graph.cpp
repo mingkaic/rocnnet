@@ -13,6 +13,7 @@
 #include "graph/connector/immutable/matmul.hpp"
 #include "graph/connector/immutable/elementary.hpp"
 #include "graph/connector/immutable/transform.hpp"
+#include "graph/optimize/merged_immutable.hpp"
 #include "graph/varptr.hpp"
 
 namespace nnet
@@ -31,7 +32,13 @@ template class placeholder<double>;
 
 template class immutable<double>;
 
+template class immutable<unsigned>;
+
 template class matmul<double>;
+
+template class matmul<unsigned>;
+
+template class merged_immutable<double>;
 
 template varptr<double> operator + (const varptr<double> a);
 

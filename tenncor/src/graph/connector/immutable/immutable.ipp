@@ -30,7 +30,10 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 }
 
 template <typename T>
-immutable<T>::~immutable (void) {}
+immutable<T>::~immutable (void)
+{
+	delete data_;
+}
 
 template <typename T>
 immutable<T>* immutable<T>::clone (void) const
@@ -85,7 +88,7 @@ const tensor<T>* immutable<T>::get_eval (void) const
 	{
 		return nullptr;
 	}
-	return data_.get();
+	return data_;
 }
 
 template <typename T>
@@ -144,13 +147,12 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 	}
 	if (nullptr == it->second)
 	{
-		// initiate grad_
 		std::vector<inode<T>*> deps;
 		for (subject* sub : this->dependencies_)
 		{
 			deps.push_back(static_cast<inode<T>*>(sub));
 		};
-		gcache_[leaf] = ginit_(deps, leaf);
+		backward_pass(deps, leaf);
 	}
 	return gcache_[leaf];
 }
@@ -170,7 +172,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	{
 		out = get_leaf(leaf);
 		// modify res with jacobian
-		JList& j = jacobians_[leaf];
+		auto& j = this->jacobians_[leaf];
 		for (auto it = j.list_.rbegin(), et = j.list_.rend(); it != et; it++)
 		{
 			out = (*it)(out, leaf);
@@ -209,7 +211,6 @@ void immutable<T>::update (subject* /*arg*/)
 	bool allgood = true;
 	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
-	std::vector<tensorshape> ts;
 	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
 		it != et && allgood && !damaged; it++)
 	{
@@ -221,7 +222,6 @@ void immutable<T>::update (subject* /*arg*/)
 			if (allgood)
 			{
 				tens.push_back(a->get_eval());
-				ts.push_back(a->get_shape());
 			}
 		}
 	};
@@ -234,16 +234,11 @@ void immutable<T>::update (subject* /*arg*/)
 	else if (allgood)
 	{
 		// forward pass
-		if (data_ == nullptr)
-		{
-			// initialize data in the expected resulting shape
-			data_ = std::make_unique<tensor<T> >(Nf_.calc_shape(ts));
-		}
-		Nf_(*data_, tens);
+		forward_pass(tens);
 		this->notify(UPDATE);
 	}
 
-	// graph id optimization (update master and remove unnecessary graph ids)
+	// graph id optimize (update master and remove unnecessary graph ids)
 	typename iconnector<T>::graph_node* master = nullptr;
 	this->gid_->get_master(master);
 	if (this->gid_ != master)
@@ -261,6 +256,12 @@ bool immutable<T>::read_proto (const tenncor::tensor_proto&)
 }
 
 template <typename T>
+void immutable<T>::summarize (std::vector<typename iconnector<T>::conn_summary>& conn_list) const
+{
+	conn_list.push_back(typename iconnector<T>::conn_summary(this->get_name(), Nf_, ginit_, this->dependencies_.size()));
+}
+
+template <typename T>
 immutable<T>::immutable (
 	std::vector<inode<T>*> args,
 	SHAPER shaper, FORWARD_OP<T> forward,
@@ -269,33 +270,9 @@ iconnector<T>(args, label),
 Nf_(shaper, forward),
 ginit_(F)
 {
-	std::unordered_set<inode<T>*> deps;
-	// todo: test for jacobian, and leaf transfer
-	// if we have more than 1 jacobian, separate the operators for each branch
 	for (subject* sub : this->dependencies_)
 	{
-		inode<T>* arg = static_cast<inode<T>*>(sub);
-		// only perform following on unique dependent nodes:
-		if (deps.end() == deps.find(arg))
-		{
-			if (immutable<T>* imm = dynamic_cast<immutable<T>*>(arg))
-			{
-				for (auto jpair : imm->jacobians_)
-				{
-					variable<T>* leaf = jpair.first;
-					auto jit = jacobians_.find(leaf);
-					// different jacobians originating from the same leaf cannot overlap
-					JList& j = jpair.second;
-					if (!j.list_.empty())
-					{
-						assert (jacobians_.end() == jit || jit->second.uid_ == j.uid_);
-						jacobians_[leaf] = j;
-					}
-				}
-			}
-			arg->get_leaves(gcache_);
-			deps.emplace(arg);
-		}
+		static_cast<inode<T>*>(sub)->get_leaves(gcache_);
 	}
 	update(nullptr); // update data_ initially
 }
@@ -346,12 +323,28 @@ immutable<T>::immutable (immutable<T>&& other) :
 }
 
 template <typename T>
+void immutable<T>::forward_pass (std::vector<const tensor<T>*> tens)
+{
+	Nf_(data_, tens);
+}
+
+template <typename T>
+void immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf)
+{
+	gcache_[leaf] = ginit_(deps, leaf);
+}
+
+template <typename T>
 void immutable<T>::copy_helper (const immutable& other)
 {
-	data_ = nullptr;
+	if (data_)
+	{
+		delete data_;
+		data_ = nullptr;
+	}
 	if (other.data_)
 	{
-		data_ = std::unique_ptr<tensor<T> >(other.data_->clone());
+		data_ = other.data_->clone();
 	}
 	ginit_ = other.ginit_;
 }
@@ -359,6 +352,10 @@ void immutable<T>::copy_helper (const immutable& other)
 template <typename T>
 void immutable<T>::move_helper (immutable&& other)
 {
+	if (data_)
+	{
+		delete data_;
+	}
 	data_ = std::move(other.data_);
 	other.data_ = nullptr;
 	ginit_ = std::move(other.ginit_);

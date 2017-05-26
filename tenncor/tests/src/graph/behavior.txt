@@ -151,7 +151,7 @@ K006 - arg_compress obtains of the index of an element found by some search para
         otherwise obtain the coordinate of the element
 K007 - arg_compress will throw when dimension is greater than or equal to rank
 
-// MATMUL BEHAVIOR
+// MATMUL BEHAVIORS
 L000 - cloning and moving matmul copies and moves over transpose information
 L001 - matmul with nullptr arguments returns nullptr
 L002 - matmul matrix multiplies the first 2 dimensions of tensors
@@ -166,3 +166,7 @@ L004 - matmul(a, b) appends a jacobian operator to it's observers (and super-obs
 (TESTED)
 L005 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
         matmul shape X, Y (X=?, Y=?) takes at most N seconds
+
+// MERGE_IMM BEHAVIORS
+M000 -
+M001 - cloning and moving merge_immutable

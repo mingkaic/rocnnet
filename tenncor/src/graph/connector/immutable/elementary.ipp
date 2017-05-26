@@ -628,7 +628,7 @@ varptr<T> operator * (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*b == (T)0) return constant<T>::get(0);
 		if (*b == (T)1) return constant<T>::get(a);
@@ -658,7 +658,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
 	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*a == (T)0) return constant<T>::get(0);
 		if (*a == (T)1) return constant<T>::get(b);
@@ -688,13 +688,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*a == (T)0) return constant<T>::get(0);
 		if (*a == (T)1) return b;
 	}
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*b == (T)0) return constant<T>::get(0);
 		if (*b == (T)1) return a;
@@ -772,7 +772,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
 		if (*b == (T)1) return constant<T>::get(a);
@@ -829,7 +829,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	// don't allow infinity
 	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	// optimize only applies to constants
 	{
 		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
 		if (*b == (T)1) return a;

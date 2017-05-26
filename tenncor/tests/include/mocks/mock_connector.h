@@ -72,6 +72,8 @@ protected:
 	{
 		return new mock_connector(std::move(*this));
 	}
+
+	virtual void summarize (std::vector<typename iconnector<double>::conn_summary>&) const {}
 };
 
 

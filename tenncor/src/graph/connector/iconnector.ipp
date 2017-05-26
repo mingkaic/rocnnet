@@ -152,6 +152,33 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 	inode<T>(label),
 	iobserver(std::vector<subject*>(dependencies.begin(), dependencies.end()))
 {
+	std::unordered_set<inode<T>*> deps;
+	// todo: test for jacobian, and leaf transfer
+	// if we have more than 1 jacobian, separate the operators for each branch
+	for (subject* sub : this->dependencies_)
+	{
+		inode<T>* arg = static_cast<inode<T>*>(sub);
+		// only perform following on unique dependent nodes:
+		if (deps.end() == deps.find(arg))
+		{
+			if (iconnector<T>* imm = dynamic_cast<iconnector<T>*>(arg))
+			{
+				for (auto jpair : imm->jacobians_)
+				{
+					variable<T>* leaf = jpair.first;
+					auto jit = this->jacobians_.find(leaf);
+					// different jacobians originating from the same leaf cannot overlap
+					auto& j = jpair.second;
+					if (!j.list_.empty())
+					{
+						assert (this->jacobians_.end() == jit || jit->second.uid_ == j.uid_);
+						this->jacobians_[leaf] = j;
+					}
+				}
+			}
+			deps.emplace(arg);
+		}
+	}
 	update_graph(to_con<T, inode<T> >(dependencies));
 }
 
@@ -214,6 +241,20 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 			}
 		}
 		gid_->users_++; // add this as a user
+	}
+}
+
+template <typename T>
+void iconnector<T>::dep_replace (std::vector<subject*>& deps)
+{
+	size_t oldndep = this->dependencies_.size();
+	for (size_t i = oldndep, n = deps.size(); i < n; i++)
+	{
+		this->add_dependency(deps[i]);
+	}
+	for (size_t i = 0; i < oldndep; i++)
+	{
+		this->replace_dependency(deps[i], i);
 	}
 }
 

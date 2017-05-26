@@ -47,6 +47,8 @@ public:
 	//! determine whether this observes sub
 	bool has_subject (subject* sub) const;
 
+	std::vector<subject*> get_subjects (void) { return dependencies_; }
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor

@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "graph/connector/immutable/matmul.hpp"
+#include "utils/futils.hpp"
 
 #include "gtest/gtest.h"
 #include "util_test.h"
@@ -324,9 +325,130 @@ TEST(MATMUL, Incompatible_L003)
 }
 
 
-TEST(MATMUL, DISABLED_Jacobian_L004)
+TEST(MATMUL, Jacobian_L004)
 {
 	FUZZ::reset_logger();
+	// we get at most 49 elements per matrix
+	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {3, 7});
+	rand_uniform<double> rinit(0, 1);
+
+	tensorshape shapeA = std::vector<size_t>{dims[0], dims[1]};
+	tensorshape shapeB = std::vector<size_t>{dims[2], dims[0]};
+	tensorshape shapetA = std::vector<size_t>{dims[1], dims[0]}; // transpose A
+	tensorshape shapetB = std::vector<size_t>{dims[0], dims[2]}; // transpose B
+
+	variable<double> A(shapeA, rinit, "A"); // shape <m, n>
+	variable<double> B(shapeB, rinit, "B"); // shape <k, m>
+	variable<double> tA(shapetA, rinit, "tA");
+	variable<double> tB(shapetB, rinit, "tB");
+
+	// shapes of <k, n>
+	varptr<double> res = sigmoid(varptr<double>(matmul<double>::get(&A, &B)));
+	varptr<double> restA = sigmoid(varptr<double>(matmul<double>::get(&tA, &B, true)));
+	varptr<double> restB = sigmoid(varptr<double>(matmul<double>::get(&A, &tB, false, true)));
+	varptr<double> resT = sigmoid(varptr<double>(matmul<double>::get(&tA, &tB, true, true)));
+
+	A.initialize();
+	B.initialize();
+	tA.initialize();
+	tB.initialize();
+
+	inode<double>* dresA = res->get_gradient(&A);
+	inode<double>* dresB = res->get_gradient(&B);
+
+	inode<double>* drestAA = restA->get_gradient(&tA);
+	inode<double>* drestAB = restA->get_gradient(&B);
+
+	inode<double>* drestBA = restB->get_gradient(&A);
+	inode<double>* drestBB = restB->get_gradient(&tB);
+
+	inode<double>* dresTA = resT->get_gradient(&tA);
+	inode<double>* dresTB = resT->get_gradient(&tB);
+
+// requires on all elementary operations to be valid (not a great validation method...)
+	// res = 1/(1+e^-(A@B))
+	// dres = jacobian(sigmoid'(1))
+	// where jacobian = {
+	// 		sigmoid'(1) @ B^T for dA
+	//		A^T @ sigmoid'(1) for dB
+	// }
+	// sigmoid' = sigmoid * (1 - sigmoid)
+	varptr<double> dsig_res = res * (1.0 - res);
+	inode<double>* fake_dresA = matmul<double>::get(dsig_res, &B, false, true);
+	inode<double>* fake_dresB = matmul<double>::get(&A, dsig_res, true);
+
+	varptr<double> dsig_restA = restA * (1.0 - restA);
+	inode<double>* fake_drestAA = transpose<double>(matmul<double>::get(dsig_restA, &B, false, true));
+	inode<double>* fake_drestAB = matmul<double>::get(&tA, dsig_restA);
+
+	varptr<double> dsig_restB = restB * (1.0 - restB);
+	inode<double>* fake_drestBA = matmul<double>::get(dsig_restB, &tB);
+	inode<double>* fake_drestBB = transpose<double>(matmul<double>::get(&A, dsig_restB, true, false));
+
+	varptr<double> dsig_resT = resT * (1.0 - resT);
+	inode<double>* fake_dresTA = transpose<double>(matmul<double>::get(dsig_resT, &tB));
+	inode<double>* fake_dresTB = transpose<double>(matmul<double>::get(&tA, dsig_resT));
+
+	EXPECT_TRUE(tensorshape_equal(dresA->get_shape(), A.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresB->get_shape(), B.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestAA->get_shape(), tA.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestAB->get_shape(), B.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestBA->get_shape(), A.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestBB->get_shape(), tB.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresTA->get_shape(), tA.get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresTB->get_shape(), tB.get_shape()));
+
+	EXPECT_TRUE(tensorshape_equal(dresA->get_shape(), fake_dresA->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresB->get_shape(), fake_dresB->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestAA->get_shape(), fake_drestAA->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestAB->get_shape(), fake_drestAB->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestBA->get_shape(), fake_drestBA->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(drestBB->get_shape(), fake_drestBB->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresTA->get_shape(), fake_dresTA->get_shape()));
+	EXPECT_TRUE(tensorshape_equal(dresTB->get_shape(), fake_dresTB->get_shape()));
+
+	std::vector<double> dresA_data = expose(dresA);
+	std::vector<double> dresB_data = expose(dresB);
+	std::vector<double> drestAA_data = expose(drestAA);
+	std::vector<double> drestAB_data = expose(drestAB);
+	std::vector<double> drestBA_data = expose(drestBA);
+	std::vector<double> drestBB_data = expose(drestBB);
+	std::vector<double> dresTA_data = expose(dresTA);
+	std::vector<double> dresTB_data = expose(dresTB);
+
+	std::vector<double> fake_dresA_data = expose(fake_dresA);
+	std::vector<double> fake_dresB_data = expose(fake_dresB);
+	std::vector<double> fake_drestAA_data = expose(fake_drestAA);
+	std::vector<double> fake_drestAB_data = expose(fake_drestAB);
+	std::vector<double> fake_drestBA_data = expose(fake_drestBA);
+	std::vector<double> fake_drestBB_data = expose(fake_drestBB);
+	std::vector<double> fake_dresTA_data = expose(fake_dresTA);
+	std::vector<double> fake_dresTB_data = expose(fake_dresTB);
+
+	// all a shapes should have the same number of elements
+	double err_thresh = 0.001;
+	for (size_t i = 0, n = dresA_data.size(); i < n; i++)
+	{
+		double dresAerr = std::abs(dresA_data[i] - fake_dresA_data[i]) / dresA_data[i];
+		double drestAAerr = std::abs(drestAA_data[i] - fake_drestAA_data[i]) / drestAA_data[i];
+		double drestBAerr = std::abs(drestBA_data[i] - fake_drestBA_data[i]) / drestBA_data[i];
+		double dresTAerr = std::abs(dresTA_data[i] - fake_dresTA_data[i]) / dresTA_data[i];
+		EXPECT_GT(err_thresh, dresAerr);
+		EXPECT_GT(err_thresh, drestAAerr);
+		EXPECT_GT(err_thresh, drestBAerr);
+		EXPECT_GT(err_thresh, dresTAerr);
+	}
+	for (size_t i = 0, n = dresB_data.size(); i < n; i++)
+	{
+		double dresBerr = std::abs(dresB_data[i] - fake_dresB_data[i]) / dresB_data[i];
+		double drestABerr = std::abs(drestAB_data[i] - fake_drestAB_data[i]) / drestAB_data[i];
+		double drestBBerr = std::abs(drestBB_data[i] - fake_drestBB_data[i]) / drestBB_data[i];
+		double dresTBerr = std::abs(dresTB_data[i] - fake_dresTB_data[i]) / dresTB_data[i];
+		EXPECT_GT(err_thresh, dresBerr);
+		EXPECT_GT(err_thresh, drestABerr);
+		EXPECT_GT(err_thresh, drestBBerr);
+		EXPECT_GT(err_thresh, dresTBerr);
+	}
 }
 
 
