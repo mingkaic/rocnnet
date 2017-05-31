@@ -32,6 +32,10 @@ public:
 
 	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
+	void node_release (nnet::subject* sub);
+
+	void node_release (nnet::iobserver* obs);
+
 	template <typename T>
 	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr)
 	{

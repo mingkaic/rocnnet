@@ -8,6 +8,10 @@
 
 #include "graph/react/iobserver.hpp"
 
+#ifdef EDGE_RCD
+#include "edgeinfo/comm_record.hpp"
+#endif /* EDGE_RCD */
+
 #ifdef TENNCOR_IOBSERVER_HPP
 
 namespace nnet
@@ -20,6 +24,13 @@ iobserver::~iobserver (void)
 	{
 		remove_dependency(i);
 	}
+
+#ifdef EDGE_RCD
+
+// record subject-object edge
+rocnnet_record::erec::rec.node_release(this);
+
+#endif /* EDGE_RCD */
 }
 
 iobserver& iobserver::operator = (const iobserver& other)
@@ -103,11 +114,12 @@ void iobserver::replace_dependency (subject* dep, size_t idx)
 	{
 		dep->attach(this, idx);
 	}
+	subject* lastsub = dependencies_[idx];
 	if (idx >= ndeps)
 	{
 		dependencies_.insert(dependencies_.end(), idx - ndeps + 1, nullptr);
 	}
-	else if (subject* lastsub = dependencies_[idx])
+	else if (lastsub && lastsub != dep)
 	{
 		lastsub->detach(this, idx);
 	}

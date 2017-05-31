@@ -6,14 +6,15 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <iostream> // for recording
-#include <unordered_set>
 #include "mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
 #define gd_net_hpp
+
+#include <iostream> // for recording
+#include <unordered_set>
 
 namespace rocnnet
 {

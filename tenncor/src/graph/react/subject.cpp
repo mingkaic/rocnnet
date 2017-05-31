@@ -20,6 +20,13 @@ namespace nnet
 subject::~subject (void)
 {
 	notify(UNSUBSCRIBE); // unsubscribe all audiences
+
+#ifdef EDGE_RCD
+
+// record subject-object edge
+rocnnet_record::erec::rec.node_release(this);
+
+#endif /* EDGE_RCD */
 }
 
 subject& subject::operator = (const subject&) { return *this; }

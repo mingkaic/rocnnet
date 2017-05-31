@@ -21,6 +21,9 @@ namespace nnet
 {
 
 template <typename T>
+void solo_merge (immutable<T>*& root);
+
+template <typename T>
 class merged_immutable : public immutable<T>
 {
 public:
@@ -42,6 +45,15 @@ protected:
 	//! merged_immutable constructor merging connector and its children
 	merged_immutable (immutable<T>* conn);
 
+	merged_immutable (std::vector<inode<T>*> args,
+		typename iconnector<T>::conn_summary s,
+		variable<T>* leaf, inode<T>* gres) :
+	immutable<T>(args, s)
+	{
+		this->set_label("merge_temp"+s.id_);
+		this->gcache_[leaf] = gres;
+	}
+
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! implement clone function
 	virtual inode<T>* clone_impl (void) const;
@@ -58,7 +70,8 @@ protected:
 private:
 	std::vector<typename iconnector<T>::conn_summary> summaries_;
 
-	std::vector<size_t> top_deps_;
+	//! map dependencies to the id of the summary that consumes it
+	std::vector<std::pair<std::string,size_t> > sub_mapper_;
 };
 
 }

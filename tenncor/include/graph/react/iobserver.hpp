@@ -47,7 +47,9 @@ public:
 	//! determine whether this observes sub
 	bool has_subject (subject* sub) const;
 
-	std::vector<subject*> get_subjects (void) { return dependencies_; }
+	std::vector<subject*> get_subjects (void) const { return dependencies_; }
+
+	size_t n_subjects (void) const { return dependencies_.size(); }
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

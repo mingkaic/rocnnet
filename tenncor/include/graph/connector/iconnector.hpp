@@ -83,7 +83,7 @@ public:
 		BACK_MAP<T> ginit_;
 		size_t ndeps_;
 
-		std::vector<std::pair<std::string, size_t> > dependents_;
+		std::unordered_map<std::string,std::vector<size_t> > dependents_;
 	};
 
 	//! Summarize this connector

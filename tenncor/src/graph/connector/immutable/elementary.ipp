@@ -281,7 +281,7 @@ varptr<T> sqrt (const varptr<T> a)
 }
 
 template <typename T>
-varptr<T> pow (const varptr<T> a, T scalar)
+varptr<T> pow (const varptr<T> a, double scalar)
 {
 	if (nullptr == a) return nullptr;
 	if (scalar == 0)
@@ -433,8 +433,24 @@ template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	{
+		if (*a == (T)0) return b;
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] + b;
+		}
+	}
+	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	{
+		if (*b == (T)0) return a;
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a + outconst[0];
+		}
+	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
@@ -553,8 +569,24 @@ template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return -b;
-	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	{
+		if (*a == (T)0) return -b;
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] - b;
+		}
+	}
+	else if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	{
+		if (*b == (T)0) return a;
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a - outconst[0];
+		}
+	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
@@ -692,12 +724,22 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	{
 		if (*a == (T)0) return constant<T>::get(0);
 		if (*a == (T)1) return b;
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] * b;
+		}
 	}
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) return constant<T>::get(0);
 		if (*b == (T)1) return a;
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a * outconst[0];
+		}
 	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
@@ -827,12 +869,25 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	// don't allow infinity
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
+	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	{
+		if (*a == (T)0) return constant<T>::get(0);
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] / b;
+		}
+	}
 	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
 		if (*b == (T)1) return a;
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a / outconst[0];
+		}
 	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,

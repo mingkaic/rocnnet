@@ -46,6 +46,7 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 	{
 		iobserver::operator = (other);
 		inode<T>::operator = (other);
+		jacobians_ = other.jacobians_;
 		if (to_con<T, subject>(
 			this->dependencies_).empty())
 		{
@@ -68,6 +69,7 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 		iobserver::operator = (std::move(other));
 		inode<T>::operator = (std::move(other));
 		gid_ = std::move(other.gid_);
+		jacobians_ = std::move(other.jacobians_);
 		other.gid_ = nullptr;
 	}
 	return *this;
@@ -185,7 +187,8 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
 	inode<T>(other),
-	iobserver(other)
+	iobserver(other),
+	jacobians_(other.jacobians_)
 {
 	if (to_con<T, subject>(
 		this->dependencies_).empty())
@@ -203,6 +206,7 @@ template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
 	inode<T>(std::move(other)),
 	iobserver(std::move(other)),
+	jacobians_(std::move(other.jacobians_)),
 	gid_(std::move(other.gid_))
 {
 	other.gid_ = nullptr;
@@ -248,7 +252,9 @@ template <typename T>
 void iconnector<T>::dep_replace (std::vector<subject*>& deps)
 {
 	size_t oldndep = this->dependencies_.size();
-	for (size_t i = oldndep, n = deps.size(); i < n; i++)
+	size_t n = deps.size();
+	assert(n >= oldndep);
+	for (size_t i = oldndep; i < n; i++)
 	{
 		this->add_dependency(deps[i]);
 	}

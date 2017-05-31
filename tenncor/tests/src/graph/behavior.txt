@@ -86,7 +86,8 @@ G004 - placeholder get_leaf returns 0 scalar node
 G005 - placeholder get_leaves does not change referenced leaf set
 
 // CONNECTOR BEHAVIOR
-H000 - copying connector copies over graph id if the original connector has at least one
+H000 - copying connector copies over graph id if the original connector has at least one,
+        (UNTESTED) connector copies over jacobians
         connector dependency (conform to definition of same graph)
         moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer
         creating a connector of a connector with null gid_ (possible with moving) will throw
@@ -97,7 +98,7 @@ H002 - connector is the same graph as another connector if they share a common c
 H003 - connector potential descendent calls both this and other connnector get_leaves to get leaf set
 
 // IMMUTABLE BEHAVIOR
-I000 - cloning and moving immutable copies and moves over data, Nf_ and ginit_
+I000 - cloning and moving immutable copies and moves over data, Nf_, (UNTESTED) ginit_, and gcache
 I001 - immutable A is a potential descendent of connector B if A's leaf set is a subset of B's leaf set
 I002 - immutable has good status if all its children are good, otherwise it's bad
 I003 - immutable tensor shape is the result of the shaper function.
@@ -158,15 +159,23 @@ L002 - matmul matrix multiplies the first 2 dimensions of tensors
         shapes must match by according to the following (<m, n, a, b, c, ...>, <k, m, a, b, c, ...>)
         where m is shape value of index 0, and 1 for first and second argument respectively (note: column is index 0)
         any shape value following the first two must be identical
-        (probabilistically verified by Freivald's algorithm)
+        (probabilistically verified by Freivald's algorithm) (N-dimensional Matmul UNTESTED and UNIMPLEMENTED)
 L003 - matrix multiplying incompatible shapes throws logic_error
-(UNTESTED)
 L004 - matmul(a, b) appends a jacobian operator to it's observers (and super-observers)
         the jacobian operator is defined as: a' * matmul(k, b^T) + b' * matmul(a^T, k) where k is the graph root
-(TESTED)
 L005 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
         matmul shape X, Y (X=?, Y=?) takes at most N seconds
 
 // MERGE_IMM BEHAVIORS
-M000 -
-M001 - cloning and moving merge_immutable
+M000 - constructed merged immutable is operationally identical to the original connector:
+        it has the same forward value,
+        it has the same backward node value
+        deleting the original graph (except the leaves) does not damage the merged node
+        note: merge_immutable automatically breaks and deletes the input connector
+(UNTESTED)
+M001 - cloning or moving merge_immutable copies or moves over the original operations
+M002 - solo_merge is operationally identical to the original graph
+        any node with multiple audiences is not merged
+        any node whose jacobian different from its parent is unmergible
+M003 - all_merge has same behavior as solo_merge, except nodes with multiple audiences are split and merged
+        e.g.: A is consumed by B and C, merge on C splits A to A1 and A2, B consumes A1, C consumes A2

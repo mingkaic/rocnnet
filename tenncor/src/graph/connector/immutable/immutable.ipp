@@ -347,6 +347,7 @@ void immutable<T>::copy_helper (const immutable& other)
 		data_ = other.data_->clone();
 	}
 	ginit_ = other.ginit_;
+	gcache_ = other.gcache_;
 }
 
 template <typename T>
@@ -359,6 +360,7 @@ void immutable<T>::move_helper (immutable&& other)
 	data_ = std::move(other.data_);
 	other.data_ = nullptr;
 	ginit_ = std::move(other.ginit_);
+	gcache_ = std::move(other.gcache_);
 }
 
 }

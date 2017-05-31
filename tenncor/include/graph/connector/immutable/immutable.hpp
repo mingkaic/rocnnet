@@ -87,12 +87,19 @@ public:
 	//! summarize this immutable
 	virtual void summarize (std::vector<typename iconnector<T>::conn_summary>& conn_list) const;
 
+	bool mergible_ = true;
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! mutable constructor defining transfer functions
 	immutable (std::vector<inode<T>*> args,
 		SHAPER shaper, FORWARD_OP<T> Nf,
 		BACK_MAP<T> F, std::string label);
+
+	immutable (std::vector<inode<T>*> args,
+		typename iconnector<T>::conn_summary s) :
+	iconnector<T>(args, s.id_),
+	Nf_(s.Nf_), ginit_(s.ginit_) { update(nullptr); }
 
 	//! copy everything but with new arguments
 	immutable (std::vector<inode<T>*> args, const immutable<T>& other);
@@ -121,6 +128,13 @@ protected:
 	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
 	virtual void backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf);
 
+	// >>>> LEAF-GRADIENT CACHE <<<<
+	//! maps leaf to gradient node
+	//! lazy instantiates gradient nodes
+	//! - stores the gradient value wrt each leaf
+	//! - record leaf set
+	typename inode<T>::GRAD_CACHE gcache_;
+
 private:
 	//! copy helper
 	void copy_helper (const immutable& other);
@@ -139,13 +153,6 @@ private:
 	//! backward transfer function to
 	//! lazy instantiate gradient cache values
 	BACK_MAP<T> ginit_;
-
-	// >>>> LEAF-GRADIENT CACHE <<<<
-	//! maps leaf to gradient node
-	//! lazy instantiates gradient nodes
-	//! - stores the gradient value wrt each leaf
-	//! - record leaf set
-	typename inode<T>::GRAD_CACHE gcache_;
 };
 
 }

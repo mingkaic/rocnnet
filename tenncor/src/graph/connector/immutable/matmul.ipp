@@ -359,6 +359,8 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	return get_shared_one<T>();
 }, "matmul")
 {
+	if (immutable<T>* imma = dynamic_cast<immutable<T>*>(a)) imma->mergible_ = false;
+	if (immutable<T>* immb = dynamic_cast<immutable<T>*>(b)) immb->mergible_ = false;
 	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
@@ -370,8 +372,18 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		{
 			return root;
 		}
-		varptr<T> mA = new matmul<T>(root, b, false, !transposeB);
-		varptr<T> mB = new matmul<T>(a, root, !transposeA, false);
+		varptr<T> mA;
+		varptr<T> mB;
+		if (1 == root->get_shape().n_elems())
+		{
+			mA = root;
+			mB = root;
+		}
+		else
+		{
+			mA = new matmul<T>(root, b, false, !transposeB);
+			mB = new matmul<T>(a, root, !transposeA, false);
+		}
 		// todo: make N-dimensional. use permute: transpose first 2 dimensions only.
 		if (transposeA)
 		{

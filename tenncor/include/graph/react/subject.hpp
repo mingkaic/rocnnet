@@ -58,6 +58,8 @@ public:
 	//! determine whether the subject has an audience
 	bool no_audience (void) const;
 
+	size_t n_audience (void) const { return audience_.size(); }
+
 protected:
 	//! explicit default constructor to allow copy and move constructors
 	subject (void) {}
