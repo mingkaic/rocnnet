@@ -36,7 +36,7 @@ class iconnector : public inode<T>, public iobserver
 {
 public:
 	//! Virtual destructor for deleting from iconnector
-	virtual ~iconnector (void) {}
+	virtual ~iconnector (void);
 
 	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
 	//! clone function

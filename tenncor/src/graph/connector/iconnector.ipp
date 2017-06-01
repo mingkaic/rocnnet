@@ -28,6 +28,15 @@ inline std::vector<iconnector<T>*> to_con (std::vector<N*> args)
 }
 
 template <typename T>
+iconnector<T>::~iconnector (void)
+{
+	// if (0 == --gid_->users_)
+	// {
+	// 	delete gid_;
+	// }
+}
+
+template <typename T>
 iconnector<T>* iconnector<T>::clone (void) const
 {
 	return static_cast<iconnector<T>*>(this->clone_impl());

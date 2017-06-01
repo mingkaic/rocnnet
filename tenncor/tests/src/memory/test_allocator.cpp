@@ -18,74 +18,80 @@
 TEST(ALLOCATOR, Clone_A000)
 {
 	FUZZ::reset_logger();
-	mock_allocator a(true);
-	mock_allocator b(false);
+	
+	// test default allocator
+	default_alloc assign;
+	default_alloc a;
 	iallocator* aptr = &a;
-	iallocator* bptr = &b;
+	
 	iallocator* cpy = aptr->clone();
-	iallocator* cpyb = bptr->clone();
-	mock_allocator* mcpy = dynamic_cast<mock_allocator*>(cpy);
-	mock_allocator* mcpyb = dynamic_cast<mock_allocator*>(cpyb);
+	default_alloc* mcpy = dynamic_cast<default_alloc*>(cpy);
 	ASSERT_NE(nullptr, mcpy);
-	EXPECT_TRUE(mcpy->tracksize_);
-	EXPECT_FALSE(mcpyb->tracksize_);
-
+	EXPECT_FALSE(mcpy->tracks_size());
+	assign = a;
+	EXPECT_FALSE(assign.tracks_size());
 	delete cpy;
-	delete cpyb;
+	
+	// test tracked allocator 
 }
+
+
+// // covers allocator
+// // move
+// TEST(ALLOCATOR, Move_A000)
+// {
+// 	FUZZ::reset_logger();
+	
+// 	// test default allocator
+// 	default_alloc assign;
+// 	default_alloc a;
+// 	iallocator* aptr = &a;
+	
+// 	iallocator* mv = aptr->move();
+// 	default_alloc* mmv = dynamic_cast<default_alloc*>(mv);
+// 	ASSERT_NE(nullptr, mmv);
+// 	EXPECT_FALSE(mmv->tracks_size());
+// 	assign = std::move(a);
+// 	EXPECT_FALSE(assign.tracks_size());
+// 	delete mv;
+	
+// 	// test tracked allocator 
+// }
 
 
 // covers allocator
 // allocate
-TEST(ALLOCATOR, Allocate_A001)
+TEST(ALLOCATOR, Default_Allocate_A001)
 {
 	FUZZ::reset_logger();
-	mock_allocator a(true);
-	mock_allocator b(false);
+	mock_default_allocator a;
 
 	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
-	char* ca = (char*)a.template allocate<double>(numa);
-	char* cb = (char*)b.template allocate<double>(numb);
+	void* ca = a.template allocate<double>(numa);
 	size_t abytes = a.tracker[ca].num_bytes;
-	size_t bbytes = b.tracker[cb].num_bytes;
 	EXPECT_EQ(numa * sizeof(double), abytes);
-	EXPECT_EQ(numb * sizeof(double), bbytes);
-	delete ca;
-	delete cb;
+	free((char*) ca);
 
-	ca = (char*)a.template allocate<uint64_t>(numa);
-	cb = (char*)b.template allocate<uint64_t>(numb);
+	ca = a.template allocate<uint64_t>(numa);
 	abytes = a.tracker[ca].num_bytes;
-	bbytes = b.tracker[cb].num_bytes;
 	EXPECT_EQ(numa * sizeof(uint64_t), abytes);
-	EXPECT_EQ(numb * sizeof(uint64_t), bbytes);
-	delete ca;
-	delete cb;
+	free((char*) ca);
 
-	ca = (char*)a.template allocate<uint32_t>(numa);
-	cb = (char*)b.template allocate<uint32_t>(numb);
+	ca = a.template allocate<uint32_t>(numa);
 	abytes = a.tracker[ca].num_bytes;
-	bbytes = b.tracker[cb].num_bytes;
 	EXPECT_EQ(numa * sizeof(uint32_t), abytes);
-	EXPECT_EQ(numb * sizeof(uint32_t), bbytes);
-	delete ca;
-	delete cb;
+	free((char*) ca);
 
-	ca = (char*)a.template allocate<uint16_t>(numa);
-	cb = (char*)b.template allocate<uint16_t>(numb);
+	ca = a.template allocate<uint16_t>(numa);
 	abytes = a.tracker[ca].num_bytes;
-	bbytes = b.tracker[cb].num_bytes;
 	EXPECT_EQ(numa * sizeof(uint16_t), abytes);
-	EXPECT_EQ(numb * sizeof(uint16_t), bbytes);
-	delete ca;
-	delete cb;
+	free((char*) ca);
 }
 
 
 // allocate an absurdly large amount of memory to cause error
 // (line 58, /tenncor/include/memory/iallocator.hpp)
-//TEST(ALLOCATOR, LargeAllocate_A001)
+//TEST(ALLOCATOR, Default_LargeAllocate_A001)
 //{
 //
 //}
@@ -93,66 +99,32 @@ TEST(ALLOCATOR, Allocate_A001)
 
 // covers allocator
 // dealloc, dependent on allocate
-TEST(ALLOCATOR, Deallocate_A002)
+TEST(ALLOCATOR, Default_Deallocate_A002)
 {
 	FUZZ::reset_logger();
-	mock_allocator a(false);
-	mock_allocator b(true);
-	mock_allocator c(true);
-
+	mock_default_allocator a;
 	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
-	size_t numc = FUZZ::getInt(1, "numc", {25, 127})[0];
-
-	char* ca = (char*)a.template allocate<uint64_t>(numa);
-	char* cb = (char*)b.template allocate<uint64_t>(numb);
-	char* cc = (char*)c.template allocate<uint64_t>(numc);
+	size_t numb = FUZZ::getInt(1, "numb", {0, 127})[0];
+	void* ca = a.template allocate<uint64_t>(numa);
 
 	// b is not tracked, so 0 should still deallocate
-	a.template dealloc<uint64_t>((uint64_t*) ca, 0);
+	EXPECT_NE(a.tracker.end(), a.tracker.find(ca));
+	a.template dealloc<uint64_t>((uint64_t*) ca, numb);
 	EXPECT_EQ(a.tracker.end(), a.tracker.find(ca));
-
-	// b is a tracked, deallocate all at once
-	b.template dealloc<uint64_t>((uint64_t*) cb, numb);
-
-	size_t i = 0;
-	while (i < numc)
-	{
-		size_t size = 1;
-		if (i < numc-1)
-		{
-			size_t potential = numc-i;
-			size = potential;
-			if (potential > 5)
-			{
-				size = FUZZ::getInt(1, "size", {1, potential/2})[0];
-			}
-		}
-
-		c.template dealloc<uint64_t>(((uint64_t *) cc) + i, size);
-		i += size;
-	}
 }
 
 
 // covers allocator
 // tracks_size, request_size
-TEST(ALLOCATOR, Track_A003)
+TEST(ALLOCATOR, Default_Track_A003)
 {
 	FUZZ::reset_logger();
-	mock_allocator a(false);
-	mock_allocator b(true);
-
+	mock_default_allocator a;
 	EXPECT_FALSE(a.tracks_size());
-	EXPECT_TRUE(b.tracks_size());
-
 	size_t numa = FUZZ::getInt(1, "numa", {1, 127})[0];
-	size_t numb = FUZZ::getInt(1, "numb", {1, 127})[0];
 	char* ca = (char*)a.template allocate<uint64_t>(numa);
-	char* cb = (char*)b.template allocate<uint64_t>(numb);
-
 	EXPECT_THROW(a.requested_size(ca), std::bad_function_call);
-	ASSERT_EQ(numb * sizeof(uint64_t), b.requested_size(cb));
+	a.template dealloc<uint64_t>((uint64_t*) ca, numa);
 }
 
 

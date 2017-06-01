@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-14.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_LEAF_MODULE_TESTS
 
 #include <algorithm>
 
@@ -423,4 +423,4 @@ TEST(VARIABLE, Initialize_F005)
 #endif /* DISABLE_VARIABLE_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_LEAF_MODULE_TESTS */

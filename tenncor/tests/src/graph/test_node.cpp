@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-10.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_TOP_NODE_MODULE_TESTS
 
 #include <algorithm>
 
@@ -101,4 +101,4 @@ TEST(NODE, Label_B002)
 #endif /* DISABLE_NODE_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_TOP_NODE_MODULE_TESTS */

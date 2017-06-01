@@ -11,7 +11,7 @@ formatter::~formatter (void) {}
 
 std::string formatter::str (void) const
 {
-	return stream_.str();
+	return stream_.str(); // todo: valgrind still reports stringstream::str() as memory leaking
 }
 
 formatter::operator std::string () const

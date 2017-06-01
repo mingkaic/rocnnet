@@ -114,14 +114,13 @@ void iobserver::replace_dependency (subject* dep, size_t idx)
 	{
 		dep->attach(this, idx);
 	}
-	subject* lastsub = dependencies_[idx];
 	if (idx >= ndeps)
 	{
 		dependencies_.insert(dependencies_.end(), idx - ndeps + 1, nullptr);
 	}
-	else if (lastsub && lastsub != dep)
+	else if (subject* lastsub = dependencies_[idx])
 	{
-		lastsub->detach(this, idx);
+		if (lastsub != dep) lastsub->detach(this, idx);
 	}
 	dependencies_[idx] = dep;
 }

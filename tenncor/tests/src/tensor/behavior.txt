@@ -69,7 +69,6 @@ B013 - copy_from another tensor will return true if other tensor is allocated
 B014 - reading a valid tensor_proto should allocate the tensor if not already.
         data should be identical to the data saved in protobuf (check via some adhoc data values)
         both allowed and allocated shapes should be identical to the shape specified in protobuf
-        allowedshape may change to accomodate new shape
 
 // TENSOR_HANDLER
 C000 - transfer function takes output tensor and some argument tensors.
