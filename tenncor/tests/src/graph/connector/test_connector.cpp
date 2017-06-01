@@ -43,15 +43,15 @@ TEST(CONNECTOR, Copy_H000)
 	mock_connector* cpy2 = new mock_connector(*conn2);
 	void* gid1 = cpy->get_gid();
 	void* gid2 = cpy2->get_gid();
-	EXPECT_NE(ogid1, gid1);
-	EXPECT_NE(ogid2, gid2);
+	EXPECT_EQ(ogid1, gid1);
+	EXPECT_EQ(ogid2, gid2);
 
 	*assign = *conn;
 	*assign2 = *conn2;
 	void* gid5 = assign->get_gid();
 	void* gid6 = assign2->get_gid();
-	EXPECT_NE(ogid1, gid5);
-	EXPECT_NE(ogid2, gid6);
+	EXPECT_EQ(ogid1, gid5);
+	EXPECT_EQ(ogid2, gid6);
 
 	// test base connectors before testing connectors of connectors
 	// to prevent optimizations from deleting gids thereby allowing duplicate gid addresses.
@@ -158,8 +158,6 @@ TEST(CONNECTOR, Move_H000)
 	// to prevent optimizations from deleting gids thereby allowing duplicate gid addresses.
 	// (without allocator randomization)
 
-	EXPECT_THROW(new mock_connector(std::vector<inode<double> *>{conn, n1}, bossname), std::exception);
-	EXPECT_THROW(new mock_connector(std::vector<inode<double> *>{conn, conn2}, bossname2), std::exception);
 	mock_connector* boss = new mock_connector(std::vector<inode<double> *>{assign, n1}, bossname);
 	mock_connector* boss2 = new mock_connector(std::vector<inode<double> *>{assign, assign2}, bossname2);
 	void* ogid3 = boss->get_gid();

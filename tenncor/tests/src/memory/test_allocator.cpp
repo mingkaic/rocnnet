@@ -36,27 +36,27 @@ TEST(ALLOCATOR, Clone_A000)
 }
 
 
-// // covers allocator
-// // move
-// TEST(ALLOCATOR, Move_A000)
-// {
-// 	FUZZ::reset_logger();
+ // covers allocator
+ // move
+ TEST(ALLOCATOR, Move_A000)
+ {
+ 	FUZZ::reset_logger();
 	
-// 	// test default allocator
-// 	default_alloc assign;
-// 	default_alloc a;
-// 	iallocator* aptr = &a;
+ 	// test default allocator
+ 	default_alloc assign;
+ 	default_alloc a;
+ 	iallocator* aptr = &a;
 	
-// 	iallocator* mv = aptr->move();
-// 	default_alloc* mmv = dynamic_cast<default_alloc*>(mv);
-// 	ASSERT_NE(nullptr, mmv);
-// 	EXPECT_FALSE(mmv->tracks_size());
-// 	assign = std::move(a);
-// 	EXPECT_FALSE(assign.tracks_size());
-// 	delete mv;
+ 	iallocator* mv = aptr->move();
+ 	default_alloc* mmv = dynamic_cast<default_alloc*>(mv);
+ 	ASSERT_NE(nullptr, mmv);
+ 	EXPECT_FALSE(mmv->tracks_size());
+ 	assign = std::move(a);
+ 	EXPECT_FALSE(assign.tracks_size());
+ 	delete mv;
 	
-// 	// test tracked allocator 
-// }
+ 	// test tracked allocator
+ }
 
 
 // covers allocator

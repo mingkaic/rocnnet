@@ -17,6 +17,11 @@ iallocator* iallocator::clone (void) const {
 	return clone_impl();
 }
 
+iallocator* iallocator::move (void)
+{
+	return move_impl();
+}
+
 bool iallocator::tracks_size (void) const { return false; }
 
 size_t iallocator::requested_size (void*) const

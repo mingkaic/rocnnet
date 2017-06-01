@@ -86,11 +86,9 @@ G004 - placeholder get_leaf returns 0 scalar node
 G005 - placeholder get_leaves does not change referenced leaf set
 
 // CONNECTOR BEHAVIOR
-H000 - copying connector copies over graph id if the original connector has at least one,
+H000 - copying connector copies over graph id, connector dependency (conform to definition of same graph),
+        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer,
         (UNTESTED) connector copies over jacobians
-        connector dependency (conform to definition of same graph)
-        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer
-        creating a connector of a connector with null gid_ (possible with moving) will throw
 H001 - connector name is the name of the connecting node in <> braces and
         its dependencies' labels separated by commas in () brackets
 H002 - connector is the same graph as another connector if they share a common connector

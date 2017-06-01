@@ -20,6 +20,11 @@ default_alloc* default_alloc::clone (void) const
 	return static_cast<default_alloc*>(clone_impl());
 }
 
+default_alloc* default_alloc::move (void)
+{
+	return static_cast<default_alloc*>(move_impl());
+}
+
 void* default_alloc::get_raw (size_t, size_t num_bytes)
 {
 	void* ptr = malloc(num_bytes);
@@ -34,6 +39,11 @@ void default_alloc::del_raw (void* ptr, size_t)
 iallocator* default_alloc::clone_impl (void) const
 {
 	return new default_alloc();
+}
+
+iallocator* default_alloc::move_impl (void)
+{
+	return new default_alloc(std::move(*this));
 }
 
 }

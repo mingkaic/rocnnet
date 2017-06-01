@@ -28,6 +28,9 @@ public:
 	//! clone function
 	default_alloc* clone (void) const;
 
+	//! move function
+	default_alloc* move (void);
+
 protected:
 	//! allocation implementation
 	virtual void* get_raw (size_t alignment, size_t num_bytes);
@@ -37,6 +40,9 @@ protected:
 
 	//! clone implementation
 	virtual iallocator* clone_impl (void) const;
+
+	//! move implementation
+	virtual iallocator* move_impl (void);
 };
 
 }

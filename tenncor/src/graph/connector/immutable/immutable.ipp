@@ -200,11 +200,9 @@ template <typename T>
 void immutable<T>::update (subject* /*arg*/)
 {
 	{
-		typename iconnector<T>::graph_node* info = nullptr;
-		this->gid_->get_master(info);
-		if (info->freeze_)
+		if (this->gid_->freeze_)
 		{
-			info->jobs_.push(this);
+			this->gid_->jobs_.push(this);
 			return;
 		}
 	}
@@ -236,14 +234,6 @@ void immutable<T>::update (subject* /*arg*/)
 		// forward pass
 		forward_pass(tens);
 		this->notify(UPDATE);
-	}
-
-	// graph id optimize (update master and remove unnecessary graph ids)
-	typename iconnector<T>::graph_node* master = nullptr;
-	this->gid_->get_master(master);
-	if (this->gid_ != master)
-	{
-		master->replace(this->gid_); // gid_ = lhs
 	}
 }
 
