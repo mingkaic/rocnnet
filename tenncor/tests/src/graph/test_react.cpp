@@ -61,6 +61,7 @@ TEST(REACT, CopySub_A000)
 // move constructor and assignment
 TEST(REACT, MoveSub_A000)
 {
+	mocker::usage_.clear();
 	FUZZ::reset_logger();
 	mock_subject sassign1;
 	mock_subject sassign2;
@@ -68,6 +69,7 @@ TEST(REACT, MoveSub_A000)
 	mock_subject s1;
 	mock_subject s2;
 	mock_observer o1(&s2);
+	s2.inst_ = "s2";
 
 	std::vector<subject*> subjects = o1.expose_dependencies();
 	ASSERT_EQ((size_t) 1, subjects.size());
@@ -77,6 +79,9 @@ TEST(REACT, MoveSub_A000)
 
 	mock_subject mv1(std::move(s1));
 	mock_subject mv2(std::move(s2));
+	mv2.inst_ = "mv2";
+
+	EXPECT_TRUE(mocker::EXPECT_CALL("s2::detach2", 1));
 
 	EXPECT_TRUE(s1.no_audience());
 	EXPECT_TRUE(s2.no_audience());
@@ -85,6 +90,10 @@ TEST(REACT, MoveSub_A000)
 
 	sassign1 = std::move(mv1);
 	sassign2 = std::move(mv2);
+
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::detach2", 1));
+
+	mocker::usage_.clear();
 
 	EXPECT_TRUE(mv1.no_audience());
 	EXPECT_TRUE(mv2.no_audience());

@@ -52,6 +52,8 @@ protected:
 	{
 		this->set_label("merge_temp"+s.id_);
 		this->gcache_[leaf] = gres;
+		for (size_t i = 0, n = args.size(); i < n; i++)
+			sub_mapper_.push_back({"", i});
 	}
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<

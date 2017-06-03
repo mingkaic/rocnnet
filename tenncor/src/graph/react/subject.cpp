@@ -35,7 +35,16 @@ subject& subject::operator = (subject&& other)
 {
 	if (this != &other)
 	{
-		audience_ = std::move(other.audience_);
+		std::unordered_map<iobserver*, std::unordered_set<size_t> > temp = other.audience_;
+		for (auto& audpair : temp)
+		{
+			iobserver* aud = audpair.first;
+			for (size_t idx : audpair.second)
+			{
+				aud->replace_dependency(this, idx);
+			}
+		}
+		other.audience_.clear();
 	}
 	return *this;
 }
@@ -65,8 +74,19 @@ bool subject::no_audience (void) const
 
 subject::subject (const subject&) {}
 
-subject::subject (subject&& other) :
-	audience_(std::move(other.audience_)) {}
+subject::subject (subject&& other)
+{
+	std::unordered_map<iobserver*, std::unordered_set<size_t> > temp = other.audience_;
+	for (auto& audpair : temp)
+	{
+		iobserver* aud = audpair.first;
+		for (size_t idx : audpair.second)
+		{
+			aud->replace_dependency(this, idx);
+		}
+	}
+	other.audience_.clear();
+}
 
 void subject::attach (iobserver* viewer, size_t idx)
 {

@@ -33,6 +33,7 @@ void solo_merge (immutable<T>*& root)
 					if (is_leaf) nleafs++;
 					return is_leaf || 1 == imm->n_audience();
 				}) && nleafs < args.size())
+			// if the number of leaf nodes in arg == arg.size then arg can't be merged
 			{
 				merged_immutable<T>* mnode = merged_immutable<T>::get(ob);
 				subs.push_front(mnode);
@@ -105,9 +106,7 @@ merged_immutable<T>::merged_immutable (immutable<T>* conn) :
 	immutable<T>(std::move(*conn)) // start by copying head connector in its entirety
 {
 	assert(conn->mergible_);
-	this->set_label("merge_" + this->get_label());
 	std::vector<subject*> old_deps;
-
 	if (merged_immutable<T>* imm = dynamic_cast<merged_immutable<T>*>(conn))
 	{
 		// connect new arguments with previous summaries
@@ -140,6 +139,7 @@ merged_immutable<T>::merged_immutable (immutable<T>* conn) :
 	}
 	else
 	{
+		this->set_label("merge_" + this->get_label());
 		// create summaries
 		for (size_t i = 0, n = this->n_subjects(); i < n; i++)
 		{

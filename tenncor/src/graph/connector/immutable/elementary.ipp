@@ -388,7 +388,10 @@ varptr<T> operator + (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
+	if (dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0) return constant<T>::get(a);
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -410,7 +413,10 @@ template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(b);
+	if (dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0) return constant<T>::get(b);
+	}
 	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -433,7 +439,7 @@ template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	if (dynamic_cast<constant<T>*>(a.get()))
 	{
 		if (*a == (T)0) return b;
 		if (1 == a->get_shape().n_elems())
@@ -442,7 +448,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 			return outconst[0] + b;
 		}
 	}
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	if (dynamic_cast<constant<T>*>(b.get()))
 	{
 		if (*b == (T)0) return a;
 		if (1 == b->get_shape().n_elems())
@@ -524,7 +530,10 @@ varptr<T> operator - (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return -b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
+	if (dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0) return constant<T>::get(a);
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -546,7 +555,10 @@ template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(-b);
+	if (dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0) return constant<T>::get(-b);
+	}
 	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -569,7 +581,7 @@ template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	if (dynamic_cast<constant<T>*>(a.get()))
 	{
 		if (*a == (T)0) return -b;
 		if (1 == a->get_shape().n_elems())
@@ -578,7 +590,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 			return outconst[0] - b;
 		}
 	}
-	else if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	else if (dynamic_cast<constant<T>*>(b.get()))
 	{
 		if (*b == (T)0) return a;
 		if (1 == b->get_shape().n_elems())
@@ -659,7 +671,7 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	if (dynamic_cast<constant<T>*>(b.get()))
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) return constant<T>::get(0);
@@ -689,7 +701,7 @@ template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	if (dynamic_cast<constant<T>*>(a.get()))
 	// optimize only applies to constants
 	{
 		if (*a == (T)0) return constant<T>::get(0);
@@ -719,7 +731,7 @@ template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	if (dynamic_cast<constant<T>*>(a.get()))
 	// optimize only applies to constants
 	{
 		if (*a == (T)0) return constant<T>::get(0);
@@ -730,7 +742,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 			return outconst[0] * b;
 		}
 	}
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	if (dynamic_cast<constant<T>*>(b.get()))
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) return constant<T>::get(0);
@@ -813,7 +825,7 @@ varptr<T> operator / (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	if (dynamic_cast<constant<T>*>(b.get()))
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
@@ -843,7 +855,10 @@ template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
+	if (dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0) return constant<T>::get(0);
+	}
 	if (b == 0) throw std::logic_error("divide by zero");
 	if (b == (T)1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
@@ -869,7 +884,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	// don't allow infinity
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
+	if (dynamic_cast<constant<T>*>(a.get()))
 	{
 		if (*a == (T)0) return constant<T>::get(0);
 		if (1 == a->get_shape().n_elems())
@@ -878,7 +893,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 			return outconst[0] / b;
 		}
 	}
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
+	if (dynamic_cast<constant<T>*>(b.get()))
 	// optimize only applies to constants
 	{
 		if (*b == (T)0) throw std::logic_error("divide by constant node of value zero");
