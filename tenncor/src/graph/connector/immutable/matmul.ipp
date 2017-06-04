@@ -356,7 +356,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 },
 [](std::vector<inode<T>*>, variable<T>*)
 {
-	return get_shared_one<T>();
+	return constant<T>::get_shared_one();
 }, "matmul")
 {
 	if (immutable<T>* imma = dynamic_cast<immutable<T>*>(a)) imma->mergible_ = false;

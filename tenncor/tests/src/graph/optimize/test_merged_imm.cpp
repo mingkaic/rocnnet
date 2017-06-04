@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "graph/optimize/merged_immutable.hpp"
 #include "graph/connector/immutable/matmul.hpp"
 #include "graph/connector/immutable/elementary.hpp"
 #include "graph/connector/immutable/transform.hpp"

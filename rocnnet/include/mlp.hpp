@@ -9,7 +9,6 @@
 #include "utils/futils.hpp"
 #include "perceptron.hpp"
 #include "memory/tensor_io.hpp"
-#include "graph/optimize/merged_immutable.hpp"
 
 #pragma once
 #ifndef ROCNNET_MLP_HPP

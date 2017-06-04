@@ -11,7 +11,7 @@ formatter::~formatter (void) {}
 
 std::string formatter::str (void) const
 {
-	return stream_.str(); // todo: valgrind still reports stringstream::str() as memory leaking
+	return stream_.str();
 }
 
 formatter::operator std::string () const
@@ -37,7 +37,6 @@ std::string uuid (const void* addr)
 		size_t token = rand() % 16;
 		ss << std::hex << token;
 	}
-
 	return ss.str();
 }
 

@@ -87,7 +87,7 @@ public:
 	};
 
 	//! Summarize this connector
-	virtual void summarize (std::vector<conn_summary>& conn_list) const = 0;
+	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const = 0;
 
 protected:
 	//! list of jacobian transfer function

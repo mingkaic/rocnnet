@@ -85,7 +85,7 @@ public:
 	virtual bool read_proto (const tenncor::tensor_proto&);
 
 	//! summarize this immutable
-	virtual void summarize (std::vector<typename iconnector<T>::conn_summary>& conn_list) const;
+	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const;
 
 	bool mergible_ = true;
 
@@ -153,6 +153,81 @@ private:
 	//! backward transfer function to
 	//! lazy instantiate gradient cache values
 	BACK_MAP<T> ginit_;
+};
+
+//! for every graph in the subgraph, destructively merge nodes with only a single audience
+template <typename T>
+void solo_merge (immutable<T>*& root);
+
+template <typename T>
+class merged_immutable : public immutable<T>
+{
+public:
+	//! builders for merged_immutables
+	static merged_immutable<T>* get (immutable<T>* conn, bool destructive = true);
+	
+	static merged_immutable<T>* get (immutable<T>* conn, std::unordered_set<size_t> ignore_indices)
+	{
+		return new merged_immutable<T>(conn, ignore_indices);
+	}
+
+	// >>>> CLONE, COPY && MOVE <<<<
+	//! clone function
+	merged_immutable<T>* clone (void) const;
+
+	//! move function
+	merged_immutable<T>* move (void);
+
+	//! summarize this connector
+	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const;
+
+protected:
+	// >>>> CONSTRUCTORS <<<<
+	//! merged_immutable constructor merging connector and its children and destroys conn
+	merged_immutable (immutable<T>* conn);
+
+	//! non-destructive merge connector with its dependencies
+	//! avoid merging dependencies specified by indices
+	//! non-destructive cannot copy over audience, 
+	//! (audience copy forces a deep copy for every super consumer of this node)
+	merged_immutable (immutable<T>* conn, std::unordered_set<size_t> ignore_indices);
+
+	// todo: replace with better alternative
+	//! temporary constructor for backprop only: never destructive
+	merged_immutable (std::vector<inode<T>*> args,
+		typename iconnector<T>::conn_summary s,
+		variable<T>* leaf, inode<T>* gres) :
+	immutable<T>(args, s)
+	{
+		this->set_label("merge_temp"+s.id_);
+		this->gcache_[leaf] = gres;
+		for (size_t i = 0, n = args.size(); i < n; i++)
+			sub_mapper_.push_back({"", i});
+	}
+
+	// >>>> COPY && MOVE CONSTRUCTORS <<<<
+	//! implement clone function
+	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
+
+	//! forward pass step: populate data_ (overridden by merged_immutable)
+	virtual void forward_pass (std::vector<const tensor<T>*> tens);
+
+	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
+	virtual void backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf);
+
+private:
+	//! refresh summaries and sub_mapper from current dependencies and input sub_mapper
+	std::vector<subject*> summary_merge (
+		std::vector<std::pair<std::string,size_t> > othersubmapper, 
+		std::unordered_set<size_t> ignore_argidx = {});
+
+	std::vector<typename iconnector<T>::conn_summary> summaries_;
+
+	//! map dependencies to the id of the summary that consumes it
+	std::vector<std::pair<std::string,size_t> > sub_mapper_;
 };
 
 }

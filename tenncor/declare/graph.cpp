@@ -13,8 +13,10 @@
 #include "graph/connector/immutable/matmul.hpp"
 #include "graph/connector/immutable/elementary.hpp"
 #include "graph/connector/immutable/transform.hpp"
-#include "graph/optimize/merged_immutable.hpp"
 #include "graph/varptr.hpp"
+
+// only forward declare when necessary to speed up compilation
+#ifdef DECLARE_TEMPLATES
 
 namespace nnet
 {
@@ -115,3 +117,5 @@ template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimens
 //template varptr<double> inverse (const varptr<double> a);
 
 }
+
+#endif

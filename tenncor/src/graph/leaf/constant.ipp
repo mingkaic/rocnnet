@@ -12,19 +12,23 @@ namespace nnet
 {
 
 template <typename T>
-constant<T>* get_shared_zero (void)
+constant<T> constant<T>::shared_zero(0);
+
+template <typename T>
+constant<T> constant<T>::shared_one(1);
+
+template <typename T>
+constant<T>* constant<T>::get_shared_zero (void)
 {
-	static constant<T>* zero = constant<T>::get(0);
-	zero->is_managed_ = true;
-	return zero;
+	shared_zero.is_managed_ = true;
+	return &shared_zero;
 }
 
 template <typename T>
-constant<T>* get_shared_one (void)
+constant<T>* constant<T>::get_shared_one (void)
 {
-	static constant<T>* one = constant<T>::get(1);
-	one->is_managed_ = true;
-	return one;
+	shared_one.is_managed_ = true;
+	return &shared_one;
 }
 
 template <typename T>
@@ -54,13 +58,13 @@ constant<T>* constant<T>::move (void)
 template <typename T>
 inode<T>* constant<T>::get_gradient (inode<T>*)
 {
-	return get_shared_zero<T>();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
 inode<T>* constant<T>::get_leaf (variable<T>*)
 {
-	return get_shared_zero<T>();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
@@ -70,7 +74,7 @@ void constant<T>::get_leaves (
 template <typename T>
 constant<T>::constant (T scalar) :
 	ileaf<T>(std::vector<size_t>{1},
-		 nnutils::formatter() << scalar)
+		nnutils::formatter() << scalar)
 {
 	const_init<T> init(scalar);
 	this->data_->allocate();

@@ -28,6 +28,12 @@ template <typename T>
 class constant final : public ileaf<T>
 {
 public:
+	//! get shared zero constant that is managed
+	static constant<T>* get_shared_zero (void);
+	
+	//! get shared one constant that is managed
+	static constant<T>* get_shared_one (void);
+	
 	//! builder for scalar
 	static constant<T>* get (T scalar);
 
@@ -86,13 +92,11 @@ protected:
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
+	
+	static constant<T> shared_zero;
+	
+	static constant<T> shared_one;
 };
-
-template <typename T>
-constant<T>* get_shared_zero (void);
-
-template <typename T>
-constant<T>* get_shared_one (void);
 
 }
 

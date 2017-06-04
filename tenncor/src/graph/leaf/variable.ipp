@@ -89,9 +89,9 @@ inode<T>* variable<T>::get_leaf (variable<T>* leaf)
 {
 	if (this == leaf)
 	{
-		return get_shared_one<T>();
+		return constant<T>::get_shared_one();
 	}
-	return get_shared_zero<T>();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>

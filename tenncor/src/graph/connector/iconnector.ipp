@@ -279,23 +279,28 @@ struct iconnector<T>::graph_node
 
 	void consume (graph_node* other)
 	{
+		if (this == other) return;
 		while (false == other->jobs_.empty())
 		{
 			jobs_.push(other->jobs_.top());
 			other->jobs_.pop();
 		}
 		freeze_ = freeze_ && other->freeze_;
-		for (iconnector<T>* ouser : other->users_)
+		std::unordered_set<iconnector<T>*> otherusers = other->users_;
+		for (iconnector<T>* ouser : otherusers)
 		{
+			other->suicide(ouser);
 			ouser->gid_ = this;
 		}
-		users_.insert(other->users_.begin(), other->users_.end());
+		users_.insert(otherusers.begin(), otherusers.end());
 	}
 
-	std::unordered_set<iconnector<T>*> users_;
-
 private:
+	std::unordered_set<iconnector<T>*> users_;
+	
 	graph_node (void) {}
+	
+	~graph_node (void) {}
 };
 
 }

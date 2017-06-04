@@ -102,23 +102,36 @@ void immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) 
 		return;
 	}
 	// traverse towards target by comparing leaf sets
+	std::unordered_set<size_t> permidx;
 	std::vector<inode<T>*> args;
-	for (subject* sub : this->dependencies_)
+	for (size_t i = 0, n = this->n_subjects(); i < n; i++)
 	{
-		iconnector<T>* con = dynamic_cast<iconnector<T>*>(sub);
+		inode<T>* arg = static_cast<inode<T>*>(this->dependencies_[i]);
+		iconnector<T>* con = dynamic_cast<iconnector<T>*>(arg);
 		if (nullptr != con && con->potential_descendent(target))
 		{
 			inode<T>* tempout;
 			con->temporary_eval(target, tempout);
 			args.push_back(tempout);
+			if (nullptr == dynamic_cast<iconnector<T>*>(tempout)) permidx.emplace(i);
 		}
 		else
 		{
-			args.push_back(static_cast<inode<T>*>(sub));
+			args.push_back(arg);
+			permidx.emplace(i);
 		}
 	};
 
-	out = new immutable<T>(args, *this);
+	immutable<T>* tempthis = new immutable(args, *this);
+	out = merged_immutable<T>::get(tempthis, permidx);
+	delete tempthis;
+	for (size_t i = 0, n = args.size(); i < n; i++)
+	{
+		if (permidx.end() == permidx.find(i))
+		{
+			delete args[i];
+		}
+	}
 }
 
 template <typename T>
@@ -143,7 +156,7 @@ inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
 	auto it = gcache_.find(leaf);
 	if (gcache_.end() == it)
 	{
-		return get_shared_zero<T>();
+		return constant<T>::get_shared_zero();
 	}
 	if (nullptr == it->second)
 	{
@@ -165,7 +178,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	// check self
 	if (wrt == this)
 	{
-		out = get_shared_one<T>();
+		out = constant<T>::get_shared_one();
 	}
 	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
@@ -191,7 +204,7 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	// is zero
 	else
 	{
-		out = get_shared_zero<T>();
+		out = constant<T>::get_shared_zero();
 	}
 	return out;
 }
@@ -246,9 +259,9 @@ bool immutable<T>::read_proto (const tenncor::tensor_proto&)
 }
 
 template <typename T>
-void immutable<T>::summarize (std::vector<typename iconnector<T>::conn_summary>& conn_list) const
+std::vector<typename iconnector<T>::conn_summary> immutable<T>::summarize (void) const
 {
-	conn_list.push_back(typename iconnector<T>::conn_summary(this->get_name(), Nf_, ginit_, this->dependencies_.size()));
+	return { typename iconnector<T>::conn_summary(this->get_name(), Nf_, ginit_, this->dependencies_.size()) };
 }
 
 template <typename T>
@@ -351,6 +364,339 @@ void immutable<T>::move_helper (immutable&& other)
 	other.data_ = nullptr;
 	ginit_ = std::move(other.ginit_);
 	gcache_ = std::move(other.gcache_);
+}
+
+// MERGE_IMMUTABLE
+
+template <typename T>
+void solo_merge (immutable<T>*& root)
+{
+	// traverse from root to leaf: merging nodes if it has one argument
+	std::list<immutable<T>*> subs;
+	subs.push_back(root);
+	while (false == subs.empty())
+	{
+		immutable<T>* ob = subs.front();
+		subs.pop_front();
+		if (ob)
+		{
+			std::vector<subject*> args = ob->get_subjects();
+			std::vector<immutable<T>*> imms(args.size());
+			std::transform(args.begin(), args.end(), imms.begin(),
+				[](subject* s) { return dynamic_cast<immutable<T>*>(s); });
+			size_t nleafs = 0;
+			// one to n between parent and child: merge sole parents
+			if (ob->mergible_ &&
+				std::all_of(imms.begin(), imms.end(),
+				[&nleafs](immutable<T>* imm)
+				{
+					bool is_leaf = nullptr == imm;
+					if (is_leaf) nleafs++;
+					return is_leaf || 1 == imm->n_audience();
+				}) && nleafs < args.size())
+			// if the number of leaf nodes in arg == arg.size then arg can't be merged
+			{
+				merged_immutable<T>* mnode = merged_immutable<T>::get(ob);
+				subs.push_front(mnode);
+				if (ob == root)
+				{
+					root = mnode;
+				}
+				std::vector<subject*> msubs = mnode->get_subjects();
+				std::unordered_set<subject*> msubset(msubs.begin(), msubs.end());
+				for (immutable<T>* im : imms)
+				{
+					if (im && msubset.end() == msubset.find(im) && im->mergible_)
+					{
+						msubset.insert(im);
+						delete im;
+					}
+				}
+			}
+			else
+			{
+				std::unordered_set<immutable<T>*> uniqueset(imms.begin(), imms.end());
+				subs.insert(subs.end(), uniqueset.begin(), uniqueset.end());
+			}
+		}
+	}
+}
+
+template <typename T>
+merged_immutable<T>* merged_immutable<T>::get (immutable<T>* conn, bool destructive)
+{
+	if (destructive) return new merged_immutable<T>(conn);
+	return new merged_immutable<T>(conn, {});
+}
+
+template <typename T>
+merged_immutable<T>* merged_immutable<T>::clone (void) const
+{
+	return static_cast<merged_immutable<T>*>(this->clone_impl());
+}
+
+template <typename T>
+merged_immutable<T>* merged_immutable<T>::move (void)
+{
+	return static_cast<merged_immutable<T>*>(this->move_impl());
+}
+
+template <typename T>
+std::vector<typename iconnector<T>::conn_summary> merged_immutable<T>::summarize (void) const
+{
+	std::vector<typename iconnector<T>::conn_summary> out = summaries_;
+	std::string con_id = this->get_name();
+	// label head dependencies
+	for (size_t i = 0, m = summaries_.size(); i < m; i++)
+	{
+		auto& conninfo = out[i];
+		auto it = conninfo.dependents_.find("");
+		if (conninfo.dependents_.end() == it)
+		{
+			conninfo.dependents_[con_id] = it->second;
+			conninfo.dependents_.erase(it);
+		}
+	}
+	// append head summary
+	std::vector<typename iconnector<T>::conn_summary> sums = immutable<T>::summarize();
+	out.insert(out.end(), sums.begin(), sums.end());
+	return out;
+}
+
+template <typename T>
+merged_immutable<T>::merged_immutable (immutable<T>* conn) :
+	immutable<T>(std::move(*conn)) // start by copying head connector in its entirety
+{
+	assert(conn->mergible_);
+	std::vector<subject*> fresh_deps;
+	if (merged_immutable<T>* merg = dynamic_cast<merged_immutable<T>*>(conn))
+	{
+		fresh_deps = summary_merge(merg->sub_mapper_);
+		summaries_.insert(summaries_.end(),
+			merg->summaries_.begin(),
+			merg->summaries_.end());
+		merg->summaries_.clear();
+		merg->sub_mapper_.clear();
+	}
+	else
+	{
+		this->set_label("merge_" + this->get_label());
+		fresh_deps = summary_merge({});
+	}
+
+	// reset cache content
+	for (auto& gpair : this->gcache_)
+	{
+//		if (immutable<T>* imm = dynamic_cast<immutable<T>*>(gpair.second))
+//		{
+//			solo_merge(imm);
+//			gpair.second = imm;
+//		}
+		// todo: account for when conn already have backprop graphs. cascade destroy or integrate (move)
+		gpair.second = nullptr;
+	}
+
+	// replace current dependencies
+	this->dep_replace(fresh_deps);
+	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
+	// which is the most correct with respect to the new arguments
+	this->update(nullptr); // update data_ initially
+	
+	delete conn;
+}
+
+template <typename T>
+merged_immutable<T>::merged_immutable (immutable<T>* conn, std::unordered_set<size_t> ignore_indices) :
+	immutable<T>(*conn)
+{
+	assert(conn->mergible_);
+	std::vector<subject*> fresh_deps;
+	if (merged_immutable<T>* merg = dynamic_cast<merged_immutable<T>*>(conn))
+	{
+		fresh_deps = summary_merge(merg->sub_mapper_, ignore_indices);
+		summaries_.insert(summaries_.end(),
+			merg->summaries_.begin(),
+			merg->summaries_.end());
+	}
+	else
+	{
+		this->set_label("merge_" + this->get_label());
+		fresh_deps = summary_merge({}, ignore_indices);
+	}
+
+	// reset cache content
+	for (auto& gpair : this->gcache_)
+	{
+		gpair.second = nullptr;
+	}
+
+	// replace current dependencies
+	this->dep_replace(fresh_deps);
+	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
+	// which is the most correct with respect to the new arguments
+	this->update(nullptr); // update data_ initially
+}
+
+template <typename T>
+inode<T>* merged_immutable<T>::clone_impl (void) const
+{
+	return new merged_immutable<T>(*this);
+}
+
+template <typename T>
+inode<T>* merged_immutable<T>::move_impl (void)
+{
+	return new merged_immutable<T>(std::move(*this));
+}
+
+template <typename T>
+void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens)
+{
+	std::unordered_map<std::string,std::vector<const tensor<T>*> > inputs;
+	for (size_t i = 0, n = tens.size(); i < n; i++)
+	{
+		auto& subinfo = sub_mapper_[i];
+		const tensor<T>* ten = tens[i];
+		std::vector<const tensor<T>*>& invec = inputs[subinfo.first];
+		if (invec.size() < subinfo.second + 1)
+		{
+			invec.insert(invec.end(), subinfo.second - invec.size() + 1, nullptr);
+		}
+		invec[subinfo.second] = ten;
+	}
+
+	std::vector<tensor<T>*> intermediate_tensors;
+	// summaries occur in their dependent order
+	for (auto& s : summaries_)
+	{
+		// search for queued dependencies
+		auto it = inputs.find(s.id_);
+		// dependencies should be filled in order, so inputs should contain the inputs for s
+		assert(inputs.end() != it);
+		std::vector<const tensor<T>*> input = it->second;
+		// consume input
+		tensor<T>* output = nullptr;
+		s.Nf_(output, input);
+		intermediate_tensors.push_back(output);
+		// cache output
+		for (auto dep : s.dependents_)
+		{
+			std::vector<const tensor<T>*>& invec = inputs[dep.first];
+			for (size_t argidx : dep.second)
+			{
+				if (invec.size() < argidx + 1)
+				{
+					invec.insert(invec.end(), argidx - invec.size() + 1, nullptr);
+				}
+				invec[argidx] = output;
+			}
+		}
+	}
+	immutable<T>::forward_pass(inputs[""]);
+	for (tensor<T>* itens : intermediate_tensors)
+		delete itens;
+}
+
+template <typename T>
+void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf)
+{
+	std::unordered_map<std::string,std::vector<inode<T>*> > inputs;
+	for (size_t i = 0, n = deps.size(); i < n; i++)
+	{
+		if (inode<T>* n = dynamic_cast<inode<T>*>(deps[i]))
+		{
+			auto& subinfo = sub_mapper_[i];
+			std::vector<inode<T>*>& invec = inputs[subinfo.first];
+			if (invec.size() < subinfo.second + 1)
+			{
+				invec.insert(invec.end(), subinfo.second - invec.size() + 1, nullptr);
+			}
+			invec[subinfo.second] = n;
+		}
+	}
+
+	std::vector<inode<T>*> intermediate_outputs;
+	// summaries occur in their dependent order
+	for (auto& s : summaries_)
+	{
+		// search for queued dependencies
+		auto it = inputs.find(s.id_);
+		// dependencies should be filled in order, so inputs should contain the inputs for s
+		assert(inputs.end() != it);
+		std::vector<inode<T>*> input = it->second;
+		// consume input
+		inode<T>* goutput = s.ginit_(input, leaf);
+		merged_immutable<T>* temp_output = new merged_immutable<T>(input, s, leaf, goutput);
+		intermediate_outputs.push_back(temp_output);
+		// cache output
+		for (auto dep : s.dependents_)
+		{
+			std::vector<inode<T>*>& invec = inputs[dep.first];
+			for (size_t argidx : dep.second)
+			{
+				if (invec.size() < argidx + 1)
+				{
+					invec.insert(invec.end(), argidx - invec.size() + 1, nullptr);
+				}
+				invec[argidx] = temp_output;
+			}
+		}
+	}
+	immutable<T>::backward_pass(inputs[""], leaf);
+	if (immutable<T>* imm = dynamic_cast<immutable<T>*>(this->gcache_[leaf]))
+	{
+		solo_merge(imm);
+		this->gcache_[leaf] = imm;
+	}
+}
+
+template <typename T>
+std::vector<subject*> merged_immutable<T>::summary_merge (
+	std::vector<std::pair<std::string,size_t> > othersubmapper, std::unordered_set<size_t> ignore_argidx)
+{
+	std::vector<subject*> new_args;
+	using temp_updater = std::function<void(size_t)>;
+	temp_updater merg_sum_updater;
+	temp_updater sub_map_updater;
+	if (othersubmapper.empty())
+	{
+		merg_sum_updater = [this](size_t i) { summaries_.back().dependents_[""].push_back(i); };
+		sub_map_updater = [this](size_t i) { sub_mapper_.push_back({"", i}); };
+	}
+	else
+	{
+		merg_sum_updater = [this, &othersubmapper](size_t i)
+		{
+			auto subinfo = othersubmapper[i];
+			summaries_.back().dependents_[subinfo.first].push_back(subinfo.second);
+		};
+		sub_map_updater = [this, &othersubmapper](size_t i)
+		{ sub_mapper_.push_back(othersubmapper[i]); };
+	}
+	// extract new arguments, summaries, submapper from another merge_immutable
+	for (size_t i = 0, n = this->n_subjects(); i < n; i++)
+	{
+		subject* sub = this->dependencies_[i];
+		iconnector<T>* arg = dynamic_cast<iconnector<T>*>(sub);
+		if (ignore_argidx.end() == ignore_argidx.find(i) && arg)
+		{
+			std::vector<typename iconnector<T>::conn_summary> argsums = arg->summarize();
+			summaries_.insert(summaries_.end(), argsums.begin(), argsums.end());
+			std::vector<subject*> aa = arg->get_subjects();
+			new_args.insert(new_args.end(), aa.begin(), aa.end());
+			for (size_t j = 0, m = aa.size(); j < m; j++)
+			{
+				sub_mapper_.push_back({arg->get_name(), j});
+			}
+			merg_sum_updater(i);
+		}
+		else
+		{
+			new_args.push_back(sub);
+			sub_map_updater(i);
+		}
+	}
+	return new_args;
 }
 
 }

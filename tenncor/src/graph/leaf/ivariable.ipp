@@ -65,9 +65,9 @@ inode<T>* ivariable<T>::get_gradient (inode<T>* wrt)
 {
 	if (this == wrt)
 	{
-		return get_shared_one<T>();
+		return constant<T>::get_shared_one();
 	}
-	return get_shared_zero<T>();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>

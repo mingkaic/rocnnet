@@ -445,49 +445,50 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 	double single_rando = FUZZ::getDouble(1, "single_rando", {1.1, 2.2})[0];
 
 	auto unifiedshaper =
-		[&shape](std::vector<tensorshape>)
-		{
-			return shape;
-		};
+	[&shape](std::vector<tensorshape>)
+	{
+		return shape;
+	};
 	auto summer =
-		[](double* outdata, const tensorshape& outshape,
-		std::vector<const double*>& indata, std::vector<tensorshape>&)
+	[](double* outdata, const tensorshape& outshape,
+	std::vector<const double*>& indata, std::vector<tensorshape>&)
+	{
+		size_t outn = outshape.n_elems();
+		memset(outdata, 0, sizeof(double) * outn);
+		for (size_t i = 0, n = indata.size(); i < n; i++)
 		{
-			size_t outn = outshape.n_elems();
-			memset(outdata, 0, sizeof(double) * outn);
-			for (size_t i = 0, n = indata.size(); i < n; i++)
+			double scalar = indata[i][0];
+			for (size_t j = 0; j < outn; j++)
 			{
-				double scalar = indata[i][0];
-				for (size_t j = 0; j < outn; j++)
-				{
-					outdata[j] += scalar;
-				}
+				outdata[j] += scalar;
 			}
-		};
+		}
+	};
 
 	const_init<double> cinit(single_rando);
 
 	inode<double>* root = FUZZ::buildNTree<inode<double> >(2, nnodes,
-		[&leaves, &shape, &cinit]() -> inode<double>*
+	[&leaves, &shape, &cinit]() -> inode<double>*
+	{
+		std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
+		variable<double>* im = new variable<double>(shape, cinit, llabel);
+		im->initialize();
+		leaves.emplace(im);
+		return im;
+	},
+	[&collector, &unifiedshaper, &summer](std::vector<inode<double>*> args)
+	{
+		std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
+		mock_immutable* im = new mock_immutable(args, nlabel,
+			unifiedshaper, summer);
+		im->triggerOnDeath =
+		[&collector](mock_immutable* ded)
 		{
-			std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
-			variable<double>* im = new variable<double>(shape, cinit, llabel);
-			im->initialize();
-			leaves.emplace(im);
-			return im;
-		},
-		[&collector, &unifiedshaper, &summer](std::vector<inode<double>*> args)
-		{
-			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-			mock_immutable* im = new mock_immutable(args, nlabel,
-				unifiedshaper, summer);
-			im->triggerOnDeath =
-				[&collector](mock_immutable* ded) {
-					collector.erase(ded);
-				};
-			collector.insert(im);
-			return im;
-		});
+			collector.erase(ded);
+		};
+		collector.insert(im);
+		return im;
+	});
 
 	inode<double>* out = nullptr;
 	inode<double>::GRAD_CACHE lcache;
@@ -510,6 +511,8 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 			double diff = std::abs(datum - od);
 			EXPECT_GT(0.000001 * single_rando, diff); // allow error of a tiny fraction of the random leaf value
 		}
+		delete out;
+		out = nullptr;
 	}
 
 	for (inode<double>* l : leaves)
@@ -585,7 +588,6 @@ TEST(IMMUTABLE, GetLeaves_I007)
 TEST(IMMUTABLE, GetLeaf_I008)
 {
 	FUZZ::reset_logger();
-
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
 		[&ordering](std::vector<inode<double>*> args,
@@ -649,6 +651,7 @@ TEST(IMMUTABLE, GetLeaf_I008)
 		EXPECT_TRUE(*zaro == 0.0);
 	}
 
+	delete notleaf;
 	for (variable<double>* l : leaves)
 	{
 		delete l;
@@ -778,6 +781,7 @@ TEST(IMMUTABLE, GetGradient_I009)
 		}
 	}
 
+	delete notleaf;
 	for (variable<double>* l : leaves)
 	{
 		delete l;
