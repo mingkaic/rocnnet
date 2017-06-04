@@ -447,19 +447,23 @@ std::vector<typename iconnector<T>::conn_summary> merged_immutable<T>::summarize
 	std::vector<typename iconnector<T>::conn_summary> out = summaries_;
 	std::string con_id = this->get_name();
 	// label head dependencies
+	size_t real_ndeps = 0;
 	for (size_t i = 0, m = summaries_.size(); i < m; i++)
 	{
 		auto& conninfo = out[i];
 		auto it = conninfo.dependents_.find("");
-		if (conninfo.dependents_.end() == it)
+		if (conninfo.dependents_.end() != it)
 		{
 			conninfo.dependents_[con_id] = it->second;
 			conninfo.dependents_.erase(it);
+			real_ndeps++;
 		}
 	}
 	// append head summary
 	std::vector<typename iconnector<T>::conn_summary> sums = immutable<T>::summarize();
-	out.insert(out.end(), sums.begin(), sums.end());
+	assert(false == sums.empty());
+	sums[0].ndeps_ = real_ndeps;
+	out.push_back(sums[0]);
 	return out;
 }
 
@@ -682,13 +686,28 @@ std::vector<subject*> merged_immutable<T>::summary_merge (
 		{
 			std::vector<typename iconnector<T>::conn_summary> argsums = arg->summarize();
 			summaries_.insert(summaries_.end(), argsums.begin(), argsums.end());
+			merg_sum_updater(i);
+
+			std::string newid = summaries_.back().id_;
 			std::vector<subject*> aa = arg->get_subjects();
 			new_args.insert(new_args.end(), aa.begin(), aa.end());
-			for (size_t j = 0, m = aa.size(); j < m; j++)
+			if (merged_immutable<T>* merg = dynamic_cast<merged_immutable<T>*>(arg))
 			{
-				sub_mapper_.push_back({arg->get_name(), j});
+				for (size_t j = 0, m = aa.size(); j < m; j++)
+				{
+					auto& infopair = merg->sub_mapper_[j];
+					std::string id = infopair.first;
+					if (id.empty()) id = newid;
+					sub_mapper_.push_back({id, infopair.second});
+				}
 			}
-			merg_sum_updater(i);
+			else
+			{
+				for (size_t j = 0, m = aa.size(); j < m; j++)
+				{
+					sub_mapper_.push_back({newid, j});
+				}
+			}
 		}
 		else
 		{
