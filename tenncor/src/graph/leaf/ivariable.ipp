@@ -61,7 +61,7 @@ bool ivariable<T>::can_init (void) const
 }
 
 template <typename T>
-inode<T>* ivariable<T>::get_gradient (inode<T>* wrt)
+varptr<T> ivariable<T>::get_gradient (inode<T>* wrt)
 {
 	if (this == wrt)
 	{

@@ -89,9 +89,9 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 }
 
 template <typename T>
-inode<T>* placeholder<T>::get_leaf (variable<T>*)
+void placeholder<T>::get_leaf (inode<T>*& out, variable<T>*)
 {
-	return constant<T>::get_shared_zero();
+	out = constant<T>::get_shared_zero();
 }
 
 template <typename T>

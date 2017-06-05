@@ -45,8 +45,8 @@ public:
 	virtual tensorshape get_shape (void) const { return tensorshape(); }
 	virtual bool good_status (void) const { return false; }
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
-	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
-	virtual inode<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual void get_leaf (inode<double>*&, variable<double>*) {}
+	virtual varptr<double> get_gradient (inode<double>*) { return nullptr; }
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 	virtual void update (subject*)

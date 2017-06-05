@@ -352,7 +352,7 @@ TEST(ELEMENTARY, Add_J000ToJ003)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
+	varptr<double> zero = constant<double>::get(0.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -385,7 +385,7 @@ TEST(ELEMENTARY, Sub_J000ToJ002_J004)
 	tensorshape shape = random_def_shape();
 	size_t inn = shape.n_elems();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
+	varptr<double> zero = constant<double>::get(0.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -433,8 +433,8 @@ TEST(ELEMENTARY, Mul_J000ToJ002_J005ToJ006)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
-	constant<double>* one = constant<double>::get(1.0);
+	varptr<double> zero = constant<double>::get(0.0);
+	varptr<double> one = constant<double>::get(1.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -485,8 +485,8 @@ TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
-	constant<double>* one = constant<double>::get(1.0);
+	varptr<double> zero = constant<double>::get(0.0);
+	varptr<double> one = constant<double>::get(1.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 

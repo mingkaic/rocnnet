@@ -71,11 +71,11 @@ public:
 	// >>>> MUTATORS <<<<
 	//! grab operational gradient node, used by other nodes
 	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual inode<T>* get_leaf (variable<T>* leaf);
+	virtual void get_leaf (inode<T>*& out, variable<T>* leaf);
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_leaf
-	virtual inode<T>* get_gradient (inode<T>* wrt);
+	virtual varptr<T> get_gradient (inode<T>* wrt);
 
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_

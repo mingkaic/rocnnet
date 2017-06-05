@@ -228,7 +228,8 @@ TEST(PLACHOLDER, GetLeaf_G004)
 
 	placeholder<double> place(shape, label1);
 
-	inode<double>* zaro = place.get_leaf(nullptr);
+	inode<double>* zaro;
+	place.get_leaf(zaro, nullptr);
 	EXPECT_TRUE(*zaro == 0.0);
 }
 

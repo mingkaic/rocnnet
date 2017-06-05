@@ -22,16 +22,6 @@ varptr<T>& varptr<T>::operator = (inode<T>* other)
 }
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (const varptr<T>& other)
-{
-	if (this != &other)
-	{
-		iobserver::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
 varptr<T>::operator inode<T>* (void) const { return get(); }
 
 template <typename T>

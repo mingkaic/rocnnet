@@ -52,7 +52,7 @@ public:
 
 	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
 	//! get gradient wrt some node
-	virtual inode<T>* get_gradient (inode<T>* wrt);
+	virtual varptr<T> get_gradient (inode<T>* wrt);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

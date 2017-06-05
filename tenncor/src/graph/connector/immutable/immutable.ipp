@@ -151,29 +151,32 @@ void immutable<T>::get_leaves (
 }
 
 template <typename T>
-inode<T>* immutable<T>::get_leaf (variable<T>* leaf)
+void immutable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
 {
 	auto it = gcache_.find(leaf);
 	if (gcache_.end() == it)
 	{
-		return constant<T>::get_shared_zero();
+		out = constant<T>::get_shared_zero();
 	}
-	if (nullptr == it->second)
+	else
 	{
-		std::vector<inode<T>*> deps;
-		for (subject* sub : this->dependencies_)
+		if (nullptr == it->second)
 		{
-			deps.push_back(static_cast<inode<T>*>(sub));
-		};
-		backward_pass(deps, leaf);
+			std::vector<inode<T>*> deps;
+			for (subject* sub : this->dependencies_)
+			{
+				deps.push_back(static_cast<inode<T>*>(sub));
+			};
+			backward_pass(deps, leaf);
+		}
+		out = gcache_[leaf].get();
 	}
-	return gcache_[leaf];
 }
 
 template <typename T>
-inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
+varptr<T> immutable<T>::get_gradient (inode<T>* wrt)
 {
-	inode<T>* out = nullptr;
+	varptr<T> out;
 	iconnector<T>* conn = dynamic_cast<iconnector<T>*>(wrt);
 	// check self
 	if (wrt == this)
@@ -183,13 +186,15 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
-		out = get_leaf(leaf);
+		inode<T>* leafout = nullptr;
+		get_leaf(leafout, leaf);
 		// modify res with jacobian
 		auto& j = this->jacobians_[leaf];
 		for (auto it = j.list_.rbegin(), et = j.list_.rend(); it != et; it++)
 		{
-			out = (*it)(out, leaf);
+			leafout = (*it)(leafout, leaf);
 		}
+		out = leafout;
 	}
 	// check graph
 	else if (conn && this->is_same_graph(conn))
@@ -197,7 +202,9 @@ inode<T>* immutable<T>::get_gradient (inode<T>* wrt)
 		// WARNING: this is one of the more expensive operations
 		// evoke temporary call, out pollutes memory, but it will be removed eventually...
 		// todo: implement top-down garabage cleanup
-		this->temporary_eval(conn, out);
+		inode<T>* temp_out = nullptr;
+		this->temporary_eval(conn, temp_out);
+		out = temp_out;
 		// todo: apply jacobian (and test)
 
 	}

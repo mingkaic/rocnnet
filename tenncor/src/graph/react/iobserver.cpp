@@ -149,12 +149,12 @@ void iobserver::copy_helper (const iobserver& other)
 {
 	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		dependencies_[i]->detach(this, i);
+		if (dependencies_[i]) dependencies_[i]->detach(this, i);
 	}
 	dependencies_.clear();
 	for (subject* dep : other.dependencies_)
 	{
-		add_dependency(dep);
+		if (dep) add_dependency(dep);
 	}
 }
 
@@ -162,7 +162,7 @@ void iobserver::move_helper (iobserver&& other)
 {
 	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		dependencies_[i]->detach(this, i);
+		if (dependencies_[i]) dependencies_[i]->detach(this, i);
 	}
 	dependencies_ = std::move(other.dependencies_);
 	// replace subs audience from other to this
@@ -170,8 +170,11 @@ void iobserver::move_helper (iobserver&& other)
 		i < n; i++)
 	{
 		// attach before detaching to ensure dep i doesn't suicide
-		dependencies_[i]->attach(this, i);
-		dependencies_[i]->detach(&other, i);
+		if (dependencies_[i])
+		{
+			dependencies_[i]->attach(this, i);
+			dependencies_[i]->detach(&other, i);
+		}
 	}
 }
 

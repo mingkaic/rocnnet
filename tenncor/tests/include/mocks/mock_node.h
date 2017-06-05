@@ -10,6 +10,7 @@
 #include "util_test.h"
 
 #include "graph/inode.hpp"
+#include "graph/varptr.hpp"
 
 using namespace nnet;
 
@@ -44,8 +45,8 @@ public:
 	virtual bool good_status (void) const { return nullptr != data_; }
 	virtual const tensor<double>* get_eval(void) const { return data_; }
 	virtual void get_leaves (GRAD_CACHE&) const {}
-	virtual inode<double>* get_gradient (inode<double>* wrt) { return wrt == this ? this : nullptr; }
-	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
+	virtual varptr<double> get_gradient (inode<double>* wrt) { return wrt == this ? varptr<double>(this) : varptr<double>(); }
+	virtual void get_leaf (inode<double>*&, variable<double>*) {}
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 protected:

@@ -593,10 +593,11 @@ TEST(IMMUTABLE, GetLeaf_I008)
 		[&ordering](std::vector<inode<double>*> args,
 			variable<double>* leaf) -> inode<double>*
 		{
-			inode<double>* leef = args[0]->get_leaf(leaf);
+			inode<double>* leef;
+			args[0]->get_leaf(leef, leaf);
 			if (*leef == 0.0 && args.size() > 1)
 			{
-				leef = args[1]->get_leaf(leaf);
+				args[1]->get_leaf(leef, leaf);
 				if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
 				{
 					ordering.push_back(conn);
@@ -641,10 +642,12 @@ TEST(IMMUTABLE, GetLeaf_I008)
 	for (size_t i = 0; i < nnodes/3; i++)
 	{
 		ordering.clear();
-		inode<double>* wun = root->get_leaf(*(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
+		inode<double>* wun;
+		root->get_leaf(wun, *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		inode<double>* zaro = root->get_leaf(notleaf);
+		inode<double>* zaro;
+		root->get_leaf(zaro, notleaf);
 		EXPECT_TRUE(bottom_up(ordering));
 
 		EXPECT_TRUE(*wun == 1.0);
@@ -698,10 +701,11 @@ TEST(IMMUTABLE, GetGradient_I009)
 		[&ordering](std::vector<inode<double>*> args,
 			variable<double>* leaf) -> inode<double>*
 		{
-			inode<double>* leef = args[0]->get_leaf(leaf);
+			inode<double>* leef;
+			args[0]->get_leaf(leef, leaf);
 			if (*leef == 0.0 && args.size() > 1)
 			{
-				leef = args[1]->get_leaf(leaf);
+				args[1]->get_leaf(leef, leaf);
 				if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
 				{
 					ordering.push_back(conn);

@@ -85,13 +85,16 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 }
 
 template <typename T>
-inode<T>* variable<T>::get_leaf (variable<T>* leaf)
+void variable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
 {
 	if (this == leaf)
 	{
-		return constant<T>::get_shared_one();
+		out = constant<T>::get_shared_one();
 	}
-	return constant<T>::get_shared_zero();
+	else
+	{
+		out = constant<T>::get_shared_zero();
+	}
 }
 
 template <typename T>

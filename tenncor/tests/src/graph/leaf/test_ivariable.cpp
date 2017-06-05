@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "mocks/mock_ivariable.h"
+#include "graph/varptr.hpp"
 
 #include "gtest/gtest.h"
 #include "fuzz.h"

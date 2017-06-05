@@ -76,7 +76,7 @@ public:
 	virtual const tensor<T>* get_eval (void) const = 0;
 
 	//! get top-level gradient value, used by root nodes
-	virtual inode<T>* get_gradient (inode<T>* wrt) = 0;
+	virtual varptr<T> get_gradient (inode<T>* wrt) = 0;
 
 	// >>>> META-DATA ACCESSOR <<<<
 	//! merge/Update the gradient/leaf info
@@ -84,7 +84,7 @@ public:
 
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be
-	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
+	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) = 0;
 
 	// >>>> META-DATA SETTER <<<<
 	//! set new label for this node

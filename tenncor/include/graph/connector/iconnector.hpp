@@ -25,7 +25,7 @@ namespace nnet
 
 //! backward transfer function, get gradient nodes; F: Nf -> Nb
 template <typename T>
-using BACK_MAP = std::function<inode<T>*(std::vector<inode<T>*>,variable<T>*)>;
+using BACK_MAP = std::function<varptr<T>(std::vector<inode<T>*>,variable<T>*)>;
 
 //! jacobian transfer function
 template <typename T>

@@ -53,7 +53,9 @@ varptr<T> transpose (const varptr<T> a)
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return transpose(varptr<T>(args.front()->get_leaf(leaf)));
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return transpose(varptr<T>(grad));
 	}, "transpose");
 }
 
@@ -77,7 +79,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return args.front()->get_leaf(leaf);
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return grad;
 	}, "fit", watch);
 }
 
@@ -151,7 +155,9 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	},
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return args.front()->get_leaf(leaf);
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return grad;
 	}, "extend");
 }
 
@@ -254,7 +260,8 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 	[index, collector](std::vector<inode<T>*> args, variable<T>* leaf) -> inode<T>*
 	{
-		inode<T>* gradn = args.front()->get_leaf(leaf);
+		inode<T>* gradn;
+		args.front()->get_leaf(gradn, leaf);
 		if (index)
 		{
 			return mappable<T>::get(gradn, *index);

@@ -38,9 +38,6 @@ public:
 	
 	virtual ~varptr (void) {}
 
-	//! assign another wrapper
-	varptr<T>& operator = (const varptr<T>& other);
-
 	//! assign ptr
 	varptr<T>& operator = (inode<T>* other);
 

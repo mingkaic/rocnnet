@@ -56,15 +56,15 @@ constant<T>* constant<T>::move (void)
 }
 
 template <typename T>
-inode<T>* constant<T>::get_gradient (inode<T>*)
+varptr<T> constant<T>::get_gradient (inode<T>*)
 {
 	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
-inode<T>* constant<T>::get_leaf (variable<T>*)
+void constant<T>::get_leaf (inode<T>*& out, variable<T>*)
 {
-	return constant<T>::get_shared_zero();
+	out = constant<T>::get_shared_zero();
 }
 
 template <typename T>

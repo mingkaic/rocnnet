@@ -364,8 +364,10 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
-		varptr<T> grada = a->get_leaf(wrt);
-		varptr<T> gradb = b->get_leaf(wrt);
+		inode<T>* grada;
+		inode<T>* gradb;
+		a->get_leaf(grada, wrt);
+		b->get_leaf(gradb, wrt);
 
 		if (grada->good_status() && *grada == (T)0 &&
 			gradb->good_status() && *gradb == (T)0)
@@ -393,7 +395,7 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		{
 			mB = transpose<T>(mB);
 		}
-		return mA * grada + mB * gradb;
+		return mA * varptr<T>(grada) + mB * varptr<T>(gradb);
 	};
 
 	typename inode<T>::GRAD_CACHE leaves;

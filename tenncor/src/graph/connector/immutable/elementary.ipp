@@ -47,16 +47,6 @@ inline void elementary_check (const varptr<T>& a, const varptr<T>& b)
 		elementary_shaper({a->get_shape(), b->get_shape()});
 }
 
-// preemptively delete constant if c has no audience
-template <typename T>
-inline void checkconst (constant<T>* c)
-{
-	if (0 == c->n_audience() && false == c->is_managed_)
-	{
-		delete c;
-	}
-}
-
 template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
@@ -74,8 +64,9 @@ varptr<T> operator + (const varptr<T> a)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		inode<T>* a1 = args.front();
-		varptr<T> grad = a1->get_leaf(leaf); // wrap
-		return +grad;
+		inode<T>* grad;
+		a1->get_leaf(grad, leaf);
+		return +varptr<T>(grad);
 	}, "abs");
 }
 
@@ -96,8 +87,9 @@ varptr<T> operator - (const varptr<T> a)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		inode<T>* a1 = args.front();
-		varptr<T> grad = a1->get_leaf(leaf); // wrap
-		return -grad;
+		inode<T>* grad;
+		a1->get_leaf(grad, leaf);
+		return -varptr<T>(grad);
 	}, "neg");
 }
 
@@ -119,8 +111,9 @@ varptr<T> sin (const varptr<T> a)
 	{
 		// sin'(f(x)) = f'(x)*cos(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * cos(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * cos(a);
 	}, "sin");
 }
 
@@ -142,8 +135,9 @@ varptr<T> cos (const varptr<T> a)
 	{
 		// cos'(f(x)) = -f'(x)*sin(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad * sin(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) * sin(a);
 	}, "cos");
 }
 
@@ -167,8 +161,9 @@ varptr<T> tan (const varptr<T> a)
 		// better with = f'(x)/cos^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> denom = cos(a);
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad / (denom * denom);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) / (denom * denom);
 	}, "tan");
 }
 
@@ -191,8 +186,9 @@ varptr<T> csc (const varptr<T> a)
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 		// better with -f'(x)/(sin(f(x)*tan(f(x))))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad / (sin(a) * tan(a));
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) / (sin(a) * tan(a));
 	}, "csc");
 }
 
@@ -215,8 +211,9 @@ varptr<T> sec (const varptr<T> a)
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 		// better with f'(x)*tan(f(x))/cos(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * tan(a) / cos(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * tan(a) / cos(a);
 	}, "sec");
 }
 
@@ -239,8 +236,9 @@ varptr<T> cot (const varptr<T> a)
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> b = csc(a);
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad * b * b;
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) * b * b;
 	}, "cot");
 }
 
@@ -262,8 +260,9 @@ varptr<T> exp (const varptr<T> a)
 	{
 		// exp'(f(x)) = f'(x)*exp(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * exp(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * exp(a);
 	}, "exp");
 }
 
@@ -285,8 +284,9 @@ varptr<T> sqrt (const varptr<T> a)
 	{
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad / ((T)2 * sqrt(a));
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) / ((T)2 * sqrt(a));
 	}, "sqrt");
 }
 
@@ -316,8 +316,9 @@ varptr<T> pow (const varptr<T> a, double scalar)
 	{
 		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return scalar * grad * pow(a, scalar-1);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return scalar * varptr<T>(grad) * pow(a, scalar-1);
 	}, "sqrt");
 }
 
@@ -341,8 +342,9 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	[min, max](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf);
-		return grad * clip_val(a, min, max);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * clip_val(a, min, max);
 	}, "clip_val");
 }
 
@@ -386,8 +388,9 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	[cap](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf);
-	   	return grad * clip_norm(a, cap);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+	   	return varptr<T>(grad) * clip_norm(a, cap);
 	}, "clip_norm");
 }
 
@@ -402,7 +405,6 @@ varptr<T> operator + (T a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			checkconst(bconst);
 			return constant<T>::get(a);
 		}
 	}
@@ -419,7 +421,9 @@ varptr<T> operator + (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = g'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return grad;
 	}, "add");
 }
 
@@ -431,7 +435,6 @@ varptr<T> operator + (const varptr<T> a, T b)
 	{
 		if (*a == (T)0)
 		{
-			checkconst(aconst);
 			return constant<T>::get(b);
 		}
 	}
@@ -449,7 +452,9 @@ varptr<T> operator + (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return grad;
 	}, "add");
 }
 
@@ -461,13 +466,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	{
 		if (*a == (T)0)
 		{
-			checkconst(aconst);
 			return b;
 		}
 		if (1 == a->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(a);
-			checkconst(aconst);
 			return outconst[0] + b;
 		}
 	}
@@ -475,13 +478,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			checkconst(bconst);
 			return a;
 		}
 		if (1 == b->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(b);
-			checkconst(bconst);
 			return a + outconst[0];
 		}
 	}
@@ -545,9 +546,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x) + g'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		varptr<T> bg = args.at(1)->get_leaf(leaf);
-		return ag + bg;
+		inode<T>* ag;
+		inode<T>* bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return varptr<T>(ag) + varptr<T>(bg);
 	}, "add");
 }
 
@@ -562,7 +565,6 @@ varptr<T> operator - (T a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			checkconst(bconst);
 			return constant<T>::get(a);
 		}
 	}
@@ -579,7 +581,9 @@ varptr<T> operator - (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = -g'(x)
-		return -varptr<T>(args.at(0)->get_leaf(leaf));
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return -varptr<T>(grad);
 	}, "sub");
 }
 
@@ -591,7 +595,6 @@ varptr<T> operator - (const varptr<T> a, T b)
 	{
 		if (*a == (T)0)
 		{
-			checkconst(aconst);
 			return constant<T>::get(-b);
 		}
 	}
@@ -609,7 +612,9 @@ varptr<T> operator - (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return varptr<T>(grad);
 	}, "sub");
 }
 
@@ -621,13 +626,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	{
 		if (*a == (T)0)
 		{
-			checkconst(aconst);
 			return -b;
 		}
 		if (1 == a->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(a);
-			checkconst(aconst);
 			return outconst[0] - b;
 		}
 	}
@@ -635,13 +638,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			checkconst(bconst);
 			return a;
 		}
 		if (1 == b->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(b);
-			checkconst(bconst);
 			return a - outconst[0];
 		}
 	}
@@ -705,9 +706,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x) - g'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		varptr<T> bg = args.at(1)->get_leaf(leaf);
-		return ag - bg;
+		inode<T>* ag;
+		inode<T>* bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return varptr<T>(ag) - varptr<T>(bg);
 	}, "sub");
 }
 
@@ -722,12 +725,10 @@ varptr<T> operator * (T a, const varptr<T> b)
 	{
 		if (*b == (T)0 || 0 == a)
 		{
-			checkconst(bconst);
 			return constant<T>::get(0);
 		}
 		if (*b == (T)1)
 		{
-			checkconst(bconst);
 			return constant<T>::get(a);
 		}
 	}
@@ -749,8 +750,9 @@ varptr<T> operator * (T a, const varptr<T> b)
 	[a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = c*g'(x)
-		varptr<T> bg = args.at(0)->get_leaf(leaf);
-		return a * bg;
+		inode<T>* bg;
+		args.at(0)->get_leaf(bg, leaf);
+		return a * varptr<T>(bg);
 	}, "mul");
 }
 
@@ -763,12 +765,10 @@ varptr<T> operator * (const varptr<T> a, T b)
 	{
 		if (*a == (T)0 || 0 == b)
 		{
-			checkconst(aconst);
 			return constant<T>::get(0);
 		}
 		if (*a == (T)1)
 		{
-			checkconst(aconst);
 			return constant<T>::get(b);
 		}
 	}
@@ -787,8 +787,9 @@ varptr<T> operator * (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = c*f'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		return b * ag;
+		inode<T>* ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return b * varptr<T>(ag);
 	}, "mul");
 }
 
@@ -803,19 +804,15 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	{
 		if (*a == (T)0)
 		{
-			if (bconst) checkconst(bconst);
-			checkconst(aconst);
 			return constant<T>::get(0);
 		}
 		if (*a == (T)1)
 		{
-			checkconst(aconst);
 			return b;
 		}
 		if (1 == a->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(a);
-			checkconst(aconst);
 			return outconst[0] * b;
 		}
 	}
@@ -824,19 +821,15 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			if (aconst) checkconst(aconst);
-			checkconst(bconst);
 			return constant<T>::get(0);
 		}
 		if (*b == (T)1)
 		{
-			checkconst(bconst);
 			return a;
 		}
 		if (1 == b->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(b);
-			checkconst(bconst);
 			return a * outconst[0];
 		}
 	}
@@ -898,11 +891,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
+		inode<T>* ag;
+		inode<T>* bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
-		varptr<T> ag = a->get_leaf(leaf);
-		varptr<T> bg = b->get_leaf(leaf);
-		return ag * b + bg * a;
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return varptr<T>(ag) * b + varptr<T>(bg) * a;
 	}, "mul");
 }
 
@@ -918,18 +913,15 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			checkconst(bconst);
 			throw std::logic_error("divide by constant node of value zero");
 		}
 		if (*b == (T)1)
 		{
-			checkconst(bconst);
 			return constant<T>::get(a);
 		}
 	}
 	if (a == (T)0)
 	{
-		if (bconst) checkconst(bconst);
 		return constant<T>::get(0);
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
@@ -946,8 +938,9 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
 		varptr<T> b = args.at(0);
-		varptr<T> bg = b->get_leaf(leaf);
-		return -a * bg / (b * b);
+		inode<T>* bg;
+		b->get_leaf(bg, leaf);
+		return -a * varptr<T>(bg) / (b * b);
 	}, "div");
 }
 
@@ -960,13 +953,11 @@ varptr<T> operator / (const varptr<T> a, T b)
 	{
 		if (*a == (T)0)
 		{
-			checkconst(aconst);
 			return constant<T>::get(0);
 		}
 	}
 	if (b == 0)
 	{
-		if (aconst) checkconst(aconst);
 		throw std::logic_error("divide by zero");
 	}
 	if (b == (T)1) return a;
@@ -983,8 +974,9 @@ varptr<T> operator / (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)/c
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		return ag / b;
+		inode<T>* ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return varptr<T>(ag) / b;
 	}, "div");
 }
 
@@ -999,14 +991,11 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		// don't allow infinity
 		if (*a == (T)0)
 		{
-			if (bconst) checkconst(bconst);
-			checkconst(aconst);
 			return constant<T>::get(0);
 		}
 		if (1 == a->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(a);
-			checkconst(aconst);
 			return outconst[0] / b;
 		}
 	}
@@ -1015,19 +1004,15 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	{
 		if (*b == (T)0)
 		{
-			if (aconst) checkconst(aconst);
-			checkconst(bconst);
 			throw std::logic_error("divide by constant node of value zero");
 		}
 		if (*b == (T)1)
 		{
-			checkconst(bconst);
 			return a;
 		}
 		if (1 == b->get_shape().n_elems())
 		{
 			std::vector<T> outconst = expose<T>(b);
-			checkconst(bconst);
 			return a / outconst[0];
 		}
 	}
@@ -1089,11 +1074,13 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
+		inode<T>* ag;
+		inode<T>* bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
-		varptr<T> ag = a->get_leaf(leaf);
-		varptr<T> bg = b->get_leaf(leaf);
-		return (ag * b - bg * a) / (b * b);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return (varptr<T>(ag) * b - varptr<T>(bg) * a) / (b * b);
 	}, "div");
 }
 
