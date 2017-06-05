@@ -25,6 +25,9 @@ namespace nnet
 // TODO: limit T down to numeric types using c++17 std::variant
 
 template <typename T>
+class varptr;
+
+template <typename T>
 class variable;
 
 template <typename T>
@@ -35,7 +38,7 @@ class inode : public subject
 {
 public:
 	//! store the gradient operation wrt to a leaf
-	using GRAD_CACHE = std::unordered_map<variable<T>*,inode<T>*>;
+	using GRAD_CACHE = std::unordered_map<variable<T>*,varptr<T> >;
 
 	//! destructor
 	virtual ~inode (void) {}

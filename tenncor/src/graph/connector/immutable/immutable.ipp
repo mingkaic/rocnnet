@@ -647,7 +647,7 @@ void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T
 		}
 	}
 	immutable<T>::backward_pass(inputs[""], leaf);
-	if (immutable<T>* imm = dynamic_cast<immutable<T>*>(this->gcache_[leaf]))
+	if (immutable<T>* imm = dynamic_cast<immutable<T>*>(this->gcache_[leaf].get()))
 	{
 		solo_merge(imm);
 		this->gcache_[leaf] = imm;
