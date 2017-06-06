@@ -61,7 +61,7 @@ protected:
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! smart destruction
-	virtual void commit_sudoku (void) = 0;
+	virtual void death_on_broken (void) = 0;
 
 	// >>>> COPY && MOVE CONSTRUCTOR <<<<
 	//! copy over dependencies

@@ -223,7 +223,7 @@ TEST(CONSTANT, GetLeaves_D004)
 }
 
 
-// covers constant commit_sudoku_sub
+// covers constant death_on_noparent
 TEST(CONSTANT, SelfDestruct_D005)
 {
 	FUZZ::reset_logger();

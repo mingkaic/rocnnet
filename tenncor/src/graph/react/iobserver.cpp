@@ -141,7 +141,7 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 	}
 	if (UNSUBSCRIBE == msg)
 	{
-		commit_sudoku();
+		death_on_broken();
 	}
 }
 

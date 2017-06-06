@@ -56,7 +56,7 @@ public:
 	virtual void update (subject*) {}
 	
 protected:
-	virtual void commit_sudoku (void)
+	virtual void death_on_broken (void)
 	{
 		if (false == this->dependencies_.empty())
 			this->remove_dependency(0);

@@ -89,7 +89,7 @@ static void unaryElemTest (UNARY_VAR func,
 	}
 }
 
-void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
+static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	BINARY_SCALARS expect_forward, QUANARY_SCALARS expect_back)
 {
 	tensorshape shape = random_def_shape();

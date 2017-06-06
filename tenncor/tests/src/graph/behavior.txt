@@ -3,11 +3,11 @@ A000 - copying subjects do not copy over audiences
         moving subjects move over audiences and (UNTESTED) audiences have their dependencies reattached to new subject
         subjects without audience will return false if it has no observers
 A001 - subjects notify all observers
-        if UNSUBSCRIBE is called, then observer will suicide via commit_sudoku
+        if UNSUBSCRIBE is called, then observer will suicide via death_on_broken
         if UPDATE is called, then observer will update via
         public update with subject being its input
 A002 - destroying a subject will destroy their observers via UNSUBSCRIBE update,
-        and via commit_sudoku
+        and via death_on_broken
 A003 - attaching observer to subject at index means notifying the
         observer's protected update is triggered with calling subject and the index specified
         attaching does nothing to update observer's dependency (not tested)

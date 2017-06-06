@@ -299,7 +299,7 @@ immutable<T>::immutable (std::vector<inode<T>*> args, const immutable<T>& other)
 }
 
 template <typename T>
-void immutable<T>::commit_sudoku (void)
+void immutable<T>::death_on_broken (void)
 {
 	delete this;
 }
@@ -636,8 +636,8 @@ void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T
 		assert(inputs.end() != it);
 		std::vector<inode<T>*> input = it->second;
 		// consume input
-		inode<T>* goutput = s.ginit_(input, leaf);
-		merged_immutable<T>* temp_output = new merged_immutable<T>(input, s, leaf, goutput);
+		merged_immutable<T>* temp_output = new merged_immutable<T>(input, s);
+		temp_output->gcache_[leaf] = s.ginit_(input, leaf);
 		intermediate_outputs.push_back(temp_output);
 		// cache output
 		for (auto dep : s.dependents_)

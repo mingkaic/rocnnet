@@ -85,7 +85,7 @@ protected:
 	//! override smart destruction,
 	//! executed when constant loses all audiences,
 	//! (after it obtains an audience of course)
-	virtual void commit_sudoku_sub (void);
+	virtual void death_on_noparent (void);
 
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;

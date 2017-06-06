@@ -48,6 +48,7 @@ public:
 			for (subinfo e : edges_)
 			{
 				nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector<T>*>(e.obs_);
+				if (nullptr == ob) continue;
 				if (consider_graph && !ob->is_same_graph(consider_graph))
 				{
 					continue; // skip connectors that aren't in the considered graph

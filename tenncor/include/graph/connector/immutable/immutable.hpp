@@ -107,7 +107,7 @@ protected:
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! ovride smart destruction,
 	//! executed when any dependency is destroyed
-	virtual void commit_sudoku (void);
+	virtual void death_on_broken (void);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! implement clone function
@@ -195,12 +195,10 @@ protected:
 	// todo: replace with better alternative
 	//! temporary constructor for backprop only: never destructive
 	merged_immutable (std::vector<inode<T>*> args,
-		typename iconnector<T>::conn_summary s,
-		variable<T>* leaf, inode<T>* gres) :
+		typename iconnector<T>::conn_summary s) :
 	immutable<T>(args, s)
 	{
 		this->set_label("merge_temp"+s.id_);
-		this->gcache_[leaf] = gres;
 		for (size_t i = 0, n = args.size(); i < n; i++)
 			sub_mapper_.push_back({"", i});
 	}

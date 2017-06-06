@@ -272,7 +272,7 @@ TEST(REACT, ObsConstruct_A005)
 	EXPECT_EQ(s1, subs2[0]);
 	EXPECT_EQ(s2, subs2[1]);
 
-	// called twice since mock observer isn't destroyed when commit_sudoku is called
+	// called twice since mock observer isn't destroyed when death_on_broken is called
 	// so deleting s2 will trigger another suicide call
 	delete s1;
 	delete s2;
@@ -280,8 +280,8 @@ TEST(REACT, ObsConstruct_A005)
 	delete o1;
 	delete o2;
 
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
 }
 
 
@@ -336,12 +336,12 @@ TEST(REACT, CopyObs_A006)
 	delete cpy2;
 	delete sassign1;
 	delete sassign2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::death_on_broken", 2));
 }
 
 
@@ -402,12 +402,12 @@ TEST(REACT, MoveObs_A006)
 	delete mv2;
 	delete sassign1;
 	delete sassign2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("mv1::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv1::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::death_on_broken", 2));
 }
 
 
@@ -450,8 +450,8 @@ TEST(REACT, AddDep_A007)
 	delete s2;
 	delete o1;
 	delete o2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
 }
 
 
@@ -515,7 +515,7 @@ TEST(REACT, RepDep_A009)
 	delete s1;
 	delete s2;
 	delete o1;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 2));
 }
 
 
