@@ -491,10 +491,10 @@ TEST(MATMUL, Strassen_L005)
 	t = clock();
 	matmul<signed>* resT = matmul<signed>::get(&tA, &tB, true, true);
 	const double work_time4 = (clock() - t) / double(CLOCKS_PER_SEC);
-	ASSERT_LT(0.003, work_time1);
-	ASSERT_LT(0.003, work_time2);
-	ASSERT_LT(0.003, work_time3);
-	ASSERT_LT(0.003, work_time4);
+	ASSERT_GT(0.03, work_time1);
+	ASSERT_GT(0.03, work_time2);
+	ASSERT_GT(0.03, work_time3);
+	ASSERT_GT(0.03, work_time4);
 
 	tensorshape expectshape = std::vector<size_t>{dims[2], dims[1]};
 	tensorshape resshape = res->get_shape();
