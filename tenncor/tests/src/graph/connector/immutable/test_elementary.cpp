@@ -89,7 +89,7 @@ static void unaryElemTest (UNARY_VAR func,
 	}
 }
 
-void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
+static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 func2,
 	BINARY_SCALARS expect_forward, QUANARY_SCALARS expect_back)
 {
 	tensorshape shape = random_def_shape();
@@ -352,7 +352,7 @@ TEST(ELEMENTARY, Add_J000ToJ003)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
+	varptr<double> zero = constant<double>::get(0.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -385,7 +385,7 @@ TEST(ELEMENTARY, Sub_J000ToJ002_J004)
 	tensorshape shape = random_def_shape();
 	size_t inn = shape.n_elems();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
+	varptr<double> zero = constant<double>::get(0.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -433,8 +433,8 @@ TEST(ELEMENTARY, Mul_J000ToJ002_J005ToJ006)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
-	constant<double>* one = constant<double>::get(1.0);
+	varptr<double> zero = constant<double>::get(0.0);
+	varptr<double> one = constant<double>::get(1.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
@@ -485,16 +485,16 @@ TEST(ELEMENTARY, Div_J000ToJ002_J007ToJ008)
 
 	tensorshape shape = random_def_shape();
 	rand_uniform<double> rinit(2, 12);
-	constant<double>* zero = constant<double>::get(0.0);
-	constant<double>* one = constant<double>::get(1.0);
+	varptr<double> zero = constant<double>::get(0.0);
+	varptr<double> one = constant<double>::get(1.0);
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
 	// Behavior J005
 	varptr<double> zaro = 0.0 / varptr<double>(&var2);
 	varptr<double> zaro2 = varptr<double>(zero) * varptr<double>(&var2);
-	EXPECT_THROW(varptr<double>(&var) /  0.0, std::exception);
-	EXPECT_THROW(varptr<double>(&var) / varptr<double>(zero), std::exception);
+	EXPECT_THROW(varptr<double>(&var) /  0.0, std::logic_error);
+	EXPECT_THROW(varptr<double>(&var) / varptr<double>(zero), std::logic_error);
 
 	std::vector<double> exp01 = expose<double>(zaro);
 	std::vector<double> exp02 = expose<double>(zaro2);

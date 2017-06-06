@@ -47,6 +47,10 @@ public:
 	//! determine whether this observes sub
 	bool has_subject (subject* sub) const;
 
+	std::vector<subject*> get_subjects (void) const { return dependencies_; }
+
+	size_t n_subjects (void) const { return dependencies_.size(); }
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor
@@ -57,7 +61,7 @@ protected:
 
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! smart destruction
-	virtual void commit_sudoku (void) = 0;
+	virtual void death_on_broken (void) = 0;
 
 	// >>>> COPY && MOVE CONSTRUCTOR <<<<
 	//! copy over dependencies

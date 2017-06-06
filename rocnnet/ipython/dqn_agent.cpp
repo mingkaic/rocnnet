@@ -12,21 +12,55 @@
 
 dqn_agent::dqn_agent (unsigned int n_input,
 	std::vector<unsigned int> hiddensizes,
+	std::vector<unsigned int> nonlinearities,
 	double learning_rate,
-	unsigned int mini_batch_size,
-	std::string name)
+	double decay,
+	double random_action_probability,
+	double exploration_period,
+	unsigned int store_every_nth,
+	unsigned int train_every_nth,
+	unsigned int minibatch_size,
+	double discount_rate,
+	double max_experience,
+	double target_network_update_rate)
 {
 	std::vector<rocnnet::IN_PAIR> hiddens;
-	for (unsigned hid_size : hiddensizes)
+	size_t n = hiddensizes.size();
+	assert(n == nonlinearities.size());
+	for (size_t i = 0; i < n; i++)
 	{
-		hiddens.push_back({hid_size, nnet::sigmoid<double>});
+		rocnnet::VAR_FUNC act;
+		switch(nonlinearities[i])
+		{
+			case SIGMOID:
+				act = nnet::sigmoid<double>;
+				break;
+			case TANH:
+				act = nnet::tanh<double>;
+				break;
+			case IDENTITY:
+				act = nnet::identity<double>;
+				break;
+		}
+		hiddens.push_back({hiddensizes[i], act});
 	}
-	nnet::vgb_updater bgd;
-	bgd.learning_rate_ = learning_rate;
+
+	nnet::rmspropupdater learner;
+	learner.learning_rate_ = learning_rate;
+	learner.discount_factor_ = decay;
+
 	rocnnet::dqn_param param;
-	param.mini_batch_size_ = mini_batch_size;
+	param.train_interval_ = train_every_nth;
+	param.rand_action_prob_ = random_action_probability;
+	param.discount_rate_ = discount_rate;
+	param.target_update_rate_ = target_network_update_rate;
+	param.exploration_period_ = exploration_period;
+	param.store_interval_ = store_every_nth;
+	param.mini_batch_size_ = minibatch_size;
+	param.max_exp_ = max_experience;
+
 	rocnnet::ml_perceptron brain(n_input, hiddens);
-	brain_ = new rocnnet::dq_net(&brain, bgd, param, name);
+	brain_ = new rocnnet::dq_net(&brain, learner, param, "pynet");
 }
 
 

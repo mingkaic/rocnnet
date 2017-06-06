@@ -70,7 +70,7 @@ protected:
 
 	// >>>> TENSOR CONTENT <<<<
 	//! tensor data
-	std::unique_ptr<tensor<T> > data_ = nullptr;
+	tensor<T>* data_ = nullptr;
 
 	// >>>> INITIALIZER DATA <<<<
 	//! tensor state (good or bad) true = good

@@ -33,9 +33,11 @@ fi
 # compilation
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
-mkdir build && pushd build
+mkdir build
+pushd build
 cmake -DTENNCOR_TEST=ON ..
 cmake --build .
+popd
 
 BINDIR=${BUILDDIR}/bin/bin
 
@@ -65,7 +67,7 @@ assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
 echo "C++ dq_demo complete"
 
 echo "running python dq_demo"
-assert_cmd "python ${BUILDDIR}/demo/dq_demo.py"
+assert_cmd "python ${BUILDDIR}/pydemo/dq_demo.py"
 
 # coverage analysis
 pushd ${BUILDDIR}

@@ -8,6 +8,10 @@
 
 #include "graph/react/iobserver.hpp"
 
+#ifdef EDGE_RCD
+#include "edgeinfo/comm_record.hpp"
+#endif /* EDGE_RCD */
+
 #ifdef TENNCOR_IOBSERVER_HPP
 
 namespace nnet
@@ -20,6 +24,13 @@ iobserver::~iobserver (void)
 	{
 		remove_dependency(i);
 	}
+
+#ifdef EDGE_RCD
+
+// record subject-object edge
+rocnnet_record::erec::rec.node_release(this);
+
+#endif /* EDGE_RCD */
 }
 
 iobserver& iobserver::operator = (const iobserver& other)
@@ -77,13 +88,15 @@ void iobserver::add_dependency (subject* dep)
 
 void iobserver::remove_dependency (size_t idx)
 {
-	if (idx >= dependencies_.size())
+	size_t depsize = dependencies_.size();
+	if (idx >= depsize)
 	{
-		throw std::exception(); // todo: better exception
+		throw std::logic_error(nnutils::formatter() << "attempting to remove argument index "
+			<< idx << " from observer with " << depsize << " arguments");
 	}
 	if (subject* sub = dependencies_[idx])
 	{
-		sub->detach(this);
+		sub->detach(this, idx);
 		// update dependencies
 		dependencies_[idx] = nullptr;
 		while (false == dependencies_.empty() &&
@@ -107,7 +120,7 @@ void iobserver::replace_dependency (subject* dep, size_t idx)
 	}
 	else if (subject* lastsub = dependencies_[idx])
 	{
-		lastsub->detach(this, idx);
+		if (lastsub != dep) lastsub->detach(this, idx);
 	}
 	dependencies_[idx] = dep;
 }
@@ -128,41 +141,40 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 	}
 	if (UNSUBSCRIBE == msg)
 	{
-		commit_sudoku();
+		death_on_broken();
 	}
 }
 
 void iobserver::copy_helper (const iobserver& other)
 {
-	for (subject* sub : dependencies_)
+	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		sub->detach(this);
+		if (dependencies_[i]) dependencies_[i]->detach(this, i);
 	}
 	dependencies_.clear();
 	for (subject* dep : other.dependencies_)
 	{
-		add_dependency(dep);
+		if (dep) add_dependency(dep);
 	}
 }
 
 void iobserver::move_helper (iobserver&& other)
 {
-	for (subject* sub : dependencies_)
+	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
-		sub->detach(this);
+		if (dependencies_[i]) dependencies_[i]->detach(this, i);
 	}
 	dependencies_ = std::move(other.dependencies_);
 	// replace subs audience from other to this
 	for (size_t i = 0, n = dependencies_.size();
 		i < n; i++)
 	{
-		dependencies_[i]->detach(&other, i);
-		dependencies_[i]->attach(this, i);
-	}
-	size_t ndeps = dependencies_.size();
-	for (size_t i = 0; i < ndeps; i++)
-	{
-		dependencies_[i]->attach(this, i);
+		// attach before detaching to ensure dep i doesn't suicide
+		if (dependencies_[i])
+		{
+			dependencies_[i]->attach(this, i);
+			dependencies_[i]->detach(&other, i);
+		}
 	}
 }
 

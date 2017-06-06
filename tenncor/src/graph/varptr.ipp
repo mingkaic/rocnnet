@@ -11,36 +11,31 @@
 namespace nnet {
 
 template <typename T>
-varptr<T>::varptr (inode<T>* ptr) : ptr_(ptr) {}
+varptr<T>::varptr (inode<T>* ptr) : iobserver({ptr}) {}
 
 template <typename T>
 varptr<T>& varptr<T>::operator = (inode<T>* other)
 {
-	ptr_ = other;
+	if (this->dependencies_.empty()) this->add_dependency(other);
+	else this->replace_dependency(other, 0);
 	return *this;
 }
 
 template <typename T>
-varptr<T>& varptr<T>::operator = (const varptr<T>& other)
+varptr<T>::operator inode<T>* (void) const { return get(); }
+
+template <typename T>
+inode<T>& varptr<T>::operator * (void) const { return *get(); }
+
+template <typename T>
+inode<T>* varptr<T>::operator -> (void) const { return get(); }
+
+template <typename T>
+inode<T>* varptr<T>::get (void) const
 {
-	if (this != &other)
-	{
-		ptr_ = other.ptr_;
-	}
-	return *this;
+	if (this->dependencies_.empty()) return nullptr;
+	return static_cast<inode<T>*>(this->dependencies_.at(0));
 }
-
-template <typename T>
-varptr<T>::operator inode<T>* (void) const { return ptr_; }
-
-template <typename T>
-inode<T>& varptr<T>::operator * (void) const { return *ptr_; }
-
-template <typename T>
-inode<T>* varptr<T>::operator -> (void) const { return ptr_; }
-
-template <typename T>
-inode<T>* varptr<T>::get (void) const { return ptr_; }
 
 template <typename T>
 placeptr<T>::placeptr (placeholder<T>* ptr) : varptr<T>(ptr) {}
@@ -48,7 +43,7 @@ placeptr<T>::placeptr (placeholder<T>* ptr) : varptr<T>(ptr) {}
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (placeholder<T>* other)
 {
-	this->ptr_ = other;
+	varptr<T>::operator = (other);
 	return *this;
 }
 
@@ -57,7 +52,7 @@ placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other)
 {
 	if (this != &other)
 	{
-		this->ptr_ = other.ptr_;
+		varptr<T>::operator = (other);
 	}
 	return *this;
 }
@@ -65,39 +60,39 @@ placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other)
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)
 {
-    *(static_cast<placeholder<T>*>(this->ptr_)) = vec;
+    *get() = vec;
     return *this;
 }
 
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (tensor<T>& ten)
 {
-	*(static_cast<placeholder<T>*>(this->ptr_)) = ten;
+	*get() = ten;
 	return *this;
 }
 
 template <typename T>
 placeptr<T>::operator placeholder<T>* (void) const
 {
-    return static_cast<placeholder<T>*>(this->ptr_);
+    return get();
 }
 
 template <typename T>
 placeholder<T>& placeptr<T>::operator * (void)
 {
-    return *(static_cast<placeholder<T>*>(this->ptr_));
+    return *get();
 }
 
 template <typename T>
 placeholder<T>* placeptr<T>::operator -> (void)
 {
-    return static_cast<placeholder<T>*>(this->ptr_);
+    return get();
 }
 
 template <typename T>
 placeholder<T>* placeptr<T>::get (void) const
 {
-    return static_cast<placeholder<T>*>(this->ptr_);
+    return static_cast<placeholder<T>*>(varptr<T>::get());
 }
 
 }

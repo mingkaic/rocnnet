@@ -1,0 +1,33 @@
+tenncor:
+- add optimization option to merge unary nodes
+- add optimization option to merge n-nary nodes
+- matrix multiplication on for n-dimension tensors only operate on first 2 dimension
+- transpose should generalize to permute on n-dimensions
+- remove move and clone functions for classes that don't need it
+- define alloc shape as mutable and allowed shape as immutable (enforce this rule)
+	placeholder of (4, 0) should accept input of size of any multiple of 4
+- refine shape flexibility e.g: (4,) == (4,1)
+	also any shape padded by 0 or 1 maybe “optimized” for lower dimensional shape
+	(this should be an option, since some applications may not want to lose this information)
+- improve tests
+- possible dangling pointers by propagating destruction in the graph
+- interface confusion:
+    graphs have 2 methods of getting backprop node (get_leaf and get_gradient)
+    users only have 1 valid method of getting backprop (get_gradient)
+    currently, users can call get_leaf. change visibility
+- elementary and transform constant optimization may memory leak some input constant nodes
+    example: constant<double>::get(0) + constant<double>::get(1) leaks constant<double>::get(0)
+
+evaluate rocnnet principles:
+- practicality
+- efficiency
+– logical correctness
+- testability/program transparency
+
+interesting ideas:
+- scalable batch size (increasing batch size over generations)
+
+tests:
+- copying and moving observers on multiple unmanaged constants
+- detaching unmanaged constants from observers
+- copying immutable of uninitialized variables

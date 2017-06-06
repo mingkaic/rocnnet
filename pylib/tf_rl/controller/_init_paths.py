@@ -9,5 +9,5 @@ def add_path(path):
 
 this_dir = osp.dirname(__file__)
 
-dqn_path = osp.join(this_dir, '..', 'bin', 'lib')
+dqn_path = osp.join(this_dir, '..', '..', '..', 'bin', 'lib')
 add_path(dqn_path)

@@ -372,7 +372,7 @@ void tensor<T>::set_allocator (size_t alloc_id)
 	}
 	else
 	{
-		throw std::exception(); // todo: better exception
+		throw std::runtime_error(nnutils::formatter() << "allocator with id " << alloc_id << " not found");
 	}
 }
 
@@ -503,13 +503,8 @@ bool tensor<T>::from_proto (const tenncor::tensor_proto& other)
 	const char* protoraw = protostr.c_str();
 	// shapes must have same dimensionality... (otherwise, input data is definitely corrupt)
 	assert(other.alloc_shape_size() == other.allow_shape_size());
-	std::vector<size_t> allow;
-	std::vector<size_t> alloc;
-	for (size_t i = 0, n = other.allow_shape_size(); i < n; i++)
-	{
-		allow.push_back(other.allow_shape(i));
-		alloc.push_back(other.alloc_shape(i));
-	}
+	std::vector<size_t> allow(other.allow_shape().begin(), other.allow_shape().end());
+	std::vector<size_t> alloc(other.alloc_shape().begin(), other.alloc_shape().end());
 	allowed_shape_ = tensorshape(allow);
 	tensorshape temp_alloc_shape(alloc);
 	// another sanity check, be less stringent, since this may represent some less evident issue

@@ -1,0 +1,6 @@
+python==2.7.*
+future==0.15.2
+matplotlib==2.0.2
+redis==2.10.5
+euclid==0.1
+IPython

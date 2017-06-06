@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-10.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_TOP_NODE_MODULE_TESTS
 
 #include <algorithm>
 
@@ -61,6 +61,7 @@ TEST(REACT, CopySub_A000)
 // move constructor and assignment
 TEST(REACT, MoveSub_A000)
 {
+	mocker::usage_.clear();
 	FUZZ::reset_logger();
 	mock_subject sassign1;
 	mock_subject sassign2;
@@ -68,6 +69,7 @@ TEST(REACT, MoveSub_A000)
 	mock_subject s1;
 	mock_subject s2;
 	mock_observer o1(&s2);
+	s2.inst_ = "s2";
 
 	std::vector<subject*> subjects = o1.expose_dependencies();
 	ASSERT_EQ((size_t) 1, subjects.size());
@@ -77,6 +79,9 @@ TEST(REACT, MoveSub_A000)
 
 	mock_subject mv1(std::move(s1));
 	mock_subject mv2(std::move(s2));
+	mv2.inst_ = "mv2";
+
+	EXPECT_TRUE(mocker::EXPECT_CALL("s2::detach2", 1));
 
 	EXPECT_TRUE(s1.no_audience());
 	EXPECT_TRUE(s2.no_audience());
@@ -85,6 +90,10 @@ TEST(REACT, MoveSub_A000)
 
 	sassign1 = std::move(mv1);
 	sassign2 = std::move(mv2);
+
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::detach2", 1));
+
+	mocker::usage_.clear();
 
 	EXPECT_TRUE(mv1.no_audience());
 	EXPECT_TRUE(mv2.no_audience());
@@ -263,7 +272,7 @@ TEST(REACT, ObsConstruct_A005)
 	EXPECT_EQ(s1, subs2[0]);
 	EXPECT_EQ(s2, subs2[1]);
 
-	// called twice since mock observer isn't destroyed when commit_sudoku is called
+	// called twice since mock observer isn't destroyed when death_on_broken is called
 	// so deleting s2 will trigger another suicide call
 	delete s1;
 	delete s2;
@@ -271,8 +280,8 @@ TEST(REACT, ObsConstruct_A005)
 	delete o1;
 	delete o2;
 
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
 }
 
 
@@ -327,12 +336,12 @@ TEST(REACT, CopyObs_A006)
 	delete cpy2;
 	delete sassign1;
 	delete sassign2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::death_on_broken", 2));
 }
 
 
@@ -393,12 +402,12 @@ TEST(REACT, MoveObs_A006)
 	delete mv2;
 	delete sassign1;
 	delete sassign2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("mv1::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv1::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("mv2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign1::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("sassign2::death_on_broken", 2));
 }
 
 
@@ -441,8 +450,8 @@ TEST(REACT, AddDep_A007)
 	delete s2;
 	delete o1;
 	delete o2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("o2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o2::death_on_broken", 2));
 }
 
 
@@ -506,7 +515,7 @@ TEST(REACT, RepDep_A009)
 	delete s1;
 	delete s2;
 	delete o1;
-	EXPECT_TRUE(mocker::EXPECT_CALL("o1::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("o1::death_on_broken", 2));
 }
 
 
@@ -524,7 +533,7 @@ TEST(REACT, ObsDeath_A010)
 	mock_observer2* o1 = new mock_observer2(&s1, &s2);
 	iobserver* tempptr = o1;
 	delete o1;
-	EXPECT_TRUE(mocker::EXPECT_CALL("s1::detach1", 1)); // todo: verify detach argument is o1
+	EXPECT_TRUE(mocker::EXPECT_CALL("s1::detach2", 1)); // todo: verify detach argument is o1
 
 	EXPECT_TRUE(s2.no_audience());
 	s1.mock_detach(tempptr);
@@ -534,4 +543,4 @@ TEST(REACT, ObsDeath_A010)
 #endif /* DISABLE_REACT_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_TOP_NODE_MODULE_TESTS */

@@ -12,6 +12,26 @@ namespace nnet
 {
 
 template <typename T>
+constant<T> constant<T>::shared_zero(0);
+
+template <typename T>
+constant<T> constant<T>::shared_one(1);
+
+template <typename T>
+constant<T>* constant<T>::get_shared_zero (void)
+{
+	shared_zero.is_managed_ = true;
+	return &shared_zero;
+}
+
+template <typename T>
+constant<T>* constant<T>::get_shared_one (void)
+{
+	shared_one.is_managed_ = true;
+	return &shared_one;
+}
+
+template <typename T>
 constant<T>* constant<T>::get (T scalar)
 {
 	return new constant<T>(scalar);
@@ -21,15 +41,6 @@ template <typename T>
 constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 {
 	return new constant<T>(raw, shape);
-}
-
-template <typename T>
-constant<T>::~constant (void)
-{
-	if (zero != this)
-	{
-		delete zero;
-	}
 }
 
 template <typename T>
@@ -45,15 +56,15 @@ constant<T>* constant<T>::move (void)
 }
 
 template <typename T>
-inode<T>* constant<T>::get_gradient (inode<T>*)
+varptr<T> constant<T>::get_gradient (inode<T>*)
 {
-	return zero;
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
-inode<T>* constant<T>::get_leaf (variable<T>*)
+void constant<T>::get_leaf (inode<T>*& out, variable<T>*)
 {
-	return zero;
+	out = constant<T>::get_shared_zero();
 }
 
 template <typename T>
@@ -63,21 +74,11 @@ void constant<T>::get_leaves (
 template <typename T>
 constant<T>::constant (T scalar) :
 	ileaf<T>(std::vector<size_t>{1},
-		 nnutils::formatter() << scalar)
+		nnutils::formatter() << scalar)
 {
-	if (scalar == 0)
-	{
-		zero = this;
-	}
-	else
-	{
-		zero = new constant<T>(0);
-		zero->is_managed_ = true;
-	}
-
 	const_init<T> init(scalar);
 	this->data_->allocate();
-	init(*this->data_);
+	init(this->data_);
 	this->is_init_ = true;
 }
 
@@ -86,9 +87,6 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 	ileaf<T>(shape, raw.empty() ? "<empty>" :
 		(nnutils::formatter() << raw.front() << ".." << raw.back()).str())
 {
-	zero = new constant<T>(0);
-	zero->is_managed_ = true;
-
 	size_t rawn = raw.size();
 	typename ileaf<T>::assignment assigner;
 	if (false == this->data_->is_alloc())
@@ -111,12 +109,12 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		size_t deficiency = n - rawn;
 		raw.insert(raw.end(), deficiency, 0);
 	}
-	assigner(*this->data_, raw);
+	assigner(this->data_, raw);
 	this->is_init_ = true;
 }
 
 template <typename T>
-void constant<T>::commit_sudoku_sub (void)
+void constant<T>::death_on_noparent (void)
 {
 	if (false == is_managed_ && this->no_audience())
 	{

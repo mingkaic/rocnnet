@@ -37,6 +37,38 @@ void edge_record::edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t
 	}
 }
 
+void edge_record::node_release (nnet::subject* sub)
+{
+	// linear search and remove all edges from sub
+	auto it = edges_.begin(), et = edges_.end();
+	while (it != et)
+	{
+		bool releasenode = (*it).sub_ == sub;
+		auto cpyit = it;
+		it++;
+		if (releasenode)
+		{
+			edges_.erase(cpyit);
+		}
+	}
+}
+
+void edge_record::node_release (nnet::iobserver* obs)
+{
+	// linear search and remove all edges to obs
+	auto it = edges_.begin(), et = edges_.end();
+	while (it != et)
+	{
+		bool releasenode = (*it).obs_ == obs;
+		auto cpyit = it;
+		it++;
+		if (releasenode)
+		{
+			edges_.erase(cpyit);
+		}
+	}
+}
+
 }
 
 #endif

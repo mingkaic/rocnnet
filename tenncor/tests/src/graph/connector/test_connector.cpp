@@ -43,15 +43,15 @@ TEST(CONNECTOR, Copy_H000)
 	mock_connector* cpy2 = new mock_connector(*conn2);
 	void* gid1 = cpy->get_gid();
 	void* gid2 = cpy2->get_gid();
-	EXPECT_NE(ogid1, gid1);
-	EXPECT_NE(ogid2, gid2);
+	EXPECT_EQ(ogid1, gid1);
+	EXPECT_EQ(ogid2, gid2);
 
 	*assign = *conn;
 	*assign2 = *conn2;
 	void* gid5 = assign->get_gid();
 	void* gid6 = assign2->get_gid();
-	EXPECT_NE(ogid1, gid5);
-	EXPECT_NE(ogid2, gid6);
+	EXPECT_EQ(ogid1, gid5);
+	EXPECT_EQ(ogid2, gid6);
 
 	// test base connectors before testing connectors of connectors
 	// to prevent optimizations from deleting gids thereby allowing duplicate gid addresses.
@@ -102,18 +102,18 @@ TEST(CONNECTOR, Copy_H000)
 	delete cpy2;
 	delete cpy3;
 	delete cpy4;
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::death_on_broken", 2));
 }
 
 
@@ -158,8 +158,6 @@ TEST(CONNECTOR, Move_H000)
 	// to prevent optimizations from deleting gids thereby allowing duplicate gid addresses.
 	// (without allocator randomization)
 
-	EXPECT_THROW(new mock_connector(std::vector<inode<double> *>{conn, n1}, bossname), std::exception);
-	EXPECT_THROW(new mock_connector(std::vector<inode<double> *>{conn, conn2}, bossname2), std::exception);
 	mock_connector* boss = new mock_connector(std::vector<inode<double> *>{assign, n1}, bossname);
 	mock_connector* boss2 = new mock_connector(std::vector<inode<double> *>{assign, assign2}, bossname2);
 	void* ogid3 = boss->get_gid();
@@ -205,18 +203,18 @@ TEST(CONNECTOR, Move_H000)
 	delete mv2;
 	delete mv3;
 	delete mv4;
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::commit_sudoku", 0));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy2::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy3::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("cpy4::death_on_broken", 0));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign3::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("assign4::death_on_broken", 2));
 }
 
 
@@ -248,7 +246,7 @@ TEST(CONNECTOR, Name_H001)
 		delete n;
 	}
 	delete conn1;
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn1::commit_sudoku", nargs));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn1::death_on_broken", nargs));
 }
 
 
@@ -288,10 +286,10 @@ TEST(CONNECTOR, Graph_H002)
 	delete conn2;
 	delete boss;
 	delete boss2;
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss2::death_on_broken", 2));
 }
 
 
@@ -336,10 +334,10 @@ TEST(CONNECTOR, Descendent_H003)
 	delete conn2;
 	delete boss;
 	delete separate;
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::commit_sudoku", 1));
-	EXPECT_TRUE(mocker::EXPECT_CALL("boss::commit_sudoku", 2));
-	EXPECT_TRUE(mocker::EXPECT_CALL("separate::commit_sudoku", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("conn2::death_on_broken", 1));
+	EXPECT_TRUE(mocker::EXPECT_CALL("boss::death_on_broken", 2));
+	EXPECT_TRUE(mocker::EXPECT_CALL("separate::death_on_broken", 2));
 }
 
 

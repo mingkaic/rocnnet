@@ -77,13 +77,15 @@ TEST(HANDLER, Transfer_C000)
 	mock_tensor arg2(c2);
 	tensor<double> good(resshape);
 	tensor<double> bad(c1);
+	tensor<double>* goodptr = &good;
+	tensor<double>* badptr = &bad;
 	std::vector<const tensor<double>*> args;
 	args.push_back(&arg1);
 	args.push_back(&arg2);
 
 	transfer_func<double> tf(shaper, forward);
-	EXPECT_THROW(tf(bad, args), std::exception);
-	tf(good, args);
+	EXPECT_THROW(tf(badptr, args), std::exception);
+	tf(goodptr, args);
 	std::vector<double> d1 = arg1.expose();
 	std::vector<double> d2 = arg2.expose();
 	std::vector<double> res = good.expose();
@@ -113,7 +115,8 @@ TEST(HANDLER, Constant_C001)
 	const_init<double> ci(scalar);
 	tensorshape shape = random_def_shape();
 	tensor<double> block(shape);
-	ci(block);
+	tensor<double>* blockptr = &block;
+	ci(blockptr);
 
 	std::vector<double> v = block.expose();
 
@@ -137,8 +140,10 @@ TEST(HANDLER, Random_C002)
 	tensorshape shape = random_def_shape();
 	tensor<double> block1(shape);
 	tensor<double> block2(shape);
-	ri1(block1);
-	ri2(block2);
+	tensor<double>* block1ptr = &block1;
+	tensor<double>* block2ptr = &block2;
+	ri1(block1ptr);
+	ri2(block2ptr);
 
 	std::vector<double> v1 = block1.expose();
 	std::vector<double> v2 = block2.expose();
@@ -186,15 +191,18 @@ TEST(HANDLER, Copy_C003)
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
-	(*tfcpy)(ttransf, {});
+	tensor<double>* tscalarptr = &tscalar;
+	tensor<double>* tblockptr = &tblock;
+	tensor<double>* ttransfptr = &ttransf;
+	(*tfcpy)(ttransfptr, {});
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
 
-	(*cicpy)(tscalar);
+	(*cicpy)(tscalarptr);
 	EXPECT_EQ(scalar, tscalar.expose()[0]);
 
-	(*ricpy)(tblock);
+	(*ricpy)(tblockptr);
 	std::vector<double> v = tblock.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -205,15 +213,18 @@ TEST(HANDLER, Copy_C003)
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
 	tensor<double> ttransf2(std::vector<size_t>{(size_t) SUPERMARK});
-	tfassign(ttransf2, {});
+	tensor<double>* tscalar2ptr = &tscalar2;
+	tensor<double>* tblock2ptr = &tblock2;
+	tensor<double>* ttransf2ptr = &ttransf2;
+	tfassign(ttransf2ptr, {});
 	std::vector<double> transfv2 = ttransf2.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv2.size());
 	EXPECT_EQ(SUPERMARK, transfv2[0]);
 
-	ciassign(tscalar2);
+	ciassign(tscalar2ptr);
 	EXPECT_EQ(scalar, tscalar2.expose()[0]);
 
-	riassign(tblock2);
+	riassign(tblock2ptr);
 	std::vector<double> v2 = tblock2.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -268,15 +279,18 @@ TEST(HANDLER, Move_C003)
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
-	tfmv(ttransf, {});
+	tensor<double>* tscalarptr = &tscalar;
+	tensor<double>* tblockptr = &tblock;
+	tensor<double>* ttransfptr = &ttransf;
+	tfmv(ttransfptr, {});
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
 
-	cimv(tscalar);
+	cimv(tscalarptr);
 	EXPECT_EQ(scalar, tscalar.expose()[0]);
 
-	rimv(tblock);
+	rimv(tblockptr);
 	std::vector<double> v = tblock.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -291,15 +305,18 @@ TEST(HANDLER, Move_C003)
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
 	tensor<double> ttransf2(std::vector<size_t>{(size_t) SUPERMARK});
-	tfassign(ttransf2, {});
+	tensor<double>* tscalar2ptr = &tscalar2;
+	tensor<double>* tblock2ptr = &tblock2;
+	tensor<double>* ttransf2ptr = &ttransf2;
+	tfassign(ttransf2ptr, {});
 	std::vector<double> transfv2 = ttransf2.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv2.size());
 	EXPECT_EQ(SUPERMARK, transfv2[0]);
 
-	ciassign(tscalar2);
+	ciassign(tscalar2ptr);
 	EXPECT_EQ(scalar, tscalar2.expose()[0]);
 
-	riassign(tblock2);
+	riassign(tblock2ptr);
 	std::vector<double> v2 = tblock2.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -308,18 +325,21 @@ TEST(HANDLER, Move_C003)
 	}
 
 	// tf, ci, ri, tfmv, cimv, and rimv should be undefined
-	tensor<double> tscalar3(0);
-	tensor<double> tblock3(shape);
-	tensor<double> ttransf3(std::vector<size_t>{(size_t) SUPERMARK});
+//	tensor<double> tscalar3(0);
+//	tensor<double> tblock3(shape);
+//	tensor<double> ttransf3(std::vector<size_t>{(size_t) SUPERMARK});
+//	tensor<double>* tscalar3ptr = &tscalar3;
+//	tensor<double>* tblock3ptr = &tblock3;
+//	tensor<double>* ttransf3ptr = &ttransf3;
 
 	// moving function and resulting in undefined is a standard-dependent behavior
 	// todo: decide on a more standard-independent way of testing moving function behavior
-//	EXPECT_DEATH(tf(ttransf3, {}), ".*");
-// 	EXPECT_DEATH(ci(tscalar3), ".*");
-// 	EXPECT_DEATH(ri(tblock3), ".*");
-// 	EXPECT_DEATH(tfmv(ttransf3, {}), ".*");
-// 	EXPECT_DEATH(cimv(tscalar3), ".*");
-//	EXPECT_DEATH(rimv(tblock3), ".*");
+//	EXPECT_DEATH(tf(ttransf3ptr, {}), ".*");
+// 	EXPECT_DEATH(ci(tscalar3ptr), ".*");
+// 	EXPECT_DEATH(ri(tblock3ptr), ".*");
+// 	EXPECT_DEATH(tfmv(ttransf3ptr, {}), ".*");
+// 	EXPECT_DEATH(cimv(tscalar3ptr), ".*");
+//	EXPECT_DEATH(rimv(tblock3ptr), ".*");
 }
 
 

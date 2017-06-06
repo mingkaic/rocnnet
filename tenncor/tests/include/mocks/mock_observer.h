@@ -45,9 +45,9 @@ public:
 		label_incr("update1");
 	}
 	
-	virtual void commit_sudoku (void)
+	virtual void death_on_broken (void)
 	{
-		label_incr("commit_sudoku");
+		label_incr("death_on_broken");
 	}
 
 protected:

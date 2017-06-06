@@ -13,7 +13,6 @@
 
 #include "tensor/tensor_handler.hpp"
 #include "tensor/tensor.hpp"
-#include "utils/utils.hpp"
 #include "graph/react/subject.hpp"
 
 #pragma once
@@ -26,7 +25,7 @@ namespace nnet
 // TODO: limit T down to numeric types using c++17 std::variant
 
 template <typename T>
-class ioptimizer;
+class varptr;
 
 template <typename T>
 class variable;
@@ -39,7 +38,7 @@ class inode : public subject
 {
 public:
 	//! store the gradient operation wrt to a leaf
-	using GRAD_CACHE = std::unordered_map<variable<T>*,inode<T>*>;
+	using GRAD_CACHE = std::unordered_map<variable<T>*,varptr<T> >;
 
 	//! destructor
 	virtual ~inode (void) {}
@@ -77,7 +76,7 @@ public:
 	virtual const tensor<T>* get_eval (void) const = 0;
 
 	//! get top-level gradient value, used by root nodes
-	virtual inode<T>* get_gradient (inode<T>* wrt) = 0;
+	virtual varptr<T> get_gradient (inode<T>* wrt) = 0;
 
 	// >>>> META-DATA ACCESSOR <<<<
 	//! merge/Update the gradient/leaf info
@@ -85,7 +84,7 @@ public:
 
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be
-	virtual inode<T>* get_leaf (variable<T>* leaf) = 0;
+	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) = 0;
 
 	// >>>> META-DATA SETTER <<<<
 	//! set new label for this node

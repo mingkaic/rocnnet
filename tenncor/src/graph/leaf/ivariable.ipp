@@ -61,29 +61,25 @@ bool ivariable<T>::can_init (void) const
 }
 
 template <typename T>
-inode<T>* ivariable<T>::get_gradient (inode<T>* wrt)
+varptr<T> ivariable<T>::get_gradient (inode<T>* wrt)
 {
 	if (this == wrt)
 	{
-		return one.get();
+		return constant<T>::get_shared_one();
 	}
-	return zero.get();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
 ivariable<T>::ivariable (const tensorshape& shape,
 	initializer<T>* init,
 	std::string name) :
-ileaf<T>(shape, name), init_(init)
-{
-	common();
-}
+ileaf<T>(shape, name), init_(init) {}
 
 template <typename T>
 ivariable<T>::ivariable (const ivariable<T>& other) :
 	ileaf<T>(other)
 {
-	common();
 	copy_helper(other);
 }
 
@@ -91,7 +87,6 @@ template <typename T>
 ivariable<T>::ivariable (ivariable<T>&& other) :
 	ileaf<T>(std::move(other))
 {
-	common();
 	move_helper(std::move(other));
 }
 
@@ -123,15 +118,6 @@ void ivariable<T>::move_helper (ivariable<T>&& other)
 	}
 	init_ = std::move(other.init_);
 	other.init_ = nullptr;
-}
-
-template <typename T>
-void ivariable<T>::common (void)
-{
-	one = std::unique_ptr<constant<T> >(constant<T>::get(1));
-	zero = std::unique_ptr<constant<T> >(constant<T>::get(0));
-	one->is_managed_ = true;
-	zero->is_managed_ = true;
 }
 
 }

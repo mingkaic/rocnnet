@@ -12,6 +12,7 @@
  *
  */
 
+#include "graph/react/iobserver.hpp"
 #include "graph/inode.hpp"
 #include "graph/leaf/placeholder.hpp"
 
@@ -24,17 +25,18 @@ namespace nnet
 
 // TODO: override delete to destroy ptr directly
 template <typename T>
-class varptr
+class varptr : public iobserver
 {
 public:
+	void* operator new (size_t) = delete;
+
 	//! nullptr construction
 	varptr (void) {}
 
 	//! wrap ptr construction
 	varptr (inode<T>* ptr);
-
-	//! assign another wrapper
-	varptr<T>& operator = (const varptr<T>& other);
+	
+	virtual ~varptr (void) {}
 
 	//! assign ptr
 	varptr<T>& operator = (inode<T>* other);
@@ -50,10 +52,15 @@ public:
 
 	//! get inner pointer
 	inode<T>* get (void) const;
-
+	
+	virtual void update (subject*) {}
+	
 protected:
-	//! inner pointer, not owned by this
-	inode<T>* ptr_ = nullptr;
+	virtual void death_on_broken (void)
+	{
+		if (false == this->dependencies_.empty())
+			this->remove_dependency(0);
+	}
 };
 
 template <typename T>

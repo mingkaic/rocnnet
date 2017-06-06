@@ -32,7 +32,7 @@ PUUID ptr_record::get_hash (void* ptr)
 	auto pit = ptrs_.find(ptr);
 	if (ptrs_.end() == pit)
 	{
-		throw std::exception(); // TODO: make better exception
+		throw std::runtime_error("pointer not found");
 	}
 	return pit->second.id_;
 }

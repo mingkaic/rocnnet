@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-14.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_LEAF_MODULE_TESTS
 
 #include <algorithm>
 
@@ -290,19 +290,31 @@ TEST(VARIABLE, GetLeaf_F003)
 	variable<double> cinitv(shape, cinit, label3);
 	variable<double> rinitv(shape, rinit, label4);
 
-	inode<double>* wun = scalar.get_leaf(&scalar);
-	inode<double>* wun2 = noinitv.get_leaf(&noinitv);
-	inode<double>* wun3 = cinitv.get_leaf(&cinitv);
-	inode<double>* wun4 = rinitv.get_leaf(&rinitv);
+	inode<double>* wun;
+	inode<double>* wun2;
+	inode<double>* wun3;
+	inode<double>* wun4;
+	scalar.get_leaf(wun, &scalar);
+	noinitv.get_leaf(wun2, &noinitv);
+	cinitv.get_leaf(wun3, &cinitv);
+	rinitv.get_leaf(wun4, &rinitv);
 
-	inode<double>* zaro = scalar.get_leaf(nullptr);
-	inode<double>* zaro2 = scalar.get_leaf(&noinitv);
-	inode<double>* zaro3 = noinitv.get_leaf(nullptr);
-	inode<double>* zaro4 = noinitv.get_leaf(&cinitv);
-	inode<double>* zaro5 = cinitv.get_leaf(nullptr);
-	inode<double>* zaro6 = cinitv.get_leaf(&rinitv);
-	inode<double>* zaro7 = rinitv.get_leaf(nullptr);
-	inode<double>* zaro8 = rinitv.get_leaf(&scalar);
+	inode<double>* zaro;
+	inode<double>* zaro2;
+	inode<double>* zaro3;
+	inode<double>* zaro4;
+	inode<double>* zaro5;
+	inode<double>* zaro6;
+	inode<double>* zaro7;
+	inode<double>* zaro8;
+	scalar.get_leaf(zaro, nullptr);
+	scalar.get_leaf(zaro2, &noinitv);
+	noinitv.get_leaf(zaro3, nullptr);
+	noinitv.get_leaf(zaro4, &cinitv);
+	cinitv.get_leaf(zaro5, nullptr);
+	cinitv.get_leaf(zaro6, &rinitv);
+	rinitv.get_leaf(zaro7, nullptr);
+	rinitv.get_leaf(zaro8, &scalar);
 
 	EXPECT_TRUE(*wun == 1.0);
 	EXPECT_TRUE(*wun2 == 1.0);
@@ -423,4 +435,4 @@ TEST(VARIABLE, Initialize_F005)
 #endif /* DISABLE_VARIABLE_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_LEAF_MODULE_TESTS */

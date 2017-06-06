@@ -28,14 +28,17 @@ template <typename T>
 class constant final : public ileaf<T>
 {
 public:
+	//! get shared zero constant that is managed
+	static constant<T>* get_shared_zero (void);
+	
+	//! get shared one constant that is managed
+	static constant<T>* get_shared_one (void);
+	
 	//! builder for scalar
 	static constant<T>* get (T scalar);
 
 	//! builder for data and shape
 	static constant<T>* get (std::vector<T> raw, tensorshape shape);
-
-	//! destructor to kill zero
-	~constant (void);
 
 	// >>>> CLONE, COPY, & MOVE <<<<
 	//! clone function
@@ -59,11 +62,11 @@ public:
 
 	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
 	//! get gradient wrt some node
-	virtual inode<T>* get_gradient (inode<T>* wrt);
+	virtual varptr<T> get_gradient (inode<T>* wrt);
 
 	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
 	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf) ;
+	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) ;
 
 	//! merge/update the gradient/leaf info
 	virtual void get_leaves (
@@ -72,8 +75,6 @@ public:
 	bool is_managed_ = false; //! if constant is managed, it will not suicide if it lacks audiences
 
 protected:
-	constant<T>* zero = nullptr; //! commonly used constant zero
-
 	//! scalar constructor
 	constant (T scalar);
 
@@ -84,13 +85,17 @@ protected:
 	//! override smart destruction,
 	//! executed when constant loses all audiences,
 	//! (after it obtains an audience of course)
-	virtual void commit_sudoku_sub (void);
+	virtual void death_on_noparent (void);
 
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
+	
+	static constant<T> shared_zero;
+	
+	static constant<T> shared_one;
 };
 
 }

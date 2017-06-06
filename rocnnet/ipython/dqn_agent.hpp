@@ -10,14 +10,30 @@
 #include <string>
 
 
+enum NL
+{
+	SIGMOID=0,
+	TANH=1,
+	IDENTITY=2
+};
+
+
 struct dqn_agent
 {
-	// builds dq_net using sigmoid activations, vanilla gradient descent and default parameters
+	// builds dq_net using RMSProp
 	dqn_agent (unsigned int n_input, 
 		std::vector<unsigned int> hiddensizes,
+		std::vector<unsigned int> nonlinearities,
 		double learning_rate,
-		unsigned int mini_batch_size,
-		std::string name);
+		double decay,
+		double random_action_probability,
+		double exploration_period,
+		unsigned int store_every_nth,
+		unsigned int train_every_nth,
+		unsigned int minibatch_size,
+		double discount_rate,
+		double max_experience,
+		double target_network_update_rate);
 
 	~dqn_agent (void);
 

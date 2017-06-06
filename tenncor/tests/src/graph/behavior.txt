@@ -1,13 +1,13 @@
 // REACTIVE BEHAVIOR
 A000 - copying subjects do not copy over audiences
-        moving subjects move over audiences
+        moving subjects move over audiences and (UNTESTED) audiences have their dependencies reattached to new subject
         subjects without audience will return false if it has no observers
 A001 - subjects notify all observers
-        if UNSUBSCRIBE is called, then observer will suicide via commit_sudoku
+        if UNSUBSCRIBE is called, then observer will suicide via death_on_broken
         if UPDATE is called, then observer will update via
         public update with subject being its input
 A002 - destroying a subject will destroy their observers via UNSUBSCRIBE update,
-        and via commit_sudoku
+        and via death_on_broken
 A003 - attaching observer to subject at index means notifying the
         observer's protected update is triggered with calling subject and the index specified
         attaching does nothing to update observer's dependency (not tested)
@@ -86,10 +86,9 @@ G004 - placeholder get_leaf returns 0 scalar node
 G005 - placeholder get_leaves does not change referenced leaf set
 
 // CONNECTOR BEHAVIOR
-H000 - copying connector copies over graph id if the original connector has at least one
-        connector dependency (conform to definition of same graph)
-        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer
-        creating a connector of a connector with null gid_ (possible with moving) will throw
+H000 - copying connector copies over graph id, connector dependency (conform to definition of same graph),
+        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer,
+        (UNTESTED) connector copies over jacobians
 H001 - connector name is the name of the connecting node in <> braces and
         its dependencies' labels separated by commas in () brackets
 H002 - connector is the same graph as another connector if they share a common connector
@@ -97,7 +96,7 @@ H002 - connector is the same graph as another connector if they share a common c
 H003 - connector potential descendent calls both this and other connnector get_leaves to get leaf set
 
 // IMMUTABLE BEHAVIOR
-I000 - cloning and moving immutable copies and moves over data, Nf_ and ginit_
+I000 - cloning and moving immutable copies and moves over data, Nf_, (UNTESTED) ginit_, and gcache
 I001 - immutable A is a potential descendent of connector B if A's leaf set is a subset of B's leaf set
 I002 - immutable has good status if all its children are good, otherwise it's bad
 I003 - immutable tensor shape is the result of the shaper function.
@@ -151,8 +150,30 @@ K006 - arg_compress obtains of the index of an element found by some search para
         otherwise obtain the coordinate of the element
 K007 - arg_compress will throw when dimension is greater than or equal to rank
 
-// MATMUL BEHAVIOR
-L000 -
+// MATMUL BEHAVIORS
+L000 - cloning and moving matmul copies and moves over transpose information
+L001 - matmul with nullptr arguments returns nullptr
+L002 - matmul matrix multiplies the first 2 dimensions of tensors
+        shapes must match by according to the following (<m, n, a, b, c, ...>, <k, m, a, b, c, ...>)
+        where m is shape value of index 0, and 1 for first and second argument respectively (note: column is index 0)
+        any shape value following the first two must be identical
+        (probabilistically verified by Freivald's algorithm) (N-dimensional Matmul UNTESTED and UNIMPLEMENTED)
+L003 - matrix multiplying incompatible shapes throws logic_error
+L004 - matmul(a, b) appends a jacobian operator to it's observers (and super-observers)
+        the jacobian operator is defined as: a' * matmul(k, b^T) + b' * matmul(a^T, k) where k is the graph root
+L005 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
+        matmul shape X, Y (X=?, Y=?) takes at most N seconds
 
-- matrix operations only takes 2-D tensors
-- matrix operations argument shapes must match by according to the following (<m, n>, <k, m>) where m is indice 0, and 1 for first and second argument respectively (this indicates column is index 0)
+// MERGE_IMM BEHAVIORS
+M000 - constructed merged immutable is operationally identical to the original connector:
+        it has the same forward value,
+        it has the same backward node value
+        deleting the original graph (except the leaves) does not damage the merged node
+        note: merge_immutable automatically breaks and deletes the input connector
+(UNTESTED)
+M001 - cloning or moving merge_immutable copies or moves over the original operations
+M002 - solo_merge is operationally identical to the original graph
+        any node with multiple audiences is not merged
+        any node whose jacobian different from its parent is unmergible
+M003 - all_merge has same behavior as solo_merge, except nodes with multiple audiences are split and merged
+        e.g.: A is consumed by B and C, merge on C splits A to A1 and A2, B consumes A1, C consumes A2

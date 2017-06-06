@@ -32,8 +32,12 @@ public:
 
 	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
+	void node_release (nnet::subject* sub);
+
+	void node_release (nnet::iobserver* obs);
+
 	template <typename T>
-	void to_csv (nnet::iconnector<T>* consider_graph = nullptr)
+	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr)
 	{
 		std::ofstream ofile;
 		ofile.open(outname_);
@@ -44,6 +48,7 @@ public:
 			for (subinfo e : edges_)
 			{
 				nnet::iconnector<T>* ob = dynamic_cast<nnet::iconnector<T>*>(e.obs_);
+				if (nullptr == ob) continue;
 				if (consider_graph && !ob->is_same_graph(consider_graph))
 				{
 					continue; // skip connectors that aren't in the considered graph

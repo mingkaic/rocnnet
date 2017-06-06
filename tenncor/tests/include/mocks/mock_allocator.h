@@ -15,6 +15,33 @@
 using namespace nnet;
 
 
+class mock_default_allocator : public default_alloc
+{
+public:
+	struct memoryinfo
+	{
+		size_t num_bytes;
+		size_t alignment;
+	};
+
+	std::unordered_map<void*,memoryinfo> tracker;
+
+protected:
+	virtual void* get_raw (size_t alignment, size_t num_bytes)
+	{
+		void* ptr = default_alloc::get_raw(alignment, num_bytes);
+		tracker[ptr] = {num_bytes, alignment};
+		return ptr;
+	}
+
+	virtual void del_raw (void* ptr, size_t num_bytes)
+	{
+		tracker.erase(ptr);
+		default_alloc::del_raw(ptr, num_bytes);
+	}
+};
+
+
 class mock_allocator : public iallocator
 {
 public:
@@ -136,10 +163,19 @@ protected:
 					}
 				}
 			}
+			else
+			{
+				// erase
+			}
 		}
 	}
 
 	virtual iallocator* clone_impl (void) const
+	{
+		return new mock_allocator(*this);
+	}
+
+	virtual iallocator* move_impl (void)
 	{
 		return new mock_allocator(*this);
 	}

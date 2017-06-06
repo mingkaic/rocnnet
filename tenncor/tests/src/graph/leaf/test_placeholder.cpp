@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-14.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_LEAF_MODULE_TESTS
 
 #include <algorithm>
 
@@ -197,7 +197,8 @@ TEST(PLACHOLDER, AssignTensor_G003)
 	double c = FUZZ::getDouble(1, "c")[0];
 	const_init<double> cinit(c);
 	tensor<double> rawtens(shape);
-	cinit(rawtens);
+	tensor<double>* rawtenptr = &rawtens;
+	cinit(rawtenptr);
 
 	mock_connector conn({&place}, label2);
 	conn.inst_ = "conn";
@@ -227,7 +228,8 @@ TEST(PLACHOLDER, GetLeaf_G004)
 
 	placeholder<double> place(shape, label1);
 
-	inode<double>* zaro = place.get_leaf(nullptr);
+	inode<double>* zaro;
+	place.get_leaf(zaro, nullptr);
 	EXPECT_TRUE(*zaro == 0.0);
 }
 
@@ -249,4 +251,4 @@ TEST(PLACHOLDER, GetLeaves_G005)
 #endif /* DISABLE_PLACEHOLDER_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_LEAF_MODULE_TESTS */
