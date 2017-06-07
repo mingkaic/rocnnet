@@ -476,25 +476,25 @@ TEST(MATMUL, Strassen_L005)
 	tB.initialize();
 
 	// shapes of <k, n>
-	clock_t t = clock();
+//	clock_t t = clock();
 	matmul<signed>* res = matmul<signed>::get(&A, &B);
-	const double work_time1 = (clock() - t) / double(CLOCKS_PER_SEC);
+//	const double work_time1 = (clock() - t) / double(CLOCKS_PER_SEC);
 
-	t = clock();
+//	t = clock();
 	matmul<signed>* restA = matmul<signed>::get(&tA, &B, true);
-	const double work_time2 = (clock() - t) / double(CLOCKS_PER_SEC);
+//	const double work_time2 = (clock() - t) / double(CLOCKS_PER_SEC);
 
-	t = clock();
+//	t = clock();
 	matmul<signed>* restB = matmul<signed>::get(&A, &tB, false, true);
-	const double work_time3 = (clock() - t) / double(CLOCKS_PER_SEC);
+//	const double work_time3 = (clock() - t) / double(CLOCKS_PER_SEC);
 
-	t = clock();
+//	t = clock();
 	matmul<signed>* resT = matmul<signed>::get(&tA, &tB, true, true);
-	const double work_time4 = (clock() - t) / double(CLOCKS_PER_SEC);
-	// ASSERT_GT(0.3, work_time1);
-	// ASSERT_GT(0.3, work_time2);
-	// ASSERT_GT(0.3, work_time3);
-	// ASSERT_GT(0.3, work_time4);
+//	const double work_time4 = (clock() - t) / double(CLOCKS_PER_SEC);
+//	ASSERT_GT(0.3, work_time1);
+//	ASSERT_GT(0.3, work_time2);
+//	ASSERT_GT(0.3, work_time3);
+//	ASSERT_GT(0.3, work_time4);
 
 	tensorshape expectshape = std::vector<size_t>{dims[2], dims[1]};
 	tensorshape resshape = res->get_shape();

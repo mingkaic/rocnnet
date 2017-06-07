@@ -238,10 +238,6 @@ TEST(MERGE_IMM, Constructor_M000)
 	std::vector<subject*> margs = mroot->get_subjects();
 	EXPECT_TRUE(std::equal(margs.begin(), margs.end(), leaves.begin()));
 
-#ifdef EDGE_RCD
-	rocnnet_record::erec::rec.to_csv<double>();
-#endif /* EDGE_RCD */
-
 	for (variable<double>* base : leaves)
 	{
 		delete base;

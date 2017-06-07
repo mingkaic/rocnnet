@@ -134,6 +134,7 @@ int main (int argc, char** argv)
 	}
 
 #ifdef EDGE_RCD
+if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(trained_gdn->get_error());
 #endif /* EDGE_RCD */
 	

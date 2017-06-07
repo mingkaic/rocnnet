@@ -28,7 +28,7 @@ iobserver::~iobserver (void)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.node_release(this);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.node_release(this);
 
 #endif /* EDGE_RCD */
 }

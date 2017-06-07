@@ -182,6 +182,7 @@ int main (int argc, char** argv)
 	}
 
 #ifdef EDGE_RCD
+if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(
 		static_cast<nnet::iconnector<double>*>(trained_dqn->get_trainout().get()));
 #endif /* EDGE_RCD */

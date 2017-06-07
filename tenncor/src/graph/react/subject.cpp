@@ -24,7 +24,7 @@ subject::~subject (void)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.node_release(this);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.node_release(this);
 
 #endif /* EDGE_RCD */
 }
@@ -93,7 +93,7 @@ void subject::attach (iobserver* viewer, size_t idx)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
 
 #endif /* EDGE_RCD */
 
@@ -104,10 +104,13 @@ void subject::detach (iobserver* viewer)
 {
 #ifdef EDGE_RCD
 
-// record subject-object edge
-for (size_t idx : audience_[viewer])
+if (rocnnet_record::erec::rec_good)
 {
-	rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+	// record subject-object edge
+	for (size_t idx : audience_[viewer])
+	{
+		rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+	}
 }
 
 #endif /* EDGE_RCD */
@@ -124,7 +127,7 @@ void subject::detach (iobserver* viewer, size_t idx)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 
 #endif /* EDGE_RCD */
 
