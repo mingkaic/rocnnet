@@ -380,11 +380,13 @@ void solo_merge (immutable<T>*& root)
 {
 	// traverse from root to leaf: merging nodes if it has one argument
 	std::list<immutable<T>*> subs;
+	std::unordered_set<immutable<T>*> sset;
 	subs.push_back(root);
 	while (false == subs.empty())
 	{
 		immutable<T>* ob = subs.front();
 		subs.pop_front();
+		sset.erase(ob);
 		if (ob)
 		{
 			std::vector<subject*> args = ob->get_subjects();
@@ -405,6 +407,7 @@ void solo_merge (immutable<T>*& root)
 			{
 				merged_immutable<T>* mnode = merged_immutable<T>::get(ob);
 				subs.push_front(mnode);
+				sset.emplace(mnode);
 				if (ob == root)
 				{
 					root = mnode;
@@ -422,8 +425,14 @@ void solo_merge (immutable<T>*& root)
 			}
 			else
 			{
-				std::unordered_set<immutable<T>*> uniqueset(imms.begin(), imms.end());
-				subs.insert(subs.end(), uniqueset.begin(), uniqueset.end());
+				for (immutable<T>* u : imms)
+				{
+					if (sset.end() == sset.find(u))
+					{
+						subs.push_back(u);
+						sset.emplace(u);
+					}
+				}
 			}
 		}
 	}
