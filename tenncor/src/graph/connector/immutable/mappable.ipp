@@ -40,7 +40,9 @@ mappable<T>::mappable (inode<T>* arg, size_t idx) :
 	},
 	[](std::vector<inode<T>*> in, variable<T>* leaf)
 	{
-		return in[0]->get_leaf(leaf);
+		inode<T>* grad;
+		in[0]->get_leaf(grad, leaf);
+		return grad;
 	}, "mappable") {}
 
 template <typename T>

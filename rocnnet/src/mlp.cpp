@@ -105,6 +105,11 @@ nnet::varptr<double> ml_perceptron::operator () (nnet::inode<double>* input)
 		nnet::inode<double>* hypothesis = (*hp.first)(output);
 		output = (hp.second)(hypothesis);
 	}
+	if (nnet::immutable<double>* out = dynamic_cast<nnet::immutable<double>*>(output))
+	{
+		solo_merge(out);
+		output = out;
+	}
 	return output;
 }
 

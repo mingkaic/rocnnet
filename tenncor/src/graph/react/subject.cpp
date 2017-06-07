@@ -20,6 +20,13 @@ namespace nnet
 subject::~subject (void)
 {
 	notify(UNSUBSCRIBE); // unsubscribe all audiences
+
+#ifdef EDGE_RCD
+
+// record subject-object edge
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.node_release(this);
+
+#endif /* EDGE_RCD */
 }
 
 subject& subject::operator = (const subject&) { return *this; }
@@ -28,7 +35,16 @@ subject& subject::operator = (subject&& other)
 {
 	if (this != &other)
 	{
-		audience_ = std::move(other.audience_);
+		std::unordered_map<iobserver*, std::unordered_set<size_t> > temp = other.audience_;
+		for (auto& audpair : temp)
+		{
+			iobserver* aud = audpair.first;
+			for (size_t idx : audpair.second)
+			{
+				aud->replace_dependency(this, idx);
+			}
+		}
+		other.audience_.clear();
 	}
 	return *this;
 }
@@ -58,15 +74,26 @@ bool subject::no_audience (void) const
 
 subject::subject (const subject&) {}
 
-subject::subject (subject&& other) :
-	audience_(std::move(other.audience_)) {}
+subject::subject (subject&& other)
+{
+	std::unordered_map<iobserver*, std::unordered_set<size_t> > temp = other.audience_;
+	for (auto& audpair : temp)
+	{
+		iobserver* aud = audpair.first;
+		for (size_t idx : audpair.second)
+		{
+			aud->replace_dependency(this, idx);
+		}
+	}
+	other.audience_.clear();
+}
 
 void subject::attach (iobserver* viewer, size_t idx)
 {
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
 
 #endif /* EDGE_RCD */
 
@@ -77,10 +104,13 @@ void subject::detach (iobserver* viewer)
 {
 #ifdef EDGE_RCD
 
-// record subject-object edge
-for (size_t idx : audience_[viewer])
+if (rocnnet_record::erec::rec_good)
 {
-	rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+	// record subject-object edge
+	for (size_t idx : audience_[viewer])
+	{
+		rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+	}
 }
 
 #endif /* EDGE_RCD */
@@ -88,7 +118,7 @@ for (size_t idx : audience_[viewer])
 	audience_.erase(viewer);
 	if (audience_.empty())
 	{
-		commit_sudoku_sub();
+		death_on_noparent();
 	}
 }
 
@@ -97,7 +127,7 @@ void subject::detach (iobserver* viewer, size_t idx)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 
 #endif /* EDGE_RCD */
 
@@ -112,7 +142,7 @@ rocnnet_record::erec::rec.edge_release(viewer, this, idx);
 	}
 	if (audience_.empty())
 	{
-		commit_sudoku_sub();
+		death_on_noparent();
 	}
 }
 

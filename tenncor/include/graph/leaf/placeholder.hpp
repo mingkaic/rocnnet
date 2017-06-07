@@ -56,7 +56,7 @@ public:
 
 	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
 	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf) ;
+	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) ;
 
 	//! merge/update the gradient/leaf info
 	virtual void get_leaves (

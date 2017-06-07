@@ -58,9 +58,9 @@ tensor<T>& variable<T>::initialize (void)
 	if (false == this->data_->is_alloc() &&
 		false == this->data_->allocate())
 	{
-		throw std::exception(); // todo: better exception
+		throw std::runtime_error(this->get_label() + " data is not allocated");
 	}
-	(*this->init_)(*this->data_);
+	(*this->init_)(this->data_);
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
@@ -72,22 +72,29 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 	assert(this->init_ != nullptr);
 	if (false == this->data_->allocate(shape))
 	{
-		throw std::exception(); // todo: better exception
+		std::stringstream ss;
+		ss << "shape ";
+		print_shape(shape, ss);
+		ss << " failed to allocate " << this->get_label();
+		throw std::runtime_error(ss.str());
 	}
-	(*this->init_)(*this->data_);
+	(*this->init_)(this->data_);
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
 }
 
 template <typename T>
-inode<T>* variable<T>::get_leaf (variable<T>* leaf)
+void variable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
 {
 	if (this == leaf)
 	{
-		return this->one.get();
+		out = constant<T>::get_shared_one();
 	}
-	return this->zero.get();
+	else
+	{
+		out = constant<T>::get_shared_zero();
+	}
 }
 
 template <typename T>
@@ -102,7 +109,7 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_.get();
+		tensor<T>* outputt = this->data_;
 		transfer_func<T> assign(
 		[outputt](std::vector<tensorshape>)
 		{
@@ -121,7 +128,7 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 			}
 		});
 		const tensor<T>* inputt = input->get_eval();
-		assign(*outputt, {inputt});
+		assign(outputt, {inputt});
 	};
 }
 
@@ -130,7 +137,7 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_.get();
+		tensor<T>* outputt = this->data_;
 		transfer_func<T> assign(
 		[outputt](std::vector<tensorshape>)
 		{
@@ -149,7 +156,7 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 			}
 		});
 		const tensor<T>* inputt = input->get_eval();
-		assign(*outputt, {inputt});
+		assign(outputt, {inputt});
 	};
 }
 
@@ -158,7 +165,7 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_.get();
+		tensor<T>* outputt = this->data_;
 		transfer_func<T> assign(
 		[outputt](std::vector<tensorshape>)
 		{
@@ -177,7 +184,7 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 			}
 		});
 		const tensor<T>* inputt = input->get_eval();
-		assign(*outputt, {inputt});
+		assign(outputt, {inputt});
 	};
 }
 

@@ -886,11 +886,13 @@ TEST(TENSOR, CopyWithShape_B013)
 }
 
 
-// todo: implement
-//B014 - reading a valid tensor_proto should allocate the tensor if not already.
-//        data should be identical to the data saved in protobuf (check via some adhoc data values)
-//        both allowed and allocated shapes should be identical to the shape specified in protobuf
-//        allowedshape may change to accomodate new shape
+// cover tensor
+// from_proto
+TEST(TENSOR, DISABLED_FromProto_B014)
+{
+	// should allocate the tensor
+	// data and shape are identical to ad hoc values
+}
 
 
 #endif /* DISABLE_TENSOR_TEST */

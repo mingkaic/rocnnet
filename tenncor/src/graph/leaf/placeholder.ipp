@@ -66,12 +66,12 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 		// we would reach here if data is empty... (todo: test)
 		else
 		{
-			throw std::exception(); // todo: better exception or warning + handling (loosely guess, then clip or pad with zero)
+			throw std::logic_error("attempting to assign no data to an unallocated tensor");
 		}
 	}
 	typename ileaf<T>::assignment* assigner =
 		dynamic_cast<typename ileaf<T>::assignment*>(this->init_);
-	(*assigner)(*this->data_, data);
+	(*assigner)(this->data_, data);
 
 	this->is_init_ = true;
 	this->notify(UPDATE);
@@ -89,9 +89,9 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 }
 
 template <typename T>
-inode<T>* placeholder<T>::get_leaf (variable<T>*)
+void placeholder<T>::get_leaf (inode<T>*& out, variable<T>*)
 {
-	return this->zero.get();
+	out = constant<T>::get_shared_zero();
 }
 
 template <typename T>

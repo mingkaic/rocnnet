@@ -11,6 +11,8 @@
  *
  */
 
+#include "utils/utils.hpp"
+
 #pragma once
 #ifndef TENNCOR_SUBJECT_HPP
 #define TENNCOR_SUBJECT_HPP
@@ -56,6 +58,8 @@ public:
 	//! determine whether the subject has an audience
 	bool no_audience (void) const;
 
+	size_t n_audience (void) const { return audience_.size(); }
+
 protected:
 	//! explicit default constructor to allow copy and move constructors
 	subject (void) {}
@@ -63,7 +67,7 @@ protected:
 	// >>>> EXECUTE ON KILL CONDITION <<<<
 	//! smart destruction: default to not die
 	//! subject should have a suicide function signature different from observers
-	virtual void commit_sudoku_sub (void) {}
+	virtual void death_on_noparent (void) {}
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! Declare copy constructor to prevent audience from being copied over

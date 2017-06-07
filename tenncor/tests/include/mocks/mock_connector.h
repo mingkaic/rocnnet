@@ -45,8 +45,8 @@ public:
 	virtual tensorshape get_shape (void) const { return tensorshape(); }
 	virtual bool good_status (void) const { return false; }
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
-	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
-	virtual inode<double>* get_gradient (inode<double>*) { return nullptr; }
+	virtual void get_leaf (inode<double>*&, variable<double>*) {}
+	virtual varptr<double> get_gradient (inode<double>*) { return nullptr; }
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 	virtual void update (subject*)
@@ -54,9 +54,9 @@ public:
 		label_incr("update1");
 	}
 
-	virtual void commit_sudoku (void)
+	virtual void death_on_broken (void)
 	{
-		label_incr("commit_sudoku");
+		label_incr("death_on_broken");
 	}
 	virtual void get_leaves (GRAD_CACHE&) const
 	{
@@ -72,6 +72,8 @@ protected:
 	{
 		return new mock_connector(std::move(*this));
 	}
+
+	virtual std::vector<typename iconnector<double>::conn_summary> summarize (void) const { return {}; }
 };
 
 

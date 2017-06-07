@@ -11,30 +11,61 @@ namespace rocnnet_record
 
 #ifdef EDGE_RCD
 edge_record erec::rec(EDGE_RCD);
+bool erec::rec_good = true;
 #endif
 
-ptr_record edge_record::prec_;
-
-bool operator == (edge_record::subinfo const& lhs, edge_record::subinfo const& rhs)
+edge_record::~edge_record (void)
 {
-	return (lhs.obs_ == rhs.obs_) && (lhs.sub_ == rhs.sub_) && (lhs.sid_ == rhs.sid_);
+	erec::rec_good = false;
 }
 
 void edge_record::edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
 {
-	edge_record::prec_.add(obs);
-	edge_record::prec_.add(sub);
-	edges_.insert(subinfo(obs, sub, idx));
+	std::vector<nnet::subject*>& subs = edges_[obs];
+	if (subs.size() <= idx)
+	{
+		subs.insert(subs.end(), idx-subs.size()+1, nullptr);
+	}
+	subs[idx] = sub;
+	subset_[sub].emplace(obs);
 }
 
 void edge_record::edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
 {
-	auto it = edges_.find(subinfo(obs, sub, idx));
+	auto it = edges_.find(obs);
 	if (edges_.end() != it)
 	{
-		edge_record::prec_.remove(obs);
-		edge_record::prec_.remove(sub);
+		std::vector<nnet::subject*>& subs = it->second;
+		if (subs.size() <= idx)
+		{
+			throw std::exception();
+		}
+		if (sub == subs[idx]) subs[idx] = nullptr;
 	}
+}
+
+void edge_record::node_release (nnet::subject* sub)
+{
+	subset_.find(sub);
+	std::unordered_set<nnet::iobserver*>& auds = subset_[sub];
+	for (nnet::iobserver* ob : auds)
+	{
+		auto it = edges_.find(ob);
+		if (edges_.end() != it)
+		{
+			std::vector<nnet::subject*>& subs = it->second;
+			for (nnet::subject*& s : subs)
+			{
+				if (s == sub) s = nullptr;
+			}
+		}
+	}
+	subset_.erase(sub);
+}
+
+void edge_record::node_release (nnet::iobserver* obs)
+{
+	edges_.erase(obs);
 }
 
 }

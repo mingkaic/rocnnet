@@ -15,6 +15,9 @@
 #include "graph/connector/immutable/transform.hpp"
 #include "graph/varptr.hpp"
 
+// only forward declare when necessary to speed up compilation
+#ifdef DECLARE_TEMPLATES
+
 namespace nnet
 {
 
@@ -31,7 +34,13 @@ template class placeholder<double>;
 
 template class immutable<double>;
 
+template class immutable<unsigned>;
+
 template class matmul<double>;
+
+template class matmul<unsigned>;
+
+template class merged_immutable<double>;
 
 template varptr<double> operator + (const varptr<double> a);
 
@@ -51,9 +60,9 @@ template varptr<double> cot (const varptr<double> a);
 
 template varptr<double> exp (const varptr<double> a);
 
-//template varptr<double> sqrt (const varptr<double> a); // TODO implement
+template varptr<double> sqrt (const varptr<double> a);
 
-//template varptr<double> pow (const varptr<double> a, double scalar); // TODO implement
+template varptr<double> pow (const varptr<double> a, double scalar);
 
 template varptr<double> clip_val (const varptr<double> a, double min, double max);
 
@@ -108,3 +117,5 @@ template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimens
 //template varptr<double> inverse (const varptr<double> a);
 
 }
+
+#endif

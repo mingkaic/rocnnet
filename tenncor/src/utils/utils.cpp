@@ -37,7 +37,6 @@ std::string uuid (const void* addr)
 		size_t token = rand() % 16;
 		ss << std::hex << token;
 	}
-
 	return ss.str();
 }
 

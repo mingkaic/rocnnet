@@ -6,14 +6,15 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include <iostream> // for recording
-#include <unordered_set>
 #include "mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
 #ifndef gd_net_hpp
 #define gd_net_hpp
+
+#include <iostream> // for recording
+#include <unordered_set>
 
 namespace rocnnet
 {
@@ -39,6 +40,9 @@ public:
 	gd_net& operator = (gd_net&& other);
 
 	void train (std::vector<double>& train_in, std::vector<double>& expected_out);
+
+	// expose error to analyze graph
+	const nnet::iconnector<double>* get_error (void) const { return error_; }
 
 protected:
 	gd_net (const gd_net& other, std::string& scope);

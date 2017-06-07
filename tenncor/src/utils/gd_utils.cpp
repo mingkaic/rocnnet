@@ -139,6 +139,10 @@ variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	{
 		if (!momentum->good_status())
 		{
+			if (false == dres->good_status())
+			{
+				throw std::runtime_error(dres->get_label() + " is unallocated");
+			}
 			momentum->initialize(dres->get_shape());
 		}
 		iconnector<double>* conner = dynamic_cast<iconnector<double>*>(momentumstep.get());

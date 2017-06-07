@@ -8,9 +8,7 @@
 %include "std_vector.i"
 %include "std_string.i"
 
-namespace std {
-   %template(IntVector) vector<unsigned int>;
-   %template(DoubleVector) vector<double>;
-};
+%template(IntVector) std::vector<unsigned int>;
+%template(DoubleVector) std::vector<double>;
 
 %include "dqn_agent.hpp"

@@ -46,6 +46,9 @@ public:
 	//! clone function
 	iallocator* clone (void) const;
 
+	//! move function
+	iallocator* move (void);
+
 	// >>>> ACCESSORS <<<<
 	//! allocate the specified number of elements
 	template <typename T>
@@ -96,6 +99,9 @@ protected:
 
 	//! clone implementation
 	virtual iallocator* clone_impl (void) const = 0;
+
+	//! move implementation
+	virtual iallocator* move_impl (void) = 0;
 
 private:
 	// todo: remove T for variant once c++17 is supported

@@ -23,12 +23,20 @@
 namespace nnet
 {
 
+//! backward transfer function, get gradient nodes; F: Nf -> Nb
+template <typename T>
+using BACK_MAP = std::function<varptr<T>(std::vector<inode<T>*>,variable<T>*)>;
+
+//! jacobian transfer function
+template <typename T>
+using JTRANSFER = std::function<inode<T>*(inode<T>*,variable<T>*)>;
+
 template <typename T>
 class iconnector : public inode<T>, public iobserver
 {
 public:
 	//! Virtual destructor for deleting from iconnector
-	virtual ~iconnector (void) {}
+	virtual ~iconnector (void);
 
 	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
 	//! clone function
@@ -63,7 +71,39 @@ public:
 	//! Unfreeze allows graph to be updated again, and executes all updates in queue
 	void update_status (bool freeze);
 
+	// >>>> STRUCTS <<<<
+	//! iconnector summary
+	struct conn_summary
+	{
+		conn_summary (std::string id, transfer_func<T> forward, BACK_MAP<T> back,size_t ndeps) :
+				id_(id), Nf_(forward), ginit_(back), ndeps_(ndeps) {}
+
+		std::string id_;
+		transfer_func<T> Nf_;
+		BACK_MAP<T> ginit_;
+		size_t ndeps_;
+
+		std::unordered_map<std::string,std::vector<size_t> > dependents_;
+	};
+
+	//! Summarize this connector
+	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const = 0;
+
 protected:
+	//! list of jacobian transfer function
+	//! to be executed on resulting root node
+	//! execution order: top-down
+	struct JList
+	{
+		JList (void) : uid_(nnutils::uuid(this)) {}
+
+		std::string uid_;
+		std::list<JTRANSFER<T> > list_;
+	};
+
+	//! graph info shareable between connectors
+	struct graph_node;
+
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies
 	iconnector (std::vector<inode<T>*> dependencies, std::string label);
@@ -78,9 +118,16 @@ protected:
 	//! Update gid_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
 
-	// >>>> GRAPH META DATA <<<<
-	struct graph_node; //! graph info shareable between connectors
+	//! Properly replaces current dependencies with new deps
+	//! does not reset jacobians or local cache
+	void dep_replace (std::vector<subject*>& deps);
 
+	// >>>> SPECIALIZED OPERATOR FOR ALL CONNECTORS <<<<
+	//! jacobian for each variable
+	using JCACHE = std::unordered_map<variable<T>*,JList>;
+	JCACHE jacobians_;
+
+	// >>>> GRAPH META DATA <<<<
 	graph_node* gid_ = nullptr; //! graph hash
 };
 

@@ -53,7 +53,9 @@ varptr<T> transpose (const varptr<T> a)
 	},
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return transpose(varptr<T>(args.front()->get_leaf(leaf)));
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return transpose(varptr<T>(grad));
 	}, "transpose");
 }
 
@@ -77,7 +79,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	},
 	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return args.front()->get_leaf(leaf);
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return grad;
 	}, "fit", watch);
 }
 
@@ -151,7 +155,9 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	},
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		return args.front()->get_leaf(leaf);
+		inode<T>* grad;
+		args.front()->get_leaf(grad, leaf);
+		return grad;
 	}, "extend");
 }
 
@@ -254,7 +260,8 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
 	[index, collector](std::vector<inode<T>*> args, variable<T>* leaf) -> inode<T>*
 	{
-		inode<T>* gradn = args.front()->get_leaf(leaf);
+		inode<T>* gradn;
+		args.front()->get_leaf(gradn, leaf);
 		if (index)
 		{
 			return mappable<T>::get(gradn, *index);
@@ -313,7 +320,8 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			tensorshape& orig = inshapes[0];
 			if (dim >= orig.rank())
 			{
-				throw std::exception();
+				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
+					<< dim << " on a " << orig.rank() << " tensor");
 			}
 			std::vector<size_t> tv = orig.as_list();
 			size_t idx_val = tv[dim];
@@ -352,7 +360,8 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			ts.assert_is_fully_defined();
 			if (dim >= ts.rank())
 			{
-				throw std::exception();
+				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
+					<< dim << " on a " << ts.rank() << " tensor");
 			}
 			std::vector<size_t> tv = ts.as_list();
 			tv[dim] = 1;
@@ -392,7 +401,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	[dimension, search](std::vector<inode<T>*>, variable<T>*)
 	{
 		// arg_compression's gradient has no intrinsic meaning
-		throw std::exception();
+		throw std::logic_error("attempting to get gradient of arg compression: undefined and meaningless operation");
 		return nullptr;
 	}, "argcompress");
 }

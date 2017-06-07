@@ -54,8 +54,8 @@ int main (int argc, char** argv)
 	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
-		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
-		rocnnet::IN_PAIR(n_actions, nnet::sigmoid<double>)
+		rocnnet::IN_PAIR(9, nnet::tanh<double>),
+		rocnnet::IN_PAIR(n_actions, nnet::identity<double>)
 	};
 	nnet::rmspropupdater bgd;
 	bgd.learning_rate_ = 0.1;
@@ -182,6 +182,7 @@ int main (int argc, char** argv)
 	}
 
 #ifdef EDGE_RCD
+if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(
 		static_cast<nnet::iconnector<double>*>(trained_dqn->get_trainout().get()));
 #endif /* EDGE_RCD */

@@ -65,7 +65,7 @@ varptr<T> sqrt (const varptr<T> a);
 
 //! a to the power of scalar
 template <typename T>
-varptr<T> pow (const varptr<T> a, T scalar);
+varptr<T> pow (const varptr<T> a, double scalar);
 
 //! clip values in range [min, max]
 template<typename T>

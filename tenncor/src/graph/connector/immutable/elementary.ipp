@@ -20,7 +20,12 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 		if (shapes[i].n_elems() == 1) continue;
 		if (false == shapes[i].is_compatible_with(lastshape.shape_dimensions()))
 		{
-			throw std::exception(); // TODO: make better exception
+			std::stringstream ss;
+			ss << "shape ";
+			print_shape(shapes[i], ss);
+			ss << " is incompatible with shape ";
+			print_shape(lastshape, ss);
+			throw std::runtime_error(ss.str());
 		}
 		lastshape = shapes[i];
 		if (lastshape.is_grouped())
@@ -59,8 +64,9 @@ varptr<T> operator + (const varptr<T> a)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		inode<T>* a1 = args.front();
-		varptr<T> grad = a1->get_leaf(leaf); // wrap
-		return +grad;
+		inode<T>* grad;
+		a1->get_leaf(grad, leaf);
+		return +varptr<T>(grad);
 	}, "abs");
 }
 
@@ -81,8 +87,9 @@ varptr<T> operator - (const varptr<T> a)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		inode<T>* a1 = args.front();
-		varptr<T> grad = a1->get_leaf(leaf); // wrap
-		return -grad;
+		inode<T>* grad;
+		a1->get_leaf(grad, leaf);
+		return -varptr<T>(grad);
 	}, "neg");
 }
 
@@ -104,8 +111,9 @@ varptr<T> sin (const varptr<T> a)
 	{
 		// sin'(f(x)) = f'(x)*cos(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * cos(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * cos(a);
 	}, "sin");
 }
 
@@ -127,8 +135,9 @@ varptr<T> cos (const varptr<T> a)
 	{
 		// cos'(f(x)) = -f'(x)*sin(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad * sin(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) * sin(a);
 	}, "cos");
 }
 
@@ -152,8 +161,9 @@ varptr<T> tan (const varptr<T> a)
 		// better with = f'(x)/cos^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> denom = cos(a);
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad / (denom * denom);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) / (denom * denom);
 	}, "tan");
 }
 
@@ -176,8 +186,9 @@ varptr<T> csc (const varptr<T> a)
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 		// better with -f'(x)/(sin(f(x)*tan(f(x))))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad / (sin(a) * tan(a));
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) / (sin(a) * tan(a));
 	}, "csc");
 }
 
@@ -200,8 +211,9 @@ varptr<T> sec (const varptr<T> a)
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 		// better with f'(x)*tan(f(x))/cos(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * tan(a) / cos(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * tan(a) / cos(a);
 	}, "sec");
 }
 
@@ -224,8 +236,9 @@ varptr<T> cot (const varptr<T> a)
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> b = csc(a);
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return -grad * b * b;
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return -varptr<T>(grad) * b * b;
 	}, "cot");
 }
 
@@ -247,8 +260,9 @@ varptr<T> exp (const varptr<T> a)
 	{
 		// exp'(f(x)) = f'(x)*exp(f(x))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad * exp(a);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * exp(a);
 	}, "exp");
 }
 
@@ -270,13 +284,14 @@ varptr<T> sqrt (const varptr<T> a)
 	{
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return grad / ((T)2 * sqrt(a));
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) / ((T)2 * sqrt(a));
 	}, "sqrt");
 }
 
 template <typename T>
-varptr<T> pow (const varptr<T> a, T scalar)
+varptr<T> pow (const varptr<T> a, double scalar)
 {
 	if (nullptr == a) return nullptr;
 	if (scalar == 0)
@@ -301,8 +316,9 @@ varptr<T> pow (const varptr<T> a, T scalar)
 	{
 		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf); // wrap
-		return scalar * grad * pow(a, scalar-1);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return scalar * varptr<T>(grad) * pow(a, scalar-1);
 	}, "sqrt");
 }
 
@@ -326,8 +342,9 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	[min, max](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf);
-		return grad * clip_val(a, min, max);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+		return varptr<T>(grad) * clip_val(a, min, max);
 	}, "clip_val");
 }
 
@@ -371,8 +388,9 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	[cap](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		varptr<T> grad = a->get_leaf(leaf);
-	   	return grad * clip_norm(a, cap);
+		inode<T>* grad;
+		a->get_leaf(grad, leaf);
+	   	return varptr<T>(grad) * clip_norm(a, cap);
 	}, "clip_norm");
 }
 
@@ -383,7 +401,13 @@ varptr<T> operator + (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return constant<T>::get(a);
+		}
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -397,7 +421,9 @@ varptr<T> operator + (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = g'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return grad;
 	}, "add");
 }
 
@@ -405,7 +431,13 @@ template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(b);
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return constant<T>::get(b);
+		}
+	}
 	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -420,7 +452,9 @@ varptr<T> operator + (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return grad;
 	}, "add");
 }
 
@@ -428,8 +462,30 @@ template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] + b;
+		}
+	}
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a + outconst[0];
+		}
+	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
@@ -490,9 +546,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x) + g'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		varptr<T> bg = args.at(1)->get_leaf(leaf);
-		return ag + bg;
+		inode<T>* ag;
+		inode<T>* bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return varptr<T>(ag) + varptr<T>(bg);
 	}, "add");
 }
 
@@ -503,7 +561,13 @@ varptr<T> operator - (T a, const varptr<T> b)
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return -b;
-	if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return constant<T>::get(a);
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return constant<T>::get(a);
+		}
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -517,7 +581,9 @@ varptr<T> operator - (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = -g'(x)
-		return -varptr<T>(args.at(0)->get_leaf(leaf));
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return -varptr<T>(grad);
 	}, "sub");
 }
 
@@ -525,7 +591,13 @@ template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return constant<T>::get(-b);
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return constant<T>::get(-b);
+		}
+	}
 	if (b == (T)0) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -540,7 +612,9 @@ varptr<T> operator - (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		return args.at(0)->get_leaf(leaf);
+		inode<T>* grad;
+		args.at(0)->get_leaf(grad, leaf);
+		return varptr<T>(grad);
 	}, "sub");
 }
 
@@ -548,8 +622,30 @@ template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a->good_status() && *a == (T)0 && dynamic_cast<constant<T>*>(a.get())) return -b;
-	else if (b->good_status() && *b == (T)0 && dynamic_cast<constant<T>*>(b.get())) return a;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return -b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] - b;
+		}
+	}
+	else if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a - outconst[0];
+		}
+	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	[](T* dest, const tensorshape& shape,
@@ -610,9 +706,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x) - g'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		varptr<T> bg = args.at(1)->get_leaf(leaf);
-		return ag - bg;
+		inode<T>* ag;
+		inode<T>* bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return varptr<T>(ag) - varptr<T>(bg);
 	}, "sub");
 }
 
@@ -622,13 +720,22 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	// optimize only applies to constants
 	{
-		if (*b == (T)0) return constant<T>::get(0);
-		if (*b == (T)1) return constant<T>::get(a);
+		if (*b == (T)0 || 0 == a)
+		{
+			return constant<T>::get(0);
+		}
+		if (*b == (T)1)
+		{
+			return constant<T>::get(a);
+		}
 	}
-	if (0 == a) return constant<T>::get(0);
+	if (0 == a)
+	{
+		return constant<T>::get(0);
+	}
 	if (1 == a) return b;
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -643,8 +750,9 @@ varptr<T> operator * (T a, const varptr<T> b)
 	[a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = c*g'(x)
-		varptr<T> bg = args.at(0)->get_leaf(leaf);
-		return a * bg;
+		inode<T>* bg;
+		args.at(0)->get_leaf(bg, leaf);
+		return a * varptr<T>(bg);
 	}, "mul");
 }
 
@@ -652,11 +760,17 @@ template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
-	// optimization only applies to constants
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	// optimize only applies to constants
 	{
-		if (*a == (T)0) return constant<T>::get(0);
-		if (*a == (T)1) return constant<T>::get(b);
+		if (*a == (T)0 || 0 == b)
+		{
+			return constant<T>::get(0);
+		}
+		if (*a == (T)1)
+		{
+			return constant<T>::get(b);
+		}
 	}
 	if (0 == b) return constant<T>::get(0);
 	if (1 == b) return a;
@@ -673,8 +787,9 @@ varptr<T> operator * (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = c*f'(x)
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		return b * ag;
+		inode<T>* ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return b * varptr<T>(ag);
 	}, "mul");
 }
 
@@ -682,17 +797,41 @@ template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status())
-	// optimization only applies to constants
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst)
+	// optimize only applies to constants
 	{
-		if (*a == (T)0) return constant<T>::get(0);
-		if (*a == (T)1) return b;
+		if (*a == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (*a == (T)1)
+		{
+			return b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] * b;
+		}
 	}
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	if (bconst)
+	// optimize only applies to constants
 	{
-		if (*b == (T)0) return constant<T>::get(0);
-		if (*b == (T)1) return a;
+		if (*b == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (*b == (T)1)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a * outconst[0];
+		}
 	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
@@ -752,11 +891,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
+		inode<T>* ag;
+		inode<T>* bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
-		varptr<T> ag = a->get_leaf(leaf);
-		varptr<T> bg = b->get_leaf(leaf);
-		return ag * b + bg * a;
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return varptr<T>(ag) * b + varptr<T>(bg) * a;
 	}, "mul");
 }
 
@@ -766,13 +907,23 @@ varptr<T> operator / (T a, const varptr<T> b)
 	if (nullptr == (inode<T>*)b) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (bconst)
+	// optimize only applies to constants
 	{
-		if (*b == (T)0) throw std::exception();
-		if (*b == (T)1) return constant<T>::get(a);
+		if (*b == (T)0)
+		{
+			throw std::logic_error("divide by constant node of value zero");
+		}
+		if (*b == (T)1)
+		{
+			return constant<T>::get(a);
+		}
 	}
-	if (a == (T)0) return constant<T>::get(0);
+	if (a == (T)0)
+	{
+		return constant<T>::get(0);
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	[a](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
 	{
@@ -787,8 +938,9 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
 		varptr<T> b = args.at(0);
-		varptr<T> bg = b->get_leaf(leaf);
-		return -a * bg / (b * b);
+		inode<T>* bg;
+		b->get_leaf(bg, leaf);
+		return -a * varptr<T>(bg) / (b * b);
 	}, "div");
 }
 
@@ -796,8 +948,18 @@ template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
-	if (b == 0) throw std::exception();
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	if (aconst)
+	{
+		if (*a == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+	}
+	if (b == 0)
+	{
+		throw std::logic_error("divide by zero");
+	}
 	if (b == (T)1) return a;
 	return immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	[b](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
@@ -812,8 +974,9 @@ varptr<T> operator / (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)/c
-		varptr<T> ag = args.at(0)->get_leaf(leaf);
-		return ag / b;
+		inode<T>* ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return varptr<T>(ag) / b;
 	}, "div");
 }
 
@@ -821,13 +984,37 @@ template <typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	// don't allow infinity
-	if (dynamic_cast<constant<T>*>(a.get()) && a->good_status() && *a == (T)0) return constant<T>::get(0);
-	if (dynamic_cast<constant<T>*>(b.get()) && b->good_status())
-	// optimization only applies to constants
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst)
 	{
-		if (*b == (T)0) throw std::exception();
-		if (*b == (T)1) return a;
+		// don't allow infinity
+		if (*a == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] / b;
+		}
+	}
+	if (bconst)
+	// optimize only applies to constants
+	{
+		if (*b == (T)0)
+		{
+			throw std::logic_error("divide by constant node of value zero");
+		}
+		if (*b == (T)1)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a / outconst[0];
+		}
 	}
 	elementary_check(a, b);
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
@@ -887,11 +1074,13 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
+		inode<T>* ag;
+		inode<T>* bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
-		varptr<T> ag = a->get_leaf(leaf);
-		varptr<T> bg = b->get_leaf(leaf);
-		return (ag * b - bg * a) / (b * b);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return (varptr<T>(ag) * b - varptr<T>(bg) * a) / (b * b);
 	}, "div");
 }
 

@@ -63,8 +63,11 @@ exec_cmd "pushd $PROTODIR && make install && ldconfig && popd"
 # install swig
 exec_cmd "apt-get update && apt-get install -y swig"
 
-# install PythonLibs
-exec_cmd "apt-get install -y python-dev"
+# install PythonLibs and tk
+exec_cmd "apt-get update && apt-get install -y python-dev python-tk"
+
+# install python requirements
+exec_cmd "pushd $2 && pip install -r requirements.txt"
 
 # ===== tests and analysis tools =====
 

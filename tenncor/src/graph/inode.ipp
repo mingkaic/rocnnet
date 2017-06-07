@@ -69,7 +69,7 @@ inode<T>::inode (const inode<T>& other) :
 
 template <typename T>
 inode<T>::inode (inode<T>&& other) :
-	subject(other),
+	subject(std::move(other)),
 	label_(std::move(other.label_)) {}
 
 template <typename T>

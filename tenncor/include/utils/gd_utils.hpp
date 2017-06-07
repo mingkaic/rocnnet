@@ -170,7 +170,7 @@ protected:
 };
 
 
-//! root mean square propagation
+//! RMS prop
 // rms_delta = J'(v)_t
 // rms_t = (1 - discount) * rms_t-1 + discount * rms_delta^2
 // delta(var) = v_t = learning * rms_delta / rms_t

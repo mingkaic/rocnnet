@@ -44,13 +44,13 @@ public:
 
 	std::function<void(mock_immutable*)> triggerOnDeath;
 
-	virtual void commit_sudoku (void)
+	virtual void death_on_broken (void)
 	{
 		if (triggerOnDeath)
 		{
 			triggerOnDeath(this);
 		}
-		immutable<double>::commit_sudoku();
+		immutable<double>::death_on_broken();
 	}
 };
 

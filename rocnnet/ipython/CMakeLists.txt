@@ -9,7 +9,10 @@ endif()
 
 find_package(PythonLibs 2 REQUIRED)
 message("Python version is ${PYTHONLIBS_VERSION_STRING}")
-messagE("Python lib found at ${PYTHON_LIBRARIES}")
+message("Python include found at ${PYTHON_INCLUDE_PATH}")
+message("Python library found at ${PYTHON_LIBRARIES}")
+message("Python executable found at ${PYTHON_EXECUTABLE}")
+message("Python path is ${PYTHONPATH}")
 include_directories(${PYTHON_INCLUDE_PATH} ${ROCNNET_INCLUDE} ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_SWIG_FLAGS "-keyword")
@@ -20,3 +23,11 @@ set(CMAKE_SWIG_OUTDIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set_source_files_properties(${IFILE} PROPERTIES CPLUSPLUS ON)
 swig_add_module(dqn python ${IFILE} dqn_agent.cpp)
 swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})
+
+# manual relink python library on OSX
+if(APPLE)
+    add_custom_target(py_relink ALL
+        DEPENDS _dqn
+        COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif(APPLE)
