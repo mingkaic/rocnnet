@@ -635,7 +635,7 @@ void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T
 		}
 	}
 
-	std::vector<inode<T>*> intermediate_outputs;
+	std::vector<temp_immutable*> intermediate_outputs;
 	// summaries occur in their dependent order
 	for (auto& s : summaries_)
 	{
@@ -645,8 +645,7 @@ void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T
 		assert(inputs.end() != it);
 		std::vector<inode<T>*> input = it->second;
 		// consume input
-		merged_immutable<T>* temp_output = new merged_immutable<T>(input, s);
-		temp_output->gcache_[leaf] = s.ginit_(input, leaf);
+		temp_immutable* temp_output = new temp_immutable(input, s, leaf, s.ginit_(input, leaf));
 		intermediate_outputs.push_back(temp_output);
 		// cache output
 		for (auto dep : s.dependents_)
@@ -663,6 +662,11 @@ void merged_immutable<T>::backward_pass (std::vector<inode<T>*> deps, variable<T
 		}
 	}
 	immutable<T>::backward_pass(inputs[""], leaf);
+	for (temp_immutable* temps : intermediate_outputs)
+	{
+		temps->clear(leaf);
+	}
+	intermediate_outputs.clear(); // clear to avoid dangling ptrs
 	if (immutable<T>* imm = dynamic_cast<immutable<T>*>(this->gcache_[leaf].get()))
 	{
 		solo_merge(imm);

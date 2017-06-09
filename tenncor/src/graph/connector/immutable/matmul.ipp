@@ -8,7 +8,7 @@
 
 #ifdef TENNCOR_MATMUL_HPP
 
-#define STRASSEN_THRESHOLD 100
+#define STRASSEN_THRESHOLD 256
 
 namespace nnet
 {

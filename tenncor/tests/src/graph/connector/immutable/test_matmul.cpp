@@ -457,7 +457,7 @@ TEST(MATMUL, Strassen_L005)
 {
 	FUZZ::reset_logger();
 	// we get at most 12996 elements per matrix
-	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {100, 112});
+	std::vector<size_t> dims = FUZZ::getInt(3, "dimensions<m,n,k>", {STRASSEN_THRESHOLD, STRASSEN_THRESHOLD+12});
 	rand_uniform<signed> rinit(-12, 12);
 
 	tensorshape shapeA = std::vector<size_t>{dims[0], dims[1]};

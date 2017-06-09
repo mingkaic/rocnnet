@@ -109,11 +109,6 @@ void gd_net::train_setup (void)
 	nnet::varptr<double> diff = nnet::varptr<double>(expected_out_) - output;
 	nnet::varptr<double> error = diff * diff;
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
-//	if (immutable<double>* imm = dynamic_cast<immutable<double>*>(error_))
-//	{
-//		solo_merge(imm);
-//		error_ = imm;
-//	}
 
 	std::unordered_set<nnet::variable<double>*> biases;
 	{

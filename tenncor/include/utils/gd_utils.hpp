@@ -40,14 +40,34 @@ public:
 		std::vector<variable_updater<T> > updates;
 		typename inode<T>::GRAD_CACHE leafset;
 		root->get_leaves(leafset);
+		std::vector<std::pair<inode<T>*,variable<T>*> > gress;
 		for (auto lit : leafset)
 		{
 			variable<T>* Wb = lit.first;
 			if (ignored_.end() == ignored_.find(Wb))
 			{
-				varptr<T> gres = root->get_gradient(Wb);
-				updates.push_back(process_update(gres, Wb, intermediate_process));
+				gress.push_back({root->get_gradient(Wb), Wb});
 			}
+		}
+
+		if (graph_optimize_)
+		{
+			std::transform(gress.begin(), gress.end(), gress.begin(),
+			[](std::pair<inode<T>*,variable<T>*>& gpair)
+			{
+				if (immutable<double>* imm = dynamic_cast<immutable<double>*>(gpair.first))
+				{
+					solo_merge(imm);
+					gpair.first = imm;
+				}
+				return gpair;
+			});
+		}
+
+		for (auto& gpair : gress)
+		{
+			varptr<T> gres = gpair.first;
+			updates.push_back(process_update(gres, gpair.second, intermediate_process));
 		}
 		return updates;
 	}
@@ -66,6 +86,8 @@ public:
 	void clear_ignore (void) { ignored_.clear(); }
 
 	double learning_rate_ = 0.5;
+
+	bool graph_optimize_ = false;
 
 protected:
 	virtual gd_updater<T>* clone_impl (void) = 0;

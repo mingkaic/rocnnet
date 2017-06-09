@@ -54,6 +54,8 @@ public:
 	inode<T>* get (void) const;
 	
 	virtual void update (subject*) {}
+
+	void clear (void) { this->remove_dependency(0); }
 	
 protected:
 	virtual void death_on_broken (void)

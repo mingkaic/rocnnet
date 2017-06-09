@@ -182,6 +182,24 @@ public:
 	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const;
 
 protected:
+	struct temp_immutable : public immutable<T>
+	{
+		//! temporary constructor for backprop only: never destructive
+		temp_immutable (std::vector<inode<T>*> args,
+			typename iconnector<T>::conn_summary s,
+			variable<T>* leaf, varptr<T> gout) :
+		immutable<T>(args, s)
+		{
+			this->set_label("temp_imm");
+			this->gcache_[leaf] = gout;
+		}
+
+		void clear (variable<T>* leaf)
+		{
+			this->gcache_[leaf] = nullptr;
+		}
+	};
+
 	// >>>> CONSTRUCTORS <<<<
 	//! merged_immutable constructor merging connector and its children and destroys conn
 	merged_immutable (immutable<T>* conn);
@@ -191,17 +209,6 @@ protected:
 	//! non-destructive cannot copy over audience, 
 	//! (audience copy forces a deep copy for every super consumer of this node)
 	merged_immutable (immutable<T>* conn, std::unordered_set<size_t> ignore_indices);
-
-	// todo: replace with better alternative
-	//! temporary constructor for backprop only: never destructive
-	merged_immutable (std::vector<inode<T>*> args,
-		typename iconnector<T>::conn_summary s) :
-	immutable<T>(args, s)
-	{
-		this->set_label("merge_temp"+s.id_);
-		for (size_t i = 0, n = args.size(); i < n; i++)
-			sub_mapper_.push_back({"", i});
-	}
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! implement clone function
