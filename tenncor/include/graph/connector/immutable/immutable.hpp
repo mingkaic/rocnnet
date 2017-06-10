@@ -79,7 +79,7 @@ public:
 
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
-	virtual void update (subject* arg);
+	virtual void update (std::vector<size_t> argidx);
 
 	//! Inherited from inode: data_ takes data from proto
 	virtual bool read_proto (const tenncor::tensor_proto&);
@@ -99,7 +99,7 @@ protected:
 	immutable (std::vector<inode<T>*> args,
 		typename iconnector<T>::conn_summary s) :
 	iconnector<T>(args, s.id_),
-	Nf_(s.Nf_), ginit_(s.ginit_) { update(nullptr); }
+	Nf_(s.Nf_), ginit_(s.ginit_) { update({}); }
 
 	//! copy everything but with new arguments
 	immutable (std::vector<inode<T>*> args, const immutable<T>& other);
@@ -123,7 +123,7 @@ protected:
 	immutable (immutable<T>&& other);
 
 	//! forward pass step: populate data_ (overridden by merged_immutable)
-	virtual void forward_pass (std::vector<const tensor<T>*> tens);
+	virtual void forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t>);
 
 	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
 	virtual void backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf);
@@ -170,6 +170,8 @@ public:
 	{
 		return new merged_immutable<T>(conn, ignore_indices);
 	}
+
+	virtual ~merged_immutable (void) { if (incache_) delete incache_; }
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! clone function
@@ -218,7 +220,7 @@ protected:
 	virtual inode<T>* move_impl (void);
 
 	//! forward pass step: populate data_ (overridden by merged_immutable)
-	virtual void forward_pass (std::vector<const tensor<T>*> tens);
+	virtual void forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t> update_indices);
 
 	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
 	virtual void backward_pass (std::vector<inode<T>*> deps, variable<T>* leaf);
@@ -233,6 +235,62 @@ private:
 
 	//! map dependencies to the id of the summary that consumes it
 	std::vector<std::pair<std::string,size_t> > sub_mapper_;
+
+
+
+	//! hold information to organize argument data to make advantage of cache locality
+	struct arg_cache
+	{
+		arg_cache (size_t n_elems,
+			std::function<std::vector<size_t>(size_t)> mapper)
+		{
+			for (size_t i = 0; i < n_elems; i++)
+			{
+				elem_indices_.push_back(mapper(i));
+			}
+		}
+
+		size_t size (void)
+		{
+			size_t sum = 0;
+			for (auto& elem_idx : elem_indices_)
+			{
+				sum += elem_idx.size();
+			}
+			return sum;
+		}
+
+		// elements of group indices
+		std::vector<std::vector<size_t> > elem_indices_;
+	};
+
+	//! maps output element index to an array of input index
+	std::vector<std::function<std::vector<size_t>(size_t)> > index_map_; // todo: pass down from summary
+
+	//! input indices
+	std::vector<arg_cache> arg_indices_;
+
+	//! contiguous data organized as such:
+	//!	<
+	//! 	outelem0<
+	//! 		inputgroup0<
+	//! 			arg0,
+	//! 			arg1,
+	//! 			...,
+	//! 			argn
+	//! 		>,
+	//! 		inputgroup1<...>,
+	//! 		...,
+	//! 		inputgroupn<...>
+	//! 	>,
+	//! 	outelem1<...>,
+	//! 	...,
+	//! 	outelemn<...>
+	//! >
+	T* incache_ = nullptr;
+
+	//! performs operation on all the input elements
+	std::function<T(T*,size_t)> aggregate_; // todo: pass down from summary
 };
 
 }

@@ -832,7 +832,7 @@ TEST(IMMUTABLE, Update_I010)
 		{n1}, conname, grabs, asis);
 	std::vector<double> init = expose(conn);
 	mutate = true;
-	conn->update(nullptr);
+	conn->update({});
 	std::vector<double> next = expose(conn);
 	ASSERT_EQ(init.size(), next.size());
 	for (size_t i = 0, n = init.size(); i < n; i++)

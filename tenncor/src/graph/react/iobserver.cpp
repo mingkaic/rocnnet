@@ -135,7 +135,7 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 				remove_dependency(dep_idx);
 				break;
 			case UPDATE:
-				update(dependencies_[dep_idx]); // value update
+				update({dep_idx}); // value update
 				break;
 		}
 	}

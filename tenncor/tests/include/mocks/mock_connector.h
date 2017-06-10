@@ -49,7 +49,7 @@ public:
 	virtual varptr<double> get_gradient (inode<double>*) { return nullptr; }
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
-	virtual void update (subject*)
+	virtual void update (std::vector<size_t>)
 	{
 		label_incr("update1");
 	}

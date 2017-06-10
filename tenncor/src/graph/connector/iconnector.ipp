@@ -138,8 +138,14 @@ void iconnector<T>::update_status (bool freeze)
 	// sort jobs from bottom-most to top-most nodes
 	while (false == gid_->jobs_.empty())
 	{
-		gid_->jobs_.top()->update(nullptr);
+		auto& request = gid_->jobs_.top();
 		gid_->jobs_.pop();
+		std::vector<size_t> request_idx = {request.second};
+		for (auto& next_request = gid_->jobs_.top(); next_request.first == request.first; gid_->jobs_.pop())
+		{
+			request_idx.push_back(next_request.second);
+		}
+		request.first->update(request_idx);
 	}
 }
 
@@ -237,17 +243,20 @@ void iconnector<T>::dep_replace (std::vector<subject*>& deps)
 template <typename T>
 struct bottom_first
 {
-	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
+	bool operator() (const std::pair<iconnector<T>*,size_t> p1, const std::pair<iconnector<T>*,size_t> p2) const
 	{
+		iconnector<T>* c1 = p1.first;
+		iconnector<T>* c2 = p2.first;
+		if (c1 == c2) return p1.second > p2.second;
 		return c1->potential_descendent(c2);
 	}
 };
 
 template <typename T>
-using job_container_t = std::vector<iconnector<T>*>;
+using job_container_t = std::vector<std::pair<iconnector<T>*,size_t> >;
 
 template <typename T>
-using job_queue_t = std::priority_queue<iconnector<T>*, job_container_t<T>, bottom_first<T> >;
+using job_queue_t = std::priority_queue<std::pair<iconnector<T>*,size_t>, job_container_t<T>, bottom_first<T> >;
 
 // todo: test with odd trees to find edge cases of graph_node usage
 template <typename T>

@@ -87,7 +87,7 @@ public:
 
 	double learning_rate_ = 0.5;
 
-	bool graph_optimize_ = false;
+	bool graph_optimize_ = true;
 
 protected:
 	virtual gd_updater<T>* clone_impl (void) = 0;

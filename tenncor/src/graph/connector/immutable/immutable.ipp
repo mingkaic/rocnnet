@@ -217,12 +217,15 @@ varptr<T> immutable<T>::get_gradient (inode<T>* wrt)
 }
 
 template <typename T>
-void immutable<T>::update (subject* /*arg*/)
+void immutable<T>::update (std::vector<size_t> argindices)
 {
 	{
 		if (this->gid_->freeze_)
 		{
-			this->gid_->jobs_.push(this);
+			for (size_t argidx : argindices)
+			{
+				this->gid_->jobs_.push({this, argidx});
+			}
 			return;
 		}
 	}
@@ -252,7 +255,7 @@ void immutable<T>::update (subject* /*arg*/)
 	else if (allgood)
 	{
 		// forward pass
-		forward_pass(tens);
+		forward_pass(tens, argindices);
 		this->notify(UPDATE);
 	}
 }
@@ -284,7 +287,7 @@ ginit_(F)
 	{
 		static_cast<inode<T>*>(sub)->get_leaves(gcache_);
 	}
-	update(nullptr); // update data_ initially
+	update({}); // update data_ initially
 }
 
 template <typename T>
@@ -295,7 +298,7 @@ immutable<T>::immutable (std::vector<inode<T>*> args, const immutable<T>& other)
 	{
 		this->replace_dependency(args[i], i);
 	}
-	update(nullptr);
+	update({});
 }
 
 template <typename T>
@@ -333,7 +336,7 @@ immutable<T>::immutable (immutable<T>&& other) :
 }
 
 template <typename T>
-void immutable<T>::forward_pass (std::vector<const tensor<T>*> tens)
+void immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t>)
 {
 	Nf_(data_, tens);
 }
@@ -520,7 +523,7 @@ merged_immutable<T>::merged_immutable (immutable<T>* conn) :
 	this->dep_replace(fresh_deps);
 	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
 	// which is the most correct with respect to the new arguments
-	this->update(nullptr); // update data_ initially
+	this->update({}); // update data_ initially
 	
 	delete conn;
 }
@@ -554,7 +557,7 @@ merged_immutable<T>::merged_immutable (immutable<T>* conn, std::unordered_set<si
 	this->dep_replace(fresh_deps);
 	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
 	// which is the most correct with respect to the new arguments
-	this->update(nullptr); // update data_ initially
+	this->update({}); // update data_ initially
 }
 
 template <typename T>
@@ -570,8 +573,56 @@ inode<T>* merged_immutable<T>::move_impl (void)
 }
 
 template <typename T>
-void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens)
+void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t> update_indices)
 {
+//	std::vector<size_t> argupdate;
+//	size_t ntens = tens.size();
+//	size_t n_out_elems = this->data_->n_elems();
+//	// only need to execute once
+//	if (update_indices.empty())
+//	{
+//		if (incache_) delete incache_;
+//		size_t input_size = 0;
+//		for (size_t i = 0; i < ntens; i++)
+//		{
+//			const tensor<T>* tens = static_cast<inode<T>*>(tens[i])->get_eval();
+//			arg_indices_.push_back(argcache(n_out_elems, index_map_[i]));
+//			input_size += arg_indices_.back().size();
+//		}
+//		incache_ = new T[input_size];
+//		for (size_t i = 0; i < ntens; i++) argupdate.push_back(i);
+//	}
+//	else
+//	{
+//		argupdate.insert(argupdate.end(), update_indices.begin(), update_indices.end());
+//	}
+//	// execute for every dependency update
+//	for (size_t i : argupdate)
+//	{
+//		std::vector<T> tenout = tens[i]->expose();
+//		size_t j = 0;
+//		for (auto& elem_refs : arg_indices_[i].elem_indices_)
+//		{
+//			for (size_t arg_idx : elem_refs)
+//			{
+//				incache_[j * ntens + i] = tenout[arg_idx];
+//				j++;
+//			}
+//		}
+//	}
+	// todo: find a better way to check for groupsize (we're asserting too many things)
+	// invariants:
+	//		- arg_indices_ elements are the same size and is non-empty (2 assertions)
+	//		- elem_indices_ are the same size and non-empty (2 assertions)
+//	size_t groupsize = arg_indices_[0].elem_indices_[0].size();
+//	// invariant: groupsize * n_out_elems = allocated size of incache_
+//	// (idea: maybe store incache_ as a vector and divide its size by n_out_elems for groupsize)
+//	for (size_t i = 0; i < n_out_elems; i++)
+//	{
+//		this->data_->raw_data_[i] = aggregate_(incache_ + i * groupsize, groupsize);
+//	}
+
+
 	std::unordered_map<std::string,std::vector<const tensor<T>*> > inputs;
 	for (size_t i = 0, n = tens.size(); i < n; i++)
 	{
@@ -612,7 +663,7 @@ void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens)
 			}
 		}
 	}
-	immutable<T>::forward_pass(inputs[""]);
+	immutable<T>::forward_pass(inputs[""], update_indices);
 	for (tensor<T>* itens : intermediate_tensors)
 		delete itens;
 }
