@@ -27,6 +27,7 @@ gd_updater<double>* vgb_updater::move_impl (void)
 nnet::variable_updater<double> vgb_updater::process_update (varptr<double>& gres,
 	variable<double>* leaf, grad_process<double> intermediate_process)
 {
+	gres->set_label("grad_"+leaf->get_label());
 	// leaf = leaf - learning_rate * gres
 	return leaf->assign_sub(intermediate_process(gres, leaf) * learning_rate_);
 }

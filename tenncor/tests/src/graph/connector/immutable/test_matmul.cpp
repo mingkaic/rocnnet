@@ -426,13 +426,13 @@ TEST(MATMUL, Jacobian_L004)
 	std::vector<double> fake_dresTB_data = expose(fake_dresTB);
 
 	// all a shapes should have the same number of elements
-	double err_thresh = 0.001;
+	double err_thresh = 0.0000001;
 	for (size_t i = 0, n = dresA_data.size(); i < n; i++)
 	{
-		double dresAerr = std::abs(dresA_data[i] - fake_dresA_data[i]) / dresA_data[i];
-		double drestAAerr = std::abs(drestAA_data[i] - fake_drestAA_data[i]) / drestAA_data[i];
-		double drestBAerr = std::abs(drestBA_data[i] - fake_drestBA_data[i]) / drestBA_data[i];
-		double dresTAerr = std::abs(dresTA_data[i] - fake_dresTA_data[i]) / dresTA_data[i];
+		double dresAerr = std::abs(dresA_data[i] - fake_dresA_data[i]);
+		double drestAAerr = std::abs(drestAA_data[i] - fake_drestAA_data[i]);
+		double drestBAerr = std::abs(drestBA_data[i] - fake_drestBA_data[i]);
+		double dresTAerr = std::abs(dresTA_data[i] - fake_dresTA_data[i]);
 		EXPECT_GT(err_thresh, dresAerr);
 		EXPECT_GT(err_thresh, drestAAerr);
 		EXPECT_GT(err_thresh, drestBAerr);
@@ -440,10 +440,10 @@ TEST(MATMUL, Jacobian_L004)
 	}
 	for (size_t i = 0, n = dresB_data.size(); i < n; i++)
 	{
-		double dresBerr = std::abs(dresB_data[i] - fake_dresB_data[i]) / dresB_data[i];
-		double drestABerr = std::abs(drestAB_data[i] - fake_drestAB_data[i]) / drestAB_data[i];
-		double drestBBerr = std::abs(drestBB_data[i] - fake_drestBB_data[i]) / drestBB_data[i];
-		double dresTBerr = std::abs(dresTB_data[i] - fake_dresTB_data[i]) / dresTB_data[i];
+		double dresBerr = std::abs(dresB_data[i] - fake_dresB_data[i]);
+		double drestABerr = std::abs(drestAB_data[i] - fake_drestAB_data[i]);
+		double drestBBerr = std::abs(drestBB_data[i] - fake_drestBB_data[i]);
+		double dresTBerr = std::abs(dresTB_data[i] - fake_dresTB_data[i]);
 		EXPECT_GT(err_thresh, dresBerr);
 		EXPECT_GT(err_thresh, drestABerr);
 		EXPECT_GT(err_thresh, drestBBerr);
@@ -453,7 +453,7 @@ TEST(MATMUL, Jacobian_L004)
 
 
 // tests large matrices sizes (100-112), 2D only
-TEST(MATMUL, Strassen_L005)
+TEST(MATMUL, DISABLED_Strassen_L005)
 {
 	FUZZ::reset_logger();
 	// we get at most 12996 elements per matrix

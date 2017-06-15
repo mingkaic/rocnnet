@@ -75,11 +75,11 @@ public:
 	//! iconnector summary
 	struct conn_summary
 	{
-		conn_summary (std::string id, transfer_func<T> forward, BACK_MAP<T> back,size_t ndeps) :
-				id_(id), Nf_(forward), ginit_(back), ndeps_(ndeps) {}
+		conn_summary (std::string id, transfer_func<T>* forward, BACK_MAP<T> back,size_t ndeps) :
+				id_(id), Nf_(forward->clone()), ginit_(back), ndeps_(ndeps) {}
 
 		std::string id_;
-		transfer_func<T> Nf_;
+		transfer_func<T>* Nf_;
 		BACK_MAP<T> ginit_;
 		size_t ndeps_;
 

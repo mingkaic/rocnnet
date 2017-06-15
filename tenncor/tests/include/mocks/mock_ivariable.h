@@ -23,7 +23,7 @@ public:
 	virtual void get_leaf (inode<double>*&, variable<double>*) {}
 	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
 
-	initializer<double>* get_initializer (void) { return this->init_; }
+	initializer<double>* get_initializer (void) { return static_cast<initializer<double>*>(this->init_); }
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_ivariable(*this); }

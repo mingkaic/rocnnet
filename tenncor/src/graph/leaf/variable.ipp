@@ -60,7 +60,8 @@ tensor<T>& variable<T>::initialize (void)
 	{
 		throw std::runtime_error(this->get_label() + " data is not allocated");
 	}
-	(*this->init_)(this->data_);
+	initializer<T>* init = static_cast<initializer<T>*>(this->init_);
+	(*init)(this->data_);
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
@@ -78,7 +79,8 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 		ss << " failed to allocate " << this->get_label();
 		throw std::runtime_error(ss.str());
 	}
-	(*this->init_)(this->data_);
+	initializer<T>* init = static_cast<initializer<T>*>(this->init_);
+	(*init)(this->data_);
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
@@ -109,26 +111,11 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_;
-		transfer_func<T> assign(
-		[outputt](std::vector<tensorshape>)
-		{
-			return outputt->get_shape();
-		},
-		[](T* dest, const tensorshape& shape, std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
-		{
-			size_t ns = shape.n_elems();
-			tensorshape& ins = inshapes.at(0);
-			assert((ins.is_fully_defined() && ns == ins.n_elems()) ||
-				   (!ins.is_fully_defined() && 0 == ns % ins.n_known()));
-			assert(nullptr != srcs[0]);
-			for (size_t i = 0; i < ns; i++)
-			{
-				dest[i] = srcs[0][i];
-			}
-		});
-		const tensor<T>* inputt = input->get_eval();
-		assign(outputt, {inputt});
+		tensor<T>* out_tens = this->data_;
+		const tensor<T>* in_tens = input->get_eval();
+		assign_func<T> assiger;
+		assiger(out_tens, in_tens);
+		this->notify(notification::UPDATE);
 	};
 }
 
@@ -137,26 +124,11 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_;
-		transfer_func<T> assign(
-		[outputt](std::vector<tensorshape>)
-		{
-			return outputt->get_shape();
-		},
-		[](T* dest, const tensorshape& shape, std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
-		{
-			size_t ns = shape.n_elems();
-			tensorshape& ins = inshapes.at(0);
-			assert((ins.is_fully_defined() && ns == ins.n_elems()) ||
-				   (!ins.is_fully_defined() && 0 == ns % ins.n_known()));
-			assert(nullptr != srcs[0]);
-			for (size_t i = 0; i < ns; i++)
-			{
-				dest[i] += srcs[0][i];
-			}
-		});
-		const tensor<T>* inputt = input->get_eval();
-		assign(outputt, {inputt});
+		tensor<T>* out_tens = this->data_;
+		const tensor<T>* in_tens = input->get_eval();
+		assign_func<T> assign_add([](const T& e1, const T& e2) { return e1 + e2; });
+		assign_add(out_tens, in_tens);
+		this->notify(notification::UPDATE);
 	};
 }
 
@@ -165,26 +137,11 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 {
 	return [this, input]()
 	{
-		tensor<T>* outputt = this->data_;
-		transfer_func<T> assign(
-		[outputt](std::vector<tensorshape>)
-		{
-			return outputt->get_shape();
-		},
-		[](T* dest, const tensorshape& shape, std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
-		{
-			size_t ns = shape.n_elems();
-			tensorshape& ins = inshapes.at(0);
-			assert((ins.is_fully_defined() && ns == ins.n_elems()) ||
-				   (!ins.is_fully_defined() && 0 == ns % ins.n_known()));
-			assert(nullptr != srcs[0]);
-			for (size_t i = 0; i < ns; i++)
-			{
-				dest[i] -= srcs[0][i];
-			}
-		});
-		const tensor<T>* inputt = input->get_eval();
-		assign(outputt, {inputt});
+		tensor<T>* out_tens = this->data_;
+		const tensor<T>* in_tens = input->get_eval();
+		assign_func<T> assign_sub([](const T& e1, const T& e2) { return e1 - e2; });
+		assign_sub(out_tens, in_tens);
+		this->notify(notification::UPDATE);
 	};
 }
 

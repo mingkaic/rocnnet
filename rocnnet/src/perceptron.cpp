@@ -67,9 +67,7 @@ nnet::varptr<double> perceptron::operator () (nnet::inode<double>* input)
 {
 	// weights are n_output column by n_input rows
 	nnet::varptr<double> weighed = nnet::matmul<double>::get(input, weights_);
-	// group by rows (since bias has shape n_output)
-	nnet::varptr<double> wmap = nnet::mappable<double>::get(weighed, 1);
-	return wmap + nnet::varptr<double>(bias_);
+	return nnet::add(weighed, nnet::varptr<double>(bias_), 1);
 }
 
 size_t perceptron::get_n_input (void) const { return n_input; }

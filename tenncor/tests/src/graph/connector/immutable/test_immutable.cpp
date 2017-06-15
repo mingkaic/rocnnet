@@ -317,20 +317,14 @@ TEST(IMMUTABLE, Tensor_I004)
 		return res;
 	};
 
-	auto maxadder = 
-	[](double* outdata, const tensorshape& outshape,
-		std::vector<const double*>& indata, std::vector<tensorshape>& inshapes)
+	auto maxadder = [](const double* data, size_t n)
 	{
-		size_t outn = outshape.n_elems();
-		memset(outdata, 0, sizeof(double) * outn);
-		memcpy(outdata, indata[0], sizeof(double) * inshapes[0].n_elems());
-		for (size_t i = 1, n = inshapes.size(); i < n; i++)
+		double accum = 0;
+		for (size_t i = 0; i < n; i++)
 		{
-			for (size_t j = 0, m = inshapes[i].n_elems(); j < m; j++)
-			{
-				outdata[j] += indata[i][j];
-			}
+			accum += data[i];
 		}
+		return accum;
 	};
 
 	immutable<double>* conn = new mock_immutable(
@@ -354,12 +348,31 @@ TEST(IMMUTABLE, Tensor_I004)
 	ASSERT_EQ(nc2s, std::max(vn2.size(), vn3.size()));
 	ASSERT_EQ(vn2.size(), t2.n_elems());
 	ASSERT_EQ(vn3.size(), t3.n_elems());
-	double* ptrn2 = &vn2[0];
-	double* ptrn3 = &vn3[0];
 	double* expectc2 = new double[nc2s];
-	std::vector<const double*> args = {ptrn2, ptrn3};
-	std::vector<tensorshape> shapes = {t2, t3};
-	maxadder(expectc2, c2s, args, shapes);
+	{
+		std::vector<double> expectin;
+		size_t n = std::min(vn2.size(), vn3.size());
+		for (size_t i = 0; i < n; i++)
+		{
+			expectin.push_back(vn2[i]);
+			expectin.push_back(vn3[i]);
+		}
+		for (size_t i = n; i < vn2.size(); i++)
+		{
+			expectin.push_back(vn2[i]);
+			expectin.push_back(0);
+		}
+		for (size_t i = n; i < vn3.size(); i++)
+		{
+			expectin.push_back(0);
+			expectin.push_back(vn3[i]);
+		}
+		for (size_t i = 0; i < nc2s; i++)
+		{
+			double* in = &expectin[i*2];
+			expectc2[i] = maxadder(in, 2);
+		}
+	}
 
 	const tensor<double>* c1tensor = conn->get_eval();
 	const tensor<double>* c2tensor = conn2->get_eval();
@@ -449,20 +462,14 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 	{
 		return shape;
 	};
-	auto summer =
-	[](double* outdata, const tensorshape& outshape,
-	std::vector<const double*>& indata, std::vector<tensorshape>&)
+	ELEM_FUNC<double> summer = [](const double* data, size_t n)
 	{
-		size_t outn = outshape.n_elems();
-		memset(outdata, 0, sizeof(double) * outn);
-		for (size_t i = 0, n = indata.size(); i < n; i++)
+		double accum = 0;
+		for (size_t i = 0; i < n; i++)
 		{
-			double scalar = indata[i][0];
-			for (size_t j = 0; j < outn; j++)
-			{
-				outdata[j] += scalar;
-			}
+			accum += data[i];
 		}
+		return accum;
 	};
 
 	const_init<double> cinit(single_rando);
@@ -479,8 +486,12 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 	[&collector, &unifiedshaper, &summer](std::vector<inode<double>*> args)
 	{
 		std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-		mock_immutable* im = new mock_immutable(args, nlabel,
-			unifiedshaper, summer);
+		std::vector<OUT_MAPPER> omaps;
+		for (size_t i = 0, n = args.size(); i < n; i++)
+		{
+			omaps.push_back([](size_t, tensorshape&,const tensorshape&) -> std::vector<size_t> { return {0}; });
+		}
+		mock_immutable* im = new mock_immutable(args, nlabel, unifiedshaper, summer, omaps);
 		im->triggerOnDeath =
 		[&collector](mock_immutable* ded)
 		{
@@ -627,9 +638,8 @@ TEST(IMMUTABLE, GetLeaf_I008)
 		[&collector, &backer](std::vector<inode<double>*> args) -> inode<double>*
 		{
 			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-			mock_immutable* im = new mock_immutable(
-				std::vector<inode<double>*>(args.begin(), args.end()), nlabel,
-				get_testshaper(), testforward, backer);
+			mock_immutable* im = new mock_immutable(args, nlabel,
+				get_testshaper(), testforward, {}, backer);
 			im->triggerOnDeath =
 				[&collector](mock_immutable* ded) {
 					collector.erase(ded);
@@ -674,49 +684,43 @@ TEST(IMMUTABLE, GetGradient_I009)
 	double single_rando = FUZZ::getDouble(1, "single_rando", {1.1, 2.2})[0];
 
 	auto unifiedshaper =
-		[&shape](std::vector<tensorshape>)
+	[&shape](std::vector<tensorshape>)
+	{
+		return shape;
+	};
+	ELEM_FUNC<double> summer = [](const double* data, size_t n)
+	{
+		double accum = 0;
+		for (size_t i = 0; i < n; i++)
 		{
-			return shape;
-		};
-	auto summer =
-		[](double* outdata, const tensorshape& outshape,
-		   std::vector<const double*>& indata, std::vector<tensorshape>&)
-		{
-			size_t outn = outshape.n_elems();
-			memset(outdata, 0, sizeof(double) * outn);
-			for (size_t i = 0, n = indata.size(); i < n; i++)
-			{
-				double scalar = indata[i][0];
-				for (size_t j = 0; j < outn; j++)
-				{
-					outdata[j] += scalar;
-				}
-			}
-		};
+			accum += data[i];
+		}
+		return accum;
+	};
 
 	const_init<double> cinit(single_rando);
 
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
-		[&ordering](std::vector<inode<double>*> args,
-			variable<double>* leaf) -> inode<double>*
+	[&ordering](std::vector<inode<double>*> args,
+		variable<double>* leaf) -> inode<double>*
+	{
+		inode<double>* leef;
+		args[0]->get_leaf(leef, leaf);
+		if (*leef == 0.0 && args.size() > 1)
 		{
-			inode<double>* leef;
-			args[0]->get_leaf(leef, leaf);
-			if (*leef == 0.0 && args.size() > 1)
-			{
-				args[1]->get_leaf(leef, leaf);
-				if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
-				{
-					ordering.push_back(conn);
-				}
-			}
-			else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+			args[1]->get_leaf(leef, leaf);
+			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
 			{
 				ordering.push_back(conn);
 			}
-			return leef;
-		};
+		}
+		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+		{
+			ordering.push_back(conn);
+		}
+		return leef;
+	};
 
 	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
 
@@ -735,9 +739,13 @@ TEST(IMMUTABLE, GetGradient_I009)
 		[&collector, &unifiedshaper, &summer, &backer](std::vector<inode<double>*> args) -> inode<double>*
 		{
 			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-			mock_immutable* im = new mock_immutable(
-				std::vector<inode<double>*>(args.begin(), args.end()), nlabel,
-				unifiedshaper, summer, backer);
+			std::vector<OUT_MAPPER> omaps;
+			for (size_t i = 0, n = args.size(); i < n; i++)
+			{
+				omaps.push_back([](size_t, tensorshape&,const tensorshape&) -> std::vector<size_t> { return {0}; });
+			}
+			mock_immutable* im = new mock_immutable(args, nlabel,
+				unifiedshaper, summer, omaps, backer);
 			im->triggerOnDeath =
 				[&collector](mock_immutable* ded) {
 					collector.erase(ded);
@@ -814,22 +822,21 @@ TEST(IMMUTABLE, Update_I010)
 	};
 
 	bool mutate = false;
-	auto asis = [&mutate](double* outdata, const tensorshape& outshape,
-		std::vector<const double*>& indata, std::vector<tensorshape>&)
+	ELEM_FUNC<double> asis = [&mutate](const double* data, size_t n)
 	{
-		size_t outn = outshape.n_elems();
-		memcpy(outdata, indata[0], sizeof(double) * outn);
+		double accum = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			accum += data[i];
+		}
 		if (mutate)
 		{
-			for (size_t i = 0; i < outn; i++)
-			{
-				outdata[i] += 1;
-			}
+			accum += n;
 		}
+		return accum;
 	};
 
-	immutable<double>* conn = new mock_immutable(
-		{n1}, conname, grabs, asis);
+	immutable<double>* conn = new mock_immutable({n1}, conname, grabs, asis);
 	std::vector<double> init = expose(conn);
 	mutate = true;
 	conn->update({});

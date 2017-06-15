@@ -23,7 +23,7 @@ namespace nnet
 
 //! transpose a, (1-2 D tensors only) todo: implement permute
 template <typename T>
-varptr<T> transpose (const varptr<T> a);
+varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap = {0, 1});
 
 //! fit data in a to watch's shape, ignores all jacobian (todo: change to selectively ignore watch's jacobian)
 //! watch needs to be a dependency of the resulting node,
@@ -39,7 +39,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 //! -1 index compresses all elements in the tensor (output is a scalar)
 template <typename T>
 varptr<T> compress (const varptr<T> a, optional<size_t> index,
-	std::function<T(const std::vector<T>&)> collector);
+	ELEM_FUNC<T> collector, std::string name = "compress");
 
 // Dimensionality Reduction Functions (Wrappers for compress)
 //! compress tensor by taking maximum value across specified dimension
@@ -63,7 +63,7 @@ varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension = optional<
 //! takes left argument of compare if compare evaluates to true
 template <typename T>
 varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
-	std::function<size_t(const std::vector<T>&)> compare);
+	ELEM_FUNC<T> compare, std::string name = "argcompress");
 
 //! obtains the indices of the maximum value across specified dimension
 //! -1 index looks returns a vector coordinate specifying max value in tensor a

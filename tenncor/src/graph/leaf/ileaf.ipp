@@ -138,50 +138,6 @@ void ileaf<T>::move_helper (ileaf<T>&& other)
 	other.data_ = nullptr;
 }
 
-template <typename T>
-class ileaf<T>::assignment : public initializer<T>
-{
-public:
-	assignment* clone (void) const
-	{
-		return static_cast<assignment*>(clone_impl());
-	}
-
-	assignment* move (void)
-	{
-		return static_cast<assignment*>(move_impl());
-	}
-
-	// perform assignment
-	void operator () (tensor<T>*& out, std::vector<T>& data)
-	{
-		// update temp_
-		temp_ = data;
-		itensor_handler<T>::operator ()(out, {out});
-	}
-
-protected:
-	virtual assignment* clone_impl (void) const
-	{
-		return new assignment(*this);
-	}
-
-	virtual assignment* move_impl (void)
-	{
-		return new assignment(std::move(*this));
-	}
-	
-	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>&, std::vector<tensorshape>&) const
-	{
-		size_t n = std::min(temp_.size(), outshape.n_elems());
-		std::memcpy(dest, &temp_[0], n * sizeof(T));
-	}
-
-private:
-	std::vector<T> temp_;
-};
-
 }
 
 #endif

@@ -26,7 +26,7 @@ inline size_t min_pad(size_t insize)
 }
 
 template <typename T>
-void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, size_t dimZ, size_t coord_map[8])
+static void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, size_t dimZ, size_t coord_map[8])
 {
 	for (size_t y = 0; y < dimY; y++)
 	{
@@ -44,7 +44,7 @@ void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, size_t d
 }
 
 template <typename T>
-void strassen (T* c, const T* a, const T* b, size_t dimPad)
+static void strassen (T* c, const T* a, const T* b, size_t dimPad)
 {
 	if (dimPad <= STRASSEN_THRESHOLD)
 	{
@@ -202,158 +202,148 @@ template <typename T>
 matmul<T>::matmul (inode<T>* a, inode<T>* b,
 	bool transposeA, bool transposeB) :
 immutable<T>((std::vector<inode<T>*>{a, b}),
-[transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
-{
-	tensorshape& t1s = shapes[0];
-	tensorshape& t2s = shapes[1];
-
-	std::vector<size_t> al = t1s.as_list();
-	std::vector<size_t> bl = t2s.as_list();
-	size_t rank1 = t1s.rank();
-	size_t rank2 = t2s.rank();
-
-	size_t ax = rank1 ? al[0] : 0;
-	size_t ay = rank1 > 1 ? al[1] : 1;
-	size_t bx = rank2 ? bl[0] : 0;
-	size_t by = rank2 > 1 ? bl[1] : 1;
-
-	// ensure the dimensions beyond 2d are equal
-	size_t minend = std::min(rank1, rank2);
-	std::vector<size_t> beyond2d;
-	if (minend > 2)
+new transfer_func<T>(
+	[transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
 	{
-		auto ait = al.begin()+2;
-		auto aet = al.begin()+minend;
-		if (std::equal(ait, aet, bl.begin()+2))
+		tensorshape& t1s = shapes[0];
+		tensorshape& t2s = shapes[1];
+
+		std::vector<size_t> al = t1s.as_list();
+		std::vector<size_t> bl = t2s.as_list();
+		size_t rank1 = t1s.rank();
+		size_t rank2 = t2s.rank();
+
+		size_t ax = rank1 ? al[0] : 0;
+		size_t ay = rank1 > 1 ? al[1] : 1;
+		size_t bx = rank2 ? bl[0] : 0;
+		size_t by = rank2 > 1 ? bl[1] : 1;
+
+		// ensure the dimensions beyond 2d are equal
+		size_t minend = std::min(rank1, rank2);
+		std::vector<size_t> beyond2d;
+		if (minend > 2)
 		{
-			beyond2d.insert(beyond2d.end(), ait, aet);
+			auto ait = al.begin()+2;
+			auto aet = al.begin()+minend;
+			if (std::equal(ait, aet, bl.begin()+2))
+			{
+				beyond2d.insert(beyond2d.end(), ait, aet);
+			}
+			else
+			{
+				std::stringstream ss;
+				ss << "attempting to matrix multiple shapes ";
+				print_shape(t1s, ss);
+				ss << " and ";
+				print_shape(t2s, ss);
+				throw std::logic_error(ss.str());
+			}
+			// check that remaining shape values are ones,
+			// otherwise one shape is larger than the other
+			auto it = rank1 > rank2 ? al.begin() : bl.begin();
+			auto et = rank1 > rank2 ? al.end() : bl.end();
+			if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
+			{
+				std::stringstream ss;
+				ss << "attempting to matrix multiple different sized shapes ";
+				print_shape(t1s, ss);
+				ss << " and ";
+				print_shape(t2s, ss);
+				throw std::logic_error(ss.str());
+			}
+		}
+
+		std::vector<size_t> res_shape;
+		if (ay == bx && transposeA && transposeB)
+		{
+			res_shape = {by, ax};
+		}
+		else if (ay == by && transposeA)
+		{
+			res_shape = {bx, ax};
+		}
+		else if (ax == bx && transposeB)
+		{
+			res_shape = {by, ay};
+		}
+		else if (ax == by && !transposeA && !transposeB)
+		{
+			res_shape = {bx, ay};
 		}
 		else
 		{
 			std::stringstream ss;
-			ss << "attempting to matrix multiple shapes ";
+			ss << "matmul shapes ";
 			print_shape(t1s, ss);
-			ss << " and ";
+			if (transposeA) ss << "transposed ";
+			ss << "and ";
 			print_shape(t2s, ss);
+			if (transposeB) ss << "transposed ";
+			ss << "do not match";
 			throw std::logic_error(ss.str());
 		}
-		// check that remaining shape values are ones,
-		// otherwise one shape is larger than the other
-		auto it = rank1 > rank2 ? al.begin() : bl.begin();
-		auto et = rank1 > rank2 ? al.end() : bl.end();
-		if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
+		res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
+		return res_shape;
+	},
+	{
+		[transposeA](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
 		{
-			std::stringstream ss;
-			ss << "attempting to matrix multiple different sized shapes ";
-			print_shape(t1s, ss);
-			ss << " and ";
-			print_shape(t2s, ss);
-			throw std::logic_error(ss.str());
-		}
-	}
-
-	std::vector<size_t> res_shape;
-	if (ay == bx && transposeA && transposeB)
-	{
-		res_shape = {by, ax};
-	}
-	else if (ay == by && transposeA)
-	{
-		res_shape = {bx, ax};
-	}
-	else if (ax == bx && transposeB)
-	{
-		res_shape = {by, ay};
-	}
-	else if (ax == by && !transposeA && !transposeB)
-	{
-		res_shape = {bx, ay};
-	}
-	else
-	{
-		std::stringstream ss;
-		ss << "matmul shapes ";
-		print_shape(t1s, ss);
-		if (transposeA) ss << "transposed ";
-		ss << "and ";
-		print_shape(t2s, ss);
-		if (transposeB) ss << "transposed ";
-		ss << "do not match";
-		throw std::logic_error(ss.str());
-	}
-
-	res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
-	return res_shape;
-},
-[transposeA, transposeB](T* out, const tensorshape& outs,
-	std::vector<const T*>& in, std::vector<tensorshape>& inshapes)
-{
-	outs.assert_is_fully_defined();
-	std::vector<size_t> dims = outs.as_list();
-	size_t dimX = dims[0]; size_t dimY = dims[1];
-
-	std::vector<size_t> t = inshapes[0].as_list();
-	size_t dimZ = t[0];
-
-	size_t coord_map[4] = {dimZ, 1, 1, dimX};
-
-	if (transposeA)
-	{
-		dimZ = t.size() > 1 ? t[1] : 1;
-		coord_map[1] = dimY;
-		coord_map[0] = 1;
-	}
-	if (transposeB)
-	{
-		coord_map[2] = dimZ;
-		coord_map[3] = 1;
-	}
-
-	size_t dimPad = min_pad(std::max(std::max(dimX, dimY), dimZ));
-	size_t nbeyond2d = std::accumulate(dims.begin()+2, dims.end(),
-		(size_t) 1, std::multiplies<size_t>());
-	size_t nmat = dimX * dimY;
-	for (size_t i = 0; i < nbeyond2d; i++)
-	{
-		const T* rawa = in[0] + i * nmat;
-		const T* rawb = in[1] + i * nmat;
-		T* rawc = out + i * nmat;
-		if (dimPad > STRASSEN_THRESHOLD)
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			if (coord.size() < 2)
+			{
+				coord.push_back(0);
+			}
+			std::vector<size_t> alist = ashape.as_list();
+			std::vector<size_t> indices;
+			size_t idx = 0;
+			size_t ncol = alist[0]; // traverse along the row
+			if (transposeA)
+			{
+				idx = 1;
+				ncol = alist.size() > 1 ? alist[1] : 1;
+				std::swap(coord[0], coord[1]);
+			}
+			for (size_t j = 0; j < ncol; j++)
+			{
+				coord[idx] = j;
+				indices.push_back(ashape.sequential_idx(coord));
+			}
+			return indices;
+		},
+		[transposeB](size_t i, tensorshape& bshape, const tensorshape& outshape) -> std::vector<size_t>
 		{
-			size_t nmat = dimPad * dimPad;
-			T out[nmat];
-			T a[nmat];
-			T b[nmat];
-			memset(a, 0, sizeof(T) * nmat);
-			memset(b, 0, sizeof(T) * nmat);
-			for (size_t y = 0; y < dimY; y++)
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			if (coord.size() < 2)
 			{
-				for (size_t z = 0; z < dimZ; z++)
-				{
-					size_t aidx = coord_map[0] * y + coord_map[1] * z;
-					a[z + dimPad * y] = rawa[aidx];
-				}
+				coord.push_back(0);
 			}
-			for (size_t z = 0; z < dimZ; z++)
+			std::vector<size_t> blist = bshape.as_list();
+			std::vector<size_t> indices;
+			size_t idx = 1;
+			size_t nrow = blist.size() > 1 ? blist[1] : 1; // traverse along the col
+			if (transposeB)
 			{
-				for (size_t x = 0; x < dimX; x++)
-				{
-					size_t bidx = coord_map[2] * x + coord_map[3] * z;
-					b[x + dimPad * z] = rawb[bidx];
-				}
+				idx = 0;
+				nrow = blist[0];
+				std::swap(coord[0], coord[1]);
 			}
-			strassen(out, a, b, dimPad);
-			for (size_t y = 0; y < dimY; y++)
+			for (size_t j = 0; j < nrow; j++)
 			{
-				memcpy(rawc + y * dimX, out + y * dimPad, sizeof(T) * dimX);
+				coord[idx] = j;
+				indices.push_back(bshape.sequential_idx(coord));
 			}
+			return indices;
 		}
-		else
+	},
+	ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		T accum = 0;
+		for (size_t i = 0; i < n; i += 2)
 		{
-			cubic_mul(rawc, rawa, rawb, dimX, dimY, dimZ, coord_map);
+			accum += group[i] * group[i+1];
 		}
-	}
-},
+		return accum;
+	})),
 [](std::vector<inode<T>*>, variable<T>*)
 {
 	return constant<T>::get_shared_one();
@@ -395,7 +385,9 @@ immutable<T>((std::vector<inode<T>*>{a, b}),
 		{
 			mB = transpose<T>(mB);
 		}
-		return mA * varptr<T>(grada) + mB * varptr<T>(gradb);
+		varptr<T> ga(grada);
+		varptr<T> gb(gradb);
+		return mA * ga + mB * gb;
 	};
 
 	typename inode<T>::GRAD_CACHE leaves;

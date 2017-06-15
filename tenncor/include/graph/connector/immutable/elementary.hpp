@@ -87,6 +87,10 @@ varptr<T> operator + (const varptr<T> a, T b);
 template<typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b);
 
+//! add a and b along a specific axis, dimension values outside of axis must match
+template <typename T>
+varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis);
+
 //! subtract scalar a and b
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b);

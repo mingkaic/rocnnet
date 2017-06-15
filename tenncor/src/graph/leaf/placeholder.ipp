@@ -13,7 +13,7 @@ namespace nnet
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
-	ivariable<T>(shape, new typename ileaf<T>::assignment(), name) {}
+	ivariable<T>(shape, new assign_func<T>(), name) {}
 
 template <typename T>
 placeholder<T>* placeholder<T>::clone (void) const
@@ -69,9 +69,8 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 			throw std::logic_error("attempting to assign no data to an unallocated tensor");
 		}
 	}
-	typename ileaf<T>::assignment* assigner =
-		dynamic_cast<typename ileaf<T>::assignment*>(this->init_);
-	(*assigner)(this->data_, data);
+	assign_func<T>* assigner = static_cast<assign_func<T>*>(this->init_);
+	(*assigner)(*(this->data_), data);
 
 	this->is_init_ = true;
 	this->notify(UPDATE);

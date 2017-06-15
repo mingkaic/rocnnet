@@ -13,10 +13,11 @@ namespace nnet
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> Nf, BACK_MAP<T> F,
+	transfer_func<T>* Nf,
+	BACK_MAP<T> ginit,
 	std::string name, inode<T>* ignore_jacobian)
 {
-	immutable<T>* imm = new immutable<T>(args, shaper, Nf, F, name);
+	immutable<T>* imm = new immutable<T>(args, Nf, ginit, name);
 	if (nullptr != ignore_jacobian)
 	{
 		typename inode<T>::GRAD_CACHE leaves;
@@ -33,6 +34,7 @@ template <typename T>
 immutable<T>::~immutable (void)
 {
 	delete data_;
+	if (Nf_) delete Nf_;
 }
 
 template <typename T>
@@ -54,7 +56,6 @@ immutable<T>& immutable<T>::operator = (const immutable<T>& other)
 	{
 		iconnector<T>::operator = (other);
 		copy_helper(other);
-		Nf_ = other.Nf_;
 	}
 	return *this;
 }
@@ -66,7 +67,6 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 	{
 		iconnector<T>::operator = (std::move(other));
 		move_helper(std::move(other));
-		Nf_ = std::move(other.Nf_);
 	}
 	return *this;
 }
@@ -217,35 +217,38 @@ varptr<T> immutable<T>::get_gradient (inode<T>* wrt)
 }
 
 template <typename T>
-void immutable<T>::update (std::vector<size_t> argindices)
+void immutable<T>::update (std::vector<size_t> update_indices)
 {
+	if (this->gid_->freeze_)
 	{
-		if (this->gid_->freeze_)
+		for (size_t argidx : update_indices)
 		{
-			for (size_t argidx : argindices)
-			{
-				this->gid_->jobs_.push({this, argidx});
-			}
-			return;
+			this->gid_->push(this, argidx);
 		}
+		return;
 	}
+	size_t n_subs = this->n_subjects();
 	bool allgood = true;
 	bool damaged = false;
 	std::vector<const tensor<T>*> tens;
-	for (auto it = this->dependencies_.begin(), et = this->dependencies_.end();
-		it != et && allgood && !damaged; it++)
+	for (size_t i = 0; i < n_subs && allgood && !damaged; i++)
 	{
-		inode<T>* a = dynamic_cast<inode<T>*>(*it);
-		damaged = nullptr == a;
-		if (!damaged)
+		if (inode<T>* a = dynamic_cast<inode<T>*>(this->dependencies_[i]))
 		{
-			allgood = allgood && a->good_status();
-			if (allgood)
+			if (a->good_status())
 			{
 				tens.push_back(a->get_eval());
 			}
+			else
+			{
+				allgood = false;
+			}
 		}
-	};
+		else
+		{
+			damaged = true;
+		}
+	}
 
 	if (damaged)
 	{
@@ -255,7 +258,7 @@ void immutable<T>::update (std::vector<size_t> argindices)
 	else if (allgood)
 	{
 		// forward pass
-		forward_pass(tens, argindices);
+		forward_pass(tens, update_indices);
 		this->notify(UPDATE);
 	}
 }
@@ -277,11 +280,11 @@ std::vector<typename iconnector<T>::conn_summary> immutable<T>::summarize (void)
 template <typename T>
 immutable<T>::immutable (
 	std::vector<inode<T>*> args,
-	SHAPER shaper, FORWARD_OP<T> forward,
-	BACK_MAP<T> F, std::string label) :
+	transfer_func<T>* Nf,
+	BACK_MAP<T> ginit, std::string label) :
 iconnector<T>(args, label),
-Nf_(shaper, forward),
-ginit_(F)
+Nf_(Nf),
+ginit_(ginit)
 {
 	for (subject* sub : this->dependencies_)
 	{
@@ -294,8 +297,10 @@ template <typename T>
 immutable<T>::immutable (std::vector<inode<T>*> args, const immutable<T>& other) :
 	immutable<T>(other)
 {
+	gcache_.clear();
 	for (size_t i = 0, n = args.size(); i < n; i++)
 	{
+		args[i]->get_leaves(gcache_);
 		this->replace_dependency(args[i], i);
 	}
 	update({});
@@ -321,24 +326,35 @@ inode<T>* immutable<T>::move_impl (void)
 
 template <typename T>
 immutable<T>::immutable (const immutable<T>& other) :
-	iconnector<T>(other),
-	Nf_(other.Nf_)
+	iconnector<T>(other)
 {
 	copy_helper(other);
 }
 
 template <typename T>
 immutable<T>::immutable (immutable<T>&& other) :
-	iconnector<T>(std::move(other)),
-	Nf_(std::move(other.Nf_))
+	iconnector<T>(std::move(other))
 {
 	move_helper(std::move(other));
 }
 
 template <typename T>
-void immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t>)
+void immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t> update_indices)
 {
-	Nf_(data_, tens);
+	std::vector<const tensor<T>*> intens;
+	if (nullptr == data_ || update_indices.empty())
+	{
+		intens = tens;
+	}
+	else
+	{
+		intens.insert(intens.end(), tens.size(), nullptr);
+		for (size_t uidx : update_indices)
+		{
+			intens[uidx] = tens[uidx];
+		}
+	}
+	(*Nf_)(data_, intens);
 }
 
 template <typename T>
@@ -361,6 +377,7 @@ void immutable<T>::copy_helper (const immutable& other)
 	}
 	ginit_ = other.ginit_;
 	gcache_ = other.gcache_;
+	Nf_ = other.Nf_->clone();
 }
 
 template <typename T>
@@ -374,6 +391,8 @@ void immutable<T>::move_helper (immutable&& other)
 	other.data_ = nullptr;
 	ginit_ = std::move(other.ginit_);
 	gcache_ = std::move(other.gcache_);
+	Nf_ = std::move(other.Nf_);
+	other.Nf_ = nullptr;
 }
 
 // MERGE_IMMUTABLE
@@ -575,54 +594,6 @@ inode<T>* merged_immutable<T>::move_impl (void)
 template <typename T>
 void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std::vector<size_t> update_indices)
 {
-//	std::vector<size_t> argupdate;
-//	size_t ntens = tens.size();
-//	size_t n_out_elems = this->data_->n_elems();
-//	// only need to execute once
-//	if (update_indices.empty())
-//	{
-//		if (incache_) delete incache_;
-//		size_t input_size = 0;
-//		for (size_t i = 0; i < ntens; i++)
-//		{
-//			const tensor<T>* tens = static_cast<inode<T>*>(tens[i])->get_eval();
-//			arg_indices_.push_back(argcache(n_out_elems, index_map_[i]));
-//			input_size += arg_indices_.back().size();
-//		}
-//		incache_ = new T[input_size];
-//		for (size_t i = 0; i < ntens; i++) argupdate.push_back(i);
-//	}
-//	else
-//	{
-//		argupdate.insert(argupdate.end(), update_indices.begin(), update_indices.end());
-//	}
-//	// execute for every dependency update
-//	for (size_t i : argupdate)
-//	{
-//		std::vector<T> tenout = tens[i]->expose();
-//		size_t j = 0;
-//		for (auto& elem_refs : arg_indices_[i].elem_indices_)
-//		{
-//			for (size_t arg_idx : elem_refs)
-//			{
-//				incache_[j * ntens + i] = tenout[arg_idx];
-//				j++;
-//			}
-//		}
-//	}
-	// todo: find a better way to check for groupsize (we're asserting too many things)
-	// invariants:
-	//		- arg_indices_ elements are the same size and is non-empty (2 assertions)
-	//		- elem_indices_ are the same size and non-empty (2 assertions)
-//	size_t groupsize = arg_indices_[0].elem_indices_[0].size();
-//	// invariant: groupsize * n_out_elems = allocated size of incache_
-//	// (idea: maybe store incache_ as a vector and divide its size by n_out_elems for groupsize)
-//	for (size_t i = 0; i < n_out_elems; i++)
-//	{
-//		this->data_->raw_data_[i] = aggregate_(incache_ + i * groupsize, groupsize);
-//	}
-
-
 	std::unordered_map<std::string,std::vector<const tensor<T>*> > inputs;
 	for (size_t i = 0, n = tens.size(); i < n; i++)
 	{
@@ -647,7 +618,7 @@ void  merged_immutable<T>::forward_pass (std::vector<const tensor<T>*> tens, std
 		std::vector<const tensor<T>*> input = it->second;
 		// consume input
 		tensor<T>* output = nullptr;
-		s.Nf_(output, input);
+		(*s.Nf_)(output, input);
 		intermediate_tensors.push_back(output);
 		// cache output
 		for (auto dep : s.dependents_)

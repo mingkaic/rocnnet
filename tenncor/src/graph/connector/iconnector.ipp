@@ -135,17 +135,9 @@ void iconnector<T>::update_status (bool freeze)
 {
 	gid_->freeze_ = freeze;
 	if (freeze) return;
-	// sort jobs from bottom-most to top-most nodes
-	while (false == gid_->jobs_.empty())
+	while (false == gid_->empty())
 	{
-		auto& request = gid_->jobs_.top();
-		gid_->jobs_.pop();
-		std::vector<size_t> request_idx = {request.second};
-		for (auto& next_request = gid_->jobs_.top(); next_request.first == request.first; gid_->jobs_.pop())
-		{
-			request_idx.push_back(next_request.second);
-		}
-		request.first->update(request_idx);
+		gid_->job_execute();
 	}
 }
 
@@ -171,7 +163,7 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 					auto jit = this->jacobians_.find(leaf);
 					// different jacobians originating from the same leaf cannot overlap
 					auto& j = jpair.second;
-					if (!j.list_.empty())
+					if (false == j.list_.empty())
 					{
 						assert (this->jacobians_.end() == jit || jit->second.uid_ == j.uid_);
 						this->jacobians_[leaf] = j;
@@ -243,29 +235,31 @@ void iconnector<T>::dep_replace (std::vector<subject*>& deps)
 template <typename T>
 struct bottom_first
 {
-	bool operator() (const std::pair<iconnector<T>*,size_t> p1, const std::pair<iconnector<T>*,size_t> p2) const
+	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
 	{
-		iconnector<T>* c1 = p1.first;
-		iconnector<T>* c2 = p2.first;
-		if (c1 == c2) return p1.second > p2.second;
 		return c1->potential_descendent(c2);
 	}
 };
 
 template <typename T>
-using job_container_t = std::vector<std::pair<iconnector<T>*,size_t> >;
+struct top_first
+{
+	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
+	{
+		return c2->potential_descendent(c1);
+	}
+};
 
 template <typename T>
-using job_queue_t = std::priority_queue<std::pair<iconnector<T>*,size_t>, job_container_t<T>, bottom_first<T> >;
+using job_map_t = std::unordered_map<iconnector<T>*,std::vector<size_t> >;
+
+template <typename T>
+using job_queue_t = std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, bottom_first<T> >;
 
 // todo: test with odd trees to find edge cases of graph_node usage
 template <typename T>
 struct iconnector<T>::graph_node
 {
-	bool freeze_ = false;
-
-	job_queue_t<T> jobs_;
-
 	static graph_node* get (iconnector<T>* source, iconnector<T>* user = nullptr)
 	{
 		assert(source);
@@ -304,7 +298,30 @@ struct iconnector<T>::graph_node
 		users_.insert(otherusers.begin(), otherusers.end());
 	}
 
+	void push (iconnector<T>* icon, size_t argidx)
+	{
+		job_map_[icon].push_back(argidx);
+		jobs_.push(icon);
+	}
+
+	bool empty (void) const { return jobs_.empty(); }
+
+	void job_execute (void)
+	{
+		if (jobs_.empty()) return;
+		iconnector<T>* headconn = jobs_.top();
+		headconn->update(job_map_[headconn]);
+		job_map_.erase(headconn);
+		jobs_.pop();
+	}
+
+	bool freeze_ = false;
+
 private:
+	job_queue_t<T> jobs_;
+
+	job_map_t<T> job_map_;
+
 	std::unordered_set<iconnector<T>*> users_;
 	
 	graph_node (void) {}

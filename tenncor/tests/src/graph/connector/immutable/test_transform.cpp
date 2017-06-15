@@ -69,7 +69,8 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	}
 
 	tensorshape expectoshape = expect_shape(shape);
-	std::vector<double> expectout = expect_transfer(expose(&var), shape);
+	std::vector<double> varout = expose(&var);
+	std::vector<double> expectout = expect_transfer(varout, shape);
 	nnet::inode<double>* vgrad = var.get_gradient(&var);
 	{
 		const nnet::tensor<double>* vgradtens = vgrad->get_eval();
@@ -276,10 +277,11 @@ TEST(TRANSFORM, Compress_K005)
 {
 	FUZZ::reset_logger();
 	size_t compress_index;
-	std::function<double(const std::vector<double>&)> compression =
-	[](const std::vector<double>& vec) -> double
+	ELEM_FUNC<double> compression =
+	[](const double* data, size_t n) -> double
 	{
-		return vec.at(0);
+		assert(n > 0);
+		return data[0];
 	};
 
 	PARAM_EVAL<size_t> compressparam =
@@ -315,8 +317,7 @@ TEST(TRANSFORM, Compress_K005)
 		if (compress_index >= out.size()) return inshape;
 		if (compress_index == 0)
 		{
-			out.front() = std::move(out.back());
-			out.pop_back();
+			out = std::vector<size_t>(out.begin()+1, out.end());
 		}
 		else if (out.size()-1 == (unsigned) compress_index)
 		{
@@ -342,27 +343,26 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 {
 	FUZZ::reset_logger();
 	size_t arg_index;
-	std::function<size_t(const std::vector<double>&)> search =
-	[](const std::vector<double>& vec) -> size_t
+	ELEM_FUNC<double> search =
+	[](const double* data, size_t n) -> double
 	{
-		double denom = vec.size();
 		double mean = 0;
-		for (double d : vec)
+		for (size_t i = 0; i < n; i++)
 		{
-			mean += d / denom;
+			mean += data[i] / n;
 		}
-		double error = std::abs(vec[0] - mean);
+		double error = std::abs(data[0] - mean);
 		size_t idx = 0;
-		for (size_t i = 1; i < denom; i++)
+		for (size_t i = 1; i < n; i++)
 		{
-			double potent_error = std::abs(vec[i] - mean);
+			double potent_error = std::abs(data[i] - mean);
 			if (potent_error < error)
 			{
 				error = potent_error;
 				idx = i;
 			}
 		}
-		return (double)idx;
+		return idx;
 	};
 
 	PARAM_EVAL<size_t> argcompressparam =
@@ -394,7 +394,7 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 					size_t inidx = inshape.sequential_idx(incoord);
 					vecs.push_back(in[inidx]);
 				}
-				out[outidx] = search(vecs);
+				out[outidx] = search(&vecs[0], vecs.size());
 			}
 		}
 		return out;
@@ -406,8 +406,7 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 		assert(arg_index < out.size());
 		if (arg_index == 0)
 		{
-			out.front() = std::move(out.back());
-			out.pop_back();
+			out = std::vector<size_t>(out.begin()+1, out.end());
 		}
 		else if (out.size()-1 == (unsigned) arg_index)
 		{

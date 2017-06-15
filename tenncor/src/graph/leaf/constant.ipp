@@ -88,7 +88,6 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		(nnutils::formatter() << raw.front() << ".." << raw.back()).str())
 {
 	size_t rawn = raw.size();
-	typename ileaf<T>::assignment assigner;
 	if (false == this->data_->is_alloc())
 	{
 		// loosely guess fails if n_elems/n_known > raw size
@@ -109,7 +108,8 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		size_t deficiency = n - rawn;
 		raw.insert(raw.end(), deficiency, 0);
 	}
-	assigner(this->data_, raw);
+	assign_func<T> assigner;
+	assigner(*(this->data_), raw);
 	this->is_init_ = true;
 }
 

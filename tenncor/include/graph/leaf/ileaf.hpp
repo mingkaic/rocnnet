@@ -76,10 +76,6 @@ protected:
 	//! tensor state (good or bad) true = good
 	bool is_init_ = false;
 
-	//! dynamically initialize tensors
-	//! used by placeholder
-	class assignment;
-
 private:
 	//! copy helper
 	void copy_helper (const ileaf<T>& other);

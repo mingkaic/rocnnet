@@ -56,6 +56,16 @@ public:
 	virtual ~tensor (void);
 
 	// >>>> COPY && MOVE <<<<
+	//! default copy constructor
+	tensor (const tensor<T>& other) : tensor<T>(other, false) {}
+
+	//! copy constructor
+	tensor (const tensor<T>& other, bool shapeonly);
+
+	//! move constructor
+	tensor (tensor<T>&& other);
+
+	// >>>> POLYMORPHIC CLONE && MOVES <<<<
 	//! clone function
 	tensor<T>* clone (bool shapeonly = false) const;
 	
@@ -178,13 +188,6 @@ public:
 	// size_t buffer_hash (void) const;
 
 protected:
-	// >>>> COPY, CLONE, && MOVE <<<<
-	//! copy constructor
-	tensor (const tensor<T>& other, bool shapeonly);
-
-	//! move constructor
-	tensor (tensor<T>&& other);
-
 	//! clone implementation
 	virtual itensor<T>* clone_impl (bool shapeonly) const;
 	
