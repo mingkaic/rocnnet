@@ -23,10 +23,10 @@ namespace nnet
 //! Accumulate an array of shape
 using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
+using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
+
 template <typename T>
 using ELEM_FUNC = std::function<T(const T*,size_t)>;
-
-using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
 
 //! Generic Tensor Handler
 template <typename T>

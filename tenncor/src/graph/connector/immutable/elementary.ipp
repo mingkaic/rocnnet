@@ -47,7 +47,6 @@ template <typename T>
 static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		if (*a == (T)0)
@@ -93,7 +92,6 @@ template <typename T>
 static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a.get() == b.get()) return constant<T>::get(0);
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
@@ -138,7 +136,6 @@ template <typename T>
 static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a.get() == b.get()) return pow(a, 2);
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -201,7 +198,6 @@ template <typename T>
 static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	if (a.get() == b.get()) return constant<T>::get(1);
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -1038,6 +1034,7 @@ varptr<T> operator + (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1155,6 +1152,7 @@ varptr<T> operator - (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1286,6 +1284,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1420,6 +1419,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1455,6 +1455,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 template <typename T>
 varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_" << axis,
 	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
@@ -1474,6 +1475,7 @@ varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
 template <typename T>
 varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_" << axis,
 	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
@@ -1493,6 +1495,7 @@ varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis)
 template <typename T>
 varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_" << axis,
 	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
@@ -1515,6 +1518,7 @@ varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
 template <typename T>
 varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis)
 {
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_" << axis,
 	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{

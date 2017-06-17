@@ -20,7 +20,7 @@ public:
 		initializer<double>* init,
 		std::string name) : ivariable<double>(shape, init, name) {}
 
-	virtual void get_leaf (inode<double>*&, variable<double>*) {}
+	virtual void get_leaf (varptr<double>&, variable<double>*) {}
 	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
 
 	initializer<double>* get_initializer (void) { return static_cast<initializer<double>*>(this->init_); }
