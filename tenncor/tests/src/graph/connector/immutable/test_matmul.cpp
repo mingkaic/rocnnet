@@ -123,9 +123,10 @@ TEST(MATMUL, Copy_L000)
 	tensorshape shapeB(std::vector<size_t>{alist[1], alist[0]});
 	rand_uniform<double> rinit(2, 12);
 	constant<double>* zero = constant<double>::get(0);
+	constant<double>* one = constant<double>::get(1);
 
 	matmul<double>* olassign = matmul<double>::get(zero, zero);
-	matmul<double>* bothassign = matmul<double>::get(zero, zero);
+	matmul<double>* bothassign = matmul<double>::get(zero, one);
 
 	variable<double> A(shapeA, rinit, "A"); // shape <m, k>
 	variable<double> B(shapeB, rinit, "B"); // shape <k, m>
@@ -176,9 +177,10 @@ TEST(MATMUL, Move_L000)
 	tensorshape shapeB(std::vector<size_t>{alist[1], alist[0]});
 	rand_uniform<double> rinit(2, 12);
 	constant<double>* zero = constant<double>::get(0);
+	constant<double>* one = constant<double>::get(1);
 
 	matmul<double>* olassign = matmul<double>::get(zero, zero);
-	matmul<double>* bothassign = matmul<double>::get(zero, zero);
+	matmul<double>* bothassign = matmul<double>::get(zero, one);
 
 	variable<double> A(shapeA, rinit, "A"); // shape <m, k>
 	variable<double> B(shapeB, rinit, "B"); // shape <k, m>

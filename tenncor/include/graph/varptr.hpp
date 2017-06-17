@@ -35,7 +35,7 @@ public:
 
 	//! wrap ptr construction
 	varptr (inode<T>* ptr);
-	
+
 	virtual ~varptr (void) {}
 
 	//! assign ptr
@@ -68,37 +68,34 @@ protected:
 template <typename T>
 class placeptr : public varptr<T>
 {
-	public:
-		//! nullptr construction
-		placeptr (void) {}
+public:
+	//! nullptr construction
+	placeptr (void) {}
 
-		//! wrap placeholder pointer
-		placeptr (placeholder<T>* ptr);
+	//! wrap placeholder pointer
+	placeptr (placeholder<T>* ptr);
 
-		//! assign a pointer
-		placeptr<T>& operator = (placeholder<T>* other);
+	//! assign a pointer
+	placeptr<T>& operator = (placeholder<T>* other);
 
-		//! assign a wrapper
-		placeptr<T>& operator = (const placeptr<T>& other);
+	// >>>> EXTENDING PLACEHOLDER <<<<
+	//! assign a raw data
+	placeptr<T>& operator = (std::vector<T> vec);
 
-		// >>>> EXTENDING PLACEHOLDER <<<<
-		//! assign a raw data
-		placeptr<T>& operator = (std::vector<T> vec);
+	//! assign a tensor
+	placeptr<T>& operator = (tensor<T>& ten);
 
-		//! assign a tensor
-		placeptr<T>& operator = (tensor<T>& ten);
+	//! implicit pointer conversion
+	operator placeholder<T>* () const;
 
-		//! implicit pointer conversion
-		operator placeholder<T>* () const;
+	//! dereference overload
+	placeholder<T>& operator * (void);
 
-		//! dereference overload
-		placeholder<T>& operator * (void);
+	//! pointer accessor overload
+	placeholder<T>* operator -> (void);
 
-		//! pointer accessor overload
-		placeholder<T>* operator -> (void);
-
-		//! get inner pointer as placeholder pointer
-		placeholder<T>* get (void) const;
+	//! get inner pointer as placeholder pointer
+	placeholder<T>* get (void) const;
 };
 
 }

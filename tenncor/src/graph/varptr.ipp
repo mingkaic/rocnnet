@@ -48,16 +48,6 @@ placeptr<T>& placeptr<T>::operator = (placeholder<T>* other)
 }
 
 template <typename T>
-placeptr<T>& placeptr<T>::operator = (const placeptr<T>& other)
-{
-	if (this != &other)
-	{
-		varptr<T>::operator = (other);
-	}
-	return *this;
-}
-
-template <typename T>
 placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)
 {
     *get() = vec;

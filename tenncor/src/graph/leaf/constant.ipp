@@ -62,7 +62,7 @@ varptr<T> constant<T>::get_gradient (inode<T>*)
 }
 
 template <typename T>
-void constant<T>::get_leaf (inode<T>*& out, variable<T>*)
+void constant<T>::get_leaf (varptr<T>& out, variable<T>*)
 {
 	out = constant<T>::get_shared_zero();
 }

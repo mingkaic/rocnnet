@@ -16,7 +16,11 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 	tensorshape lastshape = shapes[0];
 	for (size_t i = 1, nshapes = shapes.size(); i < nshapes; ++i)
 	{
-		if (shapes[i].n_elems() == 1) continue;
+		if (shapes[i].n_elems() == 1 || lastshape.n_elems() == 1)
+		{
+			lastshape = shapes[i];
+			continue;
+		}
 		if (false == shapes[i].is_compatible_with(lastshape))
 		{
 			std::stringstream ss;
@@ -33,10 +37,217 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 }
 
 template <typename T>
-inline void elementary_check (const varptr<T>& a, const varptr<T>& b)
+inline void elementary_check (const varptr<T>& a, const varptr<T>& b, transfer_func<T>* trans)
 {
 	if (a->good_status() && b->good_status())
-		elementary_shaper({a->get_shape(), b->get_shape()});
+		trans->calc_shape({a->get_shape(), b->get_shape()});
+}
+
+template <typename T>
+static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] + b;
+		}
+	}
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a + outconst[0];
+		}
+	}
+	elementary_check(a, b, Nf);
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			if (args.size() == 2 &&
+				((args[0] == a.get() && args[1] == b.get()) ||
+				 (args[1] == a.get() && args[0] == b.get())))
+				return aud;
+		}
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+}
+
+template <typename T>
+static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (a.get() == b.get()) return constant<T>::get(0);
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		if (*a == (T)0)
+		{
+			return -b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] - b;
+		}
+	}
+	else if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		if (*b == (T)0)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a - outconst[0];
+		}
+	}
+	elementary_check(a, b, Nf);
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
+				return aud;
+		}
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+}
+
+template <typename T>
+static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (a.get() == b.get()) return pow(a, 2);
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst)
+	// optimize only applies to constants
+	{
+		if (*a == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (*a == (T)1)
+		{
+			return b;
+		}
+		if (*a == (T)-1)
+		{
+			return -b;
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] * b;
+		}
+	}
+	if (bconst)
+	// optimize only applies to constants
+	{
+		if (*b == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (*b == (T)1)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a * outconst[0];
+		}
+	}
+	elementary_check(a, b, Nf);
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			if (args.size() == 2 &&
+				((args[0] == a.get() && args[1] == b.get()) ||
+				 (args[1] == a.get() && args[0] == b.get())))
+				return aud;
+		}
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+}
+
+template <typename T>
+static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (a.get() == b.get()) return constant<T>::get(1);
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst)
+	{
+		// don't allow infinity
+		if (*a == (T)0)
+		{
+			return constant<T>::get(0);
+		}
+		if (1 == a->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(a);
+			return outconst[0] / b;
+		}
+	}
+	if (bconst)
+		// optimize only applies to constants
+	{
+		if (*b == (T)0)
+		{
+			throw std::logic_error("divide by constant node of value zero");
+		}
+		if (*b == (T)1)
+		{
+			return a;
+		}
+		if (1 == b->get_shape().n_elems())
+		{
+			std::vector<T> outconst = expose<T>(b);
+			return a / outconst[0];
+		}
+	}
+	elementary_check(a, b, Nf);
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
+				return aud;
+		}
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
 }
 
 template <typename T>
@@ -75,7 +286,11 @@ inline transfer_func<T>* binary_axial_agg (ELEM_FUNC<T> aggregate, size_t axis)
 		tensorshape lastshape = shapes[0];
 		for (size_t i = 1, nshapes = shapes.size(); i < nshapes; ++i)
 		{
-			if (shapes[i].n_elems() == 1) continue;
+			if (shapes[i].n_elems() == 1 || lastshape.n_elems() == 1)
+			{
+				lastshape = shapes[i];
+				continue;
+			}
 			std::vector<size_t> prevshape = lastshape.as_list();
 			std::vector<size_t> currshape = shapes[i].as_list();
 			if (1 == std::abs((double)prevshape.size() - (double)currshape.size()))
@@ -139,6 +354,31 @@ inline transfer_func<T>* binary_axial_agg (ELEM_FUNC<T> aggregate, size_t axis)
 }
 
 template <typename T>
+varptr<T> identity (varptr<T> x)
+{
+	std::string opname = "identity";
+	std::unordered_set<inode<T>*> audience;
+	if (x->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x},
+	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		assert(n == 1);
+		return group[0];
+	})),
+	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> grad;
+		args.front()->get_leaf(grad, leaf);
+		return grad;
+	}, opname);
+	out->extract_metadata(x.get());
+	return out;
+}
+
+template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
 	if (nullptr == (inode<T>*)a) return nullptr;
@@ -151,7 +391,13 @@ varptr<T> operator + (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "abs";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -159,11 +405,12 @@ varptr<T> operator + (const varptr<T> a)
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* a1 = args.front();
-		inode<T>* grad;
-		a1->get_leaf(grad, leaf);
-		return +varptr<T>(grad);
-	}, "abs");
+		varptr<T> grad;
+		args.front()->get_leaf(grad, leaf);
+		return +grad;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -188,7 +435,13 @@ varptr<T> operator - (const varptr<T> a)
 			return static_cast<inode<T>*>(childargs[0]);
 		}
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "neg";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -196,11 +449,12 @@ varptr<T> operator - (const varptr<T> a)
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* a1 = args.front();
-		inode<T>* grad;
-		a1->get_leaf(grad, leaf);
-		return -varptr<T>(grad);
-	}, "neg");
+		varptr<T> grad;
+		args.front()->get_leaf(grad, leaf);
+		return -grad;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -216,7 +470,13 @@ varptr<T> sin (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "sin";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -226,10 +486,12 @@ varptr<T> sin (const varptr<T> a)
 	{
 		// sin'(f(x)) = f'(x)*cos(f(x))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) * cos(a);
-	}, "sin");
+		return grad * cos(a);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -245,7 +507,13 @@ varptr<T> cos (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "cos";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -255,10 +523,12 @@ varptr<T> cos (const varptr<T> a)
 	{
 		// cos'(f(x)) = -f'(x)*sin(f(x))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return -varptr<T>(grad) * sin(a);
-	}, "cos");
+		return -grad * sin(a);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -274,7 +544,13 @@ varptr<T> tan (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "tan";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -286,10 +562,12 @@ varptr<T> tan (const varptr<T> a)
 		// better with = f'(x)/cos^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> denom = cos(a);
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) / (denom * denom);
-	}, "tan");
+		return grad / (denom * denom);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -305,7 +583,13 @@ varptr<T> csc (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "csc";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -316,10 +600,12 @@ varptr<T> csc (const varptr<T> a)
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 		// better with -f'(x)/(sin(f(x)*tan(f(x))))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return -varptr<T>(grad) / (sin(a) * tan(a));
-	}, "csc");
+		return -grad / (sin(a) * tan(a));
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -335,7 +621,13 @@ varptr<T> sec (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "sec";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -346,10 +638,12 @@ varptr<T> sec (const varptr<T> a)
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 		// better with f'(x)*tan(f(x))/cos(f(x))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) * tan(a) / cos(a);
-	}, "sec");
+		return grad * tan(a) / cos(a);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -365,7 +659,13 @@ varptr<T> cot (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "cot";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -376,10 +676,12 @@ varptr<T> cot (const varptr<T> a)
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
 		varptr<T> a = args.front();
 		varptr<T> b = csc(a);
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return -varptr<T>(grad) * b * b;
-	}, "cot");
+		return -grad * b * b;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -395,7 +697,13 @@ varptr<T> exp (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "exp";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -405,10 +713,12 @@ varptr<T> exp (const varptr<T> a)
 	{
 		// exp'(f(x)) = f'(x)*exp(f(x))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) * exp(a);
-	}, "exp");
+		return grad * exp(a);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -424,7 +734,13 @@ varptr<T> sqrt (const varptr<T> a)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "sqrt";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -434,10 +750,12 @@ varptr<T> sqrt (const varptr<T> a)
 	{
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) / ((T)2 * sqrt(a));
-	}, "sqrt");
+		return grad / ((T)2 * sqrt(a));
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -461,7 +779,13 @@ varptr<T> pow (const varptr<T> a, double scalar)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "pow_" << scalar;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([scalar](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -471,10 +795,12 @@ varptr<T> pow (const varptr<T> a, double scalar)
 	{
 		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return scalar * varptr<T>(grad) * pow(a, scalar-1);
-	}, nnutils::formatter() << "pow_" << scalar);
+		return (T)scalar * grad * pow(a, scalar-1);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -492,7 +818,13 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "clip_val_" << min << "_" << max;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([min, max](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -505,10 +837,12 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	[min, max](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-		return varptr<T>(grad) * clip_val(a, min, max);
-	}, nnutils::formatter() << "clip_val_" << min << "_" << max);
+		return grad * clip_val(a, min, max);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -525,9 +859,15 @@ varptr<T> l2norm (const varptr<T> a)
 		}
 		return constant<T>::get(l2norm);
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = "l2norm";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	new transfer_func<T>(
-	[](std::vector<tensorshape> inshapes) { return std::vector<size_t>{inshapes[0].rank()}; },
+	[](std::vector<tensorshape>) { return std::vector<size_t>{1}; },
 	{
 		[](size_t, tensorshape& ashape, const tensorshape&)
 		{
@@ -550,10 +890,12 @@ varptr<T> l2norm (const varptr<T> a)
 	}),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args[0]->get_leaf(grad, leaf);
-		return l2norm(varptr<T>(grad));
-	}, "l2norm");
+		return l2norm(grad);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
@@ -579,7 +921,13 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{l2norm(a), a},
+	std::string opname = nnutils::formatter() << "clip_l2norm_" << cap;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{l2norm(a), a},
 	binary_elem_agg(ELEM_FUNC<T>([cap](const T* group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -595,10 +943,12 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	[cap](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> a = args.front();
-		inode<T>* grad;
+		varptr<T> grad;
 		a->get_leaf(grad, leaf);
-	   	return varptr<T>(grad) * clip_norm(a, cap);
-	}, nnutils::formatter() << "clip_l2norm_" << cap);
+	   	return grad * clip_norm(a, cap);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template<typename T>
@@ -621,7 +971,13 @@ varptr<T> operator + (T a, const varptr<T> b)
 		}
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{b},
+	std::string opname = nnutils::formatter() << a << "_add";
+	std::unordered_set<inode<T>*> audience;
+	if (b->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
 	 {
 	 	assert(n == 1);
@@ -630,10 +986,12 @@ varptr<T> operator + (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = g'(x)
-		inode<T>* grad;
-		args.at(0)->get_leaf(grad, leaf);
-		return grad;
-	}, nnutils::formatter() << a << "_add");
+		varptr<T> bg;
+		args.at(0)->get_leaf(bg, leaf);
+		return bg;
+	}, opname);
+	out->extract_metadata(b.get());
+	return out;
 }
 
 template<typename T>
@@ -654,7 +1012,13 @@ varptr<T> operator + (const varptr<T> a, T b)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	if (b == (T)0) return a;
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "add_" << b;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -663,102 +1027,45 @@ varptr<T> operator + (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		inode<T>* grad;
-		args.at(0)->get_leaf(grad, leaf);
-		return grad;
-	}, nnutils::formatter() << "add_" << b);
+		varptr<T> ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return ag;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	optional<size_t> aaxis = a->get_metadata("grouping");
+	optional<size_t> baxis = b->get_metadata("grouping");
+	if (aaxis)
 	{
-		if (*a == (T)0)
+		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] + b;
+			return add(a, b, *aaxis);
 		}
 	}
-	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	else if (baxis)
 	{
-		if (*b == (T)0)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a + outconst[0];
-		}
+		return add(a, b, *baxis);
 	}
-	elementary_check(a, b);
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	return add_helper<T>(a, b, "add",
 	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 2);
 		return group[0] + group[1];
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
-	{
-		// h'(f(x), g(x)) = f'(x) + g'(x)
-		inode<T>* ag;
-		inode<T>* bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
-		return varptr<T>(ag) + varptr<T>(bg);
-	}, "add");
-}
-
-template <typename T>
-varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
-{
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a.get() == b.get()) return (T)2 * a;
-	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
-	{
-		if (*a == (T)0)
-		{
-			return b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] + b;
-		}
-	}
-	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
-	{
-		if (*b == (T)0)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a + outconst[0];
-		}
-	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
-	binary_axial_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
-	{
-		assert(n == 2);
-		return group[0] + group[1];
-	}), axis),
-	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
-	{
-		// h'(f(x), g(x)) = f'(x) + g'(x)
-		inode<T>* ag;
-		inode<T>* bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
-		return add(varptr<T>(ag), varptr<T>(bg), axis);
-	}, nnutils::formatter() << "add_axis_" << axis);
+   [](std::vector<inode<T>*> args, variable<T>* leaf)
+   {
+	   // h'(f(x), g(x)) = f'(x) + g'(x)
+	   varptr<T> ag;
+	   varptr<T> bg;
+	   args.at(0)->get_leaf(ag, leaf);
+	   args.at(1)->get_leaf(bg, leaf);
+	   return ag + bg;
+   });
 }
 
 template<typename T>
@@ -781,7 +1088,13 @@ varptr<T> operator - (T a, const varptr<T> b)
 		}
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{b},
+	std::string opname = nnutils::formatter() << a << "_sub";
+	std::unordered_set<inode<T>*> audience;
+	if (b->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -790,10 +1103,12 @@ varptr<T> operator - (T a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = -g'(x)
-		inode<T>* grad;
-		args.at(0)->get_leaf(grad, leaf);
-		return -varptr<T>(grad);
-	}, nnutils::formatter() << a << "_sub");
+		varptr<T> bg;
+		args.at(0)->get_leaf(bg, leaf);
+		return -bg;
+	}, opname);
+	out->extract_metadata(b.get());
+	return out;
 }
 
 template<typename T>
@@ -814,7 +1129,13 @@ varptr<T> operator - (const varptr<T> a, T b)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	if (b == (T)0) return a;
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "sub_" << b;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -823,43 +1144,31 @@ varptr<T> operator - (const varptr<T> a, T b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)
-		inode<T>* grad;
-		args.at(0)->get_leaf(grad, leaf);
-		return varptr<T>(grad);
-	}, nnutils::formatter() << "sub_" << b);
+		varptr<T> ag;
+		args.at(0)->get_leaf(ag, leaf);
+		return ag;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a.get() == b.get()) return constant<T>::get(0);
-	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	optional<size_t> aaxis = a->get_metadata("grouping");
+	optional<size_t> baxis = b->get_metadata("grouping");
+	if (aaxis)
 	{
-		if (*a == (T)0)
+		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return -b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] - b;
+			return sub(a, b, *aaxis);
 		}
 	}
-	else if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	else if (baxis)
 	{
-		if (*b == (T)0)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a - outconst[0];
-		}
+		return sub(a, b, *baxis);
 	}
-	elementary_check(a, b);
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	return sub_helper<T>(a, b, "sub",
 	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -868,12 +1177,12 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x) - g'(x)
-		inode<T>* ag;
-		inode<T>* bg;
+		varptr<T> ag;
+		varptr<T> bg;
 		args.at(0)->get_leaf(ag, leaf);
 		args.at(1)->get_leaf(bg, leaf);
-		return varptr<T>(ag) - varptr<T>(bg);
-	}, "sub");
+		return ag - bg;
+	});
 }
 
 template<typename T>
@@ -903,7 +1212,13 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if (0 == a) return constant<T>::get(0);
 	if (1 == a) return b;
 	if (-1 == a) return -b;
-	return immutable<T>::get(std::vector<inode<T>*>{b},
+	std::string opname = nnutils::formatter() << a << "_mul";
+	std::unordered_set<inode<T>*> audience;
+	if (b->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -912,10 +1227,12 @@ varptr<T> operator * (T a, const varptr<T> b)
 	[a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(c, g(x)) = c*g'(x)
-		inode<T>* bg;
+		varptr<T> bg;
 		args.at(0)->get_leaf(bg, leaf);
-		return a * varptr<T>(bg);
-	}, nnutils::formatter() << a << "_mul");
+		return a * bg;
+	}, opname);
+	out->extract_metadata(b.get());
+	return out;
 }
 
 template<typename T>
@@ -943,7 +1260,13 @@ varptr<T> operator * (const varptr<T> a, T b)
 	if (0 == b) return constant<T>::get(0);
 	if (1 == b) return a;
 	if (-1 == b) return -a;
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "mul_" << b;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -952,59 +1275,31 @@ varptr<T> operator * (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = c*f'(x)
-		inode<T>* ag;
+		varptr<T> ag;
 		args.at(0)->get_leaf(ag, leaf);
-		return b * varptr<T>(ag);
-	}, nnutils::formatter() << "mul_" << b);
+		return b * ag;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a.get() == b.get()) return pow(a, 2);
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst)
-	// optimize only applies to constants
+	optional<size_t> aaxis = a->get_metadata("grouping");
+	optional<size_t> baxis = b->get_metadata("grouping");
+	if (aaxis)
 	{
-		if (*a == (T)0)
+		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return constant<T>::get(0);
-		}
-		if (*a == (T)1)
-		{
-			return b;
-		}
-		if (*a == (T)-1)
-		{
-			return -b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] * b;
+			return mul(a, b, *aaxis);
 		}
 	}
-	if (bconst)
-	// optimize only applies to constants
+	else if (baxis)
 	{
-		if (*b == (T)0)
-		{
-			return constant<T>::get(0);
-		}
-		if (*b == (T)1)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a * outconst[0];
-		}
+		return mul(a, b, *baxis);
 	}
-	elementary_check(a, b);
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	return mul_helper<T>(a, b, "mul",
 	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1013,14 +1308,14 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-		inode<T>* ag;
-		inode<T>* bg;
+		varptr<T> ag;
+		varptr<T> bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
 		a->get_leaf(ag, leaf);
 		b->get_leaf(bg, leaf);
-		return varptr<T>(ag) * b + varptr<T>(bg) * a;
-	}, "mul");
+		return ag * b + bg * a;
+	});
 }
 
 template<typename T>
@@ -1052,7 +1347,13 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		return constant<T>::get(0);
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{b},
+	std::string opname = nnutils::formatter() << a << "_div";
+	std::unordered_set<inode<T>*> audience;
+	if (b->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -1062,10 +1363,12 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
 		varptr<T> b = args.at(0);
-		inode<T>* bg;
+		varptr<T> bg;
 		b->get_leaf(bg, leaf);
-		return -a * varptr<T>(bg) / (b * b);
-	}, nnutils::formatter() << a << "_div");
+		return -a * bg / (b * b);
+	}, opname);
+	out->extract_metadata(b.get());
+	return out;
 }
 
 template<typename T>
@@ -1091,7 +1394,13 @@ varptr<T> operator / (const varptr<T> a, T b)
 		throw std::logic_error("divide by zero");
 	}
 	if (b == (T)1) return a;
-	return immutable<T>::get(std::vector<inode<T>*>{a},
+	std::string opname = nnutils::formatter() << "div_" << b;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
 	{
 		assert(n == 1);
@@ -1100,51 +1409,31 @@ varptr<T> operator / (const varptr<T> a, T b)
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), c) = f'(x)/c
-		inode<T>* ag;
+		varptr<T> ag;
 		args.at(0)->get_leaf(ag, leaf);
-		return varptr<T>(ag) / b;
-	}, nnutils::formatter() << "div_" << b);
+		return ag / b;
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	if (a.get() == b.get()) return constant<T>::get(1);
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst)
+	optional<size_t> aaxis = a->get_metadata("grouping");
+	optional<size_t> baxis = b->get_metadata("grouping");
+	if (aaxis)
 	{
-		// don't allow infinity
-		if (*a == (T)0)
+		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return constant<T>::get(0);
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] / b;
+			return div(a, b, *aaxis);
 		}
 	}
-	if (bconst)
-	// optimize only applies to constants
+	else if (baxis)
 	{
-		if (*b == (T)0)
-		{
-			throw std::logic_error("divide by constant node of value zero");
-		}
-		if (*b == (T)1)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a / outconst[0];
-		}
+		return div(a, b, *baxis);
 	}
-	elementary_check(a, b);
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	return div_helper<T>(a, b, "div",
 	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1153,14 +1442,96 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-		inode<T>* ag;
-		inode<T>* bg;
+		varptr<T> ag;
+		varptr<T> bg;
 		varptr<T> a = args.at(0);
 		varptr<T> b = args.at(1);
 		a->get_leaf(ag, leaf);
 		b->get_leaf(bg, leaf);
-		return (varptr<T>(ag) * b - varptr<T>(bg) * a) / (b * b);
-	}, "div");
+		return (ag * b - bg * a) / (b * b);
+	});
+}
+
+template <typename T>
+varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
+{
+	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_" << axis,
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		assert(n == 2);
+		return group[0] + group[1];
+	}), axis),
+	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> ag;
+		varptr<T> bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return add(ag, bg, axis);
+	});
+}
+
+template <typename T>
+varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis)
+{
+	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_" << axis,
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		assert(n == 2);
+		return group[0] - group[1];
+	}), axis),
+	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> ag;
+		varptr<T> bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return sub(ag, bg, axis);
+	});
+}
+
+template <typename T>
+varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
+{
+	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_" << axis,
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		assert(n == 2);
+		return group[0] * group[1];
+	}), axis),
+	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
+		varptr<T> ag;
+		varptr<T> bg;
+		varptr<T> a = args.at(0);
+		varptr<T> b = args.at(1);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return mul(ag, b, axis) + mul(bg, a, axis);
+	});
+}
+
+template <typename T>
+varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis)
+{
+	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_" << axis,
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	{
+		assert(n == 2);
+		return group[0] / group[1];
+	}), axis),
+	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
+		varptr<T> ag;
+		varptr<T> bg;
+		varptr<T> a = args.at(0);
+		varptr<T> b = args.at(1);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return div(mul(ag, b, axis) - mul(bg, a, axis), pow(b, 2), axis);
+	});
 }
 
 }

@@ -151,7 +151,7 @@ void immutable<T>::get_leaves (
 }
 
 template <typename T>
-void immutable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
+void immutable<T>::get_leaf (varptr<T>& out, variable<T>* leaf)
 {
 	auto it = gcache_.find(leaf);
 	if (gcache_.end() == it)
@@ -169,7 +169,7 @@ void immutable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
 			};
 			backward_pass(deps, leaf);
 		}
-		out = gcache_[leaf].get();
+		out = gcache_[leaf];
 	}
 }
 
@@ -186,7 +186,7 @@ varptr<T> immutable<T>::get_gradient (inode<T>* wrt)
 	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
-		inode<T>* leafout = nullptr;
+		varptr<T> leafout;
 		get_leaf(leafout, leaf);
 		// modify res with jacobian
 		auto& j = this->jacobians_[leaf];
@@ -468,6 +468,12 @@ merged_immutable<T>* merged_immutable<T>::get (immutable<T>* conn, bool destruct
 }
 
 template <typename T>
+merged_immutable<T>* merged_immutable<T>::get (immutable<T>* conn, std::unordered_set<size_t> ignore_indices)
+{
+	return new merged_immutable<T>(conn, ignore_indices);
+}
+
+template <typename T>
 merged_immutable<T>* merged_immutable<T>::clone (void) const
 {
 	return static_cast<merged_immutable<T>*>(this->clone_impl());
@@ -529,11 +535,6 @@ merged_immutable<T>::merged_immutable (immutable<T>* conn) :
 	// reset cache content
 	for (auto& gpair : this->gcache_)
 	{
-//		if (immutable<T>* imm = dynamic_cast<immutable<T>*>(gpair.second))
-//		{
-//			solo_merge(imm);
-//			gpair.second = imm;
-//		}
 		// todo: account for when conn already have backprop graphs. cascade destroy or integrate (move)
 		gpair.second = nullptr;
 	}

@@ -82,9 +82,26 @@ public:
 	//! merge/Update the gradient/leaf info
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
 
+	bool find_audience (std::string label,
+		std::unordered_set<inode<T>*>& audience) const
+	{
+		std::vector<iobserver*> auds = get_audience();
+		for (iobserver* aud : auds)
+		{
+			if (inode<T>* anode = dynamic_cast<inode<T>*>(aud))
+			{
+				if (0 == anode->label_.compare(label))
+				{
+					audience.insert(anode);
+				}
+			}
+		}
+		return false == audience.empty();
+	}
+
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be
-	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) = 0;
+	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) = 0;
 
 	// >>>> META-DATA SETTER <<<<
 	//! set new label for this node
@@ -94,6 +111,38 @@ public:
 
 	//! read tensor data from protobuf
 	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
+
+	void set_metadata (std::string key, size_t value)
+	{
+		metadata_[key] = value;
+	}
+
+	optional<size_t> get_metadata (std::string key) const
+	{
+		optional<size_t> out;
+		auto it = metadata_.find(key);
+		if (metadata_.end() != it)
+		{
+			out = it->second;
+		}
+		return out;
+	}
+
+	void extract_metadata (inode<T>* n)
+	{
+		for (auto npair : n->metadata_)
+		{
+			auto metait = metadata_.find(npair.first);
+			if (metadata_.end() == metait)
+			{
+				metadata_[npair.first] = npair.second;
+			}
+			else if (npair.second != metait->second)
+			{
+				// warn
+			}
+		}
+	}
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -118,6 +167,8 @@ protected:
 
 private:
 	std::string label_; //! variable label
+
+	std::unordered_map<std::string, size_t> metadata_;
 };
 
 //! add helper function for exposing node's data

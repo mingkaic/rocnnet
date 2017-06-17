@@ -23,6 +23,10 @@
 namespace nnet
 {
 
+//! wraps an empty node, usually to avoid overlapping references
+template <typename T>
+varptr<T> identity (varptr<T> x);
+
 //! absolute value of a
 template<typename T>
 varptr<T> operator + (const varptr<T> a);
@@ -87,10 +91,6 @@ varptr<T> operator + (const varptr<T> a, T b);
 template<typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b);
 
-//! add a and b along a specific axis, dimension values outside of axis must match
-template <typename T>
-varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis);
-
 //! subtract scalar a and b
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b);
@@ -126,6 +126,22 @@ varptr<T> operator / (const varptr<T> a, T b);
 //! divide a and b
 template<typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b);
+
+//! add a and b along a specific axis, dimension values outside of axis must match
+template <typename T>
+varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis);
+
+//! subtract a and b along a specific axis, dimension values outside of axis must match
+template <typename T>
+varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis);
+
+//! multiply a and b along a specific axis, dimension values outside of axis must match
+template <typename T>
+varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis);
+
+//! divide a and b along a specific axis, dimension values outside of axis must match
+template <typename T>
+varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis);
 
 }
 

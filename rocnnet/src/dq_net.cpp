@@ -323,7 +323,6 @@ void dq_net::variable_setup (void)
 			grad = nnet::reduce_mean(grad, 1);
 		}
 		grad = nnet::clip_norm(grad, 5.0);
-		grad->set_label("grad_"+leaf->get_label());
 		return grad;
 	});
 

@@ -181,6 +181,20 @@ matmul<T>* matmul<T>::get (inode<T>* a, inode<T>* b,
 {
 	if (a && b)
 	{
+		std::unordered_set<inode<T>*> audience;
+		if (a->find_audience(nnutils::formatter() << "matmul" << transposeA << transposeB, audience))
+		{
+			// share nodes when possible
+			for (inode<T>* aud : audience)
+			{
+				if (matmul<T>* mul = dynamic_cast<matmul<T>*>(aud))
+				{
+					std::vector<subject*> args = mul->get_subjects();
+					if (args.size() == 2 && args[0] == a && args[1] == b)
+						return mul;
+				}
+			}
+		}
 		return new matmul<T>(a, b, transposeA, transposeB);
 	}
 	return nullptr;
@@ -347,15 +361,15 @@ new transfer_func<T>(
 [](std::vector<inode<T>*>, variable<T>*)
 {
 	return constant<T>::get_shared_one();
-}, "matmul")
+}, nnutils::formatter() << "matmul" << transposeA << transposeB)
 {
 	if (immutable<T>* imma = dynamic_cast<immutable<T>*>(a)) imma->mergible_ = false;
 	if (immutable<T>* immb = dynamic_cast<immutable<T>*>(b)) immb->mergible_ = false;
 	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{
-		inode<T>* grada;
-		inode<T>* gradb;
+		varptr<T> grada;
+		varptr<T> gradb;
 		a->get_leaf(grada, wrt);
 		b->get_leaf(gradb, wrt);
 
@@ -373,8 +387,8 @@ new transfer_func<T>(
 		}
 		else
 		{
-			mA = new matmul<T>(root, b, false, !transposeB);
-			mB = new matmul<T>(a, root, !transposeA, false);
+			mA = matmul<T>::get(root, b, false, !transposeB);
+			mB = matmul<T>::get(a, root, !transposeA, false);
 		}
 		// todo: make N-dimensional. use permute: transpose first 2 dimensions only.
 		if (transposeA)
@@ -385,9 +399,7 @@ new transfer_func<T>(
 		{
 			mB = transpose<T>(mB);
 		}
-		varptr<T> ga(grada);
-		varptr<T> gb(gradb);
-		return mA * ga + mB * gb;
+		return mA * grada + mB * gradb;
 	};
 
 	typename inode<T>::GRAD_CACHE leaves;

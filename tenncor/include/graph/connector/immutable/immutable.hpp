@@ -72,7 +72,7 @@ public:
 	// >>>> MUTATORS <<<<
 	//! grab operational gradient node, used by other nodes
 	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual void get_leaf (inode<T>*& out, variable<T>* leaf);
+	virtual void get_leaf (varptr<T>& out, variable<T>* leaf);
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_leaf
@@ -167,11 +167,8 @@ class merged_immutable : public immutable<T>
 public:
 	//! builders for merged_immutables
 	static merged_immutable<T>* get (immutable<T>* conn, bool destructive = true);
-	
-	static merged_immutable<T>* get (immutable<T>* conn, std::unordered_set<size_t> ignore_indices)
-	{
-		return new merged_immutable<T>(conn, ignore_indices);
-	}
+
+	static merged_immutable<T>* get (immutable<T>* conn, std::unordered_set<size_t> ignore_indices);
 
 	virtual ~merged_immutable (void) {}
 

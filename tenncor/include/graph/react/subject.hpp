@@ -86,6 +86,16 @@ protected:
 	//! Remove observer-index data from audience
 	virtual void detach (iobserver* viewer, size_t idx);
 
+	std::vector<iobserver*> get_audience (void) const
+	{
+		std::vector<iobserver*> auds;
+		for (auto audpair :audience_)
+		{
+			auds.push_back(audpair.first);
+		}
+		return auds;
+	}
+
 	friend class iobserver;
 
 private:

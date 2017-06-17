@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/connector/immutable/elementary.hpp"
+
 #ifdef TENNCOR_TRANSFORM_HPP
 
 namespace nnet
@@ -28,6 +30,12 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 {
 	if (nullptr == a) return nullptr;
 	assert(2 >= a->get_shape().rank());
+	std::string opname = nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_trans_agg<T>(
 	[axis_swap](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
@@ -59,10 +67,10 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 	}),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
-		return transpose(varptr<T>(grad));
-	}, nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second);
+		return transpose(grad);
+	}, opname);
 }
 
 template <typename T>
@@ -72,6 +80,18 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (a->good_status() && *a == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
+	std::string opname = "fit";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			if (args.size() == 2 && args[0] == a.get() && args[1] == watch.get())
+				return aud;
+		}
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
 	new transfer_func<T>(
 	[](std::vector<tensorshape> shapes) -> tensorshape
@@ -103,10 +123,10 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	}, copyover<T>),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
 		return grad;
-	}, "fit", watch);
+	}, opname, watch);
 }
 
 template <typename T>
@@ -115,6 +135,12 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	if (nullptr == a) return nullptr;
 	if (multiplier == 0) return constant<T>::get(0);
 	if (multiplier == 1) return a;
+	std::string opname = nnutils::formatter() << "extend_" << index << "_" << multiplier;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
 	unary_trans_agg<T>(
 	[index, multiplier](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
@@ -149,10 +175,10 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	}),
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
 		return grad;
-	}, nnutils::formatter() << "extend_" << index << "_" << multiplier);
+	}, opname);
 }
 
 template <typename T>
@@ -238,14 +264,20 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 			}
 		}, collector);
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
-	[index, collector](std::vector<inode<T>*> args, variable<T>* leaf) -> inode<T>*
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
 	{
-		inode<T>* gradn;
+		return *audience.begin(); // share nodes when possible
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
+	[index](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> gradn;
 		args.front()->get_leaf(gradn, leaf);
 		if (index)
 		{
-			return compress(varptr<T>(gradn), index, collector);
+			gradn = identity<T>(gradn);
+			gradn->set_metadata("grouping", *index);
 		}
 		return gradn;
 	}, name);
@@ -339,7 +371,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				return outidx;
 			}
 		}, search);
-		name = nnutils::formatter() << name << "_" << *index;
+		name = nnutils::formatter() << name << "_" << *dimension;
 	}
 	else
 	{
@@ -361,7 +393,11 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			}
 		}, search);
 	}
-
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
 	[dimension, search](std::vector<inode<T>*>, variable<T>*)
 	{

@@ -1,7 +1,6 @@
 tenncor:
-- each element in output tensor should be mappable to values in leaf tensors
-- matrix multiplication on for n-dimension tensors only operate on first 2 dimension
-- transpose should generalize to permute on n-dimensions
+- remove incache_, add a mechanism to pass along data change for each update (avoid space overhead)
+- during the unfreeze update process, avoid duplicate updates by stopping at branching nodes to wait for dependency updates
 - remove move and clone functions for classes that don't need it
 - define alloc shape as mutable and allowed shape as immutable (enforce this rule)
 	placeholder of (4, 0) should accept input of size of any multiple of 4

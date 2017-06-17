@@ -87,7 +87,7 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 }
 
 template <typename T>
-void variable<T>::get_leaf (inode<T>*& out, variable<T>* leaf)
+void variable<T>::get_leaf (varptr<T>& out, variable<T>* leaf)
 {
 	if (this == leaf)
 	{
