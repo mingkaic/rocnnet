@@ -317,12 +317,12 @@ TEST(IMMUTABLE, Tensor_I004)
 		return res;
 	};
 
-	auto maxadder = [](const double* data, size_t n)
+	auto maxadder = [](const double** data, size_t n)
 	{
 		double accum = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			accum += data[i];
+			if (data[i]) accum += *data[i];
 		}
 		return accum;
 	};
@@ -369,8 +369,8 @@ TEST(IMMUTABLE, Tensor_I004)
 		}
 		for (size_t i = 0; i < nc2s; i++)
 		{
-			double* in = &expectin[i*2];
-			expectc2[i] = maxadder(in, 2);
+			std::vector<const double*> in = {&expectin[i*2], &expectin[i*2+1]};
+			expectc2[i] = maxadder(&(in[0]), 2);
 		}
 	}
 
@@ -412,25 +412,26 @@ TEST(IMMUTABLE, ImmutableDeath_I005)
 
 	// build a tree out of mock immutables
 	FUZZ::buildNTree<immutable<double> >(2, nnodes,
-		[&leaves]()
+	[&leaves](void)
+	{
+		std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
+		immutable<double>* im = new mock_immutable({}, llabel);
+		leaves.emplace(im);
+		return im;
+	},
+	[&collector](std::vector<immutable<double>*> args)
+	{
+		std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
+		mock_immutable* im = new mock_immutable(
+			std::vector<inode<double>*>(args.begin(), args.end()), nlabel);
+		im->triggerOnDeath =
+		[&collector](mock_immutable* ded)
 		{
-			std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
-			immutable<double>* im = new mock_immutable({}, llabel);
-			leaves.emplace(im);
-			return im;
-		},
-		[&collector](std::vector<immutable<double>*> args)
-		{
-			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-			mock_immutable* im = new mock_immutable(
-				std::vector<inode<double>*>(args.begin(), args.end()), nlabel);
-			im->triggerOnDeath =
-			[&collector](mock_immutable* ded) {
-				collector.erase(ded);
-			};
-			collector.insert(im);
-			return im;
-		});
+			collector.erase(ded);
+		};
+		collector.insert(im);
+		return im;
+	});
 
 	// check if collectors are all dead
 	for (immutable<double>* l : leaves)
@@ -462,12 +463,12 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 	{
 		return shape;
 	};
-	ELEM_FUNC<double> summer = [](const double* data, size_t n)
+	ELEM_FUNC<double> summer = [](const double** data, size_t n)
 	{
 		double accum = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			accum += data[i];
+			if (data[i]) accum += *data[i];
 		}
 		return accum;
 	};
@@ -679,7 +680,6 @@ TEST(IMMUTABLE, GetLeaf_I008)
 TEST(IMMUTABLE, GetGradient_I009)
 {
 	FUZZ::reset_logger();
-
 	tensorshape shape = random_def_shape();
 	double single_rando = FUZZ::getDouble(1, "single_rando", {1.1, 2.2})[0];
 
@@ -688,12 +688,12 @@ TEST(IMMUTABLE, GetGradient_I009)
 	{
 		return shape;
 	};
-	ELEM_FUNC<double> summer = [](const double* data, size_t n)
+	ELEM_FUNC<double> summer = [](const double** data, size_t n)
 	{
 		double accum = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			accum += data[i];
+			accum += *data[i];
 		}
 		return accum;
 	};
@@ -728,31 +728,31 @@ TEST(IMMUTABLE, GetGradient_I009)
 	std::unordered_set<immutable<double>*> collector;
 
 	inode<double>* root = FUZZ::buildNTree<inode<double> >(2, nnodes,
-		[&leaves, &shape, &cinit]() -> inode<double>*
+	[&leaves, &shape, &cinit]() -> inode<double>*
+	{
+		std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
+		variable<double>* im = new variable<double>(shape, cinit, llabel);
+		im->initialize();
+		leaves.emplace(im);
+		return im;
+	},
+	[&collector, &unifiedshaper, &summer, &backer](std::vector<inode<double>*> args) -> inode<double>*
+	{
+		std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
+		std::vector<OUT_MAPPER> omaps;
+		for (size_t i = 0, n = args.size(); i < n; i++)
 		{
-			std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
-			variable<double>* im = new variable<double>(shape, cinit, llabel);
-			im->initialize();
-			leaves.emplace(im);
-			return im;
-		},
-		[&collector, &unifiedshaper, &summer, &backer](std::vector<inode<double>*> args) -> inode<double>*
-		{
-			std::string nlabel = FUZZ::getString(FUZZ::getInt(1, "nlabel.size", {14, 29})[0], "nlabel");
-			std::vector<OUT_MAPPER> omaps;
-			for (size_t i = 0, n = args.size(); i < n; i++)
-			{
-				omaps.push_back([](size_t, tensorshape&,const tensorshape&) -> std::vector<size_t> { return {0}; });
-			}
-			mock_immutable* im = new mock_immutable(args, nlabel,
-				unifiedshaper, summer, omaps, backer);
-			im->triggerOnDeath =
-				[&collector](mock_immutable* ded) {
-					collector.erase(ded);
-				};
-			collector.insert(im);
-			return im;
-		});
+			omaps.push_back([](size_t, tensorshape&,const tensorshape&) -> std::vector<size_t> { return {0}; });
+		}
+		mock_immutable* im = new mock_immutable(args, nlabel,
+			unifiedshaper, summer, omaps, backer);
+		im->triggerOnDeath =
+			[&collector](mock_immutable* ded) {
+				collector.erase(ded);
+			};
+		collector.insert(im);
+		return im;
+	});
 
 	variable<double>* notleaf = new variable<double>(0);
 	inode<double>::GRAD_CACHE lcache;
@@ -822,12 +822,12 @@ TEST(IMMUTABLE, Update_I010)
 	};
 
 	bool mutate = false;
-	ELEM_FUNC<double> asis = [&mutate](const double* data, size_t n)
+	ELEM_FUNC<double> asis = [&mutate](const double** data, size_t n)
 	{
 		double accum = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			accum += data[i];
+			accum += *data[i];
 		}
 		if (mutate)
 		{

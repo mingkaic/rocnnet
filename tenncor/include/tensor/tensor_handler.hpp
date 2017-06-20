@@ -26,7 +26,7 @@ using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
 
 template <typename T>
-using ELEM_FUNC = std::function<T(const T*,size_t)>;
+using ELEM_FUNC = std::function<T(const T**,size_t)>;
 
 //! Generic Tensor Handler
 template <typename T>
@@ -149,20 +149,13 @@ protected:
 	//! element-wise reference input from output (only used once when populating new tensor)
 	std::vector<OUT_MAPPER> outidxer_;
 
-	//! a simulated 3-D tensor of indices:
-	//! rank 0: groups
-	//! rank 1: elements
-	//! rank 2: arguments
-	std::vector<size_t> arg_indices_;
-
-	//! groups: rank 0 of arg_indices_, rank 1 of incache_
-	size_t group_size_ = 1;
-
-	//! 3-D tensor of temporary data:
+	//! 3-D tensor of input reference:
 	//! rank 0: arguments
 	//! rank 1: groups
 	//! rank 2: elements
-	tensor<T> incache_;
+	std::vector<const T*> arg_ptrs_;
+
+	std::vector<const T*> argsrcs_;
 };
 
 //! Initializer Handler

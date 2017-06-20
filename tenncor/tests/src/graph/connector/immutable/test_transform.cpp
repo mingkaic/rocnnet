@@ -278,10 +278,10 @@ TEST(TRANSFORM, Compress_K005)
 	FUZZ::reset_logger();
 	size_t compress_index;
 	ELEM_FUNC<double> compression =
-	[](const double* data, size_t n) -> double
+	[](const double** data, size_t n) -> double
 	{
 		assert(n > 0);
-		return data[0];
+		return *data[0];
 	};
 
 	PARAM_EVAL<size_t> compressparam =
@@ -344,18 +344,18 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 	FUZZ::reset_logger();
 	size_t arg_index;
 	ELEM_FUNC<double> search =
-	[](const double* data, size_t n) -> double
+	[](const double** data, size_t n) -> double
 	{
 		double mean = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			mean += data[i] / n;
+			mean += *(data[i]) / n;
 		}
-		double error = std::abs(data[0] - mean);
+		double error = std::abs(*(data[0]) - mean);
 		size_t idx = 0;
 		for (size_t i = 1; i < n; i++)
 		{
-			double potent_error = std::abs(data[i] - mean);
+			double potent_error = std::abs(*(data[i]) - mean);
 			if (potent_error < error)
 			{
 				error = potent_error;
@@ -386,13 +386,13 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
 			if (incoord[arg_index] == 0)
 			{
-				std::vector<double> vecs;
+				std::vector<const double*> vecs;
 				size_t outidx = outshape.sequential_idx(incoord);
 				for (size_t i = 0; i < n; i++)
 				{
 					incoord[arg_index] = i;
 					size_t inidx = inshape.sequential_idx(incoord);
-					vecs.push_back(in[inidx]);
+					vecs.push_back(&in[inidx]);
 				}
 				out[outidx] = search(&vecs[0], vecs.size());
 			}

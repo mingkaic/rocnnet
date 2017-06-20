@@ -190,52 +190,77 @@ void transfer_func<T>::calc_data (T* dest, const tensorshape& outshape,
 	assert(n_args == outidxer_.size());
 	size_t n_out_elems = outshape.n_elems();
 	// only need to execute once
-	if (arg_indices_.empty() || false == incache_.is_alloc())
+	if (arg_ptrs_.empty())
 	{
-		arg_indices_.clear();
-		incache_.deallocate();
-
-		// assert: all inshapes are valid and srcs are non-nullptr
-		for (size_t i = 0; i < n_args; i++)
+		argsrcs_.empty();
+		for (size_t i = 0, n = srcs.size(); i < n; i++)
 		{
+			assert(srcs[i]);
+			argsrcs_.push_back(srcs[i]);
+		}
+		// assert: all inshapes are valid and srcs are non-nullptr
+		for (size_t j = 0; j < n_out_elems; j++)
+		{
+			// order inindices as <group, arg>
+			std::vector<size_t> inindices;
+			for (size_t i = 0; i < n_args; i++)
+			{
+				std::vector<size_t> inidx = outidxer_[i](j, inshapes[i], outshape);
+				inindices.insert(inindices.end(), inidx.begin(), inidx.end());
+			}
+			// reorder as <arg, group>
+			size_t groupsize = inindices.size() / n_args;
+			for (size_t k = 0; k < groupsize; k++)
+			{
+				for (size_t i = 0; i < n_args; i++)
+				{
+					const T* src = argsrcs_[i];
+					size_t n = inshapes[i].n_elems();
+					size_t ini = inindices[k + i * groupsize];
+					if (ini < n)
+					{
+						arg_ptrs_.push_back(src + ini);
+					}
+					else
+					{
+						arg_ptrs_.push_back(nullptr);
+					}
+				}
+			}
+		}
+	}
+	size_t groupsize = arg_ptrs_.size() / (n_args * n_out_elems);
+	size_t ptr_block_size = groupsize * n_args;
+	for (size_t i = 0; i < n_args; i++)
+	{
+		const T* src = srcs[i];
+		if (nullptr != src && src != argsrcs_[i])
+		{
+			size_t freshsize = inshapes[i].n_elems();
 			for (size_t j = 0; j < n_out_elems; j++)
 			{
 				std::vector<size_t> inidx = outidxer_[i](j, inshapes[i], outshape);
-				arg_indices_.insert(arg_indices_.end(), inidx.begin(), inidx.end());
-			}
-		}
-		group_size_ = arg_indices_.size() / (n_args * n_out_elems);
-		incache_.allocate(std::vector<size_t>{n_args, group_size_, n_out_elems});
-	}
-	T* cache_ptr = this->get_raw(incache_);
-	size_t idx_block_size = group_size_ * n_out_elems;
-	// execute for every dependency update (any non-null src)
-	for (size_t i = 0; i < n_args; i++)
-	{
-		if (const T* src = srcs[i])
-		{
-			size_t inlimit = inshapes[i].n_elems();
-			// pull up indices of argument i
-			// we take advantage of tensor's continguous ordering:
-			auto argit = arg_indices_.begin() + i * idx_block_size;
-			for (size_t j = 0; j < idx_block_size; j++)
-			{
-				size_t ini = *(argit + j);
-				if (ini < inlimit)
+				assert(groupsize == inidx.size());
+				for (size_t k = 0; k < groupsize; k++)
 				{
-					cache_ptr[i + j * n_args] = src[ini];
-				}
-				else
-				{
-					cache_ptr[i + j * n_args] = 0;
+					size_t ptridx = i + k * n_args + j * ptr_block_size;
+					if (arg_ptrs_[ptridx] && inidx[k] < freshsize)
+					{
+						size_t idx = std::distance(argsrcs_[i], arg_ptrs_[ptridx]);
+						arg_ptrs_[ptridx] = src + idx;
+					}
+					else
+					{
+						arg_ptrs_[ptridx] = nullptr;
+					}
 				}
 			}
+			argsrcs_[i] = src;
 		}
 	}
-	size_t data_block_size = n_args * group_size_;
 	for (size_t i = 0; i < n_out_elems; i++)
 	{
-		dest[i] = aggregate_(cache_ptr + i * data_block_size, data_block_size);
+		dest[i] = aggregate_(&arg_ptrs_[i * ptr_block_size], ptr_block_size);
 	}
 }
 

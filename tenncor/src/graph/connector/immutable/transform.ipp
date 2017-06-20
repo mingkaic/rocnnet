@@ -14,9 +14,10 @@ namespace nnet
 {
 
 template <typename T>
-inline T copyover (const T* data, size_t)
+inline T copyover (const T** data, size_t)
 {
-	return data[0]; // 1 to 1 copy over
+	if (data[0]) return *data[0]; // 1 to 1 copy over
+	return (T)0;
 }
 
 template <typename T>
@@ -287,9 +288,9 @@ template <typename T>
 varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const T* data, size_t n) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return *std::max_element(data, data+n);
+		return **std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
 	}, "reduce_max");
 }
 
@@ -297,9 +298,14 @@ template <typename T>
 varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const T* data, size_t n) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return std::accumulate(data, data+n, (T)0);
+		T accum = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			accum += *data[i];
+		}
+		return accum;
 	}, "reduce_sum");
 }
 
@@ -307,9 +313,14 @@ template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const T* data, size_t n) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return std::accumulate(data, data+n, (T)0) / n;
+		T accum = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			accum += *data[i];
+		}
+		return accum / n;
 	}, "reduce_mean");
 }
 
@@ -411,9 +422,9 @@ template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return arg_compress<T>(a, dimension,
-	[](const T* data, size_t n) -> T
+	[](const T** data, size_t n) -> T
 	{
-		auto mit = std::max_element(data, data+n);
+		auto mit = std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
 		return std::distance(data, mit);
 	}, "arg_max");
 }

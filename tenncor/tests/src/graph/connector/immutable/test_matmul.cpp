@@ -301,6 +301,7 @@ TEST(MATMUL, Matmul_L002)
 
 
 // tests matrix multiplication but for n dimensions, matrix sizes reduced to 2-5, (we get at most 5x25 matmuls)
+// todo: test
 TEST(MATMUL, DISABLED_NDim_Matmul_L002)
 {
 	FUZZ::reset_logger();

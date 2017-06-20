@@ -141,7 +141,7 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 		const tensor<T>* in_tens = input->get_eval();
 		assign_func<T> assign_sub([](const T& e1, const T& e2) { return e1 - e2; });
 		assign_sub(out_tens, in_tens);
-		this->notify(notification::UPDATE);
+//		this->notify(notification::UPDATE);
 	};
 }
 

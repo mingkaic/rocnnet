@@ -359,10 +359,10 @@ varptr<T> identity (varptr<T> x)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return group[0];
+		return *(group[0]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -394,10 +394,10 @@ varptr<T> operator + (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return +group[0];
+		return +(*group[0]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -438,10 +438,10 @@ varptr<T> operator - (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return -group[0];
+		return -(*group[0]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -473,10 +473,10 @@ varptr<T> sin (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::sin(group[0]);
+		return std::sin((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -510,10 +510,10 @@ varptr<T> cos (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::cos(group[0]);
+		return std::cos((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -547,10 +547,10 @@ varptr<T> tan (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::tan(group[0]);
+		return std::tan((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -586,10 +586,10 @@ varptr<T> csc (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return 1/std::sin(group[0]);
+		return 1/std::sin((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -624,10 +624,10 @@ varptr<T> sec (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return 1/std::cos(group[0]);
+		return 1/std::cos((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -662,10 +662,10 @@ varptr<T> cot (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::cos(group[0]) / std::sin(group[0]);
+		return std::cos((*group[0])) / std::sin((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -700,10 +700,10 @@ varptr<T> exp (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::exp(group[0]);
+		return std::exp((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -737,10 +737,10 @@ varptr<T> sqrt (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::sqrt(group[0]);
+		return std::sqrt((*group[0]));
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -782,10 +782,10 @@ varptr<T> pow (const varptr<T> a, double scalar)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([scalar](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([scalar](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return std::pow(group[0], scalar);
+		return std::pow((*group[0]), scalar);
 	})),
 	[scalar](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -821,10 +821,10 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([min, max](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([min, max](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		T v = group[0];
+		T v = *(group[0]);
 		// todo: we can make comparison slightly faster by xor min
 		if (min > v) v = min;
 		else if (max < v) v = max;
@@ -875,12 +875,12 @@ varptr<T> l2norm (const varptr<T> a)
 			return outidx;
 		}
 	},
-	[](const T* group, size_t n)
+	[](const T** group, size_t n)
 	{
 		T l2norm = 0;
 		for (size_t i = 0; i < n; i++)
 		{
-			l2norm += group[i] * group[i];
+			l2norm += *(group[i]) * *(group[i]);
 		}
 		return std::sqrt(l2norm);
 	}),
@@ -924,11 +924,11 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{l2norm(a), a},
-	binary_elem_agg(ELEM_FUNC<T>([cap](const T* group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>([cap](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		T l2norm = group[0];
-		T elem = group[1];
+		T l2norm = *(group[0]);
+		T elem = *(group[1]);
 		if (l2norm > cap)
 		{
 			// normalize
@@ -974,10 +974,10 @@ varptr<T> operator + (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
 	 {
 	 	assert(n == 1);
-		return a + group[0];
+		return a + *(group[0]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1015,10 +1015,10 @@ varptr<T> operator + (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return group[0] + b;
+		return *(group[0]) + b;
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1049,10 +1049,10 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		return add(a, b, *baxis);
 	}
 	return add_helper<T>(a, b, "add",
-	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] + group[1];
+		return *(group[0]) + *(group[1]);
 	})),
    [](std::vector<inode<T>*> args, variable<T>* leaf)
    {
@@ -1092,10 +1092,10 @@ varptr<T> operator - (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return a - group[0];
+		return a - *(group[0]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1133,10 +1133,10 @@ varptr<T> operator - (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return group[0] - b;
+		return *(group[0]) - b;
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1167,10 +1167,10 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		return sub(a, b, *baxis);
 	}
 	return sub_helper<T>(a, b, "sub",
-	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] - group[1];
+		return *(group[0]) - *(group[1]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1217,10 +1217,10 @@ varptr<T> operator * (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return a * group[0];
+		return a * *(group[0]);
 	})),
 	[a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1265,10 +1265,10 @@ varptr<T> operator * (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return group[0] * b;
+		return *(group[0]) * b;
 	})),
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1299,10 +1299,10 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		return mul(a, b, *baxis);
 	}
 	return mul_helper<T>(a, b, "mul",
-	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] * group[1];
+		return *(group[0]) * *(group[1]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1353,10 +1353,10 @@ varptr<T> operator / (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return a / group[0];
+		return a / *(group[0]);
 	})),
 	[a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1400,10 +1400,10 @@ varptr<T> operator / (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T* group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
-		return group[0] / b;
+		return *(group[0]) / b;
 	})),
 	[b](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1434,10 +1434,10 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		return div(a, b, *baxis);
 	}
 	return div_helper<T>(a, b, "div",
-	binary_elem_agg(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] / group[1];
+		return *(group[0]) / *(group[1]);
 	})),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1457,10 +1457,10 @@ varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] + group[1];
+		return *(group[0]) + *(group[1]);
 	}), axis),
 	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1477,10 +1477,10 @@ varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] - group[1];
+		return *(group[0]) - *(group[1]);
 	}), axis),
 	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1497,10 +1497,10 @@ varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] * group[1];
+		return *(group[0]) * *(group[1]);
 	}), axis),
 	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -1520,10 +1520,10 @@ varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
 	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T* group, size_t n) -> T
+	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return group[0] / group[1];
+		return *(group[0]) / *(group[1]);
 	}), axis),
 	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
 	{

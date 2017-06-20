@@ -19,10 +19,10 @@ SHAPER get_testshaper (void)
 	return [shape](std::vector<tensorshape>) { return shape; };
 }
 
-double testforward (const double* out, size_t n)
+double testforward (const double** out, size_t n)
 {
-	if (n == 0) return 0;
-	return out[0];
+	if (n == 0 || nullptr == out[0]) return 0;
+	return *out[0];
 }
 
 

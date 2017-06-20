@@ -29,12 +29,12 @@ static std::vector<size_t> forward_mapper (size_t i, tensorshape&, const tensors
 	return { i };
 }
 
-static double forward (const double* group, size_t n)
+static double forward (const double** group, size_t n)
 {
 	double accum = 0;
 	for (size_t i = 0; i < n; i++)
 	{
-		accum += group[i];
+		accum += *group[i];
 	}
 	return accum;
 }
@@ -42,11 +42,18 @@ static double forward (const double* group, size_t n)
 
 static tensorshape shaper (std::vector<tensorshape> args)
 {
-	return args[0].concatenate(args[1]);
+	std::vector<size_t> s0 = args[0].as_list();
+	std::vector<size_t> s1 = args[1].as_list();
+	std::vector<size_t> compress;
+	for (size_t i = 0, n = std::min(s0.size(), s1.size()); i < n; i++)
+	{
+		compress.push_back(std::min(s0[i], s1[i]));
+	}
+	return compress;
 }
 
 
-static double marked_forward (const double*, size_t)
+static double marked_forward (const double**, size_t)
 {
 	return SUPERMARK;
 }
@@ -65,7 +72,7 @@ TEST(HANDLER, Transfer_C000)
 	FUZZ::reset_logger();
 	tensorshape c1 = random_def_shape();
 	tensorshape c2 = random_def_shape();
-	tensorshape resshape = c1.concatenate(c2);
+	tensorshape resshape = shaper({c1, c2});
 	mock_tensor arg1(c1);
 	mock_tensor arg2(c2);
 	tensor<double> good(resshape);
