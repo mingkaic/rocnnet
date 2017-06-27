@@ -76,6 +76,8 @@ protected:
 	//! tensor state (good or bad) true = good
 	bool is_init_ = false;
 
+	assign_func<T> assigner_;
+
 private:
 	//! copy helper
 	void copy_helper (const ileaf<T>& other);

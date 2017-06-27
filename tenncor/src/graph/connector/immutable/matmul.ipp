@@ -189,7 +189,7 @@ matmul<T>* matmul<T>::get (inode<T>* a, inode<T>* b,
 			{
 				if (matmul<T>* mul = dynamic_cast<matmul<T>*>(aud))
 				{
-					std::vector<subject*> args = mul->get_subjects();
+					std::vector<inode<T>*> args = mul->get_arguments();
 					if (args.size() == 2 && args[0] == a && args[1] == b)
 						return mul;
 				}
@@ -363,8 +363,8 @@ new transfer_func<T>(
 	return constant<T>::get_shared_one();
 }, nnutils::formatter() << "matmul" << transposeA << transposeB)
 {
-	if (immutable<T>* imma = dynamic_cast<immutable<T>*>(a)) imma->mergible_ = false;
-	if (immutable<T>* immb = dynamic_cast<immutable<T>*>(b)) immb->mergible_ = false;
+	if (base_immutable<T>* imma = dynamic_cast<base_immutable<T>*>(a)) imma->mergible_ = false;
+	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b)) immb->mergible_ = false;
 	auto jtrans = [a, b, transposeA, transposeB](
 		inode<T>* root, variable<T>* wrt) -> inode<T>*
 	{

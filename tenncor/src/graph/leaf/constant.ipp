@@ -101,6 +101,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		assert((bool) propershape);
 		this->data_->allocate(*propershape);
 	}
+	assert(this->data_->is_alloc());
 	// we should also pad 0s for well defined shapes
 	size_t n = this->data_->n_elems();
 	if (n > rawn)
@@ -108,8 +109,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		size_t deficiency = n - rawn;
 		raw.insert(raw.end(), deficiency, 0);
 	}
-	assign_func<T> assigner;
-	assigner(*(this->data_), raw);
+	this->assigner_(this->data_, raw);
 	this->is_init_ = true;
 }
 

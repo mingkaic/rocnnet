@@ -113,9 +113,8 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->get_eval();
-		assign_func<T> assiger;
-		assiger(out_tens, in_tens);
-		this->notify(notification::UPDATE);
+		this->assigner_(out_tens, in_tens);
+//		this->notify(notification::UPDATE);
 	};
 }
 
@@ -126,9 +125,9 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->get_eval();
-		assign_func<T> assign_add([](const T& e1, const T& e2) { return e1 + e2; });
-		assign_add(out_tens, in_tens);
-		this->notify(notification::UPDATE);
+		this->assigner_(out_tens, in_tens,
+			[](const T& e1, const T& e2) { return e1 + e2; });
+//		this->notify(notification::UPDATE);
 	};
 }
 
@@ -139,8 +138,8 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->get_eval();
-		assign_func<T> assign_sub([](const T& e1, const T& e2) { return e1 - e2; });
-		assign_sub(out_tens, in_tens);
+		this->assigner_(out_tens, in_tens,
+			[](const T& e1, const T& e2) { return e1 - e2; });
 //		this->notify(notification::UPDATE);
 	};
 }

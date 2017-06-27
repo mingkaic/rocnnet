@@ -181,8 +181,10 @@ void dq_net::tear_down (void)
 {
 	// cascade delete all leaf nodes 
 	// (qnet for the variables, then local placeholders)
-	if (source_qnet_) delete source_qnet_;
-	if (target_qnet_) delete target_qnet_;
+	if (source_qnet_)
+		delete source_qnet_;
+	if (target_qnet_)
+		delete target_qnet_;
 	
 	if (input_) delete input_;
 	if (train_input_) delete train_input_;

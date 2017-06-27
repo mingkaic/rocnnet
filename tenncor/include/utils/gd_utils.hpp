@@ -55,9 +55,9 @@ public:
 			std::transform(gress.begin(), gress.end(), gress.begin(),
 			[](std::pair<inode<T>*,variable<T>*>& gpair)
 			{
-				if (immutable<double>* imm = dynamic_cast<immutable<double>*>(gpair.first))
+				if (base_immutable<double>* imm = dynamic_cast<base_immutable<double>*>(gpair.first))
 				{
-					solo_merge(imm);
+					solo_audience_merge(imm);
 					gpair.first = imm;
 				}
 				return gpair;

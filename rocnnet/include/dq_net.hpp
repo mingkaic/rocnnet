@@ -102,10 +102,10 @@ private:
 	std::vector<exp_batch> random_sample (void);
 
 	// source network
-	ml_perceptron* source_qnet_;
+	ml_perceptron* source_qnet_ = nullptr;
 
 	// target network
-	ml_perceptron* target_qnet_;
+	ml_perceptron* target_qnet_ = nullptr;
 
 	// === forward computation ===
 	// fanin: shape <ninput>

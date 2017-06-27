@@ -217,22 +217,6 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 }
 
 template <typename T>
-void iconnector<T>::dep_replace (std::vector<subject*>& deps)
-{
-	size_t oldndep = this->dependencies_.size();
-	size_t n = deps.size();
-	assert(n >= oldndep);
-	for (size_t i = oldndep; i < n; i++)
-	{
-		this->add_dependency(deps[i]);
-	}
-	for (size_t i = 0; i < oldndep; i++)
-	{
-		this->replace_dependency(deps[i], i);
-	}
-}
-
-template <typename T>
 struct bottom_first
 {
 	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const

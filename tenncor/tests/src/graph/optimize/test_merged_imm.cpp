@@ -206,12 +206,12 @@ TEST(MERGE_IMM, Constructor_M000)
 	inode<double>* back = root->get_gradient(leaves[0]);
 	tensorshape backshape = back->get_shape();
 	std::vector<double> backdata = expose(back);
-	std::vector<subject*> intermediate = dynamic_cast<iconnector<double>*>(root.get())->get_subjects();
+	std::vector<inode<double>*> intermediate = root.get()->get_arguments();
 
 	merged_immutable<double>* mroot = merged_immutable<double>::get(dynamic_cast<immutable<double>*>(root.get()));
 
-	// delete intermediates, solo_merge usually takes care of all this
-	for (subject* s : intermediate)
+	// delete intermediates, solo_audience_merge usually takes care of all this
+	for (inode<double>* s : intermediate)
 	{
 		immutable<double>* imm = dynamic_cast<immutable<double>*>(s);
 		if (imm && imm->mergible_)
@@ -235,7 +235,7 @@ TEST(MERGE_IMM, Constructor_M000)
 		EXPECT_EQ(backdata[i], mbackdata[i]);
 	}
 	// verify if merged node is direct parent of leaves
-	std::vector<subject*> margs = mroot->get_subjects();
+	std::vector<inode<double>*> margs = mroot->get_arguments();
 	EXPECT_TRUE(std::equal(margs.begin(), margs.end(), leaves.begin()));
 
 	for (variable<double>* base : leaves)

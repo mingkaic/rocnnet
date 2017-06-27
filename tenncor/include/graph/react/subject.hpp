@@ -60,6 +60,9 @@ public:
 
 	size_t n_audience (void) const { return audience_.size(); }
 
+	//! replace other with this instance for all parents of other
+	void steal_observers (subject* other);
+
 protected:
 	//! explicit default constructor to allow copy and move constructors
 	subject (void) {}
@@ -86,23 +89,12 @@ protected:
 	//! Remove observer-index data from audience
 	virtual void detach (iobserver* viewer, size_t idx);
 
-	std::vector<iobserver*> get_audience (void) const
-	{
-		std::vector<iobserver*> auds;
-		for (auto audpair :audience_)
-		{
-			auds.push_back(audpair.first);
-		}
-		return auds;
-	}
-
-	friend class iobserver;
-
-private:
 	//! Maps observers to the the subject's index in observer
 	//! the value is a set of indices to ensure uniqueness
 	std::unordered_map<iobserver*,
 		std::unordered_set<size_t> > audience_;
+
+	friend class iobserver;
 };
 
 }

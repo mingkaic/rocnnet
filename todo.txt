@@ -1,5 +1,9 @@
 tenncor:
-- remove incache_, add a mechanism to pass along data change for each update (avoid space overhead)
+- updates should be handled by a graph-shared object (graph_node)
+- is_same_graph should extend to inodes (by checking in leaf set for leaf argument)
+- shape and preparation functors should ideally use C++17 variant
+    (replace with resulting shape and temporary cache)
+- reactive updates by default should be restricted to unary connectors, n-ary connectors should update lazily
 - during the unfreeze update process, avoid duplicate updates by stopping at branching nodes to wait for dependency updates
 - remove move and clone functions for classes that don't need it
 - define alloc shape as mutable and allowed shape as immutable (enforce this rule)
@@ -7,7 +11,7 @@ tenncor:
 - refine shape flexibility e.g: (4,) == (4,1)
 	also any shape padded by 0 or 1 maybe “optimized” for lower dimensional shape
 	(this should be an option, since some applications may not want to lose this information)
-- improve tests
+- improve tests (test base_immutable and immutable separately)
 - possible dangling pointers by propagating destruction in the graph
 - interface confusion:
     graphs have 2 methods of getting backprop node (get_leaf and get_gradient)

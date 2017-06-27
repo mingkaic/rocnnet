@@ -14,6 +14,7 @@
 #include "tensor/tensor_handler.hpp"
 #include "tensor/tensor.hpp"
 #include "graph/react/subject.hpp"
+#include "graph/react/iobserver.hpp"
 
 #pragma once
 #ifndef TENNCOR_INODE_HPP
@@ -66,6 +67,8 @@ public:
 	//! get a pretty and unique label
 	virtual std::string get_name (void) const;
 
+	virtual std::string get_summaryid (void) const { return get_name(); }
+
 	//! utility function: get data shape
 	virtual tensorshape get_shape (void) const = 0;
 
@@ -85,9 +88,9 @@ public:
 	bool find_audience (std::string label,
 		std::unordered_set<inode<T>*>& audience) const
 	{
-		std::vector<iobserver*> auds = get_audience();
-		for (iobserver* aud : auds)
+		for (auto audpair : audience_)
 		{
+			iobserver* aud = audpair.first;
 			if (inode<T>* anode = dynamic_cast<inode<T>*>(aud))
 			{
 				if (0 == anode->label_.compare(label))
@@ -98,6 +101,10 @@ public:
 		}
 		return false == audience.empty();
 	}
+
+	virtual std::vector<inode<T>*> get_arguments (void) const { return {}; }
+
+	virtual size_t n_arguments (void) const { return 0; }
 
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be

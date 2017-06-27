@@ -78,7 +78,7 @@ static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 		// share nodes when possible
 		for (inode<T>* aud : audience)
 		{
-			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 &&
 				((args[0] == a.get() && args[1] == b.get()) ||
 				 (args[1] == a.get() && args[0] == b.get())))
@@ -124,7 +124,7 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 		// share nodes when possible
 		for (inode<T>* aud : audience)
 		{
-			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
 				return aud;
 		}
@@ -184,7 +184,7 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 		// share nodes when possible
 		for (inode<T>* aud : audience)
 		{
-			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 &&
 				((args[0] == a.get() && args[1] == b.get()) ||
 				 (args[1] == a.get() && args[0] == b.get())))
@@ -238,7 +238,7 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 		// share nodes when possible
 		for (inode<T>* aud : audience)
 		{
-			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
 				return aud;
 		}
@@ -271,6 +271,30 @@ inline transfer_func<T>* binary_elem_agg (ELEM_FUNC<T> aggregate)
 			return {i};
 		}
 	}, aggregate);
+}
+
+inline OUT_MAPPER get_axis_mapper (size_t axis)
+{
+	return [axis](size_t i, tensorshape& inshape, const tensorshape& outshape) -> std::vector<size_t>
+	{
+		if (1 == inshape.n_elems()) return {0};
+		std::vector<size_t> olist = outshape.as_list();
+		std::vector<size_t> ilist = inshape.as_list();
+		std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+		if (axis == 0 && ilist[axis] != olist[axis])
+		{
+			if (ilist[axis] == olist[axis+1])
+				coord = std::vector<size_t>(coord.begin()+1, coord.end());
+			else
+				throw std::exception(); // todo: better exception
+		}
+		else if (axis >= ilist.size() || (ilist[axis] == 1 && olist[axis] > 1))
+		{
+			coord[axis] = 0;
+		}
+		i = inshape.sequential_idx(coord);
+		return { i };
+	};
 }
 
 template <typename T>
@@ -321,32 +345,7 @@ inline transfer_func<T>* binary_axial_agg (ELEM_FUNC<T> aggregate, size_t axis)
 		if (false == lastshape.is_fully_defined()) return std::vector<size_t>{1};
 		return lastshape;
 	},
-	{
-		[axis](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
-		{
-			if (1 == ashape.n_elems()) return {0};
-			std::vector<size_t> alist = ashape.as_list();
-			if (axis >= alist.size() || (alist[axis] == 1 && outshape.as_list()[axis] > 1))
-			{
-				std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-				coord[axis] = 0;
-				i = ashape.sequential_idx(coord);
-			}
-			return {i};
-		},
-		[axis](size_t i, tensorshape& bshape, const tensorshape& outshape) -> std::vector<size_t>
-		{
-			if (1 == bshape.n_elems()) return {0};
-			std::vector<size_t> blist = bshape.as_list();
-			if (axis >= blist.size() || (blist[axis] == 1 && outshape.as_list()[axis] > 1))
-			{
-				std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-				coord[axis] = 0;
-				i = bshape.sequential_idx(coord);
-			}
-			return {i};
-		}
-	}, aggregate);
+	{ get_axis_mapper(axis), get_axis_mapper(axis) }, aggregate);
 }
 
 template <typename T>
@@ -424,7 +423,7 @@ varptr<T> operator - (const varptr<T> a)
 	}
 	else if (iconnector<T>* aconn = dynamic_cast<iconnector<T>*>(a.get()))
 	{
-		std::vector<subject*> childargs = aconn->get_subjects();
+		std::vector<inode<T>*> childargs = aconn->get_arguments();
 		if (0 == a->get_label().compare("neg") && 1 == childargs.size())
 		{
 			// avoids double negatives by calling child directly

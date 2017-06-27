@@ -26,61 +26,6 @@ itensor_handler<T>* itensor_handler<T>::move (void)
 }
 
 template <typename T>
-void itensor_handler<T>::operator () (tensor<T>*& out,
-	std::vector<const tensor<T>*> args)
-{
-	std::vector<tensorshape> ts;
-	std::vector<const T*> raws;
-	bool allshaped = true;
-	for (const tensor<T>* arg : args)
-	{
-		if (arg)
-		{
-			assert(arg->is_alloc());
-			ts.push_back(arg->get_shape());
-			raws.push_back(arg->raw_data_);
-		}
-		else
-		{
-			allshaped = false;
-			ts.push_back(tensorshape());
-			raws.push_back(nullptr);
-		}
-	}
-	if (allshaped)
-	{
-		tensorshape s = calc_shape(ts);
-		if (nullptr == out)
-		{
-			out = new tensor<T>(s);
-		}
-		if (s.is_fully_defined())
-		{
-			// if out is allocated, verify shape with out
-			if (out->is_alloc())
-			{
-				tensorshape oshape = out->get_shape();
-				if (false == s.is_compatible_with(oshape))
-				{
-					std::stringstream ss;
-					print_shape(s, ss);
-					ss << " is incompatible with output shape ";
-					print_shape(oshape, ss);
-					throw std::runtime_error(ss.str());
-				}
-			}
-			// otherwise allocate out
-			else
-			{
-				out->allocate(s);
-			}
-		}
-	}
-	assert(out->raw_data_);
-	calc_data(out->raw_data_, out->get_shape(), raws, ts);
-}
-
-template <typename T>
 assign_func<T>* assign_func<T>::clone (void) const
 {
 	return static_cast<assign_func<T>*>(clone_impl());
@@ -93,25 +38,32 @@ assign_func<T>* assign_func<T>::move (void)
 }
 
 template <typename T>
-void assign_func<T>::operator () (tensor<T>*& out, const tensor<T>* arg)
+void assign_func<T>::operator () (tensor<T>* out, const tensor<T>* arg,
+	std::function<T(const T&,const T&)> f) const
 {
-	itensor_handler<T>::operator () (out, {arg});
+	tensorshape outshape = out->get_shape();
+	size_t n = arg->n_elems();
+	assert(n == outshape.n_elems());
+	T* dest = this->get_raw(out);
+	const T* src = this->get_raw(arg);
+	for (size_t i = 0; i < n; i++)
+	{
+		dest[i] = f(dest[i], src[i]);
+	}
 }
 
 template <typename T>
-void assign_func<T>::operator () (tensor<T>& out, std::vector<T> indata)
+void assign_func<T>::operator () (tensor<T>* out, std::vector<T> indata,
+	std::function<T(const T&,const T&)> f) const
 {
-	tensorshape outshape = out.get_shape();
-	assert(indata.size() >= outshape.n_elems());
-	std::vector<const T*> in{&indata[0]};
-	std::vector<tensorshape> inshapes;
-	calc_data(this->get_raw(out), outshape, in, inshapes);
-}
-
-template <typename T>
-tensorshape assign_func<T>::calc_shape (std::vector<tensorshape> shapes) const
-{
-	return shapes[0];
+	tensorshape outshape = out->get_shape();
+	size_t n = outshape.n_elems();
+	assert(n <= indata.size());
+	T* dest = this->get_raw(out);
+	for (size_t i = 0; i < n; i++)
+	{
+		dest[i] = f(dest[i], indata[i]);
+	}
 }
 
 template <typename T>
@@ -124,16 +76,6 @@ template <typename T>
 itensor_handler<T>* assign_func<T>::move_impl (void)
 {
 	return new assign_func<T>(std::move(*this));
-}
-
-template <typename T>
-void assign_func<T>::calc_data (T* dest, const tensorshape& outshape,
-	std::vector<const T*>& srcs, std::vector<tensorshape>&)
-{
-	for (size_t i = 0, n = outshape.n_elems(); i < n; i++)
-	{
-		dest[i] = f_(dest[i], srcs[0][i]);
-	}
 }
 
 template <typename T>
@@ -163,9 +105,115 @@ transfer_func<T>* transfer_func<T>::move (void)
 }
 
 template <typename T>
-void transfer_func<T>::operator () (tensor<T>*& out, std::vector<const tensor<T>*> args)
+void transfer_func<T>::operator () (tensor<T>* out, std::vector<const T*>& args)
 {
-	itensor_handler<T>::operator () (out, args);
+	size_t n_out = out->n_elems();
+	size_t ptr_block_size = args.size() / n_out;
+	T* dest = this->get_raw(out);
+	for (size_t i = 0; i < n_out; i++)
+	{
+		dest[i] = aggregate_(&args[i * ptr_block_size], ptr_block_size);
+	}
+}
+
+template <typename T>
+void transfer_func<T>::operator () (std::vector<T>& out, std::vector<const T*>& args)
+{
+	size_t n_out = out.size();
+	size_t ptr_block_size = args.size() / n_out;
+	for (size_t i = 0; i < n_out; i++)
+	{
+		out[i] = aggregate_(&args[i * ptr_block_size], ptr_block_size);
+	}
+}
+
+template <typename T>
+std::vector<const T*> transfer_func<T>::prepare_args (tensorshape outshape,
+	std::vector<const tensor<T>*> args) const
+{
+	size_t n_args = args.size();
+	if (n_args == 0) return {};
+	assert(n_args == outidxer_.size());
+	size_t n_out = outshape.n_elems();
+	// rank 0: group
+	// rank 1: elements
+	// rank 2: arguments
+	size_t max_blocksize = 0;
+	std::vector<std::vector<size_t> > arg_indices(n_args);
+	for (size_t i = 0; i < n_args; i++)
+	{
+		if (args[i])
+		{
+			tensorshape ashape = args[i]->get_shape();
+			std::vector<size_t> arg_index;
+			for (size_t j = 0; j < n_out; j++)
+			{
+				std::vector<size_t> elem_idx = outidxer_[i](j, ashape, outshape);
+				arg_index.insert(arg_index.end(), elem_idx.begin(), elem_idx.end());
+			}
+			arg_indices[i] = arg_index;
+			max_blocksize = std::max(max_blocksize, arg_index.size());
+		}
+	}
+	std::vector<const T*> arg(n_args * max_blocksize, nullptr);
+	for (size_t i = 0; i < n_args; i++)
+	{
+		if (args[i])
+		{
+			size_t n = args[i]->n_elems();
+			const T* src = this->get_raw(args[i]);
+			for (size_t j = 0; j < arg_indices[i].size(); j++)
+			{
+				if (arg_indices[i][j] < n) arg[i + j * n_args] = src + arg_indices[i][j];
+			}
+		}
+	}
+	return arg;
+}
+
+template <typename T>
+std::vector<const T*> transfer_func<T>::prepare_args (tensorshape outshape,
+	std::vector<std::pair<T*,tensorshape> > args) const
+{
+	size_t n_args = args.size();
+	if (n_args == 0) return {};
+	assert(n_args == outidxer_.size());
+	size_t n_out = outshape.n_elems();
+	// rank 0: group
+	// rank 1: elements
+	// rank 2: arguments
+	size_t max_blocksize = 0;
+	std::vector<std::vector<size_t> > arg_indices(n_args);
+	for (size_t i = 0; i < n_args; i++)
+	{
+		if (args[i].first)
+		{
+			tensorshape ashape = args[i].second;
+			std::vector<size_t> arg_index;
+			for (size_t j = 0; j < n_out; j++)
+			{
+				std::vector<size_t> elem_idx = outidxer_[i](j, ashape, outshape);
+				arg_index.insert(arg_index.end(), elem_idx.begin(), elem_idx.end());
+			}
+			arg_indices[i] = arg_index;
+			max_blocksize = std::max(max_blocksize, arg_index.size());
+		}
+	}
+	std::vector<const T*> arg(n_args * max_blocksize, nullptr);
+	for (size_t i = 0; i < n_args; i++)
+	{
+		if (args[i].first)
+		{
+			const T* src = args[i].first;
+			size_t n = args[i].second.n_elems();
+			for (size_t j = 0; j < arg_indices[i].size(); j++)
+			{
+				if (arg_indices[i][j] < n)
+					arg[i + j * n_args] = src + arg_indices[i][j];
+			}
+		}
+	}
+	return arg;
 }
 
 template <typename T>
@@ -181,90 +229,6 @@ itensor_handler<T>* transfer_func<T>::move_impl (void)
 }
 
 template <typename T>
-void transfer_func<T>::calc_data (T* dest, const tensorshape& outshape,
-	std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes)
-{
-	size_t n_args = srcs.size();
-	if (n_args == 0) return;
-	assert(n_args == inshapes.size());
-	assert(n_args == outidxer_.size());
-	size_t n_out_elems = outshape.n_elems();
-	// only need to execute once
-	if (arg_ptrs_.empty())
-	{
-		argsrcs_.empty();
-		for (size_t i = 0, n = srcs.size(); i < n; i++)
-		{
-			assert(srcs[i]);
-			argsrcs_.push_back(srcs[i]);
-		}
-		// assert: all inshapes are valid and srcs are non-nullptr
-		for (size_t j = 0; j < n_out_elems; j++)
-		{
-			// order inindices as <group, arg>
-			std::vector<size_t> inindices;
-			for (size_t i = 0; i < n_args; i++)
-			{
-				std::vector<size_t> inidx = outidxer_[i](j, inshapes[i], outshape);
-				inindices.insert(inindices.end(), inidx.begin(), inidx.end());
-			}
-			// reorder as <arg, group>
-			size_t groupsize = inindices.size() / n_args;
-			for (size_t k = 0; k < groupsize; k++)
-			{
-				for (size_t i = 0; i < n_args; i++)
-				{
-					const T* src = argsrcs_[i];
-					size_t n = inshapes[i].n_elems();
-					size_t ini = inindices[k + i * groupsize];
-					if (ini < n)
-					{
-						arg_ptrs_.push_back(src + ini);
-					}
-					else
-					{
-						arg_ptrs_.push_back(nullptr);
-					}
-				}
-			}
-		}
-	}
-	size_t groupsize = arg_ptrs_.size() / (n_args * n_out_elems);
-	size_t ptr_block_size = groupsize * n_args;
-	for (size_t i = 0; i < n_args; i++)
-	{
-		const T* src = srcs[i];
-		if (nullptr != src && src != argsrcs_[i])
-		{
-			size_t freshsize = inshapes[i].n_elems();
-			for (size_t j = 0; j < n_out_elems; j++)
-			{
-				std::vector<size_t> inidx = outidxer_[i](j, inshapes[i], outshape);
-				assert(groupsize == inidx.size());
-				for (size_t k = 0; k < groupsize; k++)
-				{
-					size_t ptridx = i + k * n_args + j * ptr_block_size;
-					if (arg_ptrs_[ptridx] && inidx[k] < freshsize)
-					{
-						size_t idx = std::distance(argsrcs_[i], arg_ptrs_[ptridx]);
-						arg_ptrs_[ptridx] = src + idx;
-					}
-					else
-					{
-						arg_ptrs_[ptridx] = nullptr;
-					}
-				}
-			}
-			argsrcs_[i] = src;
-		}
-	}
-	for (size_t i = 0; i < n_out_elems; i++)
-	{
-		dest[i] = aggregate_(&arg_ptrs_[i * ptr_block_size], ptr_block_size);
-	}
-}
-
-template <typename T>
 initializer<T>* initializer<T>::clone (void) const
 {
 	return static_cast<initializer<T>*>(this->clone_impl());
@@ -277,16 +241,9 @@ initializer<T>* initializer<T>::move (void)
 }
 
 template <typename T>
-void initializer<T>::operator () (tensor<T>*& out)
+void initializer<T>::operator () (tensor<T>* out)
 {
-	itensor_handler<T>::operator ()(out, {out});
-}
-
-template <typename T>
-tensorshape initializer<T>::calc_shape (std::vector<tensorshape> shapes) const
-{
-	if (shapes.empty()) return {};
-	return shapes[0];
+	this->calc_data(this->get_raw(out), out->get_shape());
 }
 
 template <typename T>
@@ -317,8 +274,7 @@ itensor_handler<T>* const_init<T>::move_impl (void)
 }
 
 template <typename T>
-void const_init<T>::calc_data (T* dest, const tensorshape& outshape,
-	std::vector<const T*>&, std::vector<tensorshape>&)
+void const_init<T>::calc_data (T* dest, tensorshape outshape)
 {
 	size_t len = outshape.n_elems();
 	std::fill(dest, dest+len, value_);
@@ -353,8 +309,7 @@ itensor_handler<T>* rand_uniform<T>::move_impl (void)
 }
 
 template <typename T>
-void rand_uniform<T>::calc_data (T* dest, const tensorshape& outshape,
-	std::vector<const T*>&, std::vector<tensorshape>&)
+void rand_uniform<T>::calc_data (T* dest, tensorshape outshape)
 {
 	size_t len = outshape.n_elems();
 	auto gen = std::bind(distribution_, get_generator());

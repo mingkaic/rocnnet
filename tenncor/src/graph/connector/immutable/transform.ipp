@@ -88,7 +88,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 		// share nodes when possible
 		for (inode<T>* aud : audience)
 		{
-			std::vector<subject*> args = static_cast<iconnector<T>*>(aud)->get_subjects();
+			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 && args[0] == a.get() && args[1] == watch.get())
 				return aud;
 		}

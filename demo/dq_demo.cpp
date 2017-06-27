@@ -79,7 +79,6 @@ int main (int argc, char** argv)
 	//	0 = fine
 	//	1 = overfitting
 	//	2 = training error rate is wrong
-
 	std::vector<double> observations;
 	std::vector<double> new_observations;
 	std::vector<double> expect_out;

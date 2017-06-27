@@ -76,16 +76,14 @@ TEST(HANDLER, Transfer_C000)
 	mock_tensor arg1(c1);
 	mock_tensor arg2(c2);
 	tensor<double> good(resshape);
-	tensor<double> bad(c1);
 	tensor<double>* goodptr = &good;
-	tensor<double>* badptr = &bad;
 	std::vector<const tensor<double>*> args;
 	args.push_back(&arg1);
 	args.push_back(&arg2);
 
 	transfer_func<double> tf(shaper, {forward_mapper, forward_mapper}, forward);
-	EXPECT_THROW(tf(badptr, args), std::exception);
-	tf(goodptr, args);
+	std::vector<const double*> arg = tf.prepare_args(goodptr->get_shape(), args);
+	tf(goodptr, arg);
 	std::vector<double> d1 = arg1.expose();
 	std::vector<double> d2 = arg2.expose();
 	std::vector<double> res = good.expose();
@@ -188,7 +186,8 @@ TEST(HANDLER, Copy_C003)
 	tensor<double>* tscalarptr = &tscalar;
 	tensor<double>* tblockptr = &tblock;
 	tensor<double>* ttransfptr = &ttransf;
-	(*tfcpy)(ttransfptr, {ttransfptr});
+	std::vector<const double*> arg = tfcpy->prepare_args(ttransfptr->get_shape(), {ttransfptr});
+	(*tfcpy)(ttransfptr, arg);
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
@@ -210,7 +209,8 @@ TEST(HANDLER, Copy_C003)
 	tensor<double>* tscalar2ptr = &tscalar2;
 	tensor<double>* tblock2ptr = &tblock2;
 	tensor<double>* ttransf2ptr = &ttransf2;
-	tfassign(ttransf2ptr, {ttransf2ptr});
+	arg = tfassign.prepare_args(ttransf2ptr->get_shape(), {ttransf2ptr});
+	tfassign(ttransf2ptr, arg);
 	std::vector<double> transfv2 = ttransf2.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv2.size());
 	EXPECT_EQ(SUPERMARK, transfv2[0]);
@@ -276,7 +276,8 @@ TEST(HANDLER, Move_C003)
 	tensor<double>* tscalarptr = &tscalar;
 	tensor<double>* tblockptr = &tblock;
 	tensor<double>* ttransfptr = &ttransf;
-	tfmv(ttransfptr, {ttransfptr});
+	std::vector<const double*> arg = tfmv.prepare_args(ttransfptr->get_shape(), {ttransfptr});
+	tfmv(ttransfptr, arg);
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
@@ -302,7 +303,8 @@ TEST(HANDLER, Move_C003)
 	tensor<double>* tscalar2ptr = &tscalar2;
 	tensor<double>* tblock2ptr = &tblock2;
 	tensor<double>* ttransf2ptr = &ttransf2;
-	tfassign(ttransf2ptr, {ttransf2ptr});
+	arg = tfassign.prepare_args(ttransf2ptr->get_shape(), {ttransf2ptr});
+	tfassign(ttransf2ptr, arg);
 	std::vector<double> transfv2 = ttransf2.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv2.size());
 	EXPECT_EQ(SUPERMARK, transfv2[0]);

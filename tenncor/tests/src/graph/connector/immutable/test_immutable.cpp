@@ -852,6 +852,37 @@ TEST(IMMUTABLE, Update_I010)
 }
 
 
+TEST(IMMUTABLE, ShapeIncompatible_I011)
+{
+	FUZZ::reset_logger();
+	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
+	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
+
+	mock_node* n1 = new mock_node(label1);
+	tensorshape n1s = random_def_shape();
+	std::vector<size_t> temp = n1s.as_list();
+	temp.push_back(3);
+	tensorshape n2s = temp;
+	n1->data_ = new mock_tensor(n1s);
+
+	bool change = false;
+	auto shiftyshaper =
+	[&change, n2s](std::vector<tensorshape> ts)
+	{
+		if (change) return n2s;
+		return ts[0];
+	};
+
+	mock_immutable* initialgood = new mock_immutable({n1}, conname2, shiftyshaper);
+	change = true;
+	EXPECT_THROW(n1->notify(nnet::notification::UPDATE), std::exception);
+
+	delete initialgood;
+	delete n1;
+}
+
+
 #endif /* DISABLE_IMMUTABLE_TEST */
 
 
