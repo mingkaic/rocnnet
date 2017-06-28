@@ -64,40 +64,10 @@ const tensor<T>* base_immutable<T>::get_eval (void) const { return data_; }
 template <typename T>
 void base_immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) const
 {
-	// base case
-	if (this == target)
+	eval_helper(target, out);
+	if (iconnector<T>* outcon = dynamic_cast<iconnector<T>*>(out))
 	{
-		// return 1
-		out = constant<T>::get(1);
-		return;
-	}
-	// traverse towards target by comparing leaf sets
-	std::unordered_set<size_t> permidx;
-	std::vector<subject*> args;
-	for (size_t i = 0, n = this->dependencies_.size(); i < n; i++)
-	{
-		inode<T>* arg = static_cast<inode<T>*>(this->dependencies_[i]);
-		iconnector<T>* con = dynamic_cast<iconnector<T>*>(arg);
-		if (nullptr != con && con->potential_descendent(target))
-		{
-			inode<T>* tempout;
-			con->temporary_eval(target, tempout);
-			args.push_back(tempout);
-			if (nullptr == dynamic_cast<iconnector<T>*>(tempout)) permidx.emplace(i);
-		}
-		else
-		{
-			args.push_back(arg);
-			permidx.emplace(i);
-		}
-	};
-	out = merged_immutable<T>::get((base_immutable<T>*) this, args, permidx);
-	for (size_t i = 0, n = args.size(); i < n; i++)
-	{
-		if (permidx.end() == permidx.find(i))
-		{
-			delete args[i];
-		}
+		outcon->update({});
 	}
 }
 
@@ -252,6 +222,46 @@ void base_immutable<T>::death_on_broken (void)
 }
 
 template <typename T>
+void base_immutable<T>::eval_helper (const iconnector<T>* target, inode<T>*& out) const
+{
+	// base case
+	if (this == target)
+	{
+		// return 1
+		out = constant<T>::get(1);
+		return;
+	}
+	// traverse towards target by comparing leaf sets
+	std::unordered_set<size_t> permidx;
+	std::vector<subject*> args;
+	for (size_t i = 0, n = this->dependencies_.size(); i < n; i++)
+	{
+		inode<T>* arg = static_cast<inode<T>*>(this->dependencies_[i]);
+		base_immutable<T>* con = dynamic_cast<base_immutable<T>*>(arg);
+		if (nullptr != con && con->potential_descendent(target))
+		{
+			inode<T>* tempout;
+			con->eval_helper(target, tempout);
+			args.push_back(tempout);
+			if (nullptr == dynamic_cast<iconnector<T>*>(tempout)) permidx.emplace(i);
+		}
+		else
+		{
+			args.push_back(arg);
+			permidx.emplace(i);
+		}
+	}
+	out = merged_immutable<T>::get((base_immutable<T>*) this, args, permidx, true);
+	for (size_t i = 0, n = args.size(); i < n; i++)
+	{
+		if (permidx.end() == permidx.find(i))
+		{
+			delete args[i];
+		}
+	}
+}
+
+template <typename T>
 void base_immutable<T>::copy_helper (const base_immutable& other)
 {
 	if (data_)
@@ -382,17 +392,16 @@ struct merged_immutable<T>::temp_immutable : public base_immutable<T>
 
 template <typename T>
 merged_immutable<T>* merged_immutable<T>::get (base_immutable<T>* conn,
-	std::unordered_set<size_t> ignore_indices)
+	std::unordered_set<size_t> ignore_indices, bool disabled_update)
 {
-	return new merged_immutable<T>(conn, ignore_indices);
+	return new merged_immutable<T>(conn, ignore_indices, disabled_update);
 }
 
 template <typename T>
 merged_immutable<T>* merged_immutable<T>::get (base_immutable<T>* conn,
-	std::vector<subject*> args,
-	std::unordered_set<size_t> ignore_indices)
+	std::vector<subject*> args, std::unordered_set<size_t> ignore_indices, bool disabled_update)
 {
-	return new merged_immutable<T>(conn, args, ignore_indices);
+	return new merged_immutable<T>(conn, args, ignore_indices, disabled_update);
 }
 
 template <typename T>
@@ -415,7 +424,7 @@ typename iconnector<T>::summary_series merged_immutable<T>::summarize (void) con
 
 template <typename T>
 merged_immutable<T>::merged_immutable (base_immutable<T>* conn,
-	std::unordered_set<size_t> ignore_indices) :
+	std::unordered_set<size_t> ignore_indices, bool disabled_update) :
 base_immutable<T>(*conn)
 {
 	assert(conn->mergible_);
@@ -428,12 +437,12 @@ base_immutable<T>(*conn)
 	init_helper(top_summary, this->dependencies_, ignore_indices);
 	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
 	// which is the most correct with respect to the new arguments
-	this->update({}); // update data_ initially
+	if (false == disabled_update) this->update({}); // update data_ initially
 }
 
 template <typename T>
 merged_immutable<T>::merged_immutable (base_immutable<T>* conn,
-	std::vector<subject*> args, std::unordered_set<size_t> ignore_indices) :
+	std::vector<subject*> args, std::unordered_set<size_t> ignore_indices, bool disabled_update) :
 base_immutable<T>(*conn)
 {
 	assert(conn->mergible_);
@@ -468,7 +477,7 @@ base_immutable<T>(*conn)
 	init_helper(top_summary, args, ignore_indices);
 	// no need to refresh gcache or jacobians since we've copied over conn's gcache and jacobian
 	// which is the most correct with respect to the new arguments
-	this->update({}); // update data_ initially
+	if (false == disabled_update) this->update({}); // update data_ initially
 }
 
 template <typename T>

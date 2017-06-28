@@ -93,6 +93,8 @@ protected:
 
 	void death_on_broken (void);
 
+	void eval_helper (const iconnector<T>* target, inode<T>*& out) const;
+
 	//! forward pass step: populate data_
 	virtual void forward_pass (std::vector<size_t>) = 0;
 
@@ -133,13 +135,15 @@ public:
 	//! build a merged_immutable that combines conn and its arguments
 	//! ignores arguments indexed by ignore_indices
 	static merged_immutable<T>* get (base_immutable<T>* conn,
-		std::unordered_set<size_t> ignore_indices = {});
+		std::unordered_set<size_t> ignore_indices = {},
+		bool disabled_update = false);
 
 	//! build a merged_immutable that combines conn and specified arguments
 	//! ignores arguments indexed by ignore_indices
 	static merged_immutable<T>* get (base_immutable<T>* conn,
 		std::vector<subject*> args,
-		std::unordered_set<size_t> ignore_indices = {});
+		std::unordered_set<size_t> ignore_indices = {},
+		bool disabled_update = false);
 
 	// >>>> CLONE, COPY && MOVE <<<<
 	//! clone function
@@ -156,11 +160,12 @@ public:
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! merge conn and its arguments while avoiding arguments specified by indices
-	merged_immutable (base_immutable<T>* conn, std::unordered_set<size_t> ignore_indices);
+	merged_immutable (base_immutable<T>* conn,
+		std::unordered_set<size_t> ignore_indices, bool disabled_update);
 
 	//! merge conn and specified arguments while avoiding arguments specified by indices
 	merged_immutable (base_immutable<T>* conn, std::vector<subject*> args,
-		std::unordered_set<size_t> ignore_indices);
+		std::unordered_set<size_t> ignore_indices, bool disabled_update);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! implement clone function
