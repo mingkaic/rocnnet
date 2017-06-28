@@ -10,7 +10,7 @@
 
 #ifdef ROCNNET_DQN_HPP
 
-#include "memory/shared_rand.hpp"
+#include "utils/utils.hpp"
 
 namespace rocnnet
 {
@@ -358,7 +358,7 @@ double dq_net::linear_annealing (double initial_prob) const
 
 double dq_net::get_random(void)
 {
-	return explore_(nnet::get_generator());
+	return explore_(nnutils::get_generator());
 }
 
 std::vector<dq_net::exp_batch> dq_net::random_sample (void)

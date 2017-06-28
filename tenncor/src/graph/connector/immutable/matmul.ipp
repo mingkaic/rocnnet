@@ -390,7 +390,6 @@ new transfer_func<T>(
 			mA = matmul<T>::get(root, b, false, !transposeB);
 			mB = matmul<T>::get(a, root, !transposeA, false);
 		}
-		// todo: make N-dimensional. use permute: transpose first 2 dimensions only.
 		if (transposeA)
 		{
 			mA = transpose<T>(mA);

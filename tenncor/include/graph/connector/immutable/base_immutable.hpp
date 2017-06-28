@@ -106,6 +106,7 @@ protected:
 	//! - record leaf set
 	typename inode<T>::GRAD_CACHE gcache_;
 
+// todo: have an option to disable data_ caching for performance boost
 	//! inner tensor to cache forward evaluated values
 	tensor<T>* data_ = nullptr;
 

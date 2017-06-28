@@ -286,7 +286,15 @@ inline OUT_MAPPER get_axis_mapper (size_t axis)
 			if (ilist[axis] == olist[axis+1])
 				coord = std::vector<size_t>(coord.begin()+1, coord.end());
 			else
-				throw std::exception(); // todo: better exception
+			{
+				std::stringstream ss;
+				ss << "failed to map ";
+				print_shape(outshape, ss);
+				ss << " to ";
+				print_shape(inshape, ss);
+				ss << " along axis 0";
+				throw std::logic_error(ss.str());
+			}
 		}
 		else if (axis >= ilist.size() || (ilist[axis] == 1 && olist[axis] > 1))
 		{
@@ -824,7 +832,6 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	{
 		assert(n == 1);
 		T v = *(group[0]);
-		// todo: we can make comparison slightly faster by xor min
 		if (min > v) v = min;
 		else if (max < v) v = max;
 		return v;

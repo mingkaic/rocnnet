@@ -23,7 +23,6 @@
 namespace nnet
 {
 
-// TODO: override delete to destroy ptr directly
 template <typename T>
 class varptr : public iobserver
 {

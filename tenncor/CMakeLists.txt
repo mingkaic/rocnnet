@@ -49,7 +49,6 @@ target_link_libraries(${TENNCOR_LIB} proto ${PROTOBUF_LIBRARY})
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (TENNCOR_TEST)
-	#todo: remove to enable tests
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TENSOR_MODULE_TESTS")
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_MEMORY_MODULE_TESTS")
 #	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_TOP_NODE_MODULE_TESTS")

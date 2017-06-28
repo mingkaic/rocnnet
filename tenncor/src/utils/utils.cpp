@@ -5,6 +5,10 @@
 namespace nnutils
 {
 
+static std::default_random_engine common_generator(std::time(NULL));
+
+static std::uniform_int_distribution<size_t> tok_dist(0, 15);
+
 formatter::formatter (void) {}
 
 formatter::~formatter (void) {}
@@ -34,10 +38,20 @@ std::string uuid (const void* addr)
 
 	for (size_t i = 0; i < 16; i++)
 	{
-		size_t token = rand() % 16;
+		size_t token = tok_dist(common_generator);
 		ss << std::hex << token;
 	}
 	return ss.str();
+}
+
+std::default_random_engine& get_generator (void)
+{
+	return common_generator;
+}
+
+void seed_generator (size_t val)
+{
+	common_generator.seed(val);
 }
 
 }

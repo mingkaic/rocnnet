@@ -8,7 +8,7 @@
 
 #ifdef TENNCOR_TENSOR_HANDLER_HPP
 
-#include "memory/shared_rand.hpp"
+#include "utils/utils.hpp"
 
 namespace nnet
 {
@@ -312,7 +312,7 @@ template <typename T>
 void rand_uniform<T>::calc_data (T* dest, tensorshape outshape)
 {
 	size_t len = outshape.n_elems();
-	auto gen = std::bind(distribution_, get_generator());
+	auto gen = std::bind(distribution_, nnutils::get_generator());
 	std::generate(dest, dest+len, gen);
 }
 

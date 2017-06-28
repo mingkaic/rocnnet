@@ -21,7 +21,7 @@
 namespace nnet
 {
 
-//! transpose a, (1-2 D tensors only) todo: implement permute
+//! transpose a along first 2 dimension todo: expand API to accommodate "permute"
 template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap = {0, 1});
 
@@ -70,13 +70,15 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
+// todo: implement
+// [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
 //! trace of a
 template <typename T>
-varptr<T> trace (const varptr<T> a); // todo: implement [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
+varptr<T> trace (const varptr<T> a);
 
 //! inverse of matrix a
 template <typename T>
-varptr<T> inverse (const varptr<T> a); // todo: implement
+varptr<T> inverse (const varptr<T> a);
 
 }
 

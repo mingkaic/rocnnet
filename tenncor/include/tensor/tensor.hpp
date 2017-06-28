@@ -114,7 +114,7 @@ public:
 	// implementation detail:
 	// this algorithm attempts to cover up the first unknown with data.size() / n_known
 	// iff data.size() % n_known == 0
-	// todo: attempt to parameterize some lambda function to distribute data.size() / n_known amongst all unknown (same for loosely guess)
+	// todo: attempt to add lambda function as parameter to distribute data.size() / n_known among unknowns (same for loosely guess)
 	optional<tensorshape> guess_shape (const std::vector<T>& data) const;
 
 	//! return loosely compatible shape with n_elems <= data.size()

@@ -23,8 +23,6 @@
 namespace nnet
 {
 
-// TODO: limit T down to numeric types using c++17 std::variant
-
 template <typename T>
 class varptr;
 

@@ -110,7 +110,7 @@ public:
 	//! value and at most the the specified rank
 	tensorshape with_rank_at_most (size_t rank) const;
 
-	// (UNTESTED)
+	// todo: test
 	// >>>> COORDINATES <<<<
 	//! obtains the index of data should they be flatten to a vector given dimensions_
 	size_t sequential_idx (std::vector<size_t> coord) const;

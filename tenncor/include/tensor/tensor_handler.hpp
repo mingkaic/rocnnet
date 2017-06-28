@@ -112,14 +112,14 @@ public:
 	//! performs tensor transfer function given an input cache
 	void operator () (tensor<T>* out, std::vector<const T*>& args);
 
-	// (UNTESTED)
+	// todo: test
 	void operator () (std::vector<T>& out, std::vector<const T*>& args);
 
 	// only need to execute once per immutable
 	std::vector<const T*> prepare_args (tensorshape outshape,
 		std::vector<const tensor<T>*> args) const;
 
-	// (UNTESTED)
+	// todo: test
 	// mimicks preparation from tensors
 	std::vector<const T*> prepare_args (tensorshape outshape,
 		std::vector<std::pair<T*,tensorshape> > args) const;

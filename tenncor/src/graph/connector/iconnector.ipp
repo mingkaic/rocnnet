@@ -240,7 +240,6 @@ using job_map_t = std::unordered_map<iconnector<T>*,std::vector<size_t> >;
 template <typename T>
 using job_queue_t = std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, bottom_first<T> >;
 
-// todo: test with odd trees to find edge cases of graph_node usage
 template <typename T>
 struct iconnector<T>::graph_node
 {

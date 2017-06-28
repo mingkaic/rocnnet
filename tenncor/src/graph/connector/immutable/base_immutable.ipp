@@ -161,15 +161,13 @@ varptr<T> base_immutable<T>::get_gradient (inode<T>* wrt)
 	else if (conn && this->is_same_graph(conn))
 	{
 		// WARNING: this is one of the more expensive operations
-		// evoke temporary call, out pollutes memory, but it will be removed eventually...
-		// todo: implement top-down garabage cleanup
 		inode<T>* temp_out = nullptr;
 		this->temporary_eval(conn, temp_out);
 		out = temp_out;
 		// todo: apply jacobian (and test)
 
 	}
-		// is zero
+	// is zero
 	else
 	{
 		out = constant<T>::get_shared_zero();
@@ -220,7 +218,6 @@ template <typename T>
 bool base_immutable<T>::read_proto (const tenncor::tensor_proto&)
 {
 	// it doesn't really make sense to deserialize data_ here, since data serves as a cache...
-	// todo: have an option to disable caching for performance boost
 	return false;
 }
 
@@ -588,7 +585,8 @@ void merged_immutable<T>::forward_pass (std::vector<size_t>)
 			}
 			else
 			{
-				throw std::exception(); // todo: better exception (conflicting prep size between internal and external tensors)
+				throw std::logic_error(nnutils::formatter() << "merged_immutable internal preparation has size "
+					<< from_internals.size() << " while argument preparation has size " << from_externals.size());
 			}
 			raw_intermediates_[summ_id] = std::vector<T>(summ_shape.n_elems());
 		}

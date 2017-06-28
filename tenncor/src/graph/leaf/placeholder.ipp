@@ -63,7 +63,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 		{
 			this->data_->allocate(*cand_shape);
 		}
-		// we would reach here if data is empty... (todo: test)
+		// we would reach here if data is empty... (todo: test. currently never reached)
 		else
 		{
 			throw std::logic_error("attempting to assign no data to an unallocated tensor");
