@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+LOGDIR=log
 PBX_CACHE=${1:-./prototxt}
-ERRORLOG=test_out.txt
-FUZZLOG=fuzz.out
+ERRORLOG=${LOGDIR}/test_out.txt
+FUZZLOG=${LOGDIR}/fuzz.out
 BUILDDIR=.
+TIMEOUT=900
 
 on_travis() {
     if [ "$TRAVIS" == "true" ]; then
@@ -12,7 +14,7 @@ on_travis() {
 }
 
 assert_cmd() {
-    eval $*
+    timeout -s SIGKILL ${TIMEOUT} eval $*
     if [ $? -ne 0 ]; then
         echo "Command $* failed"
         cat ${ERRORLOG}
@@ -30,6 +32,10 @@ if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
 fi
 
+if [ ! -d $LOGDIR ]; then
+    mkdir $LOGDIR
+fi
+
 # compilation
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
@@ -45,7 +51,7 @@ BINDIR=${BUILDDIR}/bin/bin
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle > ${ERRORLOG}"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle | ${ERRORLOG}"
     echo "tenncortest valgrind check complete"
 done
 
@@ -53,7 +59,7 @@ done
 for _ in {1..5}
 do
     echo "running batch of 5 tenncortest"
-    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
+    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle | ${ERRORLOG}"
     echo "still running! 5 tests complete"
 done
 

@@ -40,36 +40,48 @@ template <typename T>
 inline void elementary_check (const varptr<T>& a, const varptr<T>& b, transfer_func<T>* trans)
 {
 	if (a->good_status() && b->good_status())
-		trans->calc_shape({a->get_shape(), b->get_shape()});
+	{
+		try
+		{
+			trans->calc_shape({a->get_shape(), b->get_shape()});
+		}
+		catch (std::exception&)
+		{
+			delete trans;
+			throw;
+		}
+	}
 }
 
 template <typename T>
 static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	varptr<T> out = nullptr;
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst && *a == (T) 0)
 	{
-		if (*a == (T)0)
-		{
-			return b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] + b;
-		}
+		out = b;
 	}
-	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	else if (aconst && 1 == a->get_shape().n_elems())
 	{
-		if (*b == (T)0)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a + outconst[0];
-		}
+		std::vector<T> outconst = expose<T>(a);
+		out = outconst[0] + b;
+	}
+	else if (bconst && *b == (T) 0)
+	{
+		out = a;
+	}
+	else if (bconst && 1 == b->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(b);
+		out = a + outconst[0];
+	}
+	if (nullptr != out.get())
+	{
+		delete Nf;
+		return out;
 	}
 	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
@@ -81,8 +93,11 @@ static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 &&
 				((args[0] == a.get() && args[1] == b.get()) ||
-				 (args[1] == a.get() && args[0] == b.get())))
+				(args[1] == a.get() && args[0] == b.get())))
+			{
+				delete Nf;
 				return aud;
+			}
 		}
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
@@ -92,30 +107,35 @@ template <typename T>
 static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (a.get() == b.get()) return constant<T>::get(0);
-	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	varptr<T> out = nullptr;
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (a.get() == b.get())
 	{
-		if (*a == (T)0)
-		{
-			return -b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] - b;
-		}
+		out = constant<T>::get(0);
 	}
-	else if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	else if (aconst && *a == (T) 0)
 	{
-		if (*b == (T)0)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a - outconst[0];
-		}
+		out = -b;
+	}
+	else if (aconst && 1 == a->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(a);
+		out = outconst[0] - b;
+	}
+	else if (bconst && *b == (T) 0)
+	{
+		out = a;
+	}
+	else if (bconst && 1 == b->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(b);
+		out = a - outconst[0];
+	}
+	if (nullptr != out.get())
+	{
+		delete Nf;
+		return out;
 	}
 	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
@@ -126,7 +146,10 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 		{
 			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
+			{
+				delete Nf;
 				return aud;
+			}
 		}
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
@@ -136,46 +159,35 @@ template <typename T>
 static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (a.get() == b.get()) return pow(a, 2);
+	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst)
-	// optimize only applies to constants
+	if (a.get() == b.get())
 	{
-		if (*a == (T)0)
-		{
-			return constant<T>::get(0);
-		}
-		if (*a == (T)1)
-		{
-			return b;
-		}
-		if (*a == (T)-1)
-		{
-			return -b;
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] * b;
-		}
+		out = pow(a, 2);
 	}
-	if (bconst)
-	// optimize only applies to constants
+	else if (aconst && *a == (T) 0)
 	{
-		if (*b == (T)0)
-		{
-			return constant<T>::get(0);
-		}
-		if (*b == (T)1)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a * outconst[0];
-		}
+		out = constant<T>::get(0);
+	}
+	else if (aconst && 1 == a->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(a);
+		out = outconst[0] * b;
+	}
+	else if (bconst && *b == (T) 0)
+	{
+		out = constant<T>::get(0);
+	}
+	else if (bconst && 1 == b->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(b);
+		out = a * outconst[0];
+	}
+	if (nullptr != out.get())
+	{
+		delete Nf;
+		return out;
 	}
 	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
@@ -187,8 +199,11 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 &&
 				((args[0] == a.get() && args[1] == b.get()) ||
-				 (args[1] == a.get() && args[0] == b.get())))
+				(args[1] == a.get() && args[0] == b.get())))
+			{
+				delete Nf;
 				return aud;
+			}
 		}
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
@@ -198,38 +213,37 @@ template <typename T>
 static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
-	if (a.get() == b.get()) return constant<T>::get(1);
+	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst)
+	if (a.get() == b.get())
 	{
-		// don't allow infinity
-		if (*a == (T)0)
-		{
-			return constant<T>::get(0);
-		}
-		if (1 == a->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(a);
-			return outconst[0] / b;
-		}
+		out = constant<T>::get(1);
 	}
-	if (bconst)
-		// optimize only applies to constants
+	else if (aconst && *a == (T)0)
 	{
-		if (*b == (T)0)
-		{
-			throw std::logic_error("divide by constant node of value zero");
-		}
-		if (*b == (T)1)
-		{
-			return a;
-		}
-		if (1 == b->get_shape().n_elems())
-		{
-			std::vector<T> outconst = expose<T>(b);
-			return a / outconst[0];
-		}
+		out = constant<T>::get(0);
+	}
+	else if (aconst && 1 == a->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(a);
+		out = outconst[0] / b;
+	}
+	else if (bconst && *b == (T)0)
+	// don't allow infinity
+	{
+		delete Nf;
+		throw std::logic_error("divide by constant node of value zero");
+	}
+	else if (bconst && 1 == b->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(b);
+		out = a / outconst[0];
+	}
+	if (nullptr != out.get())
+	{
+		delete Nf;
+		return out;
 	}
 	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
@@ -240,7 +254,10 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 		{
 			std::vector<inode<T>*> args = aud->get_arguments();
 			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
+			{
+				delete Nf;
 				return aud;
+			}
 		}
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
@@ -1060,15 +1077,15 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
 	})),
-   [](std::vector<inode<T>*> args, variable<T>* leaf)
-   {
-	   // h'(f(x), g(x)) = f'(x) + g'(x)
-	   varptr<T> ag;
-	   varptr<T> bg;
-	   args.at(0)->get_leaf(ag, leaf);
-	   args.at(1)->get_leaf(bg, leaf);
-	   return ag + bg;
-   });
+	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// h'(f(x), g(x)) = f'(x) + g'(x)
+		varptr<T> ag;
+		varptr<T> bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return ag + bg;
+	});
 }
 
 template<typename T>
@@ -1213,9 +1230,9 @@ varptr<T> operator * (T a, const varptr<T> b)
 		}
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
-	if (0 == a) return constant<T>::get(0);
-	if (1 == a) return b;
-	if (-1 == a) return -b;
+	if ((T) 0 == a) return constant<T>::get(0);
+	if ((T) 1 == a) return b;
+	if ((T) -1 == a) return -b;
 	std::string opname = nnutils::formatter() << a << "_mul";
 	std::unordered_set<inode<T>*> audience;
 	if (b->find_audience(opname, audience))
@@ -1261,9 +1278,9 @@ varptr<T> operator * (const varptr<T> a, T b)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	if (0 == b) return constant<T>::get(0);
-	if (1 == b) return a;
-	if (-1 == b) return -a;
+	if ((T) 0 == b) return constant<T>::get(0);
+	if ((T) 1 == b) return a;
+	if ((T) -1 == b) return -a;
 	std::string opname = nnutils::formatter() << "mul_" << b;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
@@ -1394,11 +1411,11 @@ varptr<T> operator / (const varptr<T> a, T b)
 		}
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
-	if (b == 0)
+	if (b == (T) 0)
 	{
 		throw std::logic_error("divide by zero");
 	}
-	if (b == (T)1) return a;
+	if (b == (T) 1) return a;
 	std::string opname = nnutils::formatter() << "div_" << b;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))

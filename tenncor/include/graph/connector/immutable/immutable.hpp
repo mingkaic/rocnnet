@@ -13,6 +13,7 @@
  */
 
 #include "graph/connector/immutable/base_immutable.hpp"
+#include <memory>
 
 #pragma once
 #ifndef TENNCOR_IMMUTABLE_HPP
@@ -83,7 +84,7 @@ private:
 
 	// >>>> FORWARD OPERATION <<<<
 	//! forward transfer function
-	transfer_func<T>* Nf_ = nullptr; //! calculates forward passing data
+	std::shared_ptr<transfer_func<T> > Nf_ = nullptr; //! calculates forward passing data
 
 	// >>>> BACKWARD OPERATION <<<<
 	//! backward transfer function to

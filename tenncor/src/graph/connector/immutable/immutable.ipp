@@ -31,10 +31,7 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 }
 
 template <typename T>
-immutable<T>::~immutable (void)
-{
-	if (Nf_) delete Nf_;
-}
+immutable<T>::~immutable (void) {}
 
 template <typename T>
 immutable<T>* immutable<T>::clone (void) const
@@ -184,7 +181,7 @@ template <typename T>
 void immutable<T>::copy_helper (const immutable& other)
 {
 	ginit_ = other.ginit_;
-	Nf_ = other.Nf_->clone();
+	Nf_ = std::shared_ptr<transfer_func<T> >(other.Nf_->clone());
 	temp_in_.clear();
 }
 

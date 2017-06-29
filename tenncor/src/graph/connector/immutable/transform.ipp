@@ -187,6 +187,11 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	ELEM_FUNC<T> collector, std::string name)
 {
 	if (nullptr == a) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	transfer_func<T>* forward;
 	if ((bool) index)
 	{
@@ -265,11 +270,6 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 			}
 		}, collector);
 	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(name, audience))
-	{
-		return *audience.begin(); // share nodes when possible
-	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
 	[index](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
@@ -329,6 +329,11 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	ELEM_FUNC<T> search, std::string name)
 {
 	if (nullptr == a) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	transfer_func<T>* forward;
 	if (dimension)
 	{
@@ -403,11 +408,6 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				return outidx;
 			}
 		}, search);
-	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(name, audience))
-	{
-		return *audience.begin(); // share nodes when possible
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
 	[dimension, search](std::vector<inode<T>*>, variable<T>*)

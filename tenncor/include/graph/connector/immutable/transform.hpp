@@ -21,7 +21,7 @@
 namespace nnet
 {
 
-//! transpose a along first 2 dimension todo: expand API to accommodate "permute"
+//! transpose a along first 2 dimension
 template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap = {0, 1});
 
