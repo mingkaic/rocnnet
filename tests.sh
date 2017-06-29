@@ -9,10 +9,8 @@ on_travis() {
 PBX_CACHE=${1:-./prototxt}
 BUILDDIR=.
 on_travis BUILDDIR=${TRAVIS_BUILD_DIR}
-
-LOGDIR=${BUILDDIR}/log
-ERRORLOG=${LOGDIR}/test_out.txt
-FUZZLOG=${LOGDIR}/fuzz.out
+ERRORLOG=test_out.txt
+FUZZLOG=fuzz.out
 TIMEOUT=900
 
 assert_cmd() {
@@ -39,7 +37,6 @@ cmake -DTENNCOR_TEST=ON ..
 cmake --build .
 popd
 
-mkdir ${LOGDIR}
 
 BINDIR=${BUILDDIR}/bin/bin
 
