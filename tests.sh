@@ -7,7 +7,9 @@ on_travis() {
 }
 
 BUILDDIR=.
-on_travis BUILDDIR=${TRAVIS_BUILD_DIR}
+if [ "$TRAVIS" == "true" ]; then
+    BUILDDIR=${TRAVIS_BUILD_DIR}
+fi
 
 LOGDIR=${BUILDDIR}/log
 PBX_CACHE=${1:-./prototxt}
@@ -33,7 +35,7 @@ fi
 # compilation
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
-mkdir $LOGDIR
+mkdir ${LOGDIR}
 mkdir build
 pushd build
 cmake -DTENNCOR_TEST=ON ..
