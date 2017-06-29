@@ -104,7 +104,7 @@ protected:
 	virtual iallocator* move_impl (void) = 0;
 
 private:
-	// todo: remove T for variant once c++17 is supported
+	// todo: limit T to numerics by variant in c++17
 	//! check which types are allowed
 	// allow floats and doubles: is_trivial
 	// allow complex

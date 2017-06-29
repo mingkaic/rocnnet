@@ -49,9 +49,7 @@ public:
 	//! get bytes allocated
 	virtual size_t total_bytes (void) const = 0;
 
-	//! get data at coordinate specified,
-	//! coordinate systems may be different
-	// todo: define shape coordinate systems
+	//! get data at coordinate specified
 	virtual T get (std::vector<size_t> coord) const = 0;
 
 	// >>>> DATA MUTATOR <<<<

@@ -256,7 +256,7 @@ TEST(ELEMENTARY, Tan_J000ToJ002)
 	[](double var, double gvar)
 	{
 		double s = cos(var);
-		return gvar / (s * s);
+		return gvar / std::pow(s, 2);
 	});
 }
 

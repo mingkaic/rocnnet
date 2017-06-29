@@ -199,7 +199,7 @@ TEST(CONSTANT, GetLeaf_D003)
 	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
 
-	inode<double>* g1;
+	varptr<double> g1;
 	res->get_leaf(g1, nullptr);
 	EXPECT_TRUE(*g1 == 0.0);
 

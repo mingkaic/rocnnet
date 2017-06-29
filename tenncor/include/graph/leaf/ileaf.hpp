@@ -76,9 +76,7 @@ protected:
 	//! tensor state (good or bad) true = good
 	bool is_init_ = false;
 
-	//! dynamically initialize tensors
-	//! used by placeholder
-	class assignment;
+	assign_func<T> assigner_;
 
 private:
 	//! copy helper

@@ -72,7 +72,6 @@ B014 - reading a valid tensor_proto should allocate the tensor if not already.
 
 // TENSOR_HANDLER
 C000 - transfer function takes output tensor and some argument tensors.
-        transfer will throw error if output shape is incompatible with shaper result
 C001 - constant initializer fills a tensor with a
         particular scalar defined at the construction of initializer
 C002 - random initializer fills a tensor with values

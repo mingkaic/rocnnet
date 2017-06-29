@@ -24,6 +24,7 @@
 #include <vector>
 #include <ctime>
 #include <chrono>
+#include <random>
 
 namespace nnutils
 {
@@ -90,8 +91,11 @@ private:
 
 //! generates a "unique" string based on input address and current time
 //! uses cstdlib rand, so use srand to seed
-// todo: upgrade to random generator then expose generator for seeding
 std::string uuid (const void* addr);
+
+std::default_random_engine& get_generator (void);
+
+void seed_generator (size_t val);
 
 }
 

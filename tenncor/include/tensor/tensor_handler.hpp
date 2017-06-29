@@ -23,10 +23,10 @@ namespace nnet
 //! Accumulate an array of shape
 using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
-// todo: reduce shape information in forward op (it's unnecessary)
-//! Maps argument data to this data according to shape
+using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
+
 template <typename T>
-using FORWARD_OP = std::function<void(T*,const tensorshape&,std::vector<const T*>&,std::vector<tensorshape>&)>;
+using ELEM_FUNC = std::function<T(const T**,size_t)>;
 
 //! Generic Tensor Handler
 template <typename T>
@@ -42,10 +42,6 @@ public:
 
 	//! clone function for copying from itensor_handler
 	itensor_handler<T>* move (void);
-	
-	//! calculate the shape given input shapes
-	//! publicly expose shape calculator due its utility
-	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const = 0;
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -54,12 +50,46 @@ protected:
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void) = 0;
 
-	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>*& out, std::vector<const tensor<T>*> args) const;
+	T* get_raw (tensor<T>* ten) const
+	{
+		assert(ten->is_alloc());
+		return ten->raw_data_;
+	}
 
-	//! calculate raw data from output shape, input shapes, and input data 
-	virtual void calc_data (T*,const tensorshape&,
-		std::vector<const T*>&,std::vector<tensorshape>&) const = 0;
+	const T* get_raw (const tensor<T>* ten) const
+	{
+		assert(ten->is_alloc());
+		return ten->raw_data_;
+	}
+};
+
+// todo: test
+//! assigns one tensor to another
+template <typename T>
+class assign_func : public itensor_handler<T>
+{
+public:
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function for copying from itensor_handler
+	assign_func<T>* clone (void) const;
+
+	//! clone function for copying from itensor_handler
+	assign_func<T>* move (void);
+
+	//! performs tensor transfer function given an input tensor
+	void operator () (tensor<T>* out, const tensor<T>* arg,
+		std::function<T(const T&,const T&)> f = [](const T&, const T& src) { return src; }) const;
+
+	//! performs tensor transfer function given an input array
+	void operator () (tensor<T>* out, std::vector<T> indata,
+		std::function<T(const T&,const T&)> f = [](const T&, const T& src) { return src; }) const;
+
+protected:
+	//! clone implementation for copying from itensor_handler
+	virtual itensor_handler<T>* clone_impl (void) const;
+
+	//! move implementation for moving from itensor_handler
+	virtual itensor_handler<T>* move_impl (void);
 };
 
 //! Transfer Function
@@ -68,7 +98,9 @@ class transfer_func : public itensor_handler<T>
 {
 public:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
-	transfer_func (SHAPER shaper, FORWARD_OP<T> forward);
+	transfer_func (SHAPER shaper,
+		std::vector<OUT_MAPPER> outidxer,
+		ELEM_FUNC<T> aggregate);
 
 	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
 	//! clone function for copying from itensor_handler
@@ -77,11 +109,23 @@ public:
 	//! clone function for copying from itensor_handler
 	transfer_func<T>* move (void);
 
-	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>*& out, std::vector<const tensor<T>*> args) const;
+	//! performs tensor transfer function given an input cache
+	void operator () (tensor<T>* out, std::vector<const T*>& args);
+
+	// todo: test
+	void operator () (std::vector<T>& out, std::vector<const T*>& args);
+
+	// only need to execute once per immutable
+	std::vector<const T*> prepare_args (tensorshape outshape,
+		std::vector<const tensor<T>*> args) const;
+
+	// todo: test
+	// mimicks preparation from tensors
+	std::vector<const T*> prepare_args (tensorshape outshape,
+		std::vector<std::pair<T*,tensorshape> > args) const;
 	
 	//! calls shape transformer
-	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
+	tensorshape calc_shape (std::vector<tensorshape> shapes) const;
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -90,13 +134,14 @@ protected:
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void);
 
-	//! calculate raw data using forward functor
-	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>& srcs, std::vector<tensorshape>& inshapes) const;
-
 	SHAPER shaper_; //! shape transformation
-	
-	FORWARD_OP<T> forward_; //! raw data transformation function
+
+	//! element-wise aggregate elements
+	ELEM_FUNC<T> aggregate_;
+
+// todo: move out to immutable, since handlers should not say WHAT and WHERE the data is, just HOW it is calculated
+	//! element-wise reference input from output (only used once when populating new tensor)
+	std::vector<OUT_MAPPER> outidxer_;
 };
 
 //! Initializer Handler
@@ -112,9 +157,10 @@ public:
 	initializer<T>* move (void);
 
 	//! perform initialization
-	void operator () (tensor<T>*& out) const;
-	
-	virtual tensorshape calc_shape (std::vector<tensorshape> shapes) const;
+	void operator () (tensor<T>* out);
+
+protected:
+	virtual void calc_data (T* dest, tensorshape outshape) = 0;
 };
 
 //! Constant Initializer
@@ -139,8 +185,7 @@ protected:
 	virtual itensor_handler<T>* move_impl (void);
 	
 	//! initialize data as constant
-	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>&, std::vector<tensorshape>&) const;
+	virtual void calc_data (T* dest, tensorshape outshape);
 		
 private:
 	T value_;
@@ -174,8 +219,7 @@ protected:
 	virtual itensor_handler<T>* move_impl (void);
 	
 	//! initialize data as constant
-	virtual void calc_data (T* dest, const tensorshape& outshape,
-		std::vector<const T*>&, std::vector<tensorshape>&) const;
+	virtual void calc_data (T* dest, tensorshape outshape);
 
 private:
 	general_distribution<T>  distribution_;

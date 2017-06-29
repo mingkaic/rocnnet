@@ -290,23 +290,23 @@ TEST(VARIABLE, GetLeaf_F003)
 	variable<double> cinitv(shape, cinit, label3);
 	variable<double> rinitv(shape, rinit, label4);
 
-	inode<double>* wun;
-	inode<double>* wun2;
-	inode<double>* wun3;
-	inode<double>* wun4;
+	varptr<double> wun;
+	varptr<double> wun2;
+	varptr<double> wun3;
+	varptr<double> wun4;
 	scalar.get_leaf(wun, &scalar);
 	noinitv.get_leaf(wun2, &noinitv);
 	cinitv.get_leaf(wun3, &cinitv);
 	rinitv.get_leaf(wun4, &rinitv);
 
-	inode<double>* zaro;
-	inode<double>* zaro2;
-	inode<double>* zaro3;
-	inode<double>* zaro4;
-	inode<double>* zaro5;
-	inode<double>* zaro6;
-	inode<double>* zaro7;
-	inode<double>* zaro8;
+	varptr<double> zaro;
+	varptr<double> zaro2;
+	varptr<double> zaro3;
+	varptr<double> zaro4;
+	varptr<double> zaro5;
+	varptr<double> zaro6;
+	varptr<double> zaro7;
+	varptr<double> zaro8;
 	scalar.get_leaf(zaro, nullptr);
 	scalar.get_leaf(zaro2, &noinitv);
 	noinitv.get_leaf(zaro3, nullptr);

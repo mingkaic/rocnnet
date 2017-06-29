@@ -96,6 +96,18 @@ tensor<T>::~tensor (void)
 }
 
 template <typename T>
+tensor<T>::tensor (const tensor<T>& other, bool shapeonly)
+{
+	copy_helper(other, shapeonly);
+}
+
+template <typename T>
+tensor<T>::tensor (tensor<T>&& other)
+{
+	move_helper(std::move(other));
+}
+
+template <typename T>
 tensor<T>* tensor<T>::clone (bool shapeonly) const
 {
 	return static_cast<tensor<T>*>(clone_impl(shapeonly));
@@ -543,18 +555,6 @@ tensor<T> tensor<T>::slice (size_t /*dim_start*/, size_t /*limit*/)
 // size_t tensor<T>::buffer_hash (void) const {
 //	 return 0;
 // }
-
-template <typename T>
-tensor<T>::tensor (const tensor<T>& other, bool shapeonly)
-{
-	copy_helper(other, shapeonly);
-}
-
-template <typename T>
-tensor<T>::tensor (tensor<T>&& other)
-{
-	move_helper(std::move(other));
-}
 
 template <typename T>
 itensor<T>* tensor<T>::clone_impl (bool shapeonly) const

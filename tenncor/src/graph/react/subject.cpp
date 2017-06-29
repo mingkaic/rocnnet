@@ -88,6 +88,19 @@ subject::subject (subject&& other)
 	other.audience_.clear();
 }
 
+void subject::steal_observers (subject* other)
+{
+	std::unordered_map<iobserver*, std::unordered_set<size_t> > aud_cpy = other->audience_;
+	for (auto aud_pair : aud_cpy)
+	{
+		iobserver* aud = aud_pair.first;
+		for (size_t i : aud_pair.second)
+		{
+			aud->replace_dependency(this, i);
+		}
+	}
+}
+
 void subject::attach (iobserver* viewer, size_t idx)
 {
 #ifdef EDGE_RCD

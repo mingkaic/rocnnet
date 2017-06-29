@@ -29,10 +29,6 @@ varptr<T> sigmoid (varptr<T> x);
 template <typename T>
 varptr<T> tanh (varptr<T> x);
 
-//! self explanatory
-template <typename T>
-varptr<T> identity (varptr<T> x);
-
 }
 
 #include "../../src/utils/futils.ipp"

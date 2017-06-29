@@ -72,7 +72,7 @@ varptr<T> ivariable<T>::get_gradient (inode<T>* wrt)
 
 template <typename T>
 ivariable<T>::ivariable (const tensorshape& shape,
-	initializer<T>* init,
+	itensor_handler<T>* init,
 	std::string name) :
 ileaf<T>(shape, name), init_(init) {}
 

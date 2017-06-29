@@ -8,7 +8,8 @@
 namespace nnet
 {
 
-// Instantiate tensors for instrumentation
+template class assign_func<double>;
+
 template class transfer_func<double>;
 
 template class const_init<double>;

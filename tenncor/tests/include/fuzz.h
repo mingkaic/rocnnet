@@ -15,6 +15,8 @@
 #include <queue>
 #include <functional>
 
+#include "utils/utils.hpp"
+
 #ifndef TENNCOR_FUZZ_H
 #define TENNCOR_FUZZ_H
 
@@ -68,7 +70,7 @@ N* buildNTree (size_t n, size_t nnodes,
 	std::vector<size_t> nargs = {1, 0};
 	{
 		// randomly generate predecessor nodes
-		std::default_random_engine generator;
+		std::default_random_engine generator = nnutils::get_generator();
 		std::vector<size_t> concount = {0, 1};
 
 		fuzzLogger << "tree<";
