@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
-LOGDIR=log
-PBX_CACHE=${1:-./prototxt}
-ERRORLOG=${LOGDIR}/test_out.txt
-FUZZLOG=${LOGDIR}/fuzz.out
-BUILDDIR=.
-TIMEOUT=900
-
 on_travis() {
     if [ "$TRAVIS" == "true" ]; then
         "$@"
     fi
 }
+
+BUILDDIR=.
+on_travis BUILDDIR=${TRAVIS_BUILD_DIR}
+
+LOGDIR=${BUILDDIR}/log
+PBX_CACHE=${1:-./prototxt}
+ERRORLOG=${LOGDIR}/test_out.txt
+FUZZLOG=${LOGDIR}/fuzz.out
+TIMEOUT=900
 
 assert_cmd() {
     timeout -s SIGKILL ${TIMEOUT} eval $*
@@ -23,10 +25,6 @@ assert_cmd() {
     fi
     return $!
 }
-
-if [ "$TRAVIS" == "true" ]; then
-    BUILDDIR=${TRAVIS_BUILD_DIR}
-fi
 
 if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
