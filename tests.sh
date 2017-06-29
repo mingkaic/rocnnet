@@ -6,11 +6,13 @@ on_travis() {
     fi
 }
 
-PBX_CACHE=${1:-./prototxt}
 BUILDDIR=.
 on_travis BUILDDIR=${TRAVIS_BUILD_DIR}
-ERRORLOG=test_out.txt
-FUZZLOG=fuzz.out
+
+LOGDIR=${BUILDDIR}/log
+PBX_CACHE=${1:-./prototxt}
+ERRORLOG=${LOGDIR}/test_out.txt
+FUZZLOG=${LOGDIR}/fuzz.out
 TIMEOUT=900
 
 assert_cmd() {
@@ -31,12 +33,12 @@ fi
 # compilation
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
+mkdir $LOGDIR
 mkdir build
 pushd build
 cmake -DTENNCOR_TEST=ON ..
 cmake --build .
 popd
-
 
 BINDIR=${BUILDDIR}/bin/bin
 
@@ -44,7 +46,7 @@ BINDIR=${BUILDDIR}/bin/bin
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle | ${ERRORLOG}"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle > ${ERRORLOG}"
     echo "tenncortest valgrind check complete"
 done
 
@@ -52,7 +54,7 @@ done
 for _ in {1..5}
 do
     echo "running batch of 5 tenncortest"
-    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle | ${ERRORLOG}"
+    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
     echo "still running! 5 tests complete"
 done
 
