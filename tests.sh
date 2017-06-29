@@ -6,11 +6,11 @@ on_travis() {
     fi
 }
 
+PBX_CACHE=${1:-./prototxt}
 BUILDDIR=.
 on_travis BUILDDIR=${TRAVIS_BUILD_DIR}
 
 LOGDIR=${BUILDDIR}/log
-PBX_CACHE=${1:-./prototxt}
 ERRORLOG=${LOGDIR}/test_out.txt
 FUZZLOG=${LOGDIR}/fuzz.out
 TIMEOUT=900
@@ -30,10 +30,6 @@ if [ ! -d $PBX_CACHE ]; then
     mkdir $PBX_CACHE
 fi
 
-if [ ! -d $LOGDIR ]; then
-    mkdir $LOGDIR
-fi
-
 # compilation
 pushd ${BUILDDIR}
 lcov --directory . --zerocounters
@@ -42,6 +38,8 @@ pushd build
 cmake -DTENNCOR_TEST=ON ..
 cmake --build .
 popd
+
+mkdir ${LOGDIR}
 
 BINDIR=${BUILDDIR}/bin/bin
 
