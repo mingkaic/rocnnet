@@ -18,7 +18,7 @@ FUZZLOG=${LOGDIR}/fuzz.out
 TIMEOUT=900
 
 assert_cmd() {
-    timeout -s SIGKILL ${TIMEOUT} eval $*
+    eval timeout -s SIGKILL ${TIMEOUT} $*
     if [ $? -ne 0 ]; then
         echo "Command $* failed"
         cat ${ERRORLOG}
@@ -44,6 +44,7 @@ popd
 
 BINDIR=${BUILDDIR}/bin/bin
 
+ls ${LOGDIR}
 # valgrind check
 for _ in {1..5}
 do
