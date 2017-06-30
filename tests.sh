@@ -14,7 +14,7 @@ fi
 LOGDIR=${BUILDDIR}/log
 PBX_CACHE=${1:-./prototxt}
 ERRORLOG=${LOGDIR}/test_out.txt
-FUZZLOG=${LOGDIR}/fuzz.out
+FUZZLOG=fuzz.out
 TIMEOUT=900
 
 assert_cmd() {
@@ -49,7 +49,7 @@ ls ${LOGDIR}
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle > ${ERRORLOG}"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle"
     echo "tenncortest valgrind check complete"
 done
 
