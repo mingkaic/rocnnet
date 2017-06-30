@@ -49,7 +49,7 @@ ls ${LOGDIR}
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_shuffle"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_break_on_failure --gtest_shuffle"
     echo "tenncortest valgrind check complete"
 done
 
