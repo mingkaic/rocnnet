@@ -110,7 +110,7 @@ public:
 	//! value and at most the the specified rank
 	tensorshape with_rank_at_most (size_t rank) const;
 
-	// (UNTESTED)
+	// todo: test
 	// >>>> COORDINATES <<<<
 	//! obtains the index of data should they be flatten to a vector given dimensions_
 	size_t sequential_idx (std::vector<size_t> coord) const;
@@ -118,30 +118,10 @@ public:
 	//! obtain the coordinates of the data in vector given a sequential index given dimensions_
 	std::vector<size_t> coordinate_from_idx (size_t idx) const;
 
-	//! obtains the set of indices corresponding to elements in memory (grouped elements)
-	//! shapeidx is index obtained from sequential_idx based on dimensions_
-	std::vector<size_t> memory_indices (size_t shapeidx) const;
-
-	//! obtains the dimensional values not accounting for grouping
-	std::vector<size_t> shape_dimensions (void) const;
-
-	//! determine whether shape is grouped at some diemnsion
-	bool is_grouped (void) const;
-
-	//! group shape at specified dimension
-	void group_dim (size_t dim);
-
 private:
 	//! zero values denotes unknown/undefined value
 	//! emtpy dimension_ denotes undefined shape
 	std::vector<size_t> dimensions_;
-
-	//! determines which dimension the shape is grouped and by how much
-	//! having a dim_group indicates that shape index and memory index do not correspond 1 to 1
-	//! first value denotes the dimensional index where grouping is occurring
-	//! second value denotes the number of real elements per grouping
-	//! (where the real dimension is dimensions_[first] *= second)
-	optional<std::pair<size_t,size_t> > dim_group_;
 };
 
 //! print a shape's dimension values

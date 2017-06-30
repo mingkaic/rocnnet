@@ -3,7 +3,7 @@
 #include "dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
-static std::default_random_engine rnd_device;//(std::time(NULL));
+static std::default_random_engine rnd_device(std::time(NULL));
 
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
 {
@@ -31,7 +31,8 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 }
 
 // calculates the circumference distance between A and B assuming A and B represent positions on a circle with circumference wrap_size
-inline size_t wrapdist (size_t A, size_t B, size_t wrap_size){
+inline size_t wrapdist (size_t A, size_t B, size_t wrap_size)
+{
 	double within_dist = std::min(A - B, B - A);
 	double edge_dist = std::min(A + wrap_size - B, B + wrap_size - A);
 	return std::min(within_dist, edge_dist);
@@ -79,7 +80,6 @@ int main (int argc, char** argv)
 	//	0 = fine
 	//	1 = overfitting
 	//	2 = training error rate is wrong
-
 	std::vector<double> observations;
 	std::vector<double> new_observations;
 	std::vector<double> expect_out;

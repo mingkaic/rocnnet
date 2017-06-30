@@ -14,6 +14,7 @@
 #include "tensor/tensor_handler.hpp"
 #include "tensor/tensor.hpp"
 #include "graph/react/subject.hpp"
+#include "graph/react/iobserver.hpp"
 
 #pragma once
 #ifndef TENNCOR_INODE_HPP
@@ -21,8 +22,6 @@
 
 namespace nnet
 {
-
-// TODO: limit T down to numeric types using c++17 std::variant
 
 template <typename T>
 class varptr;
@@ -66,6 +65,8 @@ public:
 	//! get a pretty and unique label
 	virtual std::string get_name (void) const;
 
+	virtual std::string get_summaryid (void) const { return get_name(); }
+
 	//! utility function: get data shape
 	virtual tensorshape get_shape (void) const = 0;
 
@@ -82,9 +83,30 @@ public:
 	//! merge/Update the gradient/leaf info
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
 
+	bool find_audience (std::string label,
+		std::unordered_set<inode<T>*>& audience) const
+	{
+		for (auto audpair : audience_)
+		{
+			iobserver* aud = audpair.first;
+			if (inode<T>* anode = dynamic_cast<inode<T>*>(aud))
+			{
+				if (0 == anode->label_.compare(label))
+				{
+					audience.insert(anode);
+				}
+			}
+		}
+		return false == audience.empty();
+	}
+
+	virtual std::vector<inode<T>*> get_arguments (void) const { return {}; }
+
+	virtual size_t n_arguments (void) const { return 0; }
+
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be
-	virtual void get_leaf (inode<T>*& out, variable<T>* leaf) = 0;
+	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) = 0;
 
 	// >>>> META-DATA SETTER <<<<
 	//! set new label for this node
@@ -94,6 +116,38 @@ public:
 
 	//! read tensor data from protobuf
 	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
+
+	void set_metadata (std::string key, size_t value)
+	{
+		metadata_[key] = value;
+	}
+
+	optional<size_t> get_metadata (std::string key) const
+	{
+		optional<size_t> out;
+		auto it = metadata_.find(key);
+		if (metadata_.end() != it)
+		{
+			out = it->second;
+		}
+		return out;
+	}
+
+	void extract_metadata (inode<T>* n)
+	{
+		for (auto npair : n->metadata_)
+		{
+			auto metait = metadata_.find(npair.first);
+			if (metadata_.end() == metait)
+			{
+				metadata_[npair.first] = npair.second;
+			}
+			else if (npair.second != metait->second)
+			{
+				// warn
+			}
+		}
+	}
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -118,6 +172,8 @@ protected:
 
 private:
 	std::string label_; //! variable label
+
+	std::unordered_map<std::string, size_t> metadata_;
 };
 
 //! add helper function for exposing node's data

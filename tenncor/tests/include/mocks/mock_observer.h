@@ -40,7 +40,7 @@ public:
 		return this->dependencies_;
 	}
 
-	virtual void update (subject*)
+	virtual void update (std::vector<size_t>)
 	{
 		label_incr("update1");
 	}

@@ -58,12 +58,12 @@ protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! construct to init zero and one
 	ivariable (const tensorshape& shape,
-		initializer<T>* init,
+		itensor_handler<T>* init,
 		std::string name);
 
 	// >>>> INITIALIZER DATA <<<<
 	//! tensor manipulator, ileaf owns this
-	initializer<T>* init_ = nullptr;
+	itensor_handler<T>* init_ = nullptr;
 
 private:
 	//! copy helper

@@ -54,6 +54,7 @@ int main (int argc, char** argv)
 	size_t n_in = 10;
 	size_t n_out = 5;
 	size_t n_batch = 3;
+	size_t show_every_n = 500;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
 		// use same sigmoid in static memory once deep copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
@@ -72,7 +73,7 @@ int main (int argc, char** argv)
 	start = std::clock();
 	for (size_t i = 0; i < n_train; i++)
 	{
-		if (i % 10 == 9) std::cout << "training " << i+1 << std::endl;
+		if (i % show_every_n == show_every_n-1) std::cout << "training " << i+1 << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		trained_gdn->train(batch, batch_out);
@@ -91,13 +92,12 @@ int main (int argc, char** argv)
 	// exit code:
 	//	0 = fine
 	//	1 = training error rate is wrong
-
 	double untrained_err = 0;
 	double trained_err = 0;
 	double pretrained_err = 0;
 	for (size_t i = 0; i < n_test; i++)
 	{
-		if (i % 10 == 9) std::cout << "testing " << i+1 << "\n";
+		if (i % show_every_n == show_every_n-1) std::cout << "testing " << i+1 << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
 		untrained_in = batch;

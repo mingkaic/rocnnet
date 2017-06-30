@@ -20,12 +20,6 @@ varptr<T> tanh (varptr<T> x)
 	return (etx + (T)1) / (etx - (T)1);
 }
 
-template <typename T>
-varptr<T> identity (varptr<T> x)
-{
-	return x;
-}
-
 }
 
 #endif

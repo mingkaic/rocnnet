@@ -46,7 +46,7 @@ public:
 	virtual const tensor<double>* get_eval(void) const { return data_; }
 	virtual void get_leaves (GRAD_CACHE&) const {}
 	virtual varptr<double> get_gradient (inode<double>* wrt) { return wrt == this ? varptr<double>(this) : varptr<double>(); }
-	virtual void get_leaf (inode<double>*&, variable<double>*) {}
+	virtual void get_leaf (varptr<double>&, variable<double>*) {}
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
 protected:

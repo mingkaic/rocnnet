@@ -56,6 +56,16 @@ public:
 	virtual ~tensor (void);
 
 	// >>>> COPY && MOVE <<<<
+	//! default copy constructor
+	tensor (const tensor<T>& other) : tensor<T>(other, false) {}
+
+	//! copy constructor
+	tensor (const tensor<T>& other, bool shapeonly);
+
+	//! move constructor
+	tensor (tensor<T>&& other);
+
+	// >>>> POLYMORPHIC CLONE && MOVES <<<<
 	//! clone function
 	tensor<T>* clone (bool shapeonly = false) const;
 	
@@ -104,7 +114,7 @@ public:
 	// implementation detail:
 	// this algorithm attempts to cover up the first unknown with data.size() / n_known
 	// iff data.size() % n_known == 0
-	// todo: attempt to parameterize some lambda function to distribute data.size() / n_known amongst all unknown (same for loosely guess)
+	// todo: attempt to add lambda function as parameter to distribute data.size() / n_known among unknowns (same for loosely guess)
 	optional<tensorshape> guess_shape (const std::vector<T>& data) const;
 
 	//! return loosely compatible shape with n_elems <= data.size()
@@ -178,13 +188,6 @@ public:
 	// size_t buffer_hash (void) const;
 
 protected:
-	// >>>> COPY, CLONE, && MOVE <<<<
-	//! copy constructor
-	tensor (const tensor<T>& other, bool shapeonly);
-
-	//! move constructor
-	tensor (tensor<T>&& other);
-
 	//! clone implementation
 	virtual itensor<T>* clone_impl (bool shapeonly) const;
 	

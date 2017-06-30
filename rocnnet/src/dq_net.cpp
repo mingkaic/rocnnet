@@ -10,7 +10,7 @@
 
 #ifdef ROCNNET_DQN_HPP
 
-#include "memory/shared_rand.hpp"
+#include "utils/utils.hpp"
 
 namespace rocnnet
 {
@@ -181,8 +181,10 @@ void dq_net::tear_down (void)
 {
 	// cascade delete all leaf nodes 
 	// (qnet for the variables, then local placeholders)
-	if (source_qnet_) delete source_qnet_;
-	if (target_qnet_) delete target_qnet_;
+	if (source_qnet_)
+		delete source_qnet_;
+	if (target_qnet_)
+		delete target_qnet_;
 	
 	if (input_) delete input_;
 	if (train_input_) delete train_input_;
@@ -323,7 +325,6 @@ void dq_net::variable_setup (void)
 			grad = nnet::reduce_mean(grad, 1);
 		}
 		grad = nnet::clip_norm(grad, 5.0);
-		grad->set_label("grad_"+leaf->get_label());
 		return grad;
 	});
 
@@ -357,7 +358,7 @@ double dq_net::linear_annealing (double initial_prob) const
 
 double dq_net::get_random(void)
 {
-	return explore_(nnet::get_generator());
+	return explore_(nnutils::get_generator());
 }
 
 std::vector<dq_net::exp_batch> dq_net::random_sample (void)

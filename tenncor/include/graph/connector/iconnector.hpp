@@ -12,7 +12,6 @@
  *
  */
 
-#include "graph/react/iobserver.hpp"
 #include "graph/varptr.hpp"
 #include "graph/leaf/constant.hpp"
 
@@ -55,6 +54,16 @@ public:
 	//! Get unique label with arguments
 	virtual std::string get_name (void) const;
 
+	virtual std::vector<inode<T>*> get_arguments (void) const
+	{
+		std::vector<inode<T>*> node_args(this->dependencies_.size());
+		std::transform(this->dependencies_.begin(), this->dependencies_.end(), node_args.begin(),
+			[](subject* s) { return static_cast<inode<T>*>(s); });
+		return node_args;
+	}
+
+	virtual size_t n_arguments (void) const { return this->dependencies_.size(); }
+
 	// >>>> GRAPH ACCESSOR <<<<
 	//! Check if other connector is in the same graph as this
 	bool is_same_graph (const iconnector<T>* other) const;
@@ -75,19 +84,22 @@ public:
 	//! iconnector summary
 	struct conn_summary
 	{
-		conn_summary (std::string id, transfer_func<T> forward, BACK_MAP<T> back,size_t ndeps) :
-				id_(id), Nf_(forward), ginit_(back), ndeps_(ndeps) {}
+		conn_summary (std::string id, std::shared_ptr<transfer_func<T> > forward, BACK_MAP<T> back) :
+			id_(id), Nf_(forward), ginit_(back) {}
 
 		std::string id_;
-		transfer_func<T> Nf_;
-		BACK_MAP<T> ginit_;
-		size_t ndeps_;
 
-		std::unordered_map<std::string,std::vector<size_t> > dependents_;
+		std::shared_ptr<transfer_func<T> > Nf_;
+
+		BACK_MAP<T> ginit_;
+
+		std::vector<std::string> arg_ids_;
 	};
 
+	using summary_series = std::vector<typename iconnector<T>::conn_summary>;
+
 	//! Summarize this connector
-	virtual std::vector<typename iconnector<T>::conn_summary> summarize (void) const = 0;
+	virtual summary_series summarize (void) const = 0;
 
 protected:
 	//! list of jacobian transfer function
@@ -117,10 +129,6 @@ protected:
 
 	//! Update gid_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
-
-	//! Properly replaces current dependencies with new deps
-	//! does not reset jacobians or local cache
-	void dep_replace (std::vector<subject*>& deps);
 
 	// >>>> SPECIALIZED OPERATOR FOR ALL CONNECTORS <<<<
 	//! jacobian for each variable

@@ -6,57 +6,72 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#ifdef TENNCOR_TRANSFORM_HPP
+#include "graph/connector/immutable/elementary.hpp"
 
-#include "graph/connector/immutable/mappable.hpp"
+#ifdef TENNCOR_TRANSFORM_HPP
 
 namespace nnet
 {
 
 template <typename T>
-varptr<T> transpose (const varptr<T> a)
+inline T copyover (const T** data, size_t)
+{
+	if (data[0]) return *data[0]; // 1 to 1 copy over
+	return (T)0;
+}
+
+template <typename T>
+inline transfer_func<T>* unary_trans_agg (OUT_MAPPER indexer, SHAPER shaper)
+{
+	return new transfer_func<T>(shaper, {indexer}, copyover<T>);
+}
+
+template <typename T>
+varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 {
 	if (nullptr == a) return nullptr;
 	assert(2 >= a->get_shape().rank());
+	std::string opname = nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
-	[](std::vector<tensorshape> shapes)
+	unary_trans_agg<T>(
+	[axis_swap](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+	{
+		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+		size_t max_axis = std::max(axis_swap.first, axis_swap.second);
+		if (max_axis >= coords.size())
+		{
+			coords.insert(coords.end(), max_axis - coords.size() + 1, 0);
+		}
+		std::swap(coords[axis_swap.first], coords[axis_swap.second]);
+		return { ashape.sequential_idx(coords) };
+	},
+	[axis_swap](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape ts = shapes[0];
 		if (ts.is_fully_defined())
 		{
-			// restrict shape to no greater than 2-D for now
-			assert(ts.rank() <= 2);
 			std::vector<size_t> inl = ts.as_list();
-			if (ts.rank() == 1)
+			size_t max_axis = std::max(axis_swap.first, axis_swap.second);
+			if (max_axis >= inl.size())
 			{
-				return std::vector<size_t>{1, inl[0]};
+				inl.insert(inl.end(), max_axis - inl.size() + 1, 1);
 			}
-			return std::vector<size_t>{inl[1], inl[0]};
+			std::swap(inl[axis_swap.first], inl[axis_swap.second]);
+			return inl;
 		}
-		return std::vector<size_t>{};
-	},
-	[](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
-	{
-		const T* src = args[0];
-		// we have the new shape
-		std::vector<size_t> outs = shape.as_list();
-		// old dimensions
-		size_t dimX = outs[1]; size_t dimY = outs[0];
-		// not in place so x = y+1 doesn't work
-		for (size_t y = 0; y < dimY; y++)
-		{
-			for (size_t x = 0; x < dimX; x++)
-			{
-				dest[y+x*dimY] = src[x+y*dimX];
-			}
-		}
-	},
+		return tensorshape();
+	}),
 	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
-		return transpose(varptr<T>(grad));
-	}, "transpose");
+		return transpose(grad);
+	}, opname);
 }
 
 template <typename T>
@@ -66,23 +81,53 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 	if (a->good_status() && *a == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
+	std::string opname = "fit";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 2 && args[0] == a.get() && args[1] == watch.get())
+				return aud;
+		}
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
-	[](std::vector<tensorshape> shapes)
+	new transfer_func<T>(
+	[](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		return shapes[1]; // watch is always argument 2
 	},
-	[](T* dest, const tensorshape& outshape, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
 	{
-		const T* src = args[0];
-		tensorshape& inshape = inshapes[0];
-		fit_toshape(dest, outshape, src, inshape);
-	},
-	[watch](std::vector<inode<T>*> args, variable<T>* leaf)
+		[](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+		{
+			std::vector<size_t> alist = ashape.as_list();
+			std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+			bool inbound = true;
+			size_t minrank = std::min(alist.size(), coords.size());
+			for (size_t j = 0; inbound && j < minrank; j++)
+			{
+				inbound = coords[j] < alist[j];
+			}
+			for (size_t j = minrank, rank = coords.size(); inbound && j < rank; j++)
+			{
+				inbound = coords[j] == 0;
+			}
+			if (false == inbound)
+			{
+				return { ashape.n_elems() };
+			}
+			return { ashape.sequential_idx(coords) };
+		},
+		[](size_t, tensorshape& ashape, const tensorshape&) -> std::vector<size_t> { return { ashape.n_elems() }; }
+	}, copyover<T>),
+	[](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
 		return grad;
-	}, "fit", watch);
+	}, opname, watch);
 }
 
 template <typename T>
@@ -91,8 +136,22 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 	if (nullptr == a) return nullptr;
 	if (multiplier == 0) return constant<T>::get(0);
 	if (multiplier == 1) return a;
+	std::string opname = nnutils::formatter() << "extend_" << index << "_" << multiplier;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
-	[index, multiplier](std::vector<tensorshape> shapes)
+	unary_trans_agg<T>(
+	[index, multiplier](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+	{
+		size_t adim = ashape.as_list()[index];
+		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+		coords[index] = coords[index] % adim;
+		return { ashape.sequential_idx(coords) };
+	},
+	[index, multiplier](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape ts = shapes[0];
 		ts.assert_is_fully_defined();
@@ -114,107 +173,30 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 			tv[index] *= multiplier;
 		}
 		return tv;
-	},
-	[index, multiplier](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
-	{
-		const T* src = args[0];
-		// REMEMBER that ts is the resulting shape, not the original shape
-		// both above and below values are calculations based on the original shape
-		std::vector<size_t> tv = shape.as_list();
-		// below calculates all elements encompassed up to the index dimension
-		// that is for a shape of <1, 2, 3, 4> and index 2
-		// below = 1 * 2 * 3 = 6
-		size_t below = 1;
-		for (size_t i = 0; i < index; i++)
-		{
-			below *= tv[i];
-		}
-		// we know that for the resulting shape, the dimensional-value at index is multiplied by multiplier
-		// so to obtain the original dimension, we divide by multiplier
-		below *= tv[index] / multiplier;
-		// above calculates the number of tensors (of index rank) within the original tensor
-		// that is for a shape of <1, 2, 3, 4> and index 2
-		// the tensors of index rank is represented by the first 3 dimensions <1, 2, 3>
-		// the overall tensor is represented as a tensor of tensor < <1, 2, 3>, 4>
-		// above is 4
-		// above = original total / below
-		// original total = resulting total / multiplier
-		size_t above = shape.n_elems() / (multiplier * below);
-
-		// copy over data
-		for (size_t i = 0; i < above; i++)
-		{
-			// copy data multiplier times
-			const T* src_addr = src + i * below;
-			for (size_t j = 0; j < multiplier; j++)
-			{
-				T* dest_addr = dest + below * (multiplier * i + j);
-				std::memcpy(dest_addr, src_addr, below * sizeof(T));
-			}
-		}
-	},
+	}),
 	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* grad;
+		varptr<T> grad;
 		args.front()->get_leaf(grad, leaf);
 		return grad;
-	}, "extend");
+	}, opname);
 }
 
 template <typename T>
 varptr<T> compress (const varptr<T> a, optional<size_t> index,
-	std::function<T(const std::vector<T>&)> collector)
+	ELEM_FUNC<T> collector, std::string name)
 {
 	if (nullptr == a) return nullptr;
-	FORWARD_OP<T> gatherer;
-	SHAPER shaper;
-	if (index)
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
 	{
-		gatherer =
-		[index, collector](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
-		{
-			size_t idx = *index;
-			const T* src = args[0];
-			tensorshape& orig = inshapes[0];
-			if (idx >= orig.rank())
-			{
-				std::memcpy(dest, src, sizeof(T)*orig.n_elems());
-				return;
-			}
-			// REMEMBER that ts is the resulting shape, not the original shape
-			// both above and below values are calculations based on the original shape
-			// original shape
-			std::vector<size_t> tv = orig.as_list();
-			size_t idx_val = tv[idx];
-			// below for compression calculates all elements below the index dimension
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// below = 1 * 2 = 2
-			size_t below = 1;
-			for (size_t i = 0; i < idx; i++)
-			{
-				below *= tv[i];
-			}
-			// above denotes the same above as the one in extend
-			size_t above = orig.n_elems() / (below*idx_val);
-
-			// copy over data
-			for (size_t i = 0; i < above; i++)
-			{
-				for (size_t j = 0; j < below; j++)
-				{
-					// apply compression to each element along idx_val dimension
-					size_t dest_idx = j + i * below;
-					std::vector<T> gather;
-					for (size_t k = 0; k < idx_val; k++)
-					{
-						gather.push_back(src[j + k * below + i * below * idx_val]);
-					}
-					dest[dest_idx] = collector(gather);
-				}
-			}
-		};
-		shaper =
-		[index](std::vector<tensorshape> shapes)
+		return *audience.begin(); // share nodes when possible
+	}
+	transfer_func<T>* forward;
+	if ((bool) index)
+	{
+		forward = new transfer_func<T>(
+		[index](std::vector<tensorshape> shapes) -> tensorshape
 		{
 			size_t idx = *index;
 			tensorshape& ts = shapes[0];
@@ -231,9 +213,9 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 				tv[0] = 1;
 			}
 			else if (0 == idx)
-			{ // pop front
-				tv.front() = std::move(tv.back());
-				tv.pop_back();
+			// pop front
+			{
+				tv = std::vector<size_t>(tv.begin()+1, tv.end());
 			}
 			else if (tv.size()-1 == idx)
 			{
@@ -244,116 +226,119 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 				tv[idx] = 1;
 			}
 			return tensorshape(tv);
-		};
+		},
+		{
+			[index](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+			{
+				if (ashape.rank() <= *index) return {i};
+				std::vector<size_t> outidx;
+				std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+				if (*index == coords.size())
+				{
+					coords.push_back(0);
+				}
+				else if (*index == 0)
+				{
+					std::vector<size_t> temp = coords;
+					coords = {0};
+					coords.insert(coords.end(), temp.begin(), temp.end());
+				}
+				for (size_t j = 0, adim = ashape.as_list()[*index]; j < adim; j++)
+				{
+					coords[*index] = j;
+					outidx.push_back(ashape.sequential_idx(coords));
+				}
+				return outidx;
+			}
+		}, collector);
+		name = nnutils::formatter() << name << "_" << *index;
 	}
 	else
 	{
-		gatherer =
-		[collector](T* dest, const tensorshape& shape, std::vector<const T*>& args, std::vector<tensorshape>&)
-		{
-			dest[0] = collector(std::vector<T>(args[0], args[0]+shape.n_elems()));
-		};
 		// scalar shape
-		shaper = [](std::vector<tensorshape>) { return std::vector<size_t>{1}; };
+		forward = new transfer_func<T>(
+		[](std::vector<tensorshape>) -> tensorshape { return std::vector<size_t>{1}; },
+		{
+			[](size_t, tensorshape &ashape, const tensorshape&)
+			{
+				std::vector<size_t> outidx;
+				for (size_t j = 0, n = ashape.n_elems(); j < n; j++)
+				{
+					outidx.push_back(j);
+				}
+				return outidx;
+			}
+		}, collector);
 	}
-
-	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
-	[index, collector](std::vector<inode<T>*> args, variable<T>* leaf) -> inode<T>*
+	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
+	[index](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		inode<T>* gradn;
+		varptr<T> gradn;
 		args.front()->get_leaf(gradn, leaf);
 		if (index)
 		{
-			return mappable<T>::get(gradn, *index);
+			gradn = identity<T>(gradn);
+			gradn->set_metadata("grouping", *index);
 		}
 		return gradn;
-	}, "compress");
+	}, name);
 }
 
 template <typename T>
 varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const std::vector<T>& values) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return *std::max_element(values.begin(), values.end());
-	});
+		return **std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
+	}, "reduce_max");
 }
 
 template <typename T>
 varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const std::vector<T>& values) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), (T)0);
-	});
+		T accum = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			accum += *data[i];
+		}
+		return accum;
+	}, "reduce_sum");
 }
 
 template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
 	return compress<T>(a, dimension,
-	[](const std::vector<T>& values) -> T
+	[](const T** data, size_t n) -> T
 	{
-		return std::accumulate(values.begin(), values.end(), (T)0) / values.size();
-	});
+		T accum = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			accum += *data[i];
+		}
+		return accum / n;
+	}, "reduce_mean");
 }
 
 template <typename T>
 varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
-	std::function<size_t(const std::vector<T>&)> search)
+	ELEM_FUNC<T> search, std::string name)
 {
 	if (nullptr == a) return nullptr;
-	FORWARD_OP<T> gatherer;
-	SHAPER shaper;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(name, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	transfer_func<T>* forward;
 	if (dimension)
 	{
-		gatherer =
-		[dimension, search](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
-		{
-			size_t dim = *dimension;
-			const T* src = args[0];
-			// REMEMBER that ts is the resulting shape, not the original shape
-			// both above and below values are calculations based on the original shape
-			// original shape
-			tensorshape& orig = inshapes[0];
-			if (dim >= orig.rank())
-			{
-				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
-					<< dim << " on a " << orig.rank() << " tensor");
-			}
-			std::vector<size_t> tv = orig.as_list();
-			size_t idx_val = tv[dim];
-			// below for compression calculates all elements below the index dimension
-			// that is for a shape of <1, 2, 3, 4> and index 2
-			// below = 1 * 2 = 2
-			size_t below = 1;
-			for (size_t i = 0; i < dim; i++)
-			{
-				below *= tv[i];
-			}
-			// above denotes the same above as the one in extend
-			size_t above = orig.n_elems() / (below*idx_val);
-
-			// copy over data
-			for (size_t i = 0; i < above; i++)
-			{
-				for (size_t j = 0; j < below; j++)
-				{
-					// apply compression to each element along idx_val dimension
-					size_t dest_idx = j + i * below;
-					std::vector<T> vals;
-					for (size_t k = 0; k < idx_val; k++)
-					{
-						vals.push_back(src[j + k * below + i * below * idx_val]);
-					}
-					dest[dest_idx] = (T)search(vals);
-				}
-			}
-		};
-		shaper =
-		[dimension](std::vector<tensorshape> shapes)
+		forward = new transfer_func<T>(
+		[dimension](std::vector<tensorshape> shapes) -> tensorshape
 		{
 			size_t dim = *dimension;
 			tensorshape ts = shapes[0];
@@ -361,7 +346,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			if (dim >= ts.rank())
 			{
 				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
-					<< dim << " on a " << ts.rank() << " tensor");
+															<< dim << " on a " << ts.rank() << " tensor");
 			}
 			std::vector<size_t> tv = ts.as_list();
 			tv[dim] = 1;
@@ -370,8 +355,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				if (0 == dim)
 				// pop front
 				{
-					tv.front() = std::move(tv.back());
-					tv.pop_back();
+					tv = std::vector<size_t>(tv.begin()+1, tv.end());
 				}
 				else if (tv.size()-1 == dim)
 				{
@@ -379,42 +363,70 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				}
 			}
 			return tv;
-		};
+		},
+		{
+			[dimension](size_t i, tensorshape& ashape, const tensorshape& outshape)
+			{
+				std::vector<size_t> outidx;
+				std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+				if (*dimension == coords.size())
+				{
+					coords.push_back(0);
+				}
+				else if (*dimension == 0)
+				{
+					std::vector<size_t> temp = coords;
+					coords = {0};
+					coords.insert(coords.end(), temp.begin(), temp.end());
+				}
+				for (size_t j = 0, adim = ashape.as_list()[*dimension]; j < adim; j++)
+				{
+					coords[*dimension] = j;
+					outidx.push_back(ashape.sequential_idx(coords));
+				}
+				return outidx;
+			}
+		}, search);
+		name = nnutils::formatter() << name << "_" << *dimension;
 	}
 	else
 	{
-		gatherer =
-		[search](T* dest, const tensorshape&, std::vector<const T*>& args, std::vector<tensorshape>& inshapes)
-		{
-			tensorshape& shape = inshapes[0];
-			const T* indata = args[0];
-			size_t idx = search(std::vector<T>(indata[0], indata[0]+shape.n_elems()));
-			std::vector<size_t> coord = shape.coordinate_from_idx(idx);
-			std::vector<T> tcoord(coord.begin(), coord.end());
-			memcpy(dest, &tcoord[0], tcoord.size() * sizeof(T));
-		};
 		// scalar shape
-		shaper = [](std::vector<tensorshape> inshapes) { return std::vector<size_t>{inshapes[0].rank()}; };
+		forward = new transfer_func<T>(
+		[](std::vector<tensorshape> inshapes) -> tensorshape
+		{
+			return std::vector<size_t>{inshapes[0].rank()};
+		},
+		{
+			[](size_t, tensorshape &ashape, const tensorshape&)
+			{
+				std::vector<size_t> outidx;
+				for (size_t j = 0, n = ashape.n_elems(); j < n; j++)
+				{
+					outidx.push_back(j);
+				}
+				return outidx;
+			}
+		}, search);
 	}
-
-	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, gatherer,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
 	[dimension, search](std::vector<inode<T>*>, variable<T>*)
 	{
 		// arg_compression's gradient has no intrinsic meaning
 		throw std::logic_error("attempting to get gradient of arg compression: undefined and meaningless operation");
 		return nullptr;
-	}, "argcompress");
+	}, name);
 }
 
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 {
 	return arg_compress<T>(a, dimension,
-	[](const std::vector<T>& vec) -> size_t
+	[](const T** data, size_t n) -> T
 	{
-		auto mit = std::max_element(vec.begin(), vec.end());
-		return std::distance(vec.begin(), mit);
-	});
+		auto mit = std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
+		return std::distance(data, mit);
+	}, "arg_max");
 }
 
 }

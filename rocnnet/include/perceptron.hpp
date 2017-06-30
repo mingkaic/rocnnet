@@ -26,7 +26,7 @@ namespace rocnnet
 
 using WB_PAIR = std::pair<nnet::variable<double>*, nnet::variable<double>*>;
 
-// TODO: make convolution neural net
+// TODO: implement convolution neural net
 class perceptron
 {
 public:

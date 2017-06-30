@@ -41,15 +41,11 @@ public:
 	// >>>> MUTATOR <<<<
 	//! update observer value according to subject
 	//! publicly available to allow explicit updates
-	virtual void update (subject* arg) = 0;
+	virtual void update (std::vector<size_t> argidx) = 0;
 
 	// >>>> ACCESSOR <<<<
 	//! determine whether this observes sub
 	bool has_subject (subject* sub) const;
-
-	std::vector<subject*> get_subjects (void) const { return dependencies_; }
-
-	size_t n_subjects (void) const { return dependencies_.size(); }
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
