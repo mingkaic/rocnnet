@@ -15,7 +15,7 @@ LOGDIR=${BUILDDIR}/log
 PBX_CACHE=${1:-./prototxt}
 ERRORLOG=${LOGDIR}/test_out.txt
 FUZZLOG=fuzz.out
-TIMEOUT=900
+TIMEOUT=300
 
 assert_cmd() {
     eval timeout -s SIGKILL ${TIMEOUT} $*
@@ -49,16 +49,16 @@ ls ${LOGDIR}
 for _ in {1..5}
 do
     echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_break_on_failure --gtest_shuffle"
+    assert_cmd "valgrind --tool=memcheck ${BINDIR}/tenncortest --gtest_break_on_failure --gtest_shuffle > ${ERRORLOG}"
     echo "tenncortest valgrind check complete"
 done
 
 # tenncor tests
-for _ in {1..5}
+for _ in {1..9}
 do
-    echo "running batch of 5 tenncortest"
-    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=5 --gtest_shuffle > ${ERRORLOG}"
-    echo "still running! 5 tests complete"
+    echo "running batch of 3 tenncortest"
+    assert_cmd "${BINDIR}/tenncortest --gtest_break_on_failure --gtest_repeat=3 --gtest_shuffle > ${ERRORLOG}"
+    echo "still running! 3 tests complete"
 done
 
 # rocnnet demos

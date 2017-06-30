@@ -17,6 +17,17 @@
 #ifndef DISABLE_IMMUTABLE_TEST
 
 
+#ifdef SLOW_GRAPH
+static std::pair<size_t,size_t> nnodes_range = {131, 297};
+#elif defined(THOROUGH_GRAPH) 
+static std::pair<size_t,size_t> nnodes_range = {67, 131};
+#elif defined(FAST_GRAPH)
+static std::pair<size_t,size_t> nnodes_range = {31, 67};
+#else // FASTEST_GRAPH
+static std::pair<size_t,size_t> nnodes_range = {17, 31};
+#endif
+
+
 static bool bottom_up (std::vector<iconnector<double>*> ordering)
 {
 	// ordering travels from leaf towards the root
@@ -406,7 +417,7 @@ TEST(IMMUTABLE, Tensor_I004)
 TEST(IMMUTABLE, ImmutableDeath_I005)
 {
 	FUZZ::reset_logger();
-	size_t nnodes = FUZZ::getInt(1, "nnodes", {97, 152})[0];
+	size_t nnodes = FUZZ::getInt(1, "nnodes", nnodes_range)[0];
 	std::unordered_set<immutable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
 
@@ -450,7 +461,7 @@ TEST(IMMUTABLE, ImmutableDeath_I005)
 TEST(IMMUTABLE, TemporaryEval_I006)
 {
 	FUZZ::reset_logger();
-	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
+	size_t nnodes = FUZZ::getInt(1, "nnodes", nnodes_range)[0];
 
 	std::unordered_set<inode<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
@@ -541,7 +552,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 TEST(IMMUTABLE, GetLeaves_I007)
 {
 	FUZZ::reset_logger();
-	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
+	size_t nnodes = FUZZ::getInt(1, "nnodes", nnodes_range)[0];
 
 	std::unordered_set<variable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
@@ -602,27 +613,27 @@ TEST(IMMUTABLE, GetLeaf_I008)
 	FUZZ::reset_logger();
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
-		[&ordering](std::vector<inode<double>*> args,
-			variable<double>* leaf) -> inode<double>*
+	[&ordering](std::vector<inode<double>*> args,
+		variable<double>* leaf) -> inode<double>*
+	{
+		varptr<double> leef;
+		args[0]->get_leaf(leef, leaf);
+		if (*leef == 0.0 && args.size() > 1)
 		{
-			varptr<double> leef;
-			args[0]->get_leaf(leef, leaf);
-			if (*leef == 0.0 && args.size() > 1)
-			{
-				args[1]->get_leaf(leef, leaf);
-				if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
-				{
-					ordering.push_back(conn);
-				}
-			}
-			else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+			args[1]->get_leaf(leef, leaf);
+			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
 			{
 				ordering.push_back(conn);
 			}
-			return leef;
-		};
+		}
+		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+		{
+			ordering.push_back(conn);
+		}
+		return leef;
+	};
 
-	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
+	size_t nnodes = FUZZ::getInt(1, "nnodes", nnodes_range)[0];
 
 	std::unordered_set<variable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
@@ -722,7 +733,7 @@ TEST(IMMUTABLE, GetGradient_I009)
 		return leef;
 	};
 
-	size_t nnodes = FUZZ::getInt(1, "nnodes", {131, 297})[0];
+	size_t nnodes = FUZZ::getInt(1, "nnodes", nnodes_range)[0];
 
 	std::unordered_set<variable<double>*> leaves;
 	std::unordered_set<immutable<double>*> collector;
