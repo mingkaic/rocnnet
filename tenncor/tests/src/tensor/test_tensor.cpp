@@ -230,7 +230,6 @@ TEST(TENSOR, Shape_B003)
 TEST(TENSOR, IsSameSize_B004)
 {
 	FUZZ::reset_logger();
-	tensorshape singular(std::vector<size_t>{1});
 	tensorshape cshape = random_def_shape();
 	std::vector<size_t> cv = cshape.as_list();
 	tensorshape ishape = make_incompatible(cv); // not same as cshape

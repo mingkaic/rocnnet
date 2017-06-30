@@ -392,8 +392,7 @@ template <typename T>
 void tensor<T>::set_shape (tensorshape shape)
 {
 	// allowed shape update
-	if (false == allowed_shape_.is_compatible_with(shape) ||
-		false == allowed_shape_.is_part_defined()) // always upgrade from undefined
+	if (false == allowed_shape_.is_compatible_with(shape) || false == is_alloc())
 	{
 		allowed_shape_ = shape;
 	}

@@ -143,8 +143,7 @@ tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t 
 	size_t realmaxn = std::pow((double)maxvalue, (double)rank);
 	if (realmaxn > maxn)
 	{
-		size_t error = realmaxn - maxn;
-		for (; error > 0; error /= maxvalue)
+		for (size_t error = realmaxn - maxn; error > 0; error /= maxvalue)
 		{
 			ncorrection++;
 		}
@@ -152,7 +151,15 @@ tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t 
 
 	std::vector<size_t> shape;
 	if (ncorrection == rank)
+	// we would need too many corrections, make a shape
+	// one dimension at a time (sacrificing rank if necessary)
 	{
+		if (minvalue < minn)
+		// we don't want our output too small either (avoid bad inputs in tests)
+		{
+			maxvalue += minn - minvalue;
+			minvalue = minn;
+		}
 		for (size_t i = 0; i < rank; i++)
 		{
 			std::stringstream ss;

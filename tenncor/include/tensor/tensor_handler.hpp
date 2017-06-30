@@ -63,6 +63,9 @@ protected:
 	}
 };
 
+template <typename T>
+T default_assign (const T&, const T& src) { return src; }
+
 // todo: test
 //! assigns one tensor to another
 template <typename T>
@@ -78,11 +81,11 @@ public:
 
 	//! performs tensor transfer function given an input tensor
 	void operator () (tensor<T>* out, const tensor<T>* arg,
-		std::function<T(const T&,const T&)> f = [](const T&, const T& src) { return src; }) const;
+		std::function<T(const T&,const T&)> f = default_assign<T>) const;
 
 	//! performs tensor transfer function given an input array
 	void operator () (tensor<T>* out, std::vector<T> indata,
-		std::function<T(const T&,const T&)> f = [](const T&, const T& src) { return src; }) const;
+		std::function<T(const T&,const T&)> f = default_assign<T>) const;
 
 protected:
 	//! clone implementation for copying from itensor_handler
