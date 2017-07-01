@@ -36,13 +36,12 @@ template <typename T>
 class inode : public subject
 {
 public:
-	//! store the gradient operation wrt to a leaf
+	virtual ~inode (void);
+
+	//! type for mapping leaf nodes to derivative with respect to leaf
 	using GRAD_CACHE = std::unordered_map<variable<T>*,varptr<T> >;
 
-	//! destructor
-	virtual ~inode (void) {}
-
-	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	inode<T>* clone (void) const;
 
@@ -55,128 +54,99 @@ public:
 	//! declare move assignment to prevent id_ copy over
 	virtual inode<T>& operator = (inode<T>&& other);
 
-	// >>>> ACCESSORS <<<<
+	// >>>> IDENTIFICATION <<<<
 	//! get the unique hash value
 	std::string get_uid (void) const;
 
-	//! Get the non-unique label
-	std::string get_label (void) const { return label_; }
+	//! get the non-unique label set by user, denoting node purpose
+	std::string get_label (void) const;
 
-	//! get a pretty and unique label
+	//! get beautified summary of name and uid, structure varies for inheritors
 	virtual std::string get_name (void) const;
 
-	virtual std::string get_summaryid (void) const { return get_name(); }
+	//! get name described in summary, defaults to name, may differ for special nodes
+	virtual std::string get_summaryid (void) const;
 
-	//! utility function: get data shape
-	virtual tensorshape get_shape (void) const = 0;
+	//! modify label to better describe node purpose
+	void set_label (std::string label);
 
-	//! check if data is available
-	virtual bool good_status (void) const = 0;
+	//>>>> OBSERVER & OBSERVABLE INFO <<<<
+	//! get all observerables
+	virtual std::vector<inode<T>*> get_arguments (void) const = 0;
 
+	//! get the number of observables
+	virtual size_t n_arguments (void) const = 0;
+
+	//! get all possible observers with specified label
+	//! return true if such observer is found
+	bool find_audience (std::string label, std::unordered_set<inode<T>*>& audience) const;
+
+	// >>>> FORWARD & BACKWARD DATA <<<<
 	//! get forward passing value
 	virtual const tensor<T>* get_eval (void) const = 0;
 
 	//! get top-level gradient value, used by root nodes
 	virtual varptr<T> get_gradient (inode<T>* wrt) = 0;
 
-	// >>>> META-DATA ACCESSOR <<<<
-	//! merge/Update the gradient/leaf info
+	//! utility function: get forward data shape
+	virtual tensorshape get_shape (void) const = 0;
+
+	// >>>> GRAPH STATUS <<<<
+	//! merge/update the gradient/leaf info
 	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
 
-	bool find_audience (std::string label,
-		std::unordered_set<inode<T>*>& audience) const
-	{
-		for (auto audpair : audience_)
-		{
-			iobserver* aud = audpair.first;
-			if (inode<T>* anode = dynamic_cast<inode<T>*>(aud))
-			{
-				if (0 == anode->label_.compare(label))
-				{
-					audience.insert(anode);
-				}
-			}
-		}
-		return false == audience.empty();
-	}
+	// >>>> NODE STATUS <<<<
+	//! check if data is available
+	virtual bool good_status (void) const = 0;
 
-	virtual std::vector<inode<T>*> get_arguments (void) const { return {}; }
+	//! read tensor data from protobuf, may modify current data to provide best information
+	//! return true if data is stored successfully
+	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
 
-	virtual size_t n_arguments (void) const { return 0; }
+	//! store any special-case numerical data using a string key
+	void set_metadata (std::string key, size_t value);
 
+	//! propagate special-case data from specified node to this node
+	void extract_metadata (inode<T>* n);
+
+	//! check for special-case numerical data
+	optional<size_t> get_metadata (std::string key) const;
+
+	// >>>> TODO: HIDE THIS <<<<
 	//! grab operational gradient node, used by other nodes
 	//! adds to internal caches if need be
 	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) = 0;
-
-	// >>>> META-DATA SETTER <<<<
-	//! set new label for this node
-	//! (mostly advised for leaf nodes,
-	//! since connectors should be informative enough)
-	void set_label (std::string label) { label_ = label; }
-
-	//! read tensor data from protobuf
-	virtual bool read_proto (const tenncor::tensor_proto& proto) = 0;
-
-	void set_metadata (std::string key, size_t value)
-	{
-		metadata_[key] = value;
-	}
-
-	optional<size_t> get_metadata (std::string key) const
-	{
-		optional<size_t> out;
-		auto it = metadata_.find(key);
-		if (metadata_.end() != it)
-		{
-			out = it->second;
-		}
-		return out;
-	}
-
-	void extract_metadata (inode<T>* n)
-	{
-		for (auto npair : n->metadata_)
-		{
-			auto metait = metadata_.find(npair.first);
-			if (metadata_.end() == metait)
-			{
-				metadata_[npair.first] = npair.second;
-			}
-			else if (npair.second != metait->second)
-			{
-				// warn
-			}
-		}
-	}
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor
 	inode (std::string name);
 
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! declare copy constructor to prevent id_ copy over
 	inode (const inode<T>& other);
 
 	//! declare move constructor to prevent id_ copy over
 	inode (inode<T>&& other);
 
+	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone abstraction function
 	virtual inode<T>* clone_impl (void) const = 0;
 
 	//! move abstraction function
 	virtual inode<T>* move_impl (void) = 0;
 
-	// >>>> NODE META DATA <<<<
-	const std::string id_ = nnutils::uuid(this); //! unique hash
-
 private:
-	std::string label_; //! variable label
+	//! uniquely identifier for this node
+	const std::string id_ = nnutils::uuid(this);
 
+	//! describes this node's purpose
+	std::string label_;
+
+	//! record special-case numerical data
 	std::unordered_map<std::string, size_t> metadata_;
 };
 
-//! add helper function for exposing node's data
+//! helper function for exposing node's data (alternatively: node::get_eval()->expose())
 template <typename T>
 std::vector<T> expose (const inode<T>* var);
 

@@ -40,10 +40,9 @@ enum notification
 class subject
 {
 public:
-	//! declare destructor to unsubscribe audiences
 	virtual ~subject (void);
 
-	// >>>> COPY && MOVE ASSIGNMENTS <<<<
+	// >>>> ASSIGNMENT OPERATORS <<<<
 	//! declare copy assignment to prevent audience_ copy over
 	virtual subject& operator = (const subject& other);
 
@@ -54,23 +53,18 @@ public:
 	//! notify audience of subject update
 	void notify (notification msg) const;
 
-	// >>>> ACCESSOR <<<<
+	// >>>> OBSERVER INFO <<<<
 	//! determine whether the subject has an audience
 	bool no_audience (void) const;
 
-	size_t n_audience (void) const { return audience_.size(); }
+	size_t n_audience (void) const;
 
 	//! replace other with this instance for all parents of other
 	void steal_observers (subject* other);
 
 protected:
 	//! explicit default constructor to allow copy and move constructors
-	subject (void) {}
-
-	// >>>> EXECUTE ON KILL CONDITION <<<<
-	//! smart destruction: default to not die
-	//! subject should have a suicide function signature different from observers
-	virtual void death_on_noparent (void) {}
+	subject (void);
 
 	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! Declare copy constructor to prevent audience from being copied over
@@ -79,7 +73,12 @@ protected:
 	//! Declare move constructor since copy is declared
 	subject (subject&& other);
 
-	// >>>> OBSERVER MANIPULATION <<<<
+	// >>>> KILL CONDITION <<<<
+	//! smart destruction: called when lacking observables
+	//! action: nothing, subjects do not die by default
+	virtual void death_on_noparent (void);
+
+	// >>>> OBSERVER MUTATORS SHARED WITH OBSERVERS <<<<
 	//! Add observer to audience
 	void attach (iobserver* viewer, size_t idx);
 
@@ -89,12 +88,11 @@ protected:
 	//! Remove observer-index data from audience
 	virtual void detach (iobserver* viewer, size_t idx);
 
-	//! Maps observers to the the subject's index in observer
-	//! the value is a set of indices to ensure uniqueness
-	std::unordered_map<iobserver*,
-		std::unordered_set<size_t> > audience_;
-
 	friend class iobserver;
+
+	// >>>> OBSERVERS DATA SHARED WITH INHERITORS <<<
+	//! observers -> { subject index in observer referencing this }
+	std::unordered_map<iobserver*, std::unordered_set<size_t> > audience_;
 };
 
 }

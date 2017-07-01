@@ -28,21 +28,30 @@ template <typename T>
 class placeholder final : public ivariable<T>
 {
 public:
+	// >>>> CONSTRUCTORS <<<<
 	//! shape constructor
 	placeholder (const tensorshape& shape, std::string name = "");
 
-	// >>>> CLONE COPY && MOVE <<<<
+	//! explicitly declare copy constructor since assignments are declared
+	placeholder (const placeholder<T>& other);
+
+	//! explicitly declare move constructor since assignments are declared
+	placeholder (placeholder<T>&& other);
+
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	placeholder<T>* clone (void) const;
 
 	//! move function
 	placeholder<T>* move (void);
 
+	//! declare copy assignment to avoid implicit deletion
 	virtual placeholder<T>& operator = (const placeholder<T>& other);
 
+	//! declare move assignment to avoid implicit deletion
 	virtual placeholder<T>& operator = (placeholder<T>&& other);
 
-	// >>>> DATA ASSIGNMENT <<<<
+	// >>>> DATA ASSIGNMENT OPERATORS <<<<
 	//! assign raw data according to a
 	//! vector representation of inner tensor
 	//! for a shape of <d_0, d_1, ..., d_i> and
@@ -54,19 +63,16 @@ public:
 	//! assign tensor to inner tensor
 	virtual placeholder<T>& operator = (tensor<T>& data);
 
-	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
+	// >>>> GRAPH STATUS <<<<
+	//! merge/update the gradient/leaf info
+	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+
+	// >>>> TODO: HIDE THIS <<<<
 	//! grab operational gradient node, used by other nodes
 	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
 
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
 protected:
-	placeholder (const placeholder<T>& other) : ivariable<T>(other) {}
-	
-	placeholder (placeholder<T>&& other) : ivariable<T>(std::move(other)) {}
-
+	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 

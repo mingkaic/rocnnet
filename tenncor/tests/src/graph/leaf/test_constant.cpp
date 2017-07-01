@@ -228,10 +228,9 @@ TEST(CONSTANT, SelfDestruct_D005)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];
-	constant<double>* res = constant<double>::get(c);
-	constant<double>* res2 = constant<double>::get(c);
-	res->is_managed_ = true;
-	res2->is_managed_ = false;
+	constant<double>* res = constant<double>::get(c); // managed
+	constant<double>* res2 = constant<double>::get(c); // unmanaged
+	res->be_managed();
 
 	mock_connector* mconn = new mock_connector({res, res2}, "");
 	delete mconn;

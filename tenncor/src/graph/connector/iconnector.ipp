@@ -104,6 +104,21 @@ std::string iconnector<T>::get_name (void) const
 }
 
 template <typename T>
+std::vector<inode<T>*> iconnector<T>::get_arguments (void) const
+{
+	std::vector<inode<T>*> node_args(this->dependencies_.size());
+	std::transform(this->dependencies_.begin(), this->dependencies_.end(), node_args.begin(),
+		[](subject* s) { return static_cast<inode<T>*>(s); });
+	return node_args;
+}
+
+template <typename T>
+size_t iconnector<T>::n_arguments (void) const
+{
+	return this->dependencies_.size();
+}
+
+template <typename T>
 bool iconnector<T>::is_same_graph (const iconnector<T>* other) const
 {
 	return gid_ == other->gid_;

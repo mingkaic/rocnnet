@@ -44,21 +44,18 @@ constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 }
 
 template <typename T>
-constant<T>* constant<T>::clone (void) const
-{
-	return static_cast<constant<T>*>(clone_impl());
-}
-
-template <typename T>
-constant<T>* constant<T>::move (void)
-{
-	return static_cast<constant<T>*>(move_impl());
-}
-
-template <typename T>
 varptr<T> constant<T>::get_gradient (inode<T>*)
 {
 	return constant<T>::get_shared_zero();
+}
+
+template <typename T>
+void constant<T>::get_leaves (typename inode<T>::GRAD_CACHE&) const {}
+
+template <typename T>
+void constant<T>::be_managed (void)
+{
+	is_managed_ = true;
 }
 
 template <typename T>
@@ -66,10 +63,6 @@ void constant<T>::get_leaf (varptr<T>& out, variable<T>*)
 {
 	out = constant<T>::get_shared_zero();
 }
-
-template <typename T>
-void constant<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
 constant<T>::constant (T scalar) :

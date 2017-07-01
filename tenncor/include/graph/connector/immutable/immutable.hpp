@@ -26,15 +26,15 @@ template <typename T>
 class immutable : public base_immutable<T>
 {
 public:
+	virtual ~immutable (void);
+
+	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
 	//! builder for immutables, grabs ownership of Nf
 	static immutable<T>* get (std::vector<inode<T>*> args,
 		transfer_func<T>* Nf, BACK_MAP<T> ginit, std::string name,
 		inode<T>* ignore_jacobian = nullptr);
 
-	//! destructor
-	virtual ~immutable (void);
-
-	// >>>> CLONE, COPY && MOVE <<<<
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	immutable<T>* clone (void) const;
 
@@ -47,6 +47,7 @@ public:
 	//! declare move assignment to move over transfer functions
 	virtual immutable<T>& operator = (immutable<T>&& other);
 
+	// >>>> GRAPH STATUS <<<<
 	//! summarize this immutable
 	virtual typename iconnector<T>::summary_series summarize (void) const;
 
@@ -56,19 +57,20 @@ protected:
 	immutable (std::vector<inode<T>*> args,
 		transfer_func<T>* Nf, BACK_MAP<T> ginit, std::string label);
 
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! implement clone function
-	virtual inode<T>* clone_impl (void) const;
-
-	//! move implementation
-	virtual inode<T>* move_impl (void);
-
 	//! declare copy constructor to copy over transfer functions
 	immutable (const immutable<T>& other);
 
 	//! declare move constructor to move over transfer functions
 	immutable (immutable<T>&& other);
 
+	// >>>> POLYMORPHIC CLONERS <<<<
+	//! implement clone function
+	virtual inode<T>* clone_impl (void) const;
+
+	//! move implementation
+	virtual inode<T>* move_impl (void);
+
+	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_ (overridden by merged_immutable)
 	virtual void forward_pass (std::vector<size_t>);
 
@@ -82,16 +84,16 @@ private:
 	//! move helper
 	void move_helper (immutable&& other);
 
-	// >>>> FORWARD OPERATION <<<<
 	//! forward transfer function
-	std::shared_ptr<transfer_func<T> > Nf_ = nullptr; //! calculates forward passing data
+	//! calculates forward passing data
+	std::shared_ptr<transfer_func<T> > Nf_ = nullptr;
 
-	// >>>> BACKWARD OPERATION <<<<
 	//! backward transfer function to
 	//! lazy instantiate gradient cache values
 	BACK_MAP<T> ginit_;
 
-	// >>>> DATA CACHING <<<<
+	//! pointers to raw_ptrs of dependency tensors,
+	//! order by corresponding output index
 	std::vector<const T*> temp_in_;
 };
 

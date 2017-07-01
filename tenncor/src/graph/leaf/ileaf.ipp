@@ -54,13 +54,15 @@ ileaf<T>& ileaf<T>::operator = (ileaf<T>&& other)
 }
 
 template <typename T>
-tensorshape ileaf<T>::get_shape (void) const
+std::vector<inode<T>*> ileaf<T>::get_arguments (void) const
 {
-	if (nullptr != data_)
-	{
-		return data_->get_shape();
-	}
-	return std::vector<size_t>{};
+	return {};
+}
+
+template <typename T>
+size_t ileaf<T>::n_arguments (void) const
+{
+	return 0;
 }
 
 template <typename T>
@@ -71,6 +73,16 @@ const tensor<T>* ileaf<T>::get_eval (void) const
 		return nullptr;
 	}
 	return data_;
+}
+
+template <typename T>
+tensorshape ileaf<T>::get_shape (void) const
+{
+	if (nullptr != data_)
+	{
+		return data_->get_shape();
+	}
+	return std::vector<size_t>{};
 }
 
 template <typename T>
