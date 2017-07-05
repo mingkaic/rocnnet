@@ -24,22 +24,14 @@ template <typename T>
 class ivariable : public ileaf<T>
 {
 public:
-	//! kill initializer
 	virtual ~ivariable (void);
 
-	// >>>> CLONE, COPY, & MOVE ASSIGNMENTS <<<<
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	ivariable<T>* clone (void) const;
 
 	//! move function
 	ivariable<T>* move (void);
-
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
-	//! copy construct to init zero and one
-	ivariable (const ivariable<T>& other);
-
-	//! move construct to init zero and one
-	ivariable (ivariable<T>&& other);
 
 	//! declare copy assignment to copy over initializer
 	virtual ivariable<T>& operator = (const ivariable<T>& other);
@@ -47,12 +39,13 @@ public:
 	//! declare move assignment to move over initializer
 	virtual ivariable<T>& operator = (ivariable<T>&& other);
 
-	//! determine whether leaf node can be initiated
-	bool can_init (void) const;
-
-	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
+	// >>>> BACKWARD DATA <<<<
 	//! get gradient wrt some node
 	virtual varptr<T> get_gradient (inode<T>* wrt);
+
+	// >>>> IVARIABLE SPECIAL <<<<
+	//! determine whether leaf node can be initiated
+	bool can_init (void) const;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -61,8 +54,13 @@ protected:
 		itensor_handler<T>* init,
 		std::string name);
 
-	// >>>> INITIALIZER DATA <<<<
-	//! tensor manipulator, ileaf owns this
+	//! copy construct to init zero and one
+	ivariable (const ivariable<T>& other);
+
+	//! move construct to init zero and one
+	ivariable (ivariable<T>&& other);
+
+	//! initialization handler, owns this
 	itensor_handler<T>* init_ = nullptr;
 
 private:

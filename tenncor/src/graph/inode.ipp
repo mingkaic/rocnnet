@@ -12,6 +12,9 @@ namespace nnet
 {
 
 template <typename T>
+inode<T>::~inode (void) {}
+
+template <typename T>
 inode<T>* inode<T>::clone (void) const
 {
 	return clone_impl();
@@ -52,9 +55,79 @@ std::string inode<T>::get_uid (void) const
 }
 
 template <typename T>
+std::string inode<T>::get_label (void) const
+{
+	return label_;
+}
+
+template <typename T>
 std::string inode<T>::get_name (void) const
 {
 	return "<"+label_+":"+id_+">";
+}
+
+template <typename T>
+std::string inode<T>::get_summaryid (void) const
+{
+	return get_name();
+}
+
+template <typename T>
+void inode<T>::set_label (std::string label)
+{
+	label_ = label;
+}
+
+template <typename T>
+bool inode<T>::find_audience (std::string label, std::unordered_set<inode<T>*>& audience) const
+{
+	for (auto audpair : audience_)
+	{
+		iobserver* aud = audpair.first;
+		if (inode<T>* anode = dynamic_cast<inode<T>*>(aud))
+		{
+			if (0 == anode->label_.compare(label))
+			{
+				audience.insert(anode);
+			}
+		}
+	}
+	return false == audience.empty();
+}
+
+template <typename T>
+void inode<T>::set_metadata (std::string key, size_t value)
+{
+	metadata_[key] = value;
+}
+
+template <typename T>
+void inode<T>::extract_metadata (inode<T>* n)
+{
+	for (auto npair : n->metadata_)
+	{
+		auto metait = metadata_.find(npair.first);
+		if (metadata_.end() == metait)
+		{
+			metadata_[npair.first] = npair.second;
+		}
+		else if (npair.second != metait->second)
+		{
+			// warn
+		}
+	}
+}
+
+template <typename T>
+optional<size_t> inode<T>::get_metadata (std::string key) const
+{
+	optional<size_t> out;
+	auto it = metadata_.find(key);
+	if (metadata_.end() != it)
+	{
+		out = it->second;
+	}
+	return out;
 }
 
 template <typename T>

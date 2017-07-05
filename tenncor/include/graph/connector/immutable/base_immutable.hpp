@@ -1,6 +1,6 @@
 /*!
  *
- *  immutable.hpp
+ *  base_immutable.hpp
  *  cnnet
  *
  *  Purpose:
@@ -32,7 +32,7 @@ class base_immutable : public iconnector<T>
 public:
 	virtual ~base_immutable (void);
 
-	// >>>> CLONE, COPY && MOVE <<<<
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	base_immutable<T>* clone (void) const;
 
@@ -45,10 +45,7 @@ public:
 	//! declare move assignment to move over transfer functions
 	virtual base_immutable<T>& operator = (base_immutable<T>&& other);
 
-	// >>>> ACCESSORS <<<<
-	//! Utility function: get data shape
-	virtual tensorshape get_shape (void) const;
-
+	// >>>> FORWARD & BACKWARD DATA <<<<
 	//! Forward passing value
 	virtual const tensor<T>* get_eval (void) const;
 
@@ -56,31 +53,39 @@ public:
 	//! allocates out tensor. caller owns out
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
-	//! check if the arguments are good; data is available
-	virtual bool good_status (void) const;
-
-	//! get gradient leaves
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
-
-	// >>>> MUTATORS <<<<
-	//! grab operational gradient node, used by other nodes
-	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf);
-
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_leaf
 	virtual varptr<T> get_gradient (inode<T>* wrt);
 
-	//! Inherited from iobserver: update data
-	//! Updates gcache_ and data_
-	virtual void update (std::vector<size_t> argidx);
+	//! Utility function: get data shape
+	virtual tensorshape get_shape (void) const;
+
+	// >>>> GRAPH STATUS <<<<
+	//! get gradient leaves
+	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+
+	// >>>> NODE STATUS <<<<
+	//! check if the arguments are good; data is available
+	virtual bool good_status (void) const;
 
 	//! Inherited from inode: data_ takes data from proto
 	virtual bool read_proto (const tenncor::tensor_proto&);
 
+	//! public flag notifying whether this node can be merged
 	bool mergible_ = true;
 
+	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
+	//! Inherited from iobserver: update data
+	//! Updates gcache_ and data_
+	virtual void update (std::vector<size_t> argidx);
+
+	// >>>> TODO: HIDE THIS <<<<
+	//! grab operational gradient node, used by other nodes
+	//! delay instantiate gcache elements if target leaf was never instantiated
+	virtual void get_leaf (varptr<T>& out, variable<T>* leaf);
+
 protected:
+	// >>>> CONSTRUCTORS <<<<
 	//! base_immutable constructing an aggregate transfer function
 	base_immutable (std::vector<inode<T>*> args, std::string label);
 
@@ -91,17 +96,17 @@ protected:
 	//! declare move constructor to move over transfer functions
 	base_immutable (base_immutable<T>&& other);
 
+	// >>>> KILL CONDITION <<<<
+	//! suicides when all observ
 	void death_on_broken (void);
 
-	void eval_helper (const iconnector<T>* target, inode<T>*& out) const;
-
+	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
 	virtual void forward_pass (std::vector<size_t>) = 0;
 
 	//! backward pass step: populate gcache_[leaf]
 	virtual void backward_pass (variable<T>* leaf) = 0;
 
-	// >>>> LEAF-GRADIENT CACHE <<<<
 	//! maps leaf to gradient node
 	//! lazy instantiates gradient nodes
 	//! - stores the gradient value wrt each leaf
@@ -118,6 +123,9 @@ private:
 
 	//! move helper
 	void move_helper (base_immutable&& other);
+
+	//! backward_evaluation helper
+	void eval_helper (const iconnector<T>* target, inode<T>*& out) const;
 };
 
 //! for every node M in root's subgraph, merge M with subjects whose sole audience is M
@@ -132,6 +140,7 @@ template <typename T>
 class merged_immutable : public base_immutable<T>
 {
 public:
+	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
 	//! build a merged_immutable that combines conn and its arguments
 	//! ignores arguments indexed by ignore_indices
 	static merged_immutable<T>* get (base_immutable<T>* conn,
@@ -145,15 +154,18 @@ public:
 		std::unordered_set<size_t> ignore_indices = {},
 		bool disabled_update = false);
 
-	// >>>> CLONE, COPY && MOVE <<<<
+	// >>>> CLONER & MOVER <<<<
 	//! clone function
 	merged_immutable<T>* clone (void) const;
 
 	//! move function
 	merged_immutable<T>* move (void);
 
-	virtual std::string get_summaryid (void) const { return summaries_.back().id_; }
+	// >>>> IDENTIFICATION <<<<
+	//! get name described in summary, defaults to name, may differ for special nodes
+	virtual std::string get_summaryid (void) const;
 
+	// >>>> GRAPH STATUS <<<<
 	//! summarize this connector
 	virtual typename iconnector<T>::summary_series summarize (void) const;
 
@@ -167,13 +179,14 @@ protected:
 	merged_immutable (base_immutable<T>* conn, std::vector<subject*> args,
 		std::unordered_set<size_t> ignore_indices, bool disabled_update);
 
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
+	// >>>> POLYMORPHIC CLONERS <<<<
 	//! implement clone function
 	virtual inode<T>* clone_impl (void) const;
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 
+	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_ (overridden by merged_immutable)
 	virtual void forward_pass (std::vector<size_t>);
 
@@ -181,15 +194,19 @@ protected:
 	virtual void backward_pass (variable<T>* leaf);
 
 private:
+	struct temp_immutable;
+
+	//! constructor helper
 	void init_helper (typename iconnector<T>::summary_series top_summary,
 		std::vector<subject*> args, std::unordered_set<size_t> ignore_indices);
 
+	//! forward and backward helper
+	//! op determines how U data is evaluated
 	template <typename U>
 	U summary_traversal (std::unordered_map<std::string,U> arg_map,
 		std::function<U(std::vector<U>,typename iconnector<T>::conn_summary&)> op);
 
-	struct temp_immutable;
-
+	//! summary.id_ -> tensor::raw_data_ equivalent vector
 	std::unordered_map<std::string,std::vector<T> > raw_intermediates_;
 
 	//! an array of pointers to raw data either in raw_intermediates_ vector or from argument tensors
@@ -197,6 +214,8 @@ private:
 	//! populated once
 	std::unordered_map<std::string,std::vector<const T*> > arg_ptrs_;
 
+	//! vector of summaries (of previously merged nodes)
+	//! describing how to forward eval and build backward node (derive)
 	typename iconnector<T>::summary_series summaries_;
 };
 

@@ -72,6 +72,25 @@ bool subject::no_audience (void) const
 	return audience_.empty();
 }
 
+size_t subject::n_audience (void) const { return audience_.size(); }
+
+void subject::steal_observers (subject* other)
+{
+	std::unordered_map<iobserver*, std::unordered_set<size_t> > aud_cpy = other->audience_;
+	for (auto aud_pair : aud_cpy)
+	{
+		iobserver* aud = aud_pair.first;
+		for (size_t i : aud_pair.second)
+		{
+			aud->replace_dependency(this, i);
+		}
+	}
+}
+
+subject::subject (void) {}
+
+void subject::death_on_noparent (void) {}
+
 subject::subject (const subject&) {}
 
 subject::subject (subject&& other)
@@ -86,19 +105,6 @@ subject::subject (subject&& other)
 		}
 	}
 	other.audience_.clear();
-}
-
-void subject::steal_observers (subject* other)
-{
-	std::unordered_map<iobserver*, std::unordered_set<size_t> > aud_cpy = other->audience_;
-	for (auto aud_pair : aud_cpy)
-	{
-		iobserver* aud = aud_pair.first;
-		for (size_t i : aud_pair.second)
-		{
-			aud->replace_dependency(this, i);
-		}
-	}
 }
 
 void subject::attach (iobserver* viewer, size_t idx)

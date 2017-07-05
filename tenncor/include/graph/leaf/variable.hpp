@@ -31,6 +31,7 @@ template <typename T>
 class variable final : public ivariable<T>
 {
 public:
+	// >>>> CONSTRUCTORS <<<<
 	//! scalar constructor.
 	//! all the benefits of constant, but reassignable
 	variable (T scalar, std::string name = "scalar");
@@ -42,42 +43,44 @@ public:
 	variable (const tensorshape& shape,
 		const initializer<T>& init, std::string name = "");
 
-	// >>>> CLONE COPY && MOVE <<<<
+	// >>>> CLONER <<<<
 	//! clone function
 	variable<T>* clone (void) const;
 
 	//! move function
 	variable<T>* move (void);
 
-	// INITIALIZE VALUE
+	// >>>> GRAPH STATUS <<<<
+	//! merge/update the gradient/leaf info
+	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+
+	// >>>> VARIABLE SPECIAL <<<<
 	//! copy over initializer, replace current initializer
 	void set_initializer (const initializer<T>& init);
 
 	//! initialize data and returns if possible,
 	//! throws error otherwise
-	virtual tensor<T>& initialize (void);
+	tensor<T>& initialize (void);
 
 	//! initialize data using shape and
 	//! returns if possible, throws error otherwise
-	virtual tensor<T>& initialize (tensorshape shape);
+	tensor<T>& initialize (tensorshape shape);
 
-	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
-	//! grab operational gradient node, used by other nodes
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
-
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
+	//! return update data function (directly assign input node data to this)
 	variable_updater<T> assign (inode<T>* input) const;
 
 	//! return update data function (add input node data to this)
 	variable_updater<T> assign_add (inode<T>* input) const;
 
-	//! return update data function (add input node data to this)
+	//! return update data function (subtract input node data to this)
 	variable_updater<T> assign_sub (inode<T>* input) const;
 
+	// >>>> TODO: HIDE THIS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
+
 protected:
+	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 

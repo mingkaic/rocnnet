@@ -41,6 +41,8 @@ public:
 
 	tensor<double>* data_ = nullptr;
 
+	virtual std::vector<inode<double>*> get_arguments (void) const { return {}; }
+	virtual size_t n_arguments (void) const { return 0; }
 	virtual tensorshape get_shape (void) const { return data_->get_shape(); }
 	virtual bool good_status (void) const { return nullptr != data_; }
 	virtual const tensor<double>* get_eval(void) const { return data_; }

@@ -28,24 +28,23 @@ namespace nnet
 class iobserver
 {
 public:
-	//! remove all dependencies
 	virtual ~iobserver (void);
 
-	// >>>> COPY && MOVE ASSIGNMENT<<<<
+	// >>>> ASSIGNMENT OPERATORS <<<<
 	//! declare copy assignment to copy over dependencies
 	virtual iobserver& operator = (const iobserver& other);
 
 	//! declare move assignment to move over dependencies
 	virtual iobserver& operator = (iobserver&& other);
 
-	// >>>> MUTATOR <<<<
+	// >>>> OBSERVER INFO <<<<
+	//! determine whether this observes sub
+	bool has_subject (subject* sub) const;
+
+	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! update observer value according to subject
 	//! publicly available to allow explicit updates
 	virtual void update (std::vector<size_t> argidx) = 0;
-
-	// >>>> ACCESSOR <<<<
-	//! determine whether this observes sub
-	bool has_subject (subject* sub) const;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -55,18 +54,17 @@ protected:
 	//! subscribe to subjects on construction (mostly non-mutable observers)
 	iobserver (std::vector<subject*> dependencies);
 
-	// >>>> EXECUTE ON KILL CONDITION <<<<
-	//! smart destruction
-	virtual void death_on_broken (void) = 0;
-
-	// >>>> COPY && MOVE CONSTRUCTOR <<<<
 	//! copy over dependencies
 	iobserver (const iobserver& other);
 
 	//! move over dependencies
 	iobserver (iobserver&& other);
 
-	// >>>> DEPENDENCY MANIPULATION <<<<
+	// >>>> KILL CONDITION <<<<
+	//! smart destruction: call when any observer is broken
+	virtual void death_on_broken (void) = 0;
+
+	// >>>> DEPENDENCY MUTATORS <<<<
 	//! subscribe: add dependency
 	void add_dependency (subject* dep);
 
@@ -81,6 +79,7 @@ protected:
 	std::vector<subject*> dependencies_;
 
 private:
+	// >>>> NOTIFICATION MESSAGE MANAGER <<<
 	//! update observer value with notification
 	virtual void update (std::unordered_set<size_t> dep_indices, notification msg);
 

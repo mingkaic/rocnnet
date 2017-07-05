@@ -13,12 +13,11 @@ namespace nnet
 
 inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 {
-	tensorshape lastshape = shapes[0];
-	for (size_t i = 1, nshapes = shapes.size(); i < nshapes; ++i)
+	tensorshape lastshape;
+	for (size_t i = 0, nshapes = shapes.size(); i < nshapes; ++i)
 	{
-		if (shapes[i].n_elems() == 1 || lastshape.n_elems() == 1)
+		if (shapes[i].n_elems() == 1)
 		{
-			lastshape = shapes[i];
 			continue;
 		}
 		if (false == shapes[i].is_compatible_with(lastshape))
@@ -272,22 +271,16 @@ inline transfer_func<T>* unary_elem_agg (ELEM_FUNC<T> aggregate)
 	}, aggregate);
 }
 
+inline std::vector<size_t> injective (size_t i, tensorshape& ashape, const tensorshape&)
+{
+	if (1 == ashape.n_elems()) return {0};
+	return {i};
+}
+
 template <typename T>
 inline transfer_func<T>* binary_elem_agg (ELEM_FUNC<T> aggregate)
 {
-	return new transfer_func<T>(elementary_shaper,
-	{
-		[](size_t i, tensorshape& ashape, const tensorshape&) -> std::vector<size_t>
-		{
-			if (1 == ashape.n_elems()) return {0};
-			return {i};
-		},
-		[](size_t i, tensorshape& bshape, const tensorshape&) -> std::vector<size_t>
-		{
-			if (1 == bshape.n_elems()) return {0};
-			return {i};
-		}
-	}, aggregate);
+	return new transfer_func<T>(elementary_shaper, { injective, injective }, aggregate);
 }
 
 inline OUT_MAPPER get_axis_mapper (size_t axis)
@@ -323,54 +316,106 @@ inline OUT_MAPPER get_axis_mapper (size_t axis)
 }
 
 template <typename T>
-inline transfer_func<T>* binary_axial_agg (ELEM_FUNC<T> aggregate, size_t axis)
+inline transfer_func<T>* binary_axial_left (ELEM_FUNC<T> aggregate, size_t axis)
+{
+	return new transfer_func<T>(
+	[axis](std::vector<tensorshape> shapes) -> tensorshape
+			{
+		tensorshape shape1 = shapes[0];
+		tensorshape shape2 = shapes[1];
+
+		if (shape2.n_elems() == 1) return shape1;
+
+		std::vector<size_t> s2list = shape2.as_list();
+
+		if (axis == 0)
+		{
+			s2list = std::vector<size_t>(s2list.begin()+1, s2list.end());
+		}
+		else if (axis < s2list.size())
+		{
+			s2list[axis] = 1;
+		}
+		else
+		{
+			s2list.push_back(1);
+		}
+		if (false == shape1.is_compatible_with(tensorshape(s2list)))
+		{
+			std::stringstream ss;
+			ss << "shape ";
+			print_shape(shape1, ss);
+			ss << " is incompatible with shape ";
+			print_shape(shape2, ss);
+			ss << " along axis " << axis;
+			throw std::runtime_error(ss.str());
+		}
+
+		if (false == shape2.is_fully_defined()) return std::vector<size_t>{1};
+		return shape2;
+	},
+	{ get_axis_mapper(axis), injective }, aggregate);
+}
+
+template <typename T>
+inline transfer_func<T>* binary_axial_right (ELEM_FUNC<T> aggregate, size_t axis)
 {
 	return new transfer_func<T>(
 	[axis](std::vector<tensorshape> shapes) -> tensorshape
 	{
-		tensorshape lastshape = shapes[0];
-		for (size_t i = 1, nshapes = shapes.size(); i < nshapes; ++i)
+		tensorshape shape1 = shapes[0];
+		tensorshape shape2 = shapes[1];
+
+		if (shape1.n_elems() == 1) return shape2;
+
+		std::vector<size_t> s1list = shape1.as_list();
+
+		if (axis == 0)
 		{
-			if (shapes[i].n_elems() == 1 || lastshape.n_elems() == 1)
-			{
-				lastshape = shapes[i];
-				continue;
-			}
-			std::vector<size_t> prevshape = lastshape.as_list();
-			std::vector<size_t> currshape = shapes[i].as_list();
-			if (1 == std::abs((double)prevshape.size() - (double)currshape.size()))
-			{
-				std::vector<size_t>& smallshape = prevshape.size() < currshape.size() ? prevshape : currshape;
-				if (axis == 0)
-				{
-					std::vector<size_t> temp = smallshape;
-					smallshape = {1};
-					smallshape.insert(smallshape.end(), temp.begin(), temp.end());
-				}
-				else
-				{
-					smallshape.push_back(1);
-				}
-			}
-			size_t maxaxal = std::max(prevshape[axis], currshape[axis]);
-			prevshape[axis] = currshape[axis] = 1;
-			if (false == tensorshape(prevshape).is_compatible_with(tensorshape(currshape)))
-			{
-				std::stringstream ss;
-				ss << "shape ";
-				print_shape(shapes[i], ss);
-				ss << " is incompatible with shape ";
-				print_shape(lastshape, ss);
-				ss << " along axis " << axis;
-				throw std::runtime_error(ss.str());
-			}
-			currshape[axis] = maxaxal;
-			lastshape = currshape;
+			s1list = std::vector<size_t>(s1list.begin()+1, s1list.end());
 		}
-		if (false == lastshape.is_fully_defined()) return std::vector<size_t>{1};
-		return lastshape;
+		else if (axis < s1list.size())
+		{
+			s1list[axis] = 1;
+		}
+		else
+		{
+			s1list.push_back(1);
+		}
+		if (false == shape2.is_compatible_with(tensorshape(s1list)))
+		{
+			std::stringstream ss;
+			ss << "shape ";
+			print_shape(shape1, ss);
+			ss << " is incompatible with shape ";
+			print_shape(shape2, ss);
+			ss << " along axis " << axis;
+			throw std::runtime_error(ss.str());
+		}
+
+ 		if (false == shape1.is_fully_defined()) return std::vector<size_t>{1};
+		return shape1;
 	},
-	{ get_axis_mapper(axis), get_axis_mapper(axis) }, aggregate);
+	{ injective, get_axis_mapper(axis) }, aggregate);
+}
+
+template <typename T>
+inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t axis)
+{
+	if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(root.get()))
+	{
+		typename inode<T>::GRAD_CACHE temp;
+		branch->get_leaves(temp);
+		std::vector<variable<T>*> leef;
+		for (auto tpair : temp)
+		{
+			leef.push_back(tpair.first);
+		}
+		iconn->set_jacobian([axis](inode<T>* root, variable<T>*) -> inode<T>*
+		{
+			return reduce_sum(varptr<T>(root), axis);
+		}, leef);
+	}
 }
 
 template <typename T>
@@ -997,7 +1042,8 @@ varptr<T> operator + (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[a](const T** group, size_t n) -> T
 	 {
 	 	assert(n == 1);
 		return a + *(group[0]);
@@ -1038,7 +1084,8 @@ varptr<T> operator + (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) + b;
@@ -1064,15 +1111,16 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	{
 		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return add(a, b, *aaxis);
+			return add_axial_b(a, b, *aaxis);
 		}
 	}
 	else if (baxis)
 	{
-		return add(a, b, *baxis);
+		return add_axial_a(a, b, *baxis);
 	}
 	return add_helper<T>(a, b, "add",
-	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
@@ -1115,7 +1163,8 @@ varptr<T> operator - (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a - *(group[0]);
@@ -1156,7 +1205,8 @@ varptr<T> operator - (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) - b;
@@ -1182,15 +1232,16 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	{
 		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return sub(a, b, *aaxis);
+			return sub_axial_b(a, b, *aaxis);
 		}
 	}
 	else if (baxis)
 	{
-		return sub(a, b, *baxis);
+		return sub_axial_a(a, b, *baxis);
 	}
 	return sub_helper<T>(a, b, "sub",
-	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) - *(group[1]);
@@ -1240,7 +1291,8 @@ varptr<T> operator * (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a * *(group[0]);
@@ -1288,7 +1340,8 @@ varptr<T> operator * (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) * b;
@@ -1314,15 +1367,16 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	{
 		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return mul(a, b, *aaxis);
+			return mul_axial_b(a, b, *aaxis);
 		}
 	}
 	else if (baxis)
 	{
-		return mul(a, b, *baxis);
+		return mul_axial_a(a, b, *baxis);
 	}
 	return mul_helper<T>(a, b, "mul",
-	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) * *(group[1]);
@@ -1376,7 +1430,8 @@ varptr<T> operator / (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>([a](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a / *(group[0]);
@@ -1423,7 +1478,8 @@ varptr<T> operator / (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([b](const T** group, size_t n) -> T
+	unary_elem_agg(ELEM_FUNC<T>(
+	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) / b;
@@ -1449,15 +1505,16 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	{
 		if (false == (bool)baxis || *aaxis == *baxis)
 		{
-			return div(a, b, *aaxis);
+			return div_axial_b(a, b, *aaxis);
 		}
 	}
 	else if (baxis)
 	{
-		return div(a, b, *baxis);
+		return div_axial_a(a, b, *baxis);
 	}
 	return div_helper<T>(a, b, "div",
-	binary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_elem_agg(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) / *(group[1]);
@@ -1476,56 +1533,108 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 }
 
 template <typename T>
-varptr<T> add (const varptr<T> a, const varptr<T> b, size_t axis)
+varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
+	binary_axial_left(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
-	}), axis),
-	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	}), axis_a),
+	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> ag;
 		varptr<T> bg;
 		args.at(0)->get_leaf(ag, leaf);
 		args.at(1)->get_leaf(bg, leaf);
-		return add(ag, bg, axis);
+		return add_axial_a(ag, bg, axis_a);
 	});
+	axial_set_jacobian(addout, a, axis_a);
+	return addout;
 }
 
 template <typename T>
-varptr<T> sub (const varptr<T> a, const varptr<T> b, size_t axis)
+varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
+	binary_axial_right(
+	ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		assert(n == 2);
+		return *(group[0]) + *(group[1]);
+	}), axis_b),
+	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> ag;
+		varptr<T> bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return add_axial_b(ag, bg, axis_b);
+	});
+	axial_set_jacobian(addout, b, axis_b);
+	return addout;
+}
+
+template <typename T>
+varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
+	binary_axial_left<T>(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) - *(group[1]);
-	}), axis),
-	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	}), axis_a),
+	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		varptr<T> ag;
 		varptr<T> bg;
 		args.at(0)->get_leaf(ag, leaf);
 		args.at(1)->get_leaf(bg, leaf);
-		return sub(ag, bg, axis);
+		return sub_axial_a(ag, bg, axis_a);
 	});
+	axial_set_jacobian(subout, a, axis_a);
+	return subout;
 }
 
 template <typename T>
-varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
+varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
+	binary_axial_right<T>(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
+	{
+		assert(n == 2);
+		return *(group[0]) - *(group[1]);
+	}), axis_b),
+	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		varptr<T> ag;
+		varptr<T> bg;
+		args.at(0)->get_leaf(ag, leaf);
+		args.at(1)->get_leaf(bg, leaf);
+		return sub_axial_b(ag, bg, axis_b);
+	});
+	axial_set_jacobian(subout, b, axis_b);
+	return subout;
+}
+
+template <typename T>
+varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
+	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) * *(group[1]);
-	}), axis),
-	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	}), axis_a),
+	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
 		varptr<T> ag;
@@ -1534,21 +1643,48 @@ varptr<T> mul (const varptr<T> a, const varptr<T> b, size_t axis)
 		varptr<T> b = args.at(1);
 		a->get_leaf(ag, leaf);
 		b->get_leaf(bg, leaf);
-		return mul(ag, b, axis) + mul(bg, a, axis);
+		return mul_axial_a(ag, b, axis_a) + mul_axial_a(a, bg, axis_a);
 	});
+	axial_set_jacobian(mulout, a, axis_a);
+	return mulout;
 }
 
 template <typename T>
-varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis)
+varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
-	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_" << axis,
-	binary_axial_agg<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
+	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		assert(n == 2);
+		return *(group[0]) * *(group[1]);
+	}), axis_b),
+	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
+		varptr<T> ag;
+		varptr<T> bg;
+		varptr<T> a = args.at(0);
+		varptr<T> b = args.at(1);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return mul_axial_b(ag, b, axis_b) + mul_axial_b(a, bg, axis_b);
+	});
+	axial_set_jacobian(mulout, b, axis_b);
+	return mulout;
+}
+
+template <typename T>
+varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
+	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) / *(group[1]);
-	}), axis),
-	[axis](std::vector<inode<T>*> args, variable<T>* leaf)
+	}), axis_a),
+	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
 		varptr<T> ag;
@@ -1557,8 +1693,35 @@ varptr<T> div (const varptr<T> a, const varptr<T> b, size_t axis)
 		varptr<T> b = args.at(1);
 		a->get_leaf(ag, leaf);
 		b->get_leaf(bg, leaf);
-		return div(mul(ag, b, axis) - mul(bg, a, axis), pow(b, 2), axis);
+		return (mul_axial_a(ag, b, axis_a) - mul_axial_b(bg, a, axis_a)) / pow(b, 2);
 	});
+	axial_set_jacobian(divout, a, axis_a);
+	return divout;
+}
+
+template <typename T>
+varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
+{
+	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
+	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		assert(n == 2);
+		return *(group[0]) / *(group[1]);
+	}), axis_b),
+	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	{
+		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
+		varptr<T> ag;
+		varptr<T> bg;
+		varptr<T> a = args.at(0);
+		varptr<T> b = args.at(1);
+		a->get_leaf(ag, leaf);
+		b->get_leaf(bg, leaf);
+		return (mul_axial_b(ag, b, axis_b) - mul_axial_a(bg, a, axis_b)) / pow(b, 2);
+	});
+	axial_set_jacobian(divout, b, axis_b);
+	return divout;
 }
 
 }
