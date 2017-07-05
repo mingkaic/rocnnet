@@ -16,8 +16,8 @@ varptr<T> sigmoid (varptr<T> x)
 template <typename T>
 varptr<T> tanh (varptr<T> x)
 {
-	varptr<T> etx = exp((T)2 * x);
-	return (etx + (T)1) / (etx - (T)1);
+	varptr<T> etx = exp((T) 2 * x);
+	return (etx - (T) 1) / (etx + (T) 1);
 }
 
 }

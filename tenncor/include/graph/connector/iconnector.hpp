@@ -91,6 +91,15 @@ public:
 	//! check if connector n is a potential descendent of this node
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
+	// >>>> NODE STATUS <<<<
+	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+	{
+		for (variable<T>* l : leaves)
+		{
+			jacobians_[l].list_.push_front(jac);
+		}
+	}
+
 	// >>>> GRAPH WIDE OPTION <<<<
 	//! Freeze or unfreeze the entire graph
 	//! Freeze prevents graph from updating temporarily (updates are queued)

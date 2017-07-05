@@ -20,6 +20,8 @@
 namespace nnet
 {
 
+using SHAPE_EXTRACT = std::function<std::vector<size_t>(tensorshape&)>;
+
 //! Accumulate an array of shape
 using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
@@ -61,6 +63,61 @@ protected:
 		assert(ten->is_alloc());
 		return ten->raw_data_;
 	}
+};
+
+template <typename T>
+class shape_extracter : public itensor_handler<T>
+{
+public:
+	shape_extracter (SHAPE_EXTRACT extract) : shaper_(extract) {}
+
+	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
+	//! clone function for copying from itensor_handler
+	shape_extracter<T>* clone (void) const
+	{
+		return static_cast<shape_extracter<T>*>(this->clone_impl());
+	}
+
+	//! clone function for copying from itensor_handler
+	shape_extracter<T>* move (void)
+	{
+		return static_cast<shape_extracter<T>*>(this->move_impl());
+	}
+
+	//! extract tensor information and store in out
+	void operator () (tensor<T>* out, std::vector<tensorshape>& ts) const
+	{
+		T* raw = this->get_raw(out);
+		std::vector<size_t> shapes = out->get_shape().as_list();
+		size_t ncol = shapes[0];
+		size_t nrow = shapes.size() < 2 ? 1 : shapes[1];
+		std::fill(raw, raw+out->n_elems(), (T) 1);
+		for (size_t i = 0; i < nrow; i++)
+		{
+			std::vector<size_t> sv = shaper_(ts[i]);
+			for (size_t j = 0, n = sv.size(); j < n; j++)
+			{
+				raw[i * ncol + j] = sv[j];
+			}
+		}
+	}
+
+protected:
+	//! clone implementation for copying from itensor_handler
+	virtual itensor_handler<T>* clone_impl (void) const
+	{
+		return new shape_extracter(*this);
+	}
+
+	//! move implementation for moving from itensor_handler
+	virtual itensor_handler<T>* move_impl (void)
+	{
+		return new shape_extracter(std::move(*this));
+	}
+
+private:
+	//! extract shape dimensions to data_
+	SHAPE_EXTRACT shaper_;
 };
 
 template <typename T>

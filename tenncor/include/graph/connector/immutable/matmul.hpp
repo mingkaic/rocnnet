@@ -12,8 +12,7 @@
  *
  */
 
-#include "graph/connector/immutable/elementary.hpp"
-#include "graph/connector/immutable/transform.hpp"
+#include "graph/operations/operations.hpp"
 #include "graph/leaf/constant.hpp"
 
 #pragma once

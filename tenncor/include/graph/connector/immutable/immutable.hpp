@@ -55,7 +55,8 @@ protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! immutable constructing an aggregate transfer function
 	immutable (std::vector<inode<T>*> args,
-		transfer_func<T>* Nf, BACK_MAP<T> ginit, std::string label);
+		transfer_func<T>* Nf, BACK_MAP<T> ginit,
+		std::string label);
 
 	//! declare copy constructor to copy over transfer functions
 	immutable (const immutable<T>& other);
@@ -71,10 +72,10 @@ protected:
 	virtual inode<T>* move_impl (void);
 
 	// >>>> FORWARD & BACKWARD <<<<
-	//! forward pass step: populate data_ (overridden by merged_immutable)
+	//! forward pass step: populate data_
 	virtual void forward_pass (std::vector<size_t>);
 
-	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
+	//! backward pass step: populate gcache_[leaf]
 	virtual void backward_pass (variable<T>* leaf);
 
 private:

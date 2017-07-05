@@ -12,7 +12,7 @@
  *
  */
 
-#include "graph/connector/immutable/elementary.hpp"
+#include "graph/operations/operations.hpp"
 #include "graph/varptr.hpp"
 
 #ifndef TENNCOR_FUTILS_HPP

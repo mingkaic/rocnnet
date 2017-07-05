@@ -62,17 +62,16 @@ int main (int argc, char** argv)
 	bgd.learning_rate_ = 0.1;
 	rocnnet::dqn_param param;
 	param.store_interval_ = 1;
-	param.mini_batch_size_ = 10;
 	param.discount_rate_ = 0.99;
 	param.exploration_period_ = 0;
 
-	rocnnet::ml_perceptron brain(n_observations, hiddens);
-	rocnnet::dq_net untrained_dqn(&brain, bgd, param, "untrained_dqn");
+	rocnnet::ml_perceptron* brain = new rocnnet::ml_perceptron(n_observations, hiddens);
+	rocnnet::dq_net untrained_dqn(brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
-	rocnnet::dq_net* trained_dqn = new rocnnet::dq_net(untrained_dqn, "trained_dqn");
+	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");
 //	trained_dqn->initialize(serialpath, "trained_dqn");
 
-	rocnnet::dq_net pretrained_dqn(&brain, bgd, param, "pretrained_dqn");
+	rocnnet::dq_net pretrained_dqn(untrained_dqn, "pretrained_dqn");
 	pretrained_dqn.initialize(serialpath, "trained_dqn");
 
 	int exit_status = 0;
@@ -95,7 +94,7 @@ int main (int argc, char** argv)
 		double episode_err = 0;
 		for (size_t j = 0; j < max_steps; j++)
 		{
-			size_t action = trained_dqn->action(observations);
+			size_t action = trained_dqn.action(observations);
 			auto mit = std::max_element(expect_out.begin(), expect_out.end());
 			size_t expect_action = std::distance(expect_out.begin(), mit);
 
@@ -106,10 +105,10 @@ int main (int argc, char** argv)
 			avgreward += reward;
 
 			new_observations = batch_generate(n_observations, 1);
-			expect_out = avgevry2(observations);
+			expect_out = avgevry2(new_observations);
 
-			trained_dqn->store(observations, action, reward, new_observations);
-			trained_dqn->train();
+			trained_dqn.store(observations, action, reward, new_observations);
+			trained_dqn.train();
 
 			observations = new_observations;
 			episode_err += err / action_dist;
@@ -153,7 +152,7 @@ int main (int argc, char** argv)
 		expect_out = avgevry2(observations);
 
 		double untrained_action = untrained_dqn.never_random(observations);
-		double trained_action = trained_dqn->never_random(observations);
+		double trained_action = trained_dqn.never_random(observations);
 		double pretrained_action = pretrained_dqn.never_random(observations);
 
 		auto mit = std::max_element(expect_out.begin(), expect_out.end());
@@ -178,16 +177,14 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0)
 	{
-		trained_dqn->save(serialname);
+		trained_dqn.save(serialname);
 	}
 
 #ifdef EDGE_RCD
 if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(
-		static_cast<nnet::iconnector<double>*>(trained_dqn->get_trainout().get()));
+		static_cast<nnet::iconnector<double>*>(trained_dqn.get_trainout().get()));
 #endif /* EDGE_RCD */
-	
-	delete trained_dqn;
 
 	return exit_status;
 }

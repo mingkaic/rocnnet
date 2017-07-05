@@ -7,8 +7,7 @@
 #include <algorithm>
 
 #include "graph/connector/immutable/matmul.hpp"
-#include "graph/connector/immutable/elementary.hpp"
-#include "graph/connector/immutable/transform.hpp"
+#include "graph/operations/operations.hpp"
 
 #include "gtest/gtest.h"
 #include "util_test.h"

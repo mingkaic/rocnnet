@@ -4,7 +4,7 @@
 
 #include "graph/varptr.hpp"
 #include "graph/leaf/variable.hpp"
-#include "graph/connector/immutable/elementary.hpp"
+#include "graph/operations/operations.hpp"
 
 #pragma once
 #ifndef ROCNNET_GD_UTILS_HPP
@@ -204,7 +204,7 @@ struct rmspropupdater : public gd_updater<double>
 
 	rmspropupdater* move (void);
 
-	double discount_factor_ = 0.9;
+	double discount_factor_ = 0.99;
 
 	std::vector<variable<double>*> momentums_;
 

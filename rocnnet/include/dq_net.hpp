@@ -148,7 +148,7 @@ private:
 	nnet::varptr<double> score_ = nullptr;
 
 	// future error that we want to minimize: scalar shape
-	nnet::iconnector<double>* error_ = nullptr;
+	nnet::iconnector<double>* prediction_error_ = nullptr;
 
 	// === updates && optimizer ===
 	// update source network (this) using updater

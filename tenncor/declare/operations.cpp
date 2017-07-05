@@ -2,8 +2,7 @@
 // Created by Mingkai Chen on 2017-06-28.
 //
 
-#include "graph/connector/immutable/elementary.hpp"
-#include "graph/connector/immutable/transform.hpp"
+#include "graph/operations/operations.hpp"
 
 namespace nnet
 {
