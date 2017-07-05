@@ -333,19 +333,19 @@ void solo_audience_merge (base_immutable<T>*& root)
 				// delete merged observers
 				delete imm;
 			}
-		}
-		// delete merged subjects, and enqueue non-merged nodes
-		for (size_t i = 0, n = args.size(); i < n; i++)
-		{
-			base_immutable<T>* imarg = dynamic_cast<base_immutable<T>*>(args[i]);
-			if (ignore_args.end() == ignore_args.find(i))
+			// delete merged subjects, and enqueue non-merged nodes
+			for (size_t i = 0, n = args.size(); i < n; i++)
 			{
-				delete args[i];
-			}
-			else if (imarg && visited.end() == visited.find(imarg))
-			{
-				node_q.push_back(imarg);
-				visited.emplace(imarg);
+				base_immutable<T>* imarg = dynamic_cast<base_immutable<T>*>(args[i]);
+				if (ignore_args.end() == ignore_args.find(i))
+				{
+					delete args[i];
+				}
+				else if (imarg && visited.end() == visited.find(imarg))
+				{
+					node_q.push_back(imarg);
+					visited.emplace(imarg);
+				}
 			}
 		}
 	}
