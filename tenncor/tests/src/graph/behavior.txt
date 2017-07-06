@@ -137,6 +137,8 @@ J011 - a inode is equal (using operator ==) to a primitive value if it is scalar
         and its value is equivalent to the primitive value
         same applies for not equal (!=),
         equality and inequality fails assertion if input node has bad status
+(UNTESTED)
+J012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
 
 // TRANSFORM BEHAVIORS
 K000 - any operation accepting nullptr as any operand returns nullptr

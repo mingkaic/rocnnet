@@ -41,6 +41,19 @@ variable<T>* variable<T>::move (void)
 }
 
 template <typename T>
+void variable<T>::get_leaf (varptr<T>& out, variable<T>* leaf)
+{
+	if (this == leaf)
+	{
+		out = constant<T>::get_shared_one();
+	}
+	else
+	{
+		out = constant<T>::get_shared_zero();
+	}
+}
+
+template <typename T>
 void variable<T>::set_initializer (const initializer<T>& init)
 {
 	if (this->init_)
@@ -87,26 +100,6 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 }
 
 template <typename T>
-void variable<T>::get_leaf (varptr<T>& out, variable<T>* leaf)
-{
-	if (this == leaf)
-	{
-		out = constant<T>::get_shared_one();
-	}
-	else
-	{
-		out = constant<T>::get_shared_zero();
-	}
-}
-
-template <typename T>
-void variable<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE& leaves) const
-{
-	leaves.emplace(const_cast<variable<T>*>(this), nullptr);
-}
-
-template <typename T>
 variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
 	return [this, input]()
@@ -142,6 +135,12 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 			[](const T& e1, const T& e2) { return e1 - e2; });
 //		this->notify(notification::UPDATE);
 	};
+}
+
+template <typename T>
+void variable<T>::get_leaves (typename inode<T>::GRAD_CACHE& leaves) const
+{
+	leaves.emplace(const_cast<variable<T>*>(this), nullptr);
 }
 
 template <typename T>

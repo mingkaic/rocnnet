@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/connector/immutable/elementary.hpp"
+#include "graph/connector/immutable/shape_dep.hpp"
 
 #ifdef TENNCOR_TRANSFORM_HPP
 
@@ -184,11 +184,13 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 
 template <typename T>
 varptr<T> compress (const varptr<T> a, optional<size_t> index,
-	ELEM_FUNC<T> collector, std::string name)
+	ELEM_FUNC<T> collector, std::string name,
+	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop)
 {
 	if (nullptr == a) return nullptr;
+	std::string imm_name = (bool) index ? nnutils::formatter() << name << "_" << *index : name;
 	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(name, audience))
+	if (a->find_audience(imm_name, audience))
 	{
 		return *audience.begin(); // share nodes when possible
 	}
@@ -251,7 +253,6 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 				return outidx;
 			}
 		}, collector);
-		name = nnutils::formatter() << name << "_" << *index;
 	}
 	else
 	{
@@ -271,17 +272,22 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 		}, collector);
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
-	[index](std::vector<inode<T>*> args, variable<T>* leaf)
+	[index, bprop](std::vector<inode<T>*> args, variable<T>* leaf)
 	{
-		varptr<T> gradn;
-		args.front()->get_leaf(gradn, leaf);
+		varptr<T> bnode;
+		varptr<T> fnode = args.front();
+		fnode->get_leaf(bnode, leaf);
+		varptr<T> barg = bprop(bnode, fnode);
 		if (index)
 		{
-			gradn = identity<T>(gradn);
-			gradn->set_metadata("grouping", *index);
+			if (barg.get() == bnode.get())
+			{
+				barg = identity<T>(bnode);
+			}
+			barg->set_metadata("grouping", *index);
 		}
-		return gradn;
-	}, name);
+		return barg;
+	}, imm_name);
 }
 
 template <typename T>
@@ -321,7 +327,29 @@ varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 			accum += *data[i];
 		}
 		return accum / n;
-	}, "reduce_mean");
+	}, "reduce_mean",
+	[dimension](varptr<T> back, varptr<T> forward)
+	{
+		varptr<T> denom;
+		if (dimension)
+		{
+			denom = shape_dep<T>::get({ forward.get() },
+			[dimension](tensorshape& s) -> std::vector<size_t>
+			{
+				return { s.as_list()[*dimension] };
+			}, std::vector<size_t>{1},
+			nnutils::formatter() << "axis_" << *dimension << "_size");
+		}
+		else
+		{
+			denom = shape_dep<T>::get({ forward.get() },
+			[](tensorshape& s) -> std::vector<size_t>
+			{
+				return { s.n_elems() };
+			}, std::vector<size_t>{1}, "shape_nelems");
+		}
+		return back / denom;
+	});
 }
 
 template <typename T>
@@ -329,8 +357,9 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	ELEM_FUNC<T> search, std::string name)
 {
 	if (nullptr == a) return nullptr;
+	std::string imm_name = (bool) dimension ? nnutils::formatter() << name << "_" << *dimension : name;
 	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(name, audience))
+	if (a->find_audience(imm_name, audience))
 	{
 		return *audience.begin(); // share nodes when possible
 	}
@@ -345,8 +374,9 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 			ts.assert_is_fully_defined();
 			if (dim >= ts.rank())
 			{
-				throw std::logic_error(nnutils::formatter() << "attempting to obtain arg index along dimension "
-															<< dim << " on a " << ts.rank() << " tensor");
+				throw std::logic_error(nnutils::formatter()
+					<< "attempting to obtain arg index along dimension "
+					<< dim << " on a " << ts.rank() << " tensor");
 			}
 			std::vector<size_t> tv = ts.as_list();
 			tv[dim] = 1;
@@ -387,7 +417,6 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 				return outidx;
 			}
 		}, search);
-		name = nnutils::formatter() << name << "_" << *dimension;
 	}
 	else
 	{
@@ -415,7 +444,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 		// arg_compression's gradient has no intrinsic meaning
 		throw std::logic_error("attempting to get gradient of arg compression: undefined and meaningless operation");
 		return nullptr;
-	}, name);
+	}, imm_name);
 }
 
 template <typename T>

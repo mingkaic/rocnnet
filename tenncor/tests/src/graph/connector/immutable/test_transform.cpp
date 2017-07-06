@@ -7,7 +7,7 @@
 #include <algorithm>
 
 #include "graph/leaf/variable.hpp"
-#include "graph/connector/immutable/transform.hpp"
+#include "graph/operations/operations.hpp"
 #include "graph/varptr.hpp"
 
 #include "gtest/gtest.h"

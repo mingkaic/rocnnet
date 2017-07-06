@@ -22,15 +22,9 @@ params_(param),
 scope_(scope),
 updater_(updater.clone())
 {
-	source_qnet_ = brain->clone("source_"+scope);
+	source_qnet_ = brain;
 	target_qnet_ = source_qnet_->clone("target_"+scope);
-	input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 1}, "input");
-	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_noutput(), 0}, "output_mask");
 
-	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 0}, "input");
-	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{brain->get_ninput(), 0}, "next_input");
-	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_output_mask");
-	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_reward");
 	variable_setup();
 }
 
@@ -146,7 +140,7 @@ void dq_net::train (void)
 		*next_output_mask_ = new_states_mask;
 		*reward_ = rewards;
 
-		error_->update_status(true); // freeze
+		prediction_error_->update_status(true); // freeze
 		// update source
 		for (auto& trainer : source_updates_)
 		{
@@ -157,7 +151,7 @@ void dq_net::train (void)
 		{
 			trainer();
 		}
-		error_->update_status(false); // update again
+		prediction_error_->update_status(false); // update again
 		iteration_++;
 	}
 	n_train_called_++;
@@ -166,7 +160,7 @@ void dq_net::train (void)
 void dq_net::initialize (std::string serialname, std::string readscope)
 {
 	if (readscope.empty()) readscope = scope_;
-	source_qnet_->initialize(serialname, "source_" + readscope);
+	source_qnet_->initialize(serialname, readscope);
 	target_qnet_->initialize(serialname, "target_" + readscope);
 }
 
@@ -211,7 +205,7 @@ void dq_net::tear_down (void)
 	next_output_ = nullptr;
 	future_reward_ = nullptr;
 	score_ = nullptr;
-	error_ = nullptr;
+	prediction_error_ = nullptr;
 	
 	// clear updates
 	source_updates_.clear();
@@ -237,7 +231,7 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 	updater_ = other.updater_->clone();
 	updater_->clear_ignore();
 	
-	source_qnet_ = other.source_qnet_->clone("source_"+scope);
+	source_qnet_ = other.source_qnet_->clone(scope);
 	target_qnet_ = other.target_qnet_->clone("target_"+scope);
 	input_ = other.input_->clone();
 	
@@ -267,7 +261,7 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	updater_ = other.updater_->move();
 	updater_->clear_ignore();
 	
-	source_qnet_ = other.source_qnet_->move("source_"+scope);
+	source_qnet_ = other.source_qnet_->move(scope);
 	target_qnet_ = other.target_qnet_->move("target_"+scope);
 	input_ = other.input_->move();
 	
@@ -281,54 +275,47 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 
 void dq_net::variable_setup (void)
 {
-	// output computation
-	output_ = (*source_qnet_)(input_);
-	output_->set_label("output");
+	// forward action score computation
+	input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 1}, "observation");
+	output_ = nnet::identity((*source_qnet_)(input_));
+	output_->set_label("action_scores");
 	best_output_ = nnet::arg_max(output_, 0);
 
-	// training input/output
-	train_output_ = (*source_qnet_)(train_input_);
-	train_output_->set_label("train_output");
+	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "train_observation");
+	train_output_ = nnet::identity((*source_qnet_)(train_input_));
+	train_output_->set_label("train_action_scores");
 
-	// predict future reward
-	next_output_ = (*target_qnet_)(next_input_);
-	next_output_->set_label("next_output");
-	nnet::varptr<double> target_values = nnet::varptr<double>(next_output_mask_) *
-		nnet::reduce_max(nnet::varptr<double>(next_output_), 0);
+	// predicting target future rewards
+	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "next_observation");
+	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_observation_mask");
+	next_output_ = nnet::identity((*target_qnet_)(next_input_));
+	next_output_->set_label("next_action_scores");
+
+	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "rewards");
+	nnet::varptr<double> target_values =
+		nnet::reduce_max(nnet::varptr<double>(next_output_), 0) *
+		nnet::varptr<double>(next_output_mask_);
 	future_reward_ = nnet::varptr<double>(reward_) + params_.discount_rate_ * target_values; // reward for each instance in batch
-	future_reward_->set_label("future_reward");
 
-	// predict future error
+	// prediction error
+	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_noutput(), 0}, "action_mask");
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(
 		nnet::varptr<double>(train_output_) * nnet::varptr<double>(output_mask_), 0);
-	nnet::varptr<double> diff = masked_output_score - future_reward_;
-	nnet::varptr<double> error = nnet::reduce_mean(diff * diff);
-	error_ = static_cast<nnet::iconnector<double>*>(error.get());
-	error_->set_label("error");
+	nnet::varptr<double> temp_diff = masked_output_score - future_reward_;
+	nnet::varptr<double> error = nnet::reduce_mean(nnet::pow(temp_diff, 2));
+	prediction_error_ = static_cast<nnet::iconnector<double>*>(error.get());
+	prediction_error_->set_label("error");
 
 	// updates for source network
-	std::unordered_set<nnet::variable<double>*> biases;
-	{
-		std::vector<WB_PAIR> wbs = source_qnet_->get_variables();
-		for (WB_PAIR& wb : wbs)
-		{
-			biases.emplace(wb.second);
-		}
-	}
 	updater_->ignore_subtree(next_output_);
-	source_updates_ = updater_->calculate(error_,
-	[biases](nnet::varptr<double> grad, nnet::variable<double>* leaf)
+	source_updates_ = updater_->calculate(prediction_error_,
+	[](nnet::varptr<double> grad, nnet::variable<double>* leaf)
 	{
-		if (biases.end() != biases.find(leaf))
-		{
-			// average the batches
-			grad = nnet::reduce_mean(grad, 1);
-		}
 		grad = nnet::clip_norm(grad, 5.0);
 		return grad;
 	});
 
-	// updates for target network
+	// update target network
 	std::vector<WB_PAIR> target_vars = target_qnet_->get_variables();
 	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
 	size_t nvars = target_vars.size();

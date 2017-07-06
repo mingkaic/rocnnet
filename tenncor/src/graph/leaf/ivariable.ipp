@@ -39,6 +39,7 @@ ivariable<T>& ivariable<T>::operator = (const ivariable<T>& other)
 	{
 		ileaf<T>::operator = (other);
 		copy_helper(other);
+		this->notify(UPDATE);
 	}
 	return *this;
 }
@@ -50,14 +51,9 @@ ivariable<T>& ivariable<T>::operator = (ivariable<T>&& other)
 	{
 		ileaf<T>::operator = (std::move(other));
 		move_helper(std::move(other));
+		this->notify(UPDATE);
 	}
 	return *this;
-}
-
-template <typename T>
-bool ivariable<T>::can_init (void) const
-{
-	return init_ != nullptr;
 }
 
 template <typename T>
@@ -68,6 +64,12 @@ varptr<T> ivariable<T>::get_gradient (inode<T>* wrt)
 		return constant<T>::get_shared_one();
 	}
 	return constant<T>::get_shared_zero();
+}
+
+template <typename T>
+bool ivariable<T>::can_init (void) const
+{
+	return init_ != nullptr;
 }
 
 template <typename T>

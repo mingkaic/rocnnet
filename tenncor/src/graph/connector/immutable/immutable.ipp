@@ -12,6 +12,9 @@ namespace nnet
 {
 
 template <typename T>
+immutable<T>::~immutable (void) {}
+
+template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 	transfer_func<T>* Nf,
 	BACK_MAP<T> ginit,
@@ -29,9 +32,6 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 	}
 	return imm;
 }
-
-template <typename T>
-immutable<T>::~immutable (void) {}
 
 template <typename T>
 immutable<T>* immutable<T>::clone (void) const
@@ -88,18 +88,6 @@ Nf_(Nf),
 ginit_(ginit) { this->update({}); }
 
 template <typename T>
-inode<T>* immutable<T>::clone_impl (void) const
-{
-	return new immutable<T>(*this);
-}
-
-template <typename T>
-inode<T>* immutable<T>::move_impl (void)
-{
-	return new immutable<T>(std::move(*this));
-}
-
-template <typename T>
 immutable<T>::immutable (const immutable<T>& other) :
 	base_immutable<T>(other)
 {
@@ -111,6 +99,18 @@ immutable<T>::immutable (immutable<T>&& other) :
 	base_immutable<T>(std::move(other))
 {
 	move_helper(std::move(other));
+}
+
+template <typename T>
+inode<T>* immutable<T>::clone_impl (void) const
+{
+	return new immutable<T>(*this);
+}
+
+template <typename T>
+inode<T>* immutable<T>::move_impl (void)
+{
+	return new immutable<T>(std::move(*this));
 }
 
 template <typename T>

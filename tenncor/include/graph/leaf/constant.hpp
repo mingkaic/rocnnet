@@ -28,6 +28,7 @@ template <typename T>
 class constant final : public ileaf<T>
 {
 public:
+	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
 	//! get shared zero constant that is managed
 	static constant<T>* get_shared_zero (void);
 	
@@ -40,14 +41,7 @@ public:
 	//! builder for data and shape
 	static constant<T>* get (std::vector<T> raw, tensorshape shape);
 
-	// >>>> CLONE, COPY, & MOVE <<<<
-	//! clone function
-	constant<T>* clone (void) const;
-
-	//! copy function
-	constant<T>* move (void);
-
-	// >>>> COPY, MOVE && CLONE <<<<
+	// >>>> CAN'T COPY OR MOVE (GOES AGAINST SHARING) <<<<
 	//! deleted copy constructor
 	constant (const constant<T>& other) = delete;
 
@@ -60,19 +54,22 @@ public:
 	//! move assignment deleted
 	constant<T>& operator = (constant<T>&& other) = delete;
 
-	// >>>> PUBLICLY ACCESSIBLE GRADIENT <<<<
+	// >>>> BACKWARD DATA <<<<
 	//! get gradient wrt some node
 	virtual varptr<T> get_gradient (inode<T>* wrt);
 
-	// >>>> LEAF AND GRADIENT ACCESSORS <<<<
+	// >>>> GRAPH STATUS <<<<
+	//! merge/update the gradient/leaf info
+	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+
+	// >>>> NODE STATUS <<<<
+	//! set this constant as being managed by some node
+	//! this will not die if it loses all observers
+	void be_managed (void);
+
+	// >>>> TODO: HIDE THIS <<<<
 	//! grab operational gradient node, used by other nodes
 	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
-
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (
-		typename inode<T>::GRAD_CACHE& leaves) const;
-
-	bool is_managed_ = false; //! if constant is managed, it will not suicide if it lacks audiences
 
 protected:
 	//! scalar constructor
@@ -81,21 +78,27 @@ protected:
 	//! raw and shape constructor
 	constant (std::vector<T> raw, tensorshape shape);
 
-	// >>>> EXECUTE ON KILL CONDITION <<<<
-	//! override smart destruction,
-	//! executed when constant loses all audiences,
-	//! (after it obtains an audience of course)
+	// >>>> KILL CONDITION <<<<
+	//! suicides when this loses all observers (unless this is_managed)
 	virtual void death_on_noparent (void);
 
+	// >>>> POLYMORPHIC CLONERS (RETURN NULLS) <<<<
 	//! clone implementation
 	virtual inode<T>* clone_impl (void) const;
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
-	
+
+private:
+	//! commonly used constant: 0
 	static constant<T> shared_zero;
-	
+
+	//! commonly used constant: 1
 	static constant<T> shared_one;
+
+	//! if constant is managed by some node,
+	//! that node is responsible for this node's life cycle
+	bool is_managed_ = false;
 };
 
 }

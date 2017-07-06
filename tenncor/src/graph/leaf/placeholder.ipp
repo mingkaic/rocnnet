@@ -16,6 +16,12 @@ placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
 	ivariable<T>(shape, new assign_func<T>(), name) {}
 
 template <typename T>
+placeholder<T>::placeholder (const placeholder<T>& other) : ivariable<T>(other) {}
+
+template <typename T>
+placeholder<T>::placeholder (placeholder<T>&& other) : ivariable<T>(std::move(other)) {}
+
+template <typename T>
 placeholder<T>* placeholder<T>::clone (void) const
 {
 	return static_cast<placeholder<T>*>(clone_impl());
@@ -33,7 +39,6 @@ placeholder<T>& placeholder<T>::operator = (const placeholder<T>& other)
 	if (this != &other)
 	{
 		ivariable<T>::operator = (other);
-		this->notify(UPDATE);
 	}
 	return *this;
 }
@@ -44,7 +49,6 @@ placeholder<T>& placeholder<T>::operator = (placeholder<T>&& other)
 	if (this != &other)
 	{
 		ivariable<T>::operator = (std::move(other));
-		this->notify(UPDATE);
 	}
 	return *this;
 }
@@ -87,14 +91,13 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 }
 
 template <typename T>
+void placeholder<T>::get_leaves (typename inode<T>::GRAD_CACHE&) const {}
+
+template <typename T>
 void placeholder<T>::get_leaf (varptr<T>& out, variable<T>*)
 {
 	out = constant<T>::get_shared_zero();
 }
-
-template <typename T>
-void placeholder<T>::get_leaves (
-	typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const

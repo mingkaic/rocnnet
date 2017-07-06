@@ -25,10 +25,9 @@ template <typename T>
 class ileaf : public inode<T>
 {
 public:
-	//! virtual destructor for constant and ivariable
 	virtual ~ileaf (void);
 
-	// >>>> CLONE, COPY && MOVE ASSIGNMENTS <<<<
+	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
 	ileaf<T>* clone (void) const;
 
@@ -41,14 +40,22 @@ public:
 	//! declare move assignment to move over data
 	virtual ileaf<T>& operator = (ileaf<T>&& other);
 
-	// >>>> ACCESSORS <<<<
-	//! utility function: get data shape
-	virtual tensorshape get_shape (void) const;
+	//>>>> OBSERVER & OBSERVABLE INFO <<<<
+	//! get all observerables: no observables
+	virtual std::vector<inode<T>*> get_arguments (void) const;
 
+	//! get the number of observables: 0
+	virtual size_t n_arguments (void) const;
+
+	// >>>> FORWARD DATA <<<<
 	//! get forward passing value
 	//! return nullptr if leaf is not init
 	virtual const tensor<T>* get_eval (void) const;
 
+	//! utility function: get data shape
+	virtual tensorshape get_shape (void) const;
+
+	// >>>> NODE STATUS <<<<
 	//! check if data is available
 	//! (if the node is initialized)
 	virtual bool good_status (void) const;
@@ -61,21 +68,21 @@ protected:
 	//! assign initializer
 	ileaf (const tensorshape& shape, std::string name);
 
-	// >>>> COPY && MOVE CONSTRUCTORS <<<<
 	//! declare copy constructor to deep copy over data
 	ileaf (const ileaf<T>& other);
 
 	//! declare move constructor to move over data
 	ileaf (ileaf<T>&& other);
 
-	// >>>> TENSOR CONTENT <<<<
 	//! tensor data
 	tensor<T>* data_ = nullptr;
 
-	// >>>> INITIALIZER DATA <<<<
-	//! tensor state (good or bad) true = good
+	//! is the tensor initialized?
+	//! TRUE = initialized/good,
+	//! FALSE = uninitialized/bad
 	bool is_init_ = false;
 
+	//! common assignment tensor handler
 	assign_func<T> assigner_;
 
 private:

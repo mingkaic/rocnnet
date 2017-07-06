@@ -39,6 +39,8 @@ then run
     
 ## Demos
 
+DQN Demos taken from https://github.com/siemanko/tensorflow-deepq
+
 To demonstrate correctness, I have setup two examples:
 
 - a multilayer perceptron (mlp) using vanilla gradient descent learner learning to average second number.

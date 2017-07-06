@@ -123,19 +123,18 @@ gd_updater<double>* rmspropupdater::move_impl (void)
 variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	variable<double>* leaf, grad_process<double> intermediate_process)
 {
-	const_init<double> zaroinit(0);
-	variable<double>* momentum = new variable<double>({}, zaroinit, "momentum");
+	const_init<double> wuninit(1);
+	variable<double>* momentum = new variable<double>({}, wuninit, "momentum");
 	momentums_.push_back(momentum); // updater manages momentum variable
 
 	// momentum = discount_factor_ * momentum + (1 - discount_factor_) * gres^2
-	// leaf = leaf - learning_rate * gres / sqrt(momentum) + epsilon
+	// leaf = leaf - learning_rate * gres / (sqrt(momentum) + epsilon)
 	varptr<double> dres = intermediate_process(gres, leaf);
-	varptr<double> momentumstep = discount_factor_ * varptr<double>(momentum) + (1-discount_factor_) * dres * dres;
-	varptr<double> leafstep = - dres * learning_rate_ / sqrt<double>(momentum) + epsilon_;
-
-	auto momentumupdate = momentum->assign(momentumstep);
-	auto leafupdate = leaf->assign_add(leafstep);
-	return [momentumupdate, leafupdate, momentum, dres, momentumstep]()
+	varptr<double> momentum_step = discount_factor_ * varptr<double>(momentum) + (1-discount_factor_) * pow(dres, 2);
+	varptr<double> leaf_step = dres * learning_rate_ / (sqrt<double>(momentum_step) + epsilon_);
+	auto momentum_update = momentum->assign(momentum_step);
+	auto leaf_update = leaf->assign_sub(leaf_step);
+	return [momentum_update, leaf_update, momentum, dres, leaf_step]()
 	{
 		if (!momentum->good_status())
 		{
@@ -145,11 +144,11 @@ variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 			}
 			momentum->initialize(dres->get_shape());
 		}
-		iconnector<double>* conner = dynamic_cast<iconnector<double>*>(momentumstep.get());
+		iconnector<double>* conner = static_cast<iconnector<double>*>(leaf_step.get());
 		conner->update_status(false);
 		conner->update_status(true);
-		momentumupdate();
-		leafupdate();
+		momentum_update();
+		leaf_update();
 	};
 }
 
