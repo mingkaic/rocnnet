@@ -92,13 +92,7 @@ public:
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	// >>>> NODE STATUS <<<<
-	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
-	{
-		for (variable<T>* l : leaves)
-		{
-			jacobians_[l].list_.push_front(jac);
-		}
-	}
+	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves);
 
 	// >>>> GRAPH WIDE OPTION <<<<
 	//! Freeze or unfreeze the entire graph
@@ -119,7 +113,7 @@ protected:
 	};
 
 	//! graph info shareable between connectors
-	struct graph_node;
+	struct graph_manager;
 
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies
@@ -140,7 +134,7 @@ protected:
 	std::unordered_map<variable<T>*,JList> jacobians_;
 
 	//! graph meta_data/manager
-	graph_node* gid_ = nullptr;
+	graph_manager* gid_ = nullptr;
 };
 
 }

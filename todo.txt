@@ -1,10 +1,9 @@
 tenncor:
-- updates should be handled by a graph-shared object (graph_node)
-- is_same_graph should extend to inodes (by checking in leaf set for leaf argument)
-- shape and preparation functors should ideally use C++17 variant
-    (replace with resulting shape and temporary cache)
+- updates should be handled by graph_manager
 - reactive updates by default should be restricted to unary connectors, n-ary connectors should update lazily
 - during the unfreeze update process, avoid duplicate updates by stopping at branching nodes to wait for dependency updates
+- shape and preparation functors should ideally use C++17 variant
+    (replace with resulting shape and temporary cache)
 - remove move and clone functions for classes that don't need it
 - define alloc shape as mutable and allowed shape as immutable (enforce this rule)
 	placeholder of (4, 0) should accept input of size of any multiple of 4

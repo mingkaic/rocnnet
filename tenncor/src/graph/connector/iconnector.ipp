@@ -55,7 +55,7 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 		jacobians_ = other.jacobians_;
 		// this copies other's dependencies so, this and other share a graph
 		gid_->suicide(this);
-		gid_ = graph_node::get(const_cast<iconnector<T>*>(&other), this);
+		gid_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
 	}
 	return *this;
 }
@@ -70,7 +70,7 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 		jacobians_ = std::move(other.jacobians_);
 		// this copies other's dependencies so, this and other share a graph
 		gid_->suicide(this);
-		gid_ = graph_node::get(&other, this);
+		gid_ = graph_manager::get(&other, this);
 		other.gid_->suicide(&other);
 		other.gid_ = nullptr;
 	}
@@ -146,6 +146,15 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 }
 
 template <typename T>
+void iconnector<T>::set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+{
+	for (variable<T>* l : leaves)
+	{
+		jacobians_[l].list_.push_front(jac);
+	}
+}
+
+template <typename T>
 void iconnector<T>::update_status (bool freeze)
 {
 	gid_->freeze_ = freeze;
@@ -198,7 +207,7 @@ iconnector<T>::iconnector (const iconnector<T>& other) :
 	jacobians_(other.jacobians_)
 {
 	if (gid_) gid_->suicide(this);
-	gid_ = graph_node::get(const_cast<iconnector<T>*>(&other), this);
+	gid_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
 }
 
 template <typename T>
@@ -208,7 +217,7 @@ iconnector<T>::iconnector (iconnector<T>&& other) :
 	jacobians_(std::move(other.jacobians_))
 {
 	if (gid_) gid_->suicide(this);
-	gid_ = graph_node::get(&other, this);
+	gid_ = graph_manager::get(&other, this);
 	other.gid_->suicide(&other);
 	other.gid_ = nullptr;
 }
@@ -220,11 +229,11 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 	{
 		if (nullptr == gid_)
 		{
-			graph_node::get(this);
+			graph_manager::get(this);
 		}
 		return;
 	}
-	gid_ = graph_node::get(args[0], this);
+	gid_ = graph_manager::get(args[0], this);
 	for (size_t i = 1, n = args.size(); i < n; i++)
 	{
 		gid_->consume(args[i]->gid_);
@@ -256,21 +265,21 @@ template <typename T>
 using job_queue_t = std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, bottom_first<T> >;
 
 template <typename T>
-struct iconnector<T>::graph_node
+struct iconnector<T>::graph_manager
 {
-	static graph_node* get (iconnector<T>* source, iconnector<T>* user = nullptr)
+	static graph_manager* get (iconnector<T>* source, iconnector<T>* user = nullptr)
 	{
 		assert(source);
-		graph_node*& gn = source->gid_;
-		if (nullptr == gn) gn = new graph_node();
+		graph_manager*& gn = source->gid_;
+		if (nullptr == gn) gn = new graph_manager();
 		if (nullptr == user) user = source;
 		gn->users_.emplace(user);
 		return gn;
 	}
 
-	graph_node (const graph_node&) = delete;
+	graph_manager (const graph_manager&) = delete;
 
-	graph_node (graph_node&&) = delete;
+	graph_manager (graph_manager&&) = delete;
 
 	void suicide (iconnector<T>* user)
 	{
@@ -278,7 +287,7 @@ struct iconnector<T>::graph_node
 		if (users_.empty()) delete this;
 	}
 
-	void consume (graph_node* other)
+	void consume (graph_manager* other)
 	{
 		if (this == other) return;
 		while (false == other->jobs_.empty())
@@ -322,9 +331,9 @@ private:
 
 	std::unordered_set<iconnector<T>*> users_;
 	
-	graph_node (void) {}
+	graph_manager (void) {}
 	
-	~graph_node (void) {}
+	~graph_manager (void) {}
 };
 
 }
