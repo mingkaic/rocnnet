@@ -63,10 +63,11 @@ template varptr<double> fit (const varptr<double> a, const varptr<double> watch)
 
 template varptr<double> extend (const varptr<double> a, size_t index, size_t multiplier);
 
+varptr<double> comp_identity (varptr<double> back, varptr<double>) { return back; }
+
 template varptr<double> compress (const varptr<double> a, optional<size_t> index,
 	ELEM_FUNC<double> collector, std::string name = "compress",
-	std::function<varptr<double>(varptr<double>,varptr<double>)> bprop =
-	[](varptr<double> back, varptr<double>){ return back; });
+	std::function<varptr<double>(varptr<double>,varptr<double>)> bprop = comp_identity);
 
 template varptr<double> reduce_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
