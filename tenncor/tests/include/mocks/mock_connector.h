@@ -45,11 +45,10 @@ public:
 	virtual tensorshape get_shape (void) const { return tensorshape(); }
 	virtual bool good_status (void) const { return false; }
 	virtual const tensor<double>* get_eval (void) const { return nullptr; }
-	virtual void get_leaf (varptr<double>&, variable<double>*) {}
 	virtual varptr<double> get_gradient (inode<double>*) { return nullptr; }
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 
-	virtual void update (std::vector<size_t>)
+	virtual void update (std::unordered_set<size_t>)
 	{
 		label_incr("update1");
 	}
@@ -72,6 +71,7 @@ protected:
 	{
 		return new mock_connector(std::move(*this));
 	}
+	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 
 	virtual std::vector<typename iconnector<double>::conn_summary> summarize (void) const { return {}; }
 };

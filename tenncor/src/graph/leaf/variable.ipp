@@ -41,19 +41,6 @@ variable<T>* variable<T>::move (void)
 }
 
 template <typename T>
-void variable<T>::get_leaf (varptr<T>& out, variable<T>* leaf)
-{
-	if (this == leaf)
-	{
-		out = constant<T>::get_shared_one();
-	}
-	else
-	{
-		out = constant<T>::get_shared_zero();
-	}
-}
-
-template <typename T>
 void variable<T>::set_initializer (const initializer<T>& init)
 {
 	if (this->init_)
@@ -105,7 +92,8 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 	return [this, input]()
 	{
 		tensor<T>* out_tens = this->data_;
-		const tensor<T>* in_tens = input->get_eval();
+		const tensor<T>* in_tens = input->eval();
+		assert(in_tens);
 		this->assigner_(out_tens, in_tens);
 //		this->notify(notification::UPDATE);
 	};
@@ -117,7 +105,8 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 	return [this, input]()
 	{
 		tensor<T>* out_tens = this->data_;
-		const tensor<T>* in_tens = input->get_eval();
+		const tensor<T>* in_tens = input->eval();
+		assert(in_tens);
 		this->assigner_(out_tens, in_tens,
 			[](const T& e1, const T& e2) { return e1 + e2; });
 //		this->notify(notification::UPDATE);
@@ -130,7 +119,8 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 	return [this, input]()
 	{
 		tensor<T>* out_tens = this->data_;
-		const tensor<T>* in_tens = input->get_eval();
+		const tensor<T>* in_tens = input->eval();
+		assert(in_tens);
 		this->assigner_(out_tens, in_tens,
 			[](const T& e1, const T& e2) { return e1 - e2; });
 //		this->notify(notification::UPDATE);
@@ -153,6 +143,16 @@ template <typename T>
 inode<T>* variable<T>::move_impl (void)
 {
 	return new variable(std::move(*this));
+}
+
+template <typename T>
+inode<T>* variable<T>::get_leaf (variable<T>* leaf)
+{
+	if (this == leaf)
+	{
+		return constant<T>::get_shared_one();
+	}
+	return constant<T>::get_shared_zero();
 }
 
 }

@@ -46,9 +46,6 @@ public:
 	virtual base_immutable<T>& operator = (base_immutable<T>&& other);
 
 	// >>>> FORWARD & BACKWARD DATA <<<<
-	//! Forward passing value
-	virtual const tensor<T>* get_eval (void) const;
-
 	//! grab a temporary value traversing top-down
 	//! allocates out tensor. caller owns out
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
@@ -77,12 +74,9 @@ public:
 	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
-	virtual void update (std::vector<size_t> argidx);
+	virtual void update (std::unordered_set<size_t> argidx);
 
 	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -100,9 +94,17 @@ protected:
 	//! suicides when all observ
 	void death_on_broken (void);
 
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! Forward passing value
+	virtual const tensor<T>* get_eval (void) const;
+
+	//! grab operational gradient node, used by other nodes
+	//! delay instantiate gcache elements if target leaf was never instantiated
+	virtual inode<T>* get_leaf (variable<T>* leaf);
+
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
-	virtual void forward_pass (std::vector<size_t>) = 0;
+	virtual void forward_pass (void) = 0;
 
 	//! backward pass step: populate gcache_[leaf]
 	virtual void backward_pass (variable<T>* leaf) = 0;
@@ -188,7 +190,7 @@ protected:
 
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_ (overridden by merged_immutable)
-	virtual void forward_pass (std::vector<size_t>);
+	virtual void forward_pass (void);
 
 	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
 	virtual void backward_pass (variable<T>* leaf);

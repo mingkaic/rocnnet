@@ -48,8 +48,9 @@ int main (int argc, char** argv)
 	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
+	std::clock_t start;
+	double duration;
 	size_t episode_count = 250;
-//	size_t max_steps = 5000;
 	size_t max_steps = 100;
 	size_t n_observations = 10;
 	size_t n_actions = 9;
@@ -69,7 +70,6 @@ int main (int argc, char** argv)
 	rocnnet::dq_net untrained_dqn(brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");
-//	trained_dqn->initialize(serialpath, "trained_dqn");
 
 	rocnnet::dq_net pretrained_dqn(untrained_dqn, "pretrained_dqn");
 	pretrained_dqn.initialize(serialpath, "trained_dqn");
@@ -85,6 +85,7 @@ int main (int argc, char** argv)
 	std::list<double> error_queue;
 	size_t err_queue_size = 10;
 	size_t action_dist = n_actions / 2;
+	start = std::clock();
 	for (size_t i = 0; i < episode_count; i++)
 	{
 		std::vector<double> output;
@@ -139,6 +140,8 @@ int main (int argc, char** argv)
 		if (std::isnan(episode_err)) throw std::exception();
 		std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error, reward: " << avgreward << std::endl;
 	}
+	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+	std::cout << "training time: " << duration << " seconds" << std::endl;
 
 	std::vector<double> untrained_output;
 	std::vector<double> trained_output;

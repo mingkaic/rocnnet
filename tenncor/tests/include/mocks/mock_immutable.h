@@ -26,7 +26,7 @@ double testforward (const double** out, size_t n)
 }
 
 
-inode<double>* testback (std::vector<inode<double>*>, variable<double>*)
+inode<double>* testback (std::vector<std::pair<inode<double>*,inode<double>*> >)
 {
 	return nullptr;
 }

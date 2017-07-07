@@ -59,9 +59,9 @@ void constant<T>::be_managed (void)
 }
 
 template <typename T>
-void constant<T>::get_leaf (varptr<T>& out, variable<T>*)
+inode<T>* constant<T>::get_leaf (variable<T>*)
 {
-	out = constant<T>::get_shared_zero();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
@@ -125,6 +125,20 @@ template <typename T>
 inode<T>* constant<T>::move_impl (void)
 {
 	return nullptr;
+}
+
+template <typename T>
+bool operator == (constant<T>& c, T scalar)
+{
+	std::vector<T> res = expose<T>(&c);
+	return 1 == res.size() && scalar == res[0];
+}
+
+template <typename T>
+bool operator != (constant<T>& c, T scalar)
+{
+	std::vector<T> res = expose<T>(&c);
+	return 1 != res.size() || scalar != res[0];
 }
 
 }

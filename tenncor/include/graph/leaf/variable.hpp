@@ -75,10 +75,6 @@ public:
 	//! return update data function (subtract input node data to this)
 	variable_updater<T> assign_sub (inode<T>* input) const;
 
-	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
-
 protected:
 	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone implementation
@@ -86,6 +82,10 @@ protected:
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
+
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* leaf);
 };
 
 }

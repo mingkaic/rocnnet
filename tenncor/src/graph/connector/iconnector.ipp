@@ -158,11 +158,6 @@ template <typename T>
 void iconnector<T>::update_status (bool freeze)
 {
 	gid_->freeze_ = freeze;
-	if (freeze) return;
-	while (false == gid_->empty())
-	{
-		gid_->job_execute();
-	}
 }
 
 template <typename T>
@@ -259,7 +254,7 @@ struct top_first
 };
 
 template <typename T>
-using job_map_t = std::unordered_map<iconnector<T>*,std::vector<size_t> >;
+using job_map_t = std::unordered_map<iconnector<T>*,std::unordered_set<size_t> >;
 
 template <typename T>
 using job_queue_t = std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, bottom_first<T> >;
@@ -290,11 +285,12 @@ struct iconnector<T>::graph_manager
 	void consume (graph_manager* other)
 	{
 		if (this == other) return;
-		while (false == other->jobs_.empty())
+		while (false == other->updates_.empty())
 		{
-			jobs_.push(other->jobs_.top());
-			other->jobs_.pop();
+			updates_.push(other->updates_.front());
+			other->updates_.pop();
 		}
+		update_map_.insert(other->update_map_.begin(), other->update_map_.end());
 		freeze_ = freeze_ && other->freeze_;
 		std::unordered_set<iconnector<T>*> otherusers = other->users_;
 		for (iconnector<T>* ouser : otherusers)
@@ -305,29 +301,35 @@ struct iconnector<T>::graph_manager
 		users_.insert(otherusers.begin(), otherusers.end());
 	}
 
-	void push (iconnector<T>* icon, size_t argidx)
+	void add_update (iconnector<T>* dependent, std::function<void(void)> update)
 	{
-		job_map_[icon].push_back(argidx);
-		jobs_.push(icon);
+		// assert dependent is in users_
+		if (update_map_.end() == update_map_.find(dependent))
+		{
+			updates_.push(dependent);
+			update_map_[dependent] = update;
+		}
 	}
 
-	bool empty (void) const { return jobs_.empty(); }
-
-	void job_execute (void)
+	void update (void)
 	{
-		if (jobs_.empty()) return;
-		iconnector<T>* headconn = jobs_.top();
-		headconn->update(job_map_[headconn]);
-		job_map_.erase(headconn);
-		jobs_.pop();
+		while (false == updates_.empty())
+		{
+			iconnector<T>* iconn = updates_.front();
+			auto updater = update_map_[iconn];
+			updates_.pop();
+			update_map_.erase(iconn);
+			updater();
+			iconn->notify(UPDATE);
+		}
 	}
 
 	bool freeze_ = false;
 
 private:
-	job_queue_t<T> jobs_;
+	std::queue<iconnector<T>*> updates_;
 
-	job_map_t<T> job_map_;
+	std::unordered_map<iconnector<T>*,std::function<void(void)> > update_map_;
 
 	std::unordered_set<iconnector<T>*> users_;
 	

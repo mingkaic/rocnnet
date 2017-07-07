@@ -24,11 +24,14 @@ namespace nnet
 
 //! backward transfer function, get gradient nodes; F: Nf -> Nb
 template <typename T>
-using BACK_MAP = std::function<varptr<T>(std::vector<inode<T>*>,variable<T>*)>;
+using BACK_MAP = std::function<varptr<T>(std::vector<std::pair<inode<T>*,inode<T>*> >)>;
+
+template <typename T>
+using NODE_MAN = std::function<inode<T>*(inode<T>*)>;
 
 //! jacobian transfer function
 template <typename T>
-using JTRANSFER = std::function<inode<T>*(inode<T>*,variable<T>*)>;
+using JTRANSFER = std::function<inode<T>*(inode<T>*,NODE_MAN<T>)>;
 
 template <typename T>
 class iconnector : public inode<T>, public iobserver
@@ -77,11 +80,17 @@ public:
 	//! get the number of observables
 	virtual size_t n_arguments (void) const;
 
-	// >>>> MORE BACKWARD DATA <<<<
+	// >>>> FORWARD & BACKWARD DATA <<<<
+	virtual const tensor<T>* eval (void)
+	{
+		if (this->gid_) this->gid_->update();
+		return this->get_eval();
+	}
+
 	//! grab a temporary value traversing top-down
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const = 0;
 
-	// >>>> MORE GRAPH STATUS <<<<
+	// >>>> GRAPH STATUS <<<<
 	//! summarize this connector
 	virtual summary_series summarize (void) const = 0;
 
@@ -89,6 +98,7 @@ public:
 	bool is_same_graph (const iconnector<T>* other) const;
 
 	//! check if connector n is a potential descendent of this node
+	//! will return false negatives if nodes are in a pipeline of a non-variable leaf
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	// >>>> NODE STATUS <<<<

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "mocks/mock_node.h"
 #include "mocks/mock_connector.h"
 #include "graph/leaf/variable.hpp"
 
@@ -43,7 +44,7 @@ TEST(VARIABLE, Constructor_F000)
 
 	EXPECT_TRUE(scalar.can_init());
 	EXPECT_TRUE(scalar.good_status());
-	const tensor<double>* scalart = scalar.get_eval();
+	const tensor<double>* scalart = scalar.eval();
 	EXPECT_TRUE(scalart->is_alloc());
 	EXPECT_EQ(c, scalart->expose()[0]);
 
@@ -95,7 +96,7 @@ TEST(VARIABLE, Copy_F001)
 
 	EXPECT_TRUE(sv->can_init());
 	EXPECT_TRUE(sv->good_status());
-	const tensor<double>* scalart = sv->get_eval();
+	const tensor<double>* scalart = sv->eval();
 	EXPECT_TRUE(scalart->is_alloc());
 	EXPECT_EQ(c, scalart->expose()[0]);
 	EXPECT_FALSE(nv->can_init());
@@ -107,7 +108,7 @@ TEST(VARIABLE, Copy_F001)
 
 	EXPECT_TRUE(assign1.can_init());
 	EXPECT_TRUE(assign1.good_status());
-	scalart = assign1.get_eval();
+	scalart = assign1.eval();
 	EXPECT_TRUE(scalart->is_alloc());
 	EXPECT_EQ(c, scalart->expose()[0]);
 	EXPECT_FALSE(assign2.can_init());
@@ -165,7 +166,7 @@ TEST(VARIABLE, Move_F001)
 
 	EXPECT_TRUE(sv->can_init());
 	EXPECT_TRUE(sv->good_status());
-	const tensor<double>* scalart = sv->get_eval();
+	const tensor<double>* scalart = sv->eval();
 	EXPECT_TRUE(scalart->is_alloc());
 	EXPECT_EQ(c, scalart->expose()[0]);
 	EXPECT_FALSE(nv->can_init());
@@ -175,7 +176,7 @@ TEST(VARIABLE, Move_F001)
 	EXPECT_TRUE(rv->can_init());
 	EXPECT_FALSE(rv->good_status());
 
-	EXPECT_EQ(nullptr, scalar.get_eval());
+	EXPECT_EQ(nullptr, scalar.eval());
 
 	assign1 = std::move(*sv);
 	assign2 = std::move(*nv);
@@ -193,7 +194,7 @@ TEST(VARIABLE, Move_F001)
 
 	EXPECT_TRUE(assign1.can_init());
 	EXPECT_TRUE(assign1.good_status());
-	scalart = assign1.get_eval();
+	scalart = assign1.eval();
 	EXPECT_TRUE(scalart->is_alloc());
 	EXPECT_EQ(c, scalart->expose()[0]);
 	EXPECT_FALSE(assign2.can_init());
@@ -203,7 +204,7 @@ TEST(VARIABLE, Move_F001)
 	EXPECT_TRUE(assign4.can_init());
 	EXPECT_FALSE(assign4.good_status());
 
-	EXPECT_EQ(nullptr, sv->get_eval());
+	EXPECT_EQ(nullptr, sv->eval());
 
 	delete sv;
 	delete nv;
@@ -281,6 +282,7 @@ TEST(VARIABLE, GetLeaf_F003)
 	std::string label4 = FUZZ::getString(strns[3], "label3");
 	tensorshape shape = random_def_shape();
 	double c = FUZZ::getDouble(1, "c")[0];
+	mock_node exposer;
 
 	const_init<double> cinit(c);
 	rand_uniform<double> rinit(0, 1);
@@ -290,45 +292,45 @@ TEST(VARIABLE, GetLeaf_F003)
 	variable<double> cinitv(shape, cinit, label3);
 	variable<double> rinitv(shape, rinit, label4);
 
-	varptr<double> wun;
-	varptr<double> wun2;
-	varptr<double> wun3;
-	varptr<double> wun4;
-	scalar.get_leaf(wun, &scalar);
-	noinitv.get_leaf(wun2, &noinitv);
-	cinitv.get_leaf(wun3, &cinitv);
-	rinitv.get_leaf(wun4, &rinitv);
+	varptr<double> wun = exposer.expose_leaf(&scalar, &scalar);
+	varptr<double> wun2 = exposer.expose_leaf(&noinitv, &noinitv);
+	varptr<double> wun3 = exposer.expose_leaf(&cinitv, &cinitv);
+	varptr<double> wun4 = exposer.expose_leaf(&rinitv, &rinitv);
 
-	varptr<double> zaro;
-	varptr<double> zaro2;
-	varptr<double> zaro3;
-	varptr<double> zaro4;
-	varptr<double> zaro5;
-	varptr<double> zaro6;
-	varptr<double> zaro7;
-	varptr<double> zaro8;
-	scalar.get_leaf(zaro, nullptr);
-	scalar.get_leaf(zaro2, &noinitv);
-	noinitv.get_leaf(zaro3, nullptr);
-	noinitv.get_leaf(zaro4, &cinitv);
-	cinitv.get_leaf(zaro5, nullptr);
-	cinitv.get_leaf(zaro6, &rinitv);
-	rinitv.get_leaf(zaro7, nullptr);
-	rinitv.get_leaf(zaro8, &scalar);
+	varptr<double> zaro = exposer.expose_leaf(&scalar, nullptr);
+	varptr<double> zaro2 = exposer.expose_leaf(&scalar, &noinitv);
+	varptr<double> zaro3 = exposer.expose_leaf(&noinitv, nullptr);
+	varptr<double> zaro4 = exposer.expose_leaf(&noinitv, &cinitv);
+	varptr<double> zaro5 = exposer.expose_leaf(&cinitv, nullptr);
+	varptr<double> zaro6 = exposer.expose_leaf(&cinitv, &rinitv);
+	varptr<double> zaro7 = exposer.expose_leaf(&rinitv, nullptr);
+	varptr<double> zaro8 = exposer.expose_leaf(&rinitv, &scalar);
 
-	EXPECT_TRUE(*wun == 1.0);
-	EXPECT_TRUE(*wun2 == 1.0);
-	EXPECT_TRUE(*wun3 == 1.0);
-	EXPECT_TRUE(*wun4 == 1.0);
+	double wunvalue = expose<double>(wun)[0];
+	double wunvalue2 = expose<double>(wun2)[0];
+	double wunvalue3 = expose<double>(wun3)[0];
+	double wunvalue4 = expose<double>(wun4)[0];
+	EXPECT_TRUE(wunvalue == 1.0);
+	EXPECT_TRUE(wunvalue2 == 1.0);
+	EXPECT_TRUE(wunvalue3 == 1.0);
+	EXPECT_TRUE(wunvalue4 == 1.0);
 
-	EXPECT_TRUE(*zaro == 0.0);
-	EXPECT_TRUE(*zaro2 == 0.0);
-	EXPECT_TRUE(*zaro3 == 0.0);
-	EXPECT_TRUE(*zaro4 == 0.0);
-	EXPECT_TRUE(*zaro5 == 0.0);
-	EXPECT_TRUE(*zaro6 == 0.0);
-	EXPECT_TRUE(*zaro7 == 0.0);
-	EXPECT_TRUE(*zaro8 == 0.0);
+	double zarovalue = expose<double>(zaro)[0];
+	double zarovalue2 = expose<double>(zaro2)[0];
+	double zarovalue3 = expose<double>(zaro3)[0];
+	double zarovalue4 = expose<double>(zaro4)[0];
+	double zarovalue5 = expose<double>(zaro5)[0];
+	double zarovalue6 = expose<double>(zaro6)[0];
+	double zarovalue7 = expose<double>(zaro7)[0];
+	double zarovalue8 = expose<double>(zaro8)[0];
+	EXPECT_TRUE(zarovalue == 0.0);
+	EXPECT_TRUE(zarovalue2 == 0.0);
+	EXPECT_TRUE(zarovalue3 == 0.0);
+	EXPECT_TRUE(zarovalue4 == 0.0);
+	EXPECT_TRUE(zarovalue5 == 0.0);
+	EXPECT_TRUE(zarovalue6 == 0.0);
+	EXPECT_TRUE(zarovalue7 == 0.0);
+	EXPECT_TRUE(zarovalue8 == 0.0);
 }
 
 

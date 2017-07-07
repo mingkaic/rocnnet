@@ -1,7 +1,6 @@
 tenncor:
-- updates should be handled by graph_manager
-- reactive updates by default should be restricted to unary connectors, n-ary connectors should update lazily
 - during the unfreeze update process, avoid duplicate updates by stopping at branching nodes to wait for dependency updates
+- implement convolution operator
 - shape and preparation functors should ideally use C++17 variant
     (replace with resulting shape and temporary cache)
 - remove move and clone functions for classes that don't need it
@@ -10,12 +9,7 @@ tenncor:
 - refine shape flexibility e.g: (4,) == (4,1)
 	also any shape padded by 0 or 1 maybe “optimized” for lower dimensional shape
 	(this should be an option, since some applications may not want to lose this information)
-- improve tests (test base_immutable and immutable separately)
 - possible dangling pointers by propagating destruction in the graph
-- interface confusion:
-    graphs have 2 methods of getting backprop node (get_leaf and get_gradient)
-    users only have 1 valid method of getting backprop (get_gradient)
-    currently, users can call get_leaf. change visibility
 
 evaluate rocnnet principles:
 - practicality
@@ -27,6 +21,11 @@ interesting ideas:
 - scalable batch size (increasing batch size over generations)
 
 tests:
+- improve tests (test base_immutable and immutable separately)
+
+need testing:
 - copying and moving observers on multiple unmanaged constants
 - detaching unmanaged constants from observers
 - copying immutable of uninitialized variables
+- updates should be handled by graph_manager
+- reactive updates by default should be restricted to unary connectors, n-ary connectors should update lazily

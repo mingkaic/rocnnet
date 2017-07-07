@@ -67,10 +67,6 @@ public:
 	//! merge/update the gradient/leaf info
 	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
 
-	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
-
 protected:
 	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone implementation
@@ -78,6 +74,10 @@ protected:
 
 	//! move implementation
 	virtual inode<T>* move_impl (void);
+
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_leaf (variable<T>* );
 };
 
 }

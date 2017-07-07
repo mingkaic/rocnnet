@@ -324,7 +324,8 @@ TEST(MATMUL, Incompatible_L003)
 	A.initialize();
 	B.initialize();
 
-	EXPECT_THROW(matmul<signed>::get(&A, &B), std::logic_error);
+	matmul<signed>* bad = matmul<signed>::get(&A, &B);
+	EXPECT_THROW(bad->eval(), std::logic_error);
 }
 
 

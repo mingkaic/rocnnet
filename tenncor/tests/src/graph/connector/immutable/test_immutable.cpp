@@ -54,14 +54,14 @@ TEST(IMMUTABLE, Copy_I000)
 	FUZZ::reset_logger();
 	immutable<double>* assign  = new mock_immutable({}, "");
 	immutable<double>* central = new mock_immutable({}, "");
-	const tensor<double>* res = central->get_eval();
+	const tensor<double>* res = central->eval();
 
 	immutable<double>* cpy = central->clone();
 	*assign = *central;
 	ASSERT_NE(nullptr, cpy);
 
-	const tensor<double>* cres = cpy->get_eval();
-	const tensor<double>* ares = assign->get_eval();
+	const tensor<double>* cres = cpy->eval();
+	const tensor<double>* ares = assign->eval();
 
 	std::vector<double> data = expose(central);
 	std::vector<double> cdata = expose(cpy);
@@ -83,25 +83,25 @@ TEST(IMMUTABLE, Move_I000)
 	FUZZ::reset_logger();
 	immutable<double>* assign  = new mock_immutable({}, "");
 	immutable<double>* central = new mock_immutable({}, "");
-	const tensor<double>* res = central->get_eval();
+	const tensor<double>* res = central->eval();
 	std::vector<double> data = expose(central);
 	tensorshape rs = res->get_shape();
 
 	immutable<double>* mv = central->move();
 	EXPECT_NE(nullptr, mv);
 
-	const tensor<double>* mres = mv->get_eval();
+	const tensor<double>* mres = mv->eval();
 	std::vector<double> mdata = expose(mv);
 	tensorshape ms = mres->get_shape();
 
-	EXPECT_EQ(nullptr, central->get_eval());
+	EXPECT_EQ(nullptr, central->eval());
 
 	*assign = std::move(*mv);
-	const tensor<double>* ares = assign->get_eval();
+	const tensor<double>* ares = assign->eval();
 	std::vector<double> adata = expose(assign);
 	tensorshape as = ares->get_shape();
 
-	EXPECT_EQ(nullptr, mv->get_eval());
+	EXPECT_EQ(nullptr, mv->eval());
 
 	EXPECT_TRUE(tensorshape_equal(rs, ms));
 	EXPECT_TRUE(tensorshape_equal(rs, as));
@@ -191,6 +191,8 @@ TEST(IMMUTABLE, Status_I002)
 	immutable<double>* conn5 = new mock_immutable({n2, n4}, conname5);
 
 	EXPECT_TRUE(conn->good_status());
+	EXPECT_FALSE(conn2->good_status());
+	conn2->eval();
 	EXPECT_TRUE(conn2->good_status());
 	EXPECT_FALSE(conn3->good_status());
 	EXPECT_FALSE(conn4->good_status());
@@ -385,8 +387,8 @@ TEST(IMMUTABLE, Tensor_I004)
 		}
 	}
 
-	const tensor<double>* c1tensor = conn->get_eval();
-	const tensor<double>* c2tensor = conn2->get_eval();
+	const tensor<double>* c1tensor = conn->eval();
+	const tensor<double>* c2tensor = conn2->eval();
 	ASSERT_NE(nullptr, c1tensor);
 	ASSERT_NE(nullptr, c2tensor);
 
@@ -397,9 +399,9 @@ TEST(IMMUTABLE, Tensor_I004)
 	EXPECT_TRUE(std::equal(expectc2, expectc2 + nc2s, c2out.begin()));
 
 	// bad status returns undefined shapes
-	EXPECT_EQ(nullptr, conn3->get_eval()); // not part defined is undefined
-	EXPECT_EQ(nullptr, conn4->get_eval());
-	EXPECT_EQ(nullptr, conn5->get_eval());
+	EXPECT_EQ(nullptr, conn3->eval()); // not part defined is undefined
+	EXPECT_EQ(nullptr, conn4->eval());
+	EXPECT_EQ(nullptr, conn5->eval());
 
 	delete[] expectc2;
 	delete conn;
@@ -521,7 +523,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 		lcache.clear();
 		static_cast<immutable<double>*>(root)->temporary_eval(coll, out);
 		ASSERT_NE(nullptr, out);
-		const tensor<double>* outt = out->get_eval();
+		const tensor<double>* outt = out->eval();
 		ASSERT_TRUE(tensorshape_equal(shape, outt->get_shape()));
 		// out data should be 1 + M * single_rando where M is the
 		// number of root's leaves that are not in coll's leaves
@@ -612,21 +614,22 @@ TEST(IMMUTABLE, GetLeaf_I008)
 {
 	FUZZ::reset_logger();
 	std::vector<iconnector<double>*> ordering;
+	mock_node exposer;
+
 	BACK_MAP<double> backer =
-	[&ordering](std::vector<inode<double>*> args,
-		variable<double>* leaf) -> inode<double>*
+	[&ordering](std::vector<std::pair<inode<double>*,inode<double>*> > args) -> inode<double>*
 	{
-		varptr<double> leef;
-		args[0]->get_leaf(leef, leaf);
-		if (*leef == 0.0 && args.size() > 1)
+		inode<double>* leef = args[0].second;
+		double lvalue = expose<double>(leef)[0];
+		if (lvalue == 0.0 && args.size() > 1)
 		{
-			args[1]->get_leaf(leef, leaf);
-			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
+			leef = args[1].second;
+			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1].first))
 			{
 				ordering.push_back(conn);
 			}
 		}
-		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0].first))
 		{
 			ordering.push_back(conn);
 		}
@@ -664,16 +667,17 @@ TEST(IMMUTABLE, GetLeaf_I008)
 	for (size_t i = 0; i < nnodes/3; i++)
 	{
 		ordering.clear();
-		varptr<double> wun;
-		root->get_leaf(wun, *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves)));
+		variable<double>* l = *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves));
+		varptr<double> wun = exposer.expose_leaf(root, l);
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		varptr<double> zaro;
-		root->get_leaf(zaro, notleaf);
+		varptr<double> zaro = exposer.expose_leaf(root, notleaf);
 		EXPECT_TRUE(bottom_up(ordering));
 
-		EXPECT_TRUE(*wun == 1.0);
-		EXPECT_TRUE(*zaro == 0.0);
+		double value1 = expose<double>(wun)[0];
+		double value0 = expose<double>(zaro)[0];
+		EXPECT_TRUE(value1 == 1.0);
+		EXPECT_TRUE(value0 == 0.0);
 	}
 
 	delete notleaf;
@@ -713,20 +717,19 @@ TEST(IMMUTABLE, GetGradient_I009)
 
 	std::vector<iconnector<double>*> ordering;
 	BACK_MAP<double> backer =
-	[&ordering](std::vector<inode<double>*> args,
-		variable<double>* leaf) -> inode<double>*
+	[&ordering](std::vector<std::pair<inode<double>*,inode<double>*> > args) -> inode<double>*
 	{
-		varptr<double> leef;
-		args[0]->get_leaf(leef, leaf);
-		if (*leef == 0.0 && args.size() > 1)
+		varptr<double> leef = args[0].second;
+		double d = expose<double>(leef.get())[0];
+		if (d == 0.0 && args.size() > 1)
 		{
-			args[1]->get_leaf(leef, leaf);
-			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1]))
+			leef = args[1].second;
+			if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[1].first))
 			{
 				ordering.push_back(conn);
 			}
 		}
-		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0]))
+		else if (iconnector<double>* conn = dynamic_cast<iconnector<double>*>(args[0].first))
 		{
 			ordering.push_back(conn);
 		}
@@ -771,10 +774,10 @@ TEST(IMMUTABLE, GetGradient_I009)
 	{
 		ordering.clear();
 		variable<double>* rselected = *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves));
-		const tensor<double>* wun = root->get_gradient(rselected)->get_eval();
+		const tensor<double>* wun = root->get_gradient(rselected)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		const tensor<double>* zaro = root->get_gradient(notleaf)->get_eval();
+		const tensor<double>* zaro = root->get_gradient(notleaf)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
 
@@ -786,7 +789,7 @@ TEST(IMMUTABLE, GetGradient_I009)
 		// SAME AS TEMPORARY EVAL
 		immutable<double>* coll = *(FUZZ::rand_select<std::unordered_set<immutable<double>*> >(collector));
 		if (coll == root) continue;
-		const tensor<double>* grad_too = root->get_gradient(coll)->get_eval();
+		const tensor<double>* grad_too = root->get_gradient(coll)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ASSERT_NE(nullptr, grad_too);
 		ASSERT_TRUE(tensorshape_equal(shape, grad_too->get_shape()));

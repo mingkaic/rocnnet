@@ -20,6 +20,7 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 	BACK_MAP<T> ginit,
 	std::string name, inode<T>* ignore_jacobian)
 {
+	assert(false == args.empty());
 	immutable<T>* imm = new immutable<T>(args, Nf, ginit, name);
 	if (nullptr != ignore_jacobian)
 	{
@@ -114,13 +115,13 @@ inode<T>* immutable<T>::move_impl (void)
 }
 
 template <typename T>
-void immutable<T>::forward_pass (std::vector<size_t>)
+void immutable<T>::forward_pass (void)
 {
 	std::vector<tensorshape> ts;
 	std::vector<const tensor<T>*> tens;
 	for (subject* sub : this->dependencies_)
 	{
-		const tensor<T>* arg = static_cast<inode<T>*>(sub)->get_eval();
+		const tensor<T>* arg = this->take_eval(static_cast<inode<T>*>(sub));
 		if (arg)
 		{
 			assert(arg->is_alloc());
@@ -169,12 +170,14 @@ void immutable<T>::forward_pass (std::vector<size_t>)
 template <typename T>
 void immutable<T>::backward_pass (variable<T>* leaf)
 {
-	std::vector<inode<T>*> deps;
+	std::vector<std::pair<inode<T>*,inode<T>*> > deps;
 	for (subject* s : this->dependencies_)
 	{
-		deps.push_back(static_cast<inode<T>*>(s));
+		inode<T>* fn = static_cast<inode<T>*>(s);
+		inode<T>* bn = this->take_leaf(fn, leaf);
+		deps.push_back({fn, bn});
 	}
-	this->gcache_[leaf] = ginit_(deps, leaf);
+	this->gcache_[leaf] = ginit_(deps);
 }
 
 template <typename T>

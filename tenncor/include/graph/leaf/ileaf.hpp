@@ -48,9 +48,11 @@ public:
 	virtual size_t n_arguments (void) const;
 
 	// >>>> FORWARD DATA <<<<
-	//! get forward passing value
-	//! return nullptr if leaf is not init
-	virtual const tensor<T>* get_eval (void) const;
+	//! get forward passing value, (pull data if necessary)
+	virtual const tensor<T>* eval (void)
+	{
+		return get_eval();
+	}
 
 	//! utility function: get data shape
 	virtual tensorshape get_shape (void) const;
@@ -73,6 +75,11 @@ protected:
 
 	//! declare move constructor to move over data
 	ileaf (ileaf<T>&& other);
+
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! get forward passing value
+	//! return nullptr if leaf is not init
+	virtual const tensor<T>* get_eval (void) const;
 
 	//! tensor data
 	tensor<T>* data_ = nullptr;

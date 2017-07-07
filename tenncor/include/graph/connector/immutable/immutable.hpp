@@ -73,7 +73,7 @@ protected:
 
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
-	virtual void forward_pass (std::vector<size_t>);
+	virtual void forward_pass (void);
 
 	//! backward pass step: populate gcache_[leaf]
 	virtual void backward_pass (variable<T>* leaf);

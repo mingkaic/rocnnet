@@ -94,12 +94,6 @@ template <typename T>
 void placeholder<T>::get_leaves (typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
-void placeholder<T>::get_leaf (varptr<T>& out, variable<T>*)
-{
-	out = constant<T>::get_shared_zero();
-}
-
-template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const
 {
 	return new placeholder<T>(*this);
@@ -109,6 +103,12 @@ template <typename T>
 inode<T>* placeholder<T>::move_impl (void)
 {
 	return new placeholder<T>(std::move(*this));
+}
+
+template <typename T>
+inode<T>* placeholder<T>::get_leaf (variable<T>*)
+{
+	return constant<T>::get_shared_zero();
 }
 
 }

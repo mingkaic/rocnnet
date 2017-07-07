@@ -43,17 +43,23 @@ public:
 
 	virtual std::vector<inode<double>*> get_arguments (void) const { return {}; }
 	virtual size_t n_arguments (void) const { return 0; }
+	virtual const tensor<double>* eval (void) { return data_; }
 	virtual tensorshape get_shape (void) const { return data_->get_shape(); }
 	virtual bool good_status (void) const { return nullptr != data_; }
-	virtual const tensor<double>* get_eval(void) const { return data_; }
 	virtual void get_leaves (GRAD_CACHE&) const {}
 	virtual varptr<double> get_gradient (inode<double>* wrt) { return wrt == this ? varptr<double>(this) : varptr<double>(); }
-	virtual void get_leaf (varptr<double>&, variable<double>*) {}
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
+
+	inode<double>* expose_leaf (inode<double>* source, variable<double>* leaf) const
+	{
+		return this->take_leaf(source, leaf);
+	}
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_node(*this); }
 	virtual inode<double>* move_impl (void) { return new mock_node(std::move(*this)); }
+	virtual const tensor<double>* get_eval (void) const { return data_; }
+	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
 };
 
 
