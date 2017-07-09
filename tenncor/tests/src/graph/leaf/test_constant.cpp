@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "mocks/mock_node.h"
 #include "mocks/mock_connector.h"
 #include "graph/leaf/constant.hpp"
 
@@ -163,7 +164,7 @@ TEST(CONSTANT, CopyNMove_D001)
 }
 
 
-// covers constant get_gradient
+// covers constant derive
 TEST(CONSTANT, GetGradient_D002)
 {
 	FUZZ::reset_logger();
@@ -171,9 +172,9 @@ TEST(CONSTANT, GetGradient_D002)
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(c+1);
 
-	const tensor<double>* g1 = res->get_gradient(nullptr)->get_eval();
-	const tensor<double>* g2 = res->get_gradient(res)->get_eval();
-	const tensor<double>* g3 = res->get_gradient(res2)->get_eval();
+	const tensor<double>* g1 = res->derive(nullptr)->eval();
+	const tensor<double>* g2 = res->derive(res)->eval();
+	const tensor<double>* g3 = res->derive(res2)->eval();
 
 	std::vector<double> gres = g1->expose();
 	std::vector<double> gres1 = g2->expose();
@@ -192,39 +193,23 @@ TEST(CONSTANT, GetGradient_D002)
 }
 
 
-// covers constant get_leaf
+// covers constant get_gradient
 TEST(CONSTANT, GetLeaf_D003)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];
 	constant<double>* res = constant<double>::get(c);
+	mock_node exposer;
 
-	varptr<double> g1;
-	res->get_leaf(g1, nullptr);
-	EXPECT_TRUE(*g1 == 0.0);
-
-	delete res;
-}
-
-
-// covers constant get_leaves
-TEST(CONSTANT, GetLeaves_D004)
-{
-	FUZZ::reset_logger();
-	double c = FUZZ::getDouble(1, "c")[0];
-	constant<double>* res = constant<double>::get(c);
-
-	typename inode<double>::GRAD_CACHE leafset;
-	res->get_leaves(leafset);
-
-	EXPECT_TRUE(leafset.empty());
+	varptr<double> zaro = exposer.expose_leaf(res, nullptr);
+	EXPECT_TRUE(expose<double>(zaro)[0] == 0.0);
 
 	delete res;
 }
 
 
 // covers constant death_on_noparent
-TEST(CONSTANT, SelfDestruct_D005)
+TEST(CONSTANT, SelfDestruct_D004)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -235,13 +220,13 @@ TEST(CONSTANT, SelfDestruct_D005)
 	mock_connector* mconn = new mock_connector({res, res2}, "");
 	delete mconn;
 
-	EXPECT_NE(nullptr, res->get_eval());
+	EXPECT_NE(nullptr, res->eval());
 	delete res;
 }
 
 
 // verifies data status
-TEST(CONSTANT, Allocated_D006)
+TEST(CONSTANT, Allocated_D005)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -260,9 +245,9 @@ TEST(CONSTANT, Allocated_D006)
 	constant<double>* res2 = constant<double>::get(v, shape);
 	constant<double>* res3 = constant<double>::get(pv, part);
 
-	const tensor<double>* t1 = res->get_eval();
-	const tensor<double>* t2 = res2->get_eval();
-	const tensor<double>* t3 = res3->get_eval();
+	const tensor<double>* t1 = res->eval();
+	const tensor<double>* t2 = res2->eval();
+	const tensor<double>* t3 = res3->eval();
 
 	EXPECT_TRUE(t1->is_alloc());
 	EXPECT_TRUE(t2->is_alloc());

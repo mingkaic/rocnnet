@@ -52,7 +52,7 @@ public:
 	//! get inner pointer
 	inode<T>* get (void) const;
 	
-	virtual void update (std::vector<size_t>) {}
+	virtual void update (std::unordered_set<size_t>) {}
 
 	void clear (void) { this->remove_dependency(0); }
 	

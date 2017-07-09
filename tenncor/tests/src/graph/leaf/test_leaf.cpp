@@ -38,8 +38,8 @@ TEST(LEAF, Copy_C000)
 	bool initstatus = res.good_status();
 	bool initstatus2 = res2.good_status();
 	bool initstatus3 = uninit.good_status();
-	const tensor<double>* init_data = res.get_eval();
-	const tensor<double>* init_data2 = res2.get_eval(); // res2 is not good
+	const tensor<double>* init_data = res.eval();
+	const tensor<double>* init_data2 = res2.eval(); // res2 is not good
 
 	ileaf<double>* cpy = res.clone();
 	ileaf<double>* cpy2 = res2.clone();
@@ -51,14 +51,14 @@ TEST(LEAF, Copy_C000)
 	bool cpystatus = cpy->good_status();
 	bool cpystatus2 = cpy2->good_status();
 	bool cpystatus3 = cpy3->good_status();
-	const tensor<double>* cpy_data = cpy->get_eval();
-	const tensor<double>* cpy_data2 = cpy2->get_eval();
+	const tensor<double>* cpy_data = cpy->eval();
+	const tensor<double>* cpy_data2 = cpy2->eval();
 
 	bool assignstatus = assign.good_status();
 	bool assignstatus2 = assign2.good_status();
 	bool assignstatus3 = assign3.good_status();
-	const tensor<double>* assign_data = assign.get_eval();
-	const tensor<double>* assign_data2 = assign2.get_eval();
+	const tensor<double>* assign_data = assign.eval();
+	const tensor<double>* assign_data2 = assign2.eval();
 
 	EXPECT_EQ(initstatus, cpystatus);
 	EXPECT_EQ(initstatus, assignstatus);
@@ -129,9 +129,9 @@ TEST(LEAF, Move_C000)
 	bool initstatus = res.good_status();
 	bool initstatus2 = res2.good_status();
 	bool initstatus3 = uninit.good_status();
-	const tensor<double>* init_data = res.get_eval();
-	const tensor<double>* init_data2 = res2.get_eval();
-	const tensor<double>* init_data3 = uninit.get_eval();
+	const tensor<double>* init_data = res.eval();
+	const tensor<double>* init_data2 = res2.eval();
+	const tensor<double>* init_data3 = uninit.eval();
 
 	ileaf<double>* mv = res.move();
 	ileaf<double>* mv2 = res2.move();
@@ -141,17 +141,17 @@ TEST(LEAF, Move_C000)
 	bool mvstatus2 = mv2->good_status();
 	bool mvstatus3 = mv3->good_status();
 	// ensure shallow copy
-	const tensor<double>* mv_data = mv->get_eval();
-	const tensor<double>* mv_data2 = mv2->get_eval();
-	const tensor<double>* mv_data3 = mv3->get_eval();
+	const tensor<double>* mv_data = mv->eval();
+	const tensor<double>* mv_data2 = mv2->eval();
+	const tensor<double>* mv_data3 = mv3->eval();
 	EXPECT_EQ(init_data, mv_data);
 	EXPECT_EQ(init_data2, mv_data2);
 	EXPECT_EQ(init_data3, mv_data3);
 	EXPECT_NE(init_data2, mv_data);
 	EXPECT_NE(init_data, mv_data2);
-	EXPECT_EQ(nullptr, res.get_eval());
-	EXPECT_EQ(nullptr, res2.get_eval());
-	EXPECT_EQ(nullptr, uninit.get_eval());
+	EXPECT_EQ(nullptr, res.eval());
+	EXPECT_EQ(nullptr, res2.eval());
+	EXPECT_EQ(nullptr, uninit.eval());
 
 	mock_leaf* mmv = static_cast<mock_leaf*>(mv);
 	mock_leaf* mmv2 = static_cast<mock_leaf*>(mv2);
@@ -164,17 +164,17 @@ TEST(LEAF, Move_C000)
 	bool assignstatus2 = assign2.good_status();
 	bool assignstatus3 = assign3.good_status();
 	// ensure shallow copy
-	const tensor<double>* assign_data = assign.get_eval();
-	const tensor<double>* assign_data2 = assign2.get_eval();
-	const tensor<double>* assign_data3 = assign3.get_eval();
+	const tensor<double>* assign_data = assign.eval();
+	const tensor<double>* assign_data2 = assign2.eval();
+	const tensor<double>* assign_data3 = assign3.eval();
 	EXPECT_EQ(mv_data, assign_data);
 	EXPECT_EQ(mv_data2, assign_data2);
 	EXPECT_EQ(mv_data3, assign_data3);
 	EXPECT_NE(mv_data, assign_data2);
 	EXPECT_NE(mv_data2, assign_data);
-	EXPECT_EQ(nullptr, mv->get_eval());
-	EXPECT_EQ(nullptr, mv2->get_eval());
-	EXPECT_EQ(nullptr, mv3->get_eval());
+	EXPECT_EQ(nullptr, mv->eval());
+	EXPECT_EQ(nullptr, mv2->eval());
+	EXPECT_EQ(nullptr, mv3->eval());
 
 	EXPECT_EQ(initstatus, mvstatus);
 	EXPECT_EQ(initstatus, assignstatus);
@@ -216,7 +216,7 @@ TEST(LEAF, GetShape_C001)
 }
 
 
-// covers ileaf get_eval
+// covers ileaf eval
 TEST(LEAF, GetEval_C002)
 {
 	FUZZ::reset_logger();
@@ -230,8 +230,8 @@ TEST(LEAF, GetEval_C002)
 	res.set_good();
 	res2.set_good();
 
-	const tensor<double>* rout = res.get_eval();
-	const tensor<double>* r2out = res2.get_eval();
+	const tensor<double>* rout = res.eval();
+	const tensor<double>* r2out = res2.eval();
 
 	ASSERT_NE(nullptr, rout);
 	ASSERT_NE(nullptr, r2out);
@@ -261,6 +261,19 @@ TEST(LEAF, GoodStatus_C003)
 
 // todo: implement
 //C004 - reading a valid tensor_proto should initialize the leaf
+
+
+TEST(LEAF, GetLeaves_G005)
+{
+	FUZZ::reset_logger();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
+	tensorshape shape = random_def_shape();
+
+	mock_leaf res(shape, label1);
+
+	std::unordered_set<ileaf<double>*> leafset = res.get_leaves();
+	EXPECT_TRUE(leafset.end() != leafset.find(&res));
+}
 
 
 #endif /* DISABLE_LEAF_TEST */

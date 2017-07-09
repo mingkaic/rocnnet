@@ -146,28 +146,24 @@ inode<T>::inode (inode<T>&& other) :
 	label_(std::move(other.label_)) {}
 
 template <typename T>
-std::vector<T> expose (const inode<T>* var)
+const tensor<T>* inode<T>::take_eval (inode<T>* source) const
+{
+	return source->get_eval();
+}
+
+template <typename T>
+inode<T>* inode<T>::take_gradient (inode<T>* source, variable<T>* leaf) const
+{
+	return source->get_gradient(leaf);
+}
+
+template <typename T>
+std::vector<T> expose (inode<T>* var)
 {
 	if (nullptr == var) return std::vector<T>{};
-	const tensor<T>* ten = var->get_eval();
+	const tensor<T>* ten = var->eval();
 	if (nullptr == ten) return std::vector<T>{};
 	return ten->expose();
-}
-
-template <typename T>
-bool operator == (const inode<T>& c, T scalar)
-{
-	assert(c.good_status());
-	std::vector<T> res = expose<T>(&c);
-	return 1 == res.size() && scalar == res[0];
-}
-
-template <typename T>
-bool operator != (const inode<T>& c, T scalar)
-{
-	assert(c.good_status());
-	std::vector<T> res = expose<T>(&c);
-	return 1 != res.size() || scalar != res[0];
 }
 
 }

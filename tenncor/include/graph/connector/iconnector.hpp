@@ -24,11 +24,14 @@ namespace nnet
 
 //! backward transfer function, get gradient nodes; F: Nf -> Nb
 template <typename T>
-using BACK_MAP = std::function<varptr<T>(std::vector<inode<T>*>,variable<T>*)>;
+using BACK_MAP = std::function<varptr<T>(std::vector<std::pair<inode<T>*,inode<T>*> >)>;
+
+template <typename T>
+using NODE_MAN = std::function<inode<T>*(inode<T>*)>;
 
 //! jacobian transfer function
 template <typename T>
-using JTRANSFER = std::function<inode<T>*(inode<T>*,variable<T>*)>;
+using JTRANSFER = std::function<inode<T>*(inode<T>*,NODE_MAN<T>)>;
 
 template <typename T>
 class iconnector : public inode<T>, public iobserver
@@ -60,10 +63,10 @@ public:
 	//! move function
 	iconnector<T>* move (void);
 
-	//! declare copy assignment to enforce proper gid_ copy over
+	//! declare copy assignment to enforce proper g_man_ copy over
 	virtual iconnector<T>& operator = (const iconnector<T>& other);
 
-	//! declare move assignment to enforce proper gid_ copy over
+	//! declare move assignment to enforce proper g_man_ copy over
 	virtual iconnector<T>& operator = (iconnector<T>&& other);
 
 	// >>>> IDENTIFICATION <<<<
@@ -77,11 +80,14 @@ public:
 	//! get the number of observables
 	virtual size_t n_arguments (void) const;
 
-	// >>>> MORE BACKWARD DATA <<<<
+	// >>>> FORWARD & BACKWARD DATA <<<<
 	//! grab a temporary value traversing top-down
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const = 0;
 
-	// >>>> MORE GRAPH STATUS <<<<
+	//! get forward passing value, (pull data if necessary)
+	virtual const tensor<T>* eval (void);
+
+	// >>>> GRAPH STATUS <<<<
 	//! summarize this connector
 	virtual summary_series summarize (void) const = 0;
 
@@ -89,22 +95,15 @@ public:
 	bool is_same_graph (const iconnector<T>* other) const;
 
 	//! check if connector n is a potential descendent of this node
+	//! will return false negatives if nodes are in a pipeline of a non-variable leaf
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	// >>>> NODE STATUS <<<<
-	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
-	{
-		for (variable<T>* l : leaves)
-		{
-			jacobians_[l].list_.push_front(jac);
-		}
-	}
+	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves);
 
-	// >>>> GRAPH WIDE OPTION <<<<
-	//! Freeze or unfreeze the entire graph
-	//! Freeze prevents graph from updating temporarily (updates are queued)
-	//! Unfreeze allows graph to be updated again, and executes all updates in queue
-	void update_status (bool freeze);
+	//! freeze or unfreeze the current node
+	//! freeze prevents this from updating temporarily instead update is queued to g_man_
+	void freeze_status (bool freeze);
 
 protected:
 	//! list of jacobian transfer function
@@ -119,28 +118,31 @@ protected:
 	};
 
 	//! graph info shareable between connectors
-	struct graph_node;
+	struct graph_manager;
 
 	// >>>> CONSTRUCTORS <<<<
 	//! Set dependencies
 	iconnector (std::vector<inode<T>*> dependencies, std::string label);
 
-	//! Declare copy constructor to enforce proper gid_ copy over
+	//! Declare copy constructor to enforce proper g_man_ copy over
 	iconnector (const iconnector<T>& other);
 
-	//! Declare move constructor to enforce proper gid_ copy over
+	//! Declare move constructor to enforce proper g_man_ copy over
 	iconnector (iconnector<T>&& other);
 
 	// >>>> MANAGE GRAPH INFO <<<<
-	//! Update gid_ by updating all argument variables
+	//! Update g_man_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
 
 	//! specialized operator: jacobian operators for each variable,
-	//! executed in get_gradient
+	//! executed in derive
 	std::unordered_map<variable<T>*,JList> jacobians_;
 
 	//! graph meta_data/manager
-	graph_node* gid_ = nullptr;
+	graph_manager* g_man_ = nullptr;
+
+	//! stop this from updating if true
+	bool freeze_ = false;
 };
 
 }

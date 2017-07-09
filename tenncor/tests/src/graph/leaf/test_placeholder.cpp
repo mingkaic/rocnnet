@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "mocks/mock_node.h"
 #include "mocks/mock_connector.h"
 #include "graph/leaf/placeholder.hpp"
 
@@ -119,14 +120,14 @@ TEST(PLACHOLDER, Move_G001)
 		EXPECT_EQ(raw[i], mvout[i]);
 	}
 
-	EXPECT_EQ(nullptr, place.get_eval());
+	EXPECT_EQ(nullptr, place.eval());
 
 	assign = std::move(*pmv);
 
 	std::vector<double> assout = expose(&assign);
 	ASSERT_EQ(assout.size(), n);
 
-	EXPECT_EQ(nullptr, pmv->get_eval());
+	EXPECT_EQ(nullptr, pmv->eval());
 
 	for (size_t i = 0; i < n; i++)
 	{
@@ -160,7 +161,7 @@ TEST(PLACHOLDER, AssignRaw_G002)
 	EXPECT_TRUE(mocker::EXPECT_CALL("conn::update1", 1));
 
 	EXPECT_TRUE(place.good_status());
-	const tensor<double>* placer = place.get_eval();
+	const tensor<double>* placer = place.eval();
 	EXPECT_TRUE(placer->is_alloc());
 	EXPECT_TRUE(tensorshape_equal(shape, placer->get_shape()));
 	std::vector<double> out = placer->expose();
@@ -173,7 +174,7 @@ TEST(PLACHOLDER, AssignRaw_G002)
 	// place2 will succeed since place2 is made partial from initial shape
 	place2 = raw;
 	EXPECT_TRUE(place2.good_status());
-	const tensor<double>* placer2 = place2.get_eval();
+	const tensor<double>* placer2 = place2.eval();
 	EXPECT_TRUE(placer2->is_alloc());
 	out = placer2->expose();
 	for (size_t i = 0, n = out.size(); i < n; i++)
@@ -209,7 +210,7 @@ TEST(PLACHOLDER, AssignTensor_G003)
 	EXPECT_FALSE(rawtens.is_alloc());
 
 	EXPECT_TRUE(place.good_status());
-	const tensor<double>* placer = place.get_eval();
+	const tensor<double>* placer = place.eval();
 	EXPECT_TRUE(placer->is_alloc());
 	EXPECT_TRUE(tensorshape_equal(shape, placer->get_shape()));
 	std::vector<double> out = placer->expose();
@@ -225,26 +226,12 @@ TEST(PLACHOLDER, GetLeaf_G004)
 	FUZZ::reset_logger();
 	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
 	tensorshape shape = random_def_shape();
+	mock_node exposer;
 
 	placeholder<double> place(shape, label1);
 
-	varptr<double> zaro;
-	place.get_leaf(zaro, nullptr);
-	EXPECT_TRUE(*zaro == 0.0);
-}
-
-
-TEST(PLACHOLDER, GetLeaves_G005)
-{
-	FUZZ::reset_logger();
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
-	tensorshape shape = random_def_shape();
-
-	placeholder<double> place(shape, label1);
-
-	typename inode<double>::GRAD_CACHE leafset;
-	place.get_leaves(leafset);
-	EXPECT_TRUE(leafset.empty());
+	varptr<double> zaro = exposer.expose_leaf(&place, nullptr);
+	EXPECT_TRUE(expose<double>(zaro)[0] == 0.0);
 }
 
 

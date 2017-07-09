@@ -38,15 +38,14 @@ public:
 		grad_process<T> intermediate_process = grad_identity<T>)
 	{
 		std::vector<variable_updater<T> > updates;
-		typename inode<T>::GRAD_CACHE leafset;
-		root->get_leaves(leafset);
+		std::unordered_set<ileaf<T>*> leafset = root->get_leaves();
 		std::vector<std::pair<inode<T>*,variable<T>*> > gress;
-		for (auto lit : leafset)
+		for (ileaf<T>* l : leafset)
 		{
-			variable<T>* Wb = lit.first;
-			if (ignored_.end() == ignored_.find(Wb))
+			variable<T>* Wb = dynamic_cast<variable<T>*>(l);
+			if (Wb && ignored_.end() == ignored_.find(Wb))
 			{
-				gress.push_back({root->get_gradient(Wb), Wb});
+				gress.push_back({root->derive(Wb), Wb});
 			}
 		}
 
@@ -74,12 +73,13 @@ public:
 
 	void ignore_subtree (inode<T>* subroot)
 	{
-		typename inode<T>::GRAD_CACHE leafset;
-		subroot->get_leaves(leafset);
-		for (auto lit : leafset)
+		std::unordered_set<ileaf<T>*> leafset = subroot->get_leaves();
+		for (ileaf<T>* l : leafset)
 		{
-			variable<T>* Wb = lit.first;
-			ignored_.emplace(Wb);
+			if (variable<T>* Wb = dynamic_cast<variable<T>*>(l))
+			{
+				ignored_.emplace(Wb);
+			}
 		}
 	}
 

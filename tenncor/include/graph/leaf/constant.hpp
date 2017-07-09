@@ -56,20 +56,12 @@ public:
 
 	// >>>> BACKWARD DATA <<<<
 	//! get gradient wrt some node
-	virtual varptr<T> get_gradient (inode<T>* wrt);
-
-	// >>>> GRAPH STATUS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	// >>>> NODE STATUS <<<<
 	//! set this constant as being managed by some node
 	//! this will not die if it loses all observers
 	void be_managed (void);
-
-	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) ;
 
 protected:
 	//! scalar constructor
@@ -89,6 +81,10 @@ protected:
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! grab operational gradient node, used by other nodes
+	virtual inode<T>* get_gradient (variable<T>* leaf);
+
 private:
 	//! commonly used constant: 0
 	static constant<T> shared_zero;
@@ -100,6 +96,14 @@ private:
 	//! that node is responsible for this node's life cycle
 	bool is_managed_ = false;
 };
+
+//! equality check for node against scalars
+template <typename T>
+bool operator == (constant<T>& c, T scalar);
+
+//! inequality check for node against scalars
+template <typename T>
+bool operator != (constant<T>& c, T scalar);
 
 }
 

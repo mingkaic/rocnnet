@@ -40,7 +40,7 @@ public:
 		return this->dependencies_;
 	}
 
-	virtual void update (std::vector<size_t>)
+	virtual void update (std::unordered_set<size_t>)
 	{
 		label_incr("update1");
 	}

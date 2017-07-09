@@ -1,4 +1,5 @@
 #include "utils/utils.hpp"
+#include <iostream>
 
 #ifdef TENNCOR_UTILS_HPP
 
@@ -43,7 +44,7 @@ std::string uuid (const void* addr)
 
 std::default_random_engine& get_generator (void)
 {
-	static std::default_random_engine common_generator(std::time(NULL));
+	static std::default_random_engine common_generator;
 	return common_generator;
 }
 

@@ -30,7 +30,7 @@ std::vector<double> getDouble (size_t len,
 
 	std::vector<double> vec;
 	std::uniform_real_distribution<double> dis(min, max);
-	std::default_random_engine generator = nnutils::get_generator();
+	std::default_random_engine& generator = nnutils::get_generator();
 
 	fuzzLogger << purpose << ": double<";
 	for (size_t i = 0; i < len; i++)
@@ -62,7 +62,7 @@ std::vector<size_t> getInt (size_t len,
 
 	std::vector<size_t> vec;
 	std::uniform_int_distribution<size_t> dis(min, max);
-	std::default_random_engine generator = nnutils::get_generator();
+	std::default_random_engine& generator = nnutils::get_generator();
 	
 	fuzzLogger << purpose << ": int<";
 	for (size_t i = 0; i < len; i++)

@@ -44,7 +44,7 @@ public:
 	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! update observer value according to subject
 	//! publicly available to allow explicit updates
-	virtual void update (std::vector<size_t> argidx) = 0;
+	virtual void update (std::unordered_set<size_t> argidx) = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<

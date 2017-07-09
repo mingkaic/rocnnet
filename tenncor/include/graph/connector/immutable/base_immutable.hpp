@@ -30,6 +30,9 @@ template <typename T>
 class base_immutable : public iconnector<T>
 {
 public:
+	//! type for mapping leaf nodes to derivative with respect to leaf
+	using GRAD_CACHE = std::unordered_map<ileaf<T>*,varptr<T> >;
+
 	virtual ~base_immutable (void);
 
 	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
@@ -46,23 +49,20 @@ public:
 	virtual base_immutable<T>& operator = (base_immutable<T>&& other);
 
 	// >>>> FORWARD & BACKWARD DATA <<<<
-	//! Forward passing value
-	virtual const tensor<T>* get_eval (void) const;
-
 	//! grab a temporary value traversing top-down
 	//! allocates out tensor. caller owns out
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
-	//! may call get_leaf
-	virtual varptr<T> get_gradient (inode<T>* wrt);
+	//! may call get_gradient
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	//! Utility function: get data shape
 	virtual tensorshape get_shape (void) const;
 
 	// >>>> GRAPH STATUS <<<<
 	//! get gradient leaves
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const;
 
 	// >>>> NODE STATUS <<<<
 	//! check if the arguments are good; data is available
@@ -77,12 +77,9 @@ public:
 	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
-	virtual void update (std::vector<size_t> argidx);
+	virtual void update (std::unordered_set<size_t> argidx);
 
 	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf);
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -100,9 +97,17 @@ protected:
 	//! suicides when all observ
 	void death_on_broken (void);
 
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! Forward passing value
+	virtual const tensor<T>* get_eval (void) const;
+
+	//! grab operational gradient node, used by other nodes
+	//! delay instantiate gcache elements if target leaf was never instantiated
+	virtual inode<T>* get_gradient (variable<T>* leaf);
+
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
-	virtual void forward_pass (std::vector<size_t>) = 0;
+	virtual void forward_pass (void) = 0;
 
 	//! backward pass step: populate gcache_[leaf]
 	virtual void backward_pass (variable<T>* leaf) = 0;
@@ -111,7 +116,7 @@ protected:
 	//! lazy instantiates gradient nodes
 	//! - stores the gradient value wrt each leaf
 	//! - record leaf set
-	typename inode<T>::GRAD_CACHE gcache_;
+	typename base_immutable<T>::GRAD_CACHE gcache_;
 
 // todo: have an option to disable data_ caching for performance boost
 	//! inner tensor to cache forward evaluated values
@@ -188,7 +193,7 @@ protected:
 
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_ (overridden by merged_immutable)
-	virtual void forward_pass (std::vector<size_t>);
+	virtual void forward_pass (void);
 
 	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
 	virtual void backward_pass (variable<T>* leaf);

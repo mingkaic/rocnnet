@@ -30,7 +30,7 @@ inline std::vector<iconnector<T>*> to_con (std::vector<N*> args)
 template <typename T>
 iconnector<T>::~iconnector (void)
 {
-	if (gid_) gid_->suicide(this);
+	if (g_man_) g_man_->suicide(this);
 }
 
 template <typename T>
@@ -54,8 +54,8 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 		inode<T>::operator = (other);
 		jacobians_ = other.jacobians_;
 		// this copies other's dependencies so, this and other share a graph
-		gid_->suicide(this);
-		gid_ = graph_node::get(const_cast<iconnector<T>*>(&other), this);
+		g_man_->suicide(this);
+		g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
 	}
 	return *this;
 }
@@ -69,10 +69,10 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 		inode<T>::operator = (std::move(other));
 		jacobians_ = std::move(other.jacobians_);
 		// this copies other's dependencies so, this and other share a graph
-		gid_->suicide(this);
-		gid_ = graph_node::get(&other, this);
-		other.gid_->suicide(&other);
-		other.gid_ = nullptr;
+		g_man_->suicide(this);
+		g_man_ = graph_manager::get(&other, this);
+		other.g_man_->suicide(&other);
+		other.g_man_ = nullptr;
 	}
 	return *this;
 }
@@ -119,25 +119,29 @@ size_t iconnector<T>::n_arguments (void) const
 }
 
 template <typename T>
+const tensor<T>* iconnector<T>::eval (void)
+{
+	if (this->g_man_) this->g_man_->update();
+	return this->get_eval();
+}
+
+template <typename T>
 bool iconnector<T>::is_same_graph (const iconnector<T>* other) const
 {
-	return gid_ == other->gid_;
+	return g_man_ == other->g_man_;
 }
 
 template <typename T>
 bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 {
-	// is a descendent iff n's leaf set is a subset of this leaf set
-	typename inode<T>::GRAD_CACHE mine;
-	typename inode<T>::GRAD_CACHE their;
-	this->get_leaves(mine);
-	n->get_leaves(their);
+	// A is a descendent of B iff A's leaf set is a subset of B's leaf set (or vice versa)
+	std::unordered_set<ileaf<T>*> mine = this->get_leaves();
+	std::unordered_set<ileaf<T>*> their = n->get_leaves();
 
 	if (mine.size() < their.size()) return false;
-	for (auto t : their)
+	for (ileaf<T>* t : their)
 	{
-		variable<T>* leaf = t.first;
-		if (mine.end() == mine.find(leaf))
+		if (mine.end() == mine.find(t))
 		{
 			return false;
 		}
@@ -146,14 +150,18 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 }
 
 template <typename T>
-void iconnector<T>::update_status (bool freeze)
+void iconnector<T>::set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
 {
-	gid_->freeze_ = freeze;
-	if (freeze) return;
-	while (false == gid_->empty())
+	for (variable<T>* l : leaves)
 	{
-		gid_->job_execute();
+		jacobians_[l].list_.push_front(jac);
 	}
+}
+
+template <typename T>
+void iconnector<T>::freeze_status (bool freeze)
+{
+	freeze_ = freeze;
 }
 
 template <typename T>
@@ -197,8 +205,8 @@ iconnector<T>::iconnector (const iconnector<T>& other) :
 	iobserver(other),
 	jacobians_(other.jacobians_)
 {
-	if (gid_) gid_->suicide(this);
-	gid_ = graph_node::get(const_cast<iconnector<T>*>(&other), this);
+	if (g_man_) g_man_->suicide(this);
+	g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
 }
 
 template <typename T>
@@ -207,10 +215,10 @@ iconnector<T>::iconnector (iconnector<T>&& other) :
 	iobserver(std::move(other)),
 	jacobians_(std::move(other.jacobians_))
 {
-	if (gid_) gid_->suicide(this);
-	gid_ = graph_node::get(&other, this);
-	other.gid_->suicide(&other);
-	other.gid_ = nullptr;
+	if (g_man_) g_man_->suicide(this);
+	g_man_ = graph_manager::get(&other, this);
+	other.g_man_->suicide(&other);
+	other.g_man_ = nullptr;
 }
 
 template <typename T>
@@ -218,59 +226,44 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 {
 	if (args.empty())
 	{
-		if (nullptr == gid_)
+		if (nullptr == g_man_)
 		{
-			graph_node::get(this);
+			graph_manager::get(this);
 		}
 		return;
 	}
-	gid_ = graph_node::get(args[0], this);
+	g_man_ = graph_manager::get(args[0], this);
 	for (size_t i = 1, n = args.size(); i < n; i++)
 	{
-		gid_->consume(args[i]->gid_);
+		g_man_->consume(args[i]->g_man_);
 	}
 }
 
 template <typename T>
-struct bottom_first
+struct small_leafset
 {
 	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
 	{
-		return c1->potential_descendent(c2);
+		return c1->get_leaves().size() > c2->get_leaves().size();
 	}
 };
 
 template <typename T>
-struct top_first
+struct iconnector<T>::graph_manager
 {
-	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
-	{
-		return c2->potential_descendent(c1);
-	}
-};
-
-template <typename T>
-using job_map_t = std::unordered_map<iconnector<T>*,std::vector<size_t> >;
-
-template <typename T>
-using job_queue_t = std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, bottom_first<T> >;
-
-template <typename T>
-struct iconnector<T>::graph_node
-{
-	static graph_node* get (iconnector<T>* source, iconnector<T>* user = nullptr)
+	static graph_manager* get (iconnector<T>* source, iconnector<T>* user = nullptr)
 	{
 		assert(source);
-		graph_node*& gn = source->gid_;
-		if (nullptr == gn) gn = new graph_node();
+		graph_manager*& gn = source->g_man_;
+		if (nullptr == gn) gn = new graph_manager();
 		if (nullptr == user) user = source;
 		gn->users_.emplace(user);
 		return gn;
 	}
 
-	graph_node (const graph_node&) = delete;
+	graph_manager (const graph_manager&) = delete;
 
-	graph_node (graph_node&&) = delete;
+	graph_manager (graph_manager&&) = delete;
 
 	void suicide (iconnector<T>* user)
 	{
@@ -278,53 +271,57 @@ struct iconnector<T>::graph_node
 		if (users_.empty()) delete this;
 	}
 
-	void consume (graph_node* other)
+	void consume (graph_manager* other)
 	{
 		if (this == other) return;
-		while (false == other->jobs_.empty())
+		while (false == other->updates_.empty())
 		{
-			jobs_.push(other->jobs_.top());
-			other->jobs_.pop();
+			updates_.push(other->updates_.top());
+			other->updates_.pop();
 		}
-		freeze_ = freeze_ && other->freeze_;
+		update_map_.insert(other->update_map_.begin(), other->update_map_.end());
 		std::unordered_set<iconnector<T>*> otherusers = other->users_;
 		for (iconnector<T>* ouser : otherusers)
 		{
 			other->suicide(ouser);
-			ouser->gid_ = this;
+			ouser->g_man_ = this;
 		}
 		users_.insert(otherusers.begin(), otherusers.end());
 	}
 
-	void push (iconnector<T>* icon, size_t argidx)
+	void add_update (iconnector<T>* dependent, std::function<void(void)> update)
 	{
-		job_map_[icon].push_back(argidx);
-		jobs_.push(icon);
+		// assert dependent is in users_
+		if (update_map_.end() == update_map_.find(dependent))
+		{
+			updates_.push(dependent);
+			update_map_[dependent] = update;
+		}
 	}
 
-	bool empty (void) const { return jobs_.empty(); }
-
-	void job_execute (void)
+	void update (void)
 	{
-		if (jobs_.empty()) return;
-		iconnector<T>* headconn = jobs_.top();
-		headconn->update(job_map_[headconn]);
-		job_map_.erase(headconn);
-		jobs_.pop();
+		while (false == updates_.empty())
+		{
+			iconnector<T>* iconn = updates_.top();
+			auto updater = update_map_[iconn];
+			updates_.pop();
+			update_map_.erase(iconn);
+			updater();
+			iconn->notify(UPDATE);
+		}
 	}
-
-	bool freeze_ = false;
 
 private:
-	job_queue_t<T> jobs_;
+	std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, small_leafset<T> > updates_;
 
-	job_map_t<T> job_map_;
+	std::unordered_map<iconnector<T>*,std::function<void(void)> > update_map_;
 
 	std::unordered_set<iconnector<T>*> users_;
 	
-	graph_node (void) {}
+	graph_manager (void) {}
 	
-	~graph_node (void) {}
+	~graph_manager (void) {}
 };
 
 }

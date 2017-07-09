@@ -124,7 +124,8 @@ variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	variable<double>* leaf, grad_process<double> intermediate_process)
 {
 	const_init<double> wuninit(1);
-	variable<double>* momentum = new variable<double>({}, wuninit, "momentum");
+	variable<double>* momentum = new variable<double>(leaf->get_shape(), wuninit, "momentum");
+	momentum->initialize();
 	momentums_.push_back(momentum); // updater manages momentum variable
 
 	// momentum = discount_factor_ * momentum + (1 - discount_factor_) * gres^2
@@ -136,17 +137,6 @@ variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	auto leaf_update = leaf->assign_sub(leaf_step);
 	return [momentum_update, leaf_update, momentum, dres, leaf_step]()
 	{
-		if (!momentum->good_status())
-		{
-			if (false == dres->good_status())
-			{
-				throw std::runtime_error(dres->get_label() + " is unallocated");
-			}
-			momentum->initialize(dres->get_shape());
-		}
-		iconnector<double>* conner = static_cast<iconnector<double>*>(leaf_step.get());
-		conner->update_status(false);
-		conner->update_status(true);
 		momentum_update();
 		leaf_update();
 	};

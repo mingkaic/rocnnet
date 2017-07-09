@@ -36,45 +36,28 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 }
 
 template <typename T>
-inline void elementary_check (const varptr<T>& a, const varptr<T>& b, transfer_func<T>* trans)
-{
-	if (a->good_status() && b->good_status())
-	{
-		try
-		{
-			trans->calc_shape({a->get_shape(), b->get_shape()});
-		}
-		catch (std::exception&)
-		{
-			delete trans;
-			throw;
-		}
-	}
-}
-
-template <typename T>
 static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
 	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst && *a == (T) 0)
+	if (aconst && *aconst == (T) 0)
 	{
 		out = b;
 	}
-	else if (aconst && 1 == a->get_shape().n_elems())
+	else if (aconst && 1 == aconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(a);
+		std::vector<T> outconst = expose<T>(aconst);
 		out = outconst[0] + b;
 	}
-	else if (bconst && *b == (T) 0)
+	else if (bconst && *bconst == (T) 0)
 	{
 		out = a;
 	}
-	else if (bconst && 1 == b->get_shape().n_elems())
+	else if (bconst && 1 == bconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(b);
+		std::vector<T> outconst = expose<T>(bconst);
 		out = a + outconst[0];
 	}
 	if (nullptr != out.get())
@@ -82,7 +65,6 @@ static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 		delete Nf;
 		return out;
 	}
-	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
 	{
@@ -113,22 +95,22 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		out = constant<T>::get(0);
 	}
-	else if (aconst && *a == (T) 0)
+	else if (aconst && *aconst == (T) 0)
 	{
 		out = -b;
 	}
-	else if (aconst && 1 == a->get_shape().n_elems())
+	else if (aconst && 1 == aconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(a);
+		std::vector<T> outconst = expose<T>(aconst);
 		out = outconst[0] - b;
 	}
-	else if (bconst && *b == (T) 0)
+	else if (bconst && *bconst == (T) 0)
 	{
 		out = a;
 	}
-	else if (bconst && 1 == b->get_shape().n_elems())
+	else if (bconst && 1 == bconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(b);
+		std::vector<T> outconst = expose<T>(bconst);
 		out = a - outconst[0];
 	}
 	if (nullptr != out.get())
@@ -136,7 +118,6 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 		delete Nf;
 		return out;
 	}
-	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
 	{
@@ -165,20 +146,20 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		out = pow(a, 2);
 	}
-	else if (aconst && *a == (T) 0)
+	else if (aconst && *aconst == (T) 0)
 	{
 		out = constant<T>::get(0);
 	}
-	else if (aconst && 1 == a->get_shape().n_elems())
+	else if (aconst && 1 == aconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(a);
+		std::vector<T> outconst = expose<T>(aconst);
 		out = outconst[0] * b;
 	}
-	else if (bconst && *b == (T) 0)
+	else if (bconst && *bconst == (T) 0)
 	{
 		out = constant<T>::get(0);
 	}
-	else if (bconst && 1 == b->get_shape().n_elems())
+	else if (bconst && 1 == bconst->get_shape().n_elems())
 	{
 		std::vector<T> outconst = expose<T>(b);
 		out = a * outconst[0];
@@ -188,7 +169,6 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 		delete Nf;
 		return out;
 	}
-	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
 	{
@@ -219,24 +199,24 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		out = constant<T>::get(1);
 	}
-	else if (aconst && *a == (T)0)
+	else if (aconst && *aconst == (T)0)
 	{
 		out = constant<T>::get(0);
 	}
-	else if (aconst && 1 == a->get_shape().n_elems())
+	else if (aconst && 1 == aconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(a);
+		std::vector<T> outconst = expose<T>(aconst);
 		out = outconst[0] / b;
 	}
-	else if (bconst && *b == (T)0)
+	else if (bconst && *bconst == (T)0)
 	// don't allow infinity
 	{
 		delete Nf;
 		throw std::logic_error("divide by constant node of value zero");
 	}
-	else if (bconst && 1 == b->get_shape().n_elems())
+	else if (bconst && 1 == bconst->get_shape().n_elems())
 	{
-		std::vector<T> outconst = expose<T>(b);
+		std::vector<T> outconst = expose<T>(bconst);
 		out = a / outconst[0];
 	}
 	if (nullptr != out.get())
@@ -244,7 +224,6 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 		delete Nf;
 		return out;
 	}
-	elementary_check(a, b, Nf);
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
 	{
@@ -404,14 +383,16 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 {
 	if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(root.get()))
 	{
-		typename inode<T>::GRAD_CACHE temp;
-		branch->get_leaves(temp);
+		std::unordered_set<ileaf<T>*> temp = branch->get_leaves();
 		std::vector<variable<T>*> leef;
-		for (auto tpair : temp)
+		for (ileaf<T>* ilef : temp)
 		{
-			leef.push_back(tpair.first);
+			if (variable<T>* var = dynamic_cast<variable<T>*>(ilef))
+			{
+				leef.push_back(var);
+			}
 		}
-		iconn->set_jacobian([axis](inode<T>* root, variable<T>*) -> inode<T>*
+		iconn->set_jacobian([axis](inode<T>* root, NODE_MAN<T>) -> inode<T>*
 		{
 			return reduce_sum(varptr<T>(root), axis);
 		}, leef);
@@ -421,6 +402,7 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 template <typename T>
 varptr<T> identity (varptr<T> x)
 {
+	if (nullptr == x.get()) return nullptr;
 	std::string opname = "identity";
 	std::unordered_set<inode<T>*> audience;
 	if (x->find_audience(opname, audience))
@@ -433,10 +415,9 @@ varptr<T> identity (varptr<T> x)
 		assert(n == 1);
 		return *(group[0]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return grad;
 	}, opname);
 	out->extract_metadata(x.get());
@@ -446,7 +427,7 @@ varptr<T> identity (varptr<T> x)
 template <typename T>
 varptr<T> operator + (const varptr<T> a)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -468,10 +449,9 @@ varptr<T> operator + (const varptr<T> a)
 		assert(n == 1);
 		return +(*group[0]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return +grad;
 	}, opname);
 	out->extract_metadata(a.get());
@@ -481,7 +461,7 @@ varptr<T> operator + (const varptr<T> a)
 template <typename T>
 varptr<T> operator - (const varptr<T> a)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -512,10 +492,9 @@ varptr<T> operator - (const varptr<T> a)
 		assert(n == 1);
 		return -(*group[0]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return -grad;
 	}, opname);
 	out->extract_metadata(a.get());
@@ -525,7 +504,7 @@ varptr<T> operator - (const varptr<T> a)
 template <typename T>
 varptr<T> sin (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -547,12 +526,11 @@ varptr<T> sin (const varptr<T> a)
 		assert(n == 1);
 		return std::sin((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sin'(f(x)) = f'(x)*cos(f(x))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return grad * cos(a);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -562,7 +540,7 @@ varptr<T> sin (const varptr<T> a)
 template <typename T>
 varptr<T> cos (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -584,12 +562,11 @@ varptr<T> cos (const varptr<T> a)
 		assert(n == 1);
 		return std::cos((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// cos'(f(x)) = -f'(x)*sin(f(x))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return -grad * sin(a);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -599,7 +576,7 @@ varptr<T> cos (const varptr<T> a)
 template <typename T>
 varptr<T> tan (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -621,14 +598,13 @@ varptr<T> tan (const varptr<T> a)
 		assert(n == 1);
 		return std::tan((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sec'(f(x)) = f'(x)*sec^2(f(x))
 		// better with = f'(x)/cos^2(f(x))
-		varptr<T> a = args.front();
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		varptr<T> denom = cos(a);
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
 		return grad / (denom * denom);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -638,7 +614,7 @@ varptr<T> tan (const varptr<T> a)
 template <typename T>
 varptr<T> csc (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -660,13 +636,12 @@ varptr<T> csc (const varptr<T> a)
 		assert(n == 1);
 		return 1/std::sin((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
 		// better with -f'(x)/(sin(f(x)*tan(f(x))))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return -grad / (sin(a) * tan(a));
 	}, opname);
 	out->extract_metadata(a.get());
@@ -676,7 +651,7 @@ varptr<T> csc (const varptr<T> a)
 template <typename T>
 varptr<T> sec (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -698,13 +673,12 @@ varptr<T> sec (const varptr<T> a)
 		assert(n == 1);
 		return 1/std::cos((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
 		// better with f'(x)*tan(f(x))/cos(f(x))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return grad * tan(a) / cos(a);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -714,7 +688,7 @@ varptr<T> sec (const varptr<T> a)
 template <typename T>
 varptr<T> cot (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -736,13 +710,12 @@ varptr<T> cot (const varptr<T> a)
 		assert(n == 1);
 		return std::cos((*group[0])) / std::sin((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
-		varptr<T> a = args.front();
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		varptr<T> b = csc(a);
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
 		return -grad * b * b;
 	}, opname);
 	out->extract_metadata(a.get());
@@ -752,7 +725,7 @@ varptr<T> cot (const varptr<T> a)
 template <typename T>
 varptr<T> exp (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -774,12 +747,11 @@ varptr<T> exp (const varptr<T> a)
 		assert(n == 1);
 		return std::exp((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// exp'(f(x)) = f'(x)*exp(f(x))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return grad * exp(a);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -789,7 +761,7 @@ varptr<T> exp (const varptr<T> a)
 template <typename T>
 varptr<T> sqrt (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -811,12 +783,11 @@ varptr<T> sqrt (const varptr<T> a)
 		assert(n == 1);
 		return std::sqrt((*group[0]));
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return grad / ((T)2 * sqrt(a));
 	}, opname);
 	out->extract_metadata(a.get());
@@ -826,7 +797,7 @@ varptr<T> sqrt (const varptr<T> a)
 template <typename T>
 varptr<T> pow (const varptr<T> a, double scalar)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (scalar == 0)
 	{
 		return constant<T>::get(1);
@@ -856,12 +827,11 @@ varptr<T> pow (const varptr<T> a, double scalar)
 		assert(n == 1);
 		return std::pow((*group[0]), scalar);
 	})),
-	[scalar](std::vector<inode<T>*> args, variable<T>* leaf)
+	[scalar](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return (T)scalar * grad * pow(a, scalar-1);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -872,7 +842,7 @@ template <typename T>
 varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
 	assert(min < max); // todo: maybe throw to indicate usage error
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -898,11 +868,10 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		else if (max < v) v = max;
 		return v;
 	})),
-	[min, max](std::vector<inode<T>*> args, variable<T>* leaf)
+	[min, max](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 		return grad * clip_val(a, min, max);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -912,7 +881,7 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 template <typename T>
 varptr<T> l2norm (const varptr<T> a)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		T l2norm = 0;
@@ -952,10 +921,9 @@ varptr<T> l2norm (const varptr<T> a)
 		}
 		return std::sqrt(l2norm);
 	}),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args[0]->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return l2norm(grad);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -966,7 +934,7 @@ template <typename T>
 varptr<T> clip_norm (const varptr<T> a, T cap)
 {
 	assert(cap > 0); // todo: maybe throw to indicate usage error
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		T l2norm = 0;
@@ -1004,11 +972,10 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 		}
 		return elem;
 	})),
-	[cap](std::vector<inode<T>*> args, variable<T>* leaf)
+	[cap](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> a = args.front();
-		varptr<T> grad;
-		a->get_leaf(grad, leaf);
+		varptr<T> a = args.front().first;
+		varptr<T> grad = args.front().second;
 	   	return grad * clip_norm(a, cap);
 	}, opname);
 	out->extract_metadata(a.get());
@@ -1018,13 +985,13 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == b.get()) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return b;
 	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
 	{
-		if (*b == (T)0)
+		if (*bconst == (T)0)
 		{
 			return constant<T>::get(a);
 		}
@@ -1048,12 +1015,11 @@ varptr<T> operator + (T a, const varptr<T> b)
 	 	assert(n == 1);
 		return a + *(group[0]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = g'(x)
-		varptr<T> bg;
-		args.at(0)->get_leaf(bg, leaf);
-		return bg;
+		varptr<T> grad = args.at(0).second;
+		return grad;
 	}, opname);
 	out->extract_metadata(b.get());
 	return out;
@@ -1062,10 +1028,10 @@ varptr<T> operator + (T a, const varptr<T> b)
 template<typename T>
 varptr<T> operator + (const varptr<T> a, T b)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
-		if (*a == (T)0)
+		if (*aconst == (T)0)
 		{
 			return constant<T>::get(b);
 		}
@@ -1090,12 +1056,11 @@ varptr<T> operator + (const varptr<T> a, T b)
 		assert(n == 1);
 		return *(group[0]) + b;
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)
-		varptr<T> ag;
-		args.at(0)->get_leaf(ag, leaf);
-		return ag;
+		varptr<T> grad = args.at(0).second;
+		return grad;
 	}, opname);
 	out->extract_metadata(a.get());
 	return out;
@@ -1104,7 +1069,7 @@ varptr<T> operator + (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1125,13 +1090,11 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x) + g'(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return ag + bg;
 	});
 }
@@ -1139,13 +1102,13 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator - (T a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == b.get()) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (a == (T)0) return -b;
 	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
 	{
-		if (*b == (T)0)
+		if (*bconst == (T)0)
 		{
 			return constant<T>::get(a);
 		}
@@ -1169,12 +1132,11 @@ varptr<T> operator - (T a, const varptr<T> b)
 		assert(n == 1);
 		return a - *(group[0]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = -g'(x)
-		varptr<T> bg;
-		args.at(0)->get_leaf(bg, leaf);
-		return -bg;
+		varptr<T> grad = args.at(0).second;
+		return -grad;
 	}, opname);
 	out->extract_metadata(b.get());
 	return out;
@@ -1183,10 +1145,10 @@ varptr<T> operator - (T a, const varptr<T> b)
 template<typename T>
 varptr<T> operator - (const varptr<T> a, T b)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
-		if (*a == (T)0)
+		if (*aconst == (T)0)
 		{
 			return constant<T>::get(-b);
 		}
@@ -1211,12 +1173,11 @@ varptr<T> operator - (const varptr<T> a, T b)
 		assert(n == 1);
 		return *(group[0]) - b;
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)
-		varptr<T> ag;
-		args.at(0)->get_leaf(ag, leaf);
-		return ag;
+		varptr<T> grad = args.at(0).second;
+		return grad;
 	}, opname);
 	out->extract_metadata(a.get());
 	return out;
@@ -1225,7 +1186,7 @@ varptr<T> operator - (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1246,13 +1207,11 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		assert(n == 2);
 		return *(group[0]) - *(group[1]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x) - g'(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return ag - bg;
 	});
 }
@@ -1260,17 +1219,17 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator * (T a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == b.get()) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
 	// optimize only applies to constants
 	{
-		if (*b == (T)0 || 0 == a)
+		if (*bconst == (T)0 || 0 == a)
 		{
 			return constant<T>::get(0);
 		}
-		if (*b == (T)1)
+		if (*bconst == (T)1)
 		{
 			return constant<T>::get(a);
 		}
@@ -1297,12 +1256,11 @@ varptr<T> operator * (T a, const varptr<T> b)
 		assert(n == 1);
 		return a * *(group[0]);
 	})),
-	[a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = c*g'(x)
-		varptr<T> bg;
-		args.at(0)->get_leaf(bg, leaf);
-		return a * bg;
+		varptr<T> grad = args.at(0).second;
+		return a * grad;
 	}, opname);
 	out->extract_metadata(b.get());
 	return out;
@@ -1311,15 +1269,15 @@ varptr<T> operator * (T a, const varptr<T> b)
 template<typename T>
 varptr<T> operator * (const varptr<T> a, T b)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	// optimize only applies to constants
 	{
-		if (*a == (T)0 || 0 == b)
+		if (*aconst == (T)0 || 0 == b)
 		{
 			return constant<T>::get(0);
 		}
-		if (*a == (T)1)
+		if (*aconst == (T)1)
 		{
 			return constant<T>::get(b);
 		}
@@ -1346,12 +1304,11 @@ varptr<T> operator * (const varptr<T> a, T b)
 		assert(n == 1);
 		return *(group[0]) * b;
 	})),
-	[b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = c*f'(x)
-		varptr<T> ag;
-		args.at(0)->get_leaf(ag, leaf);
-		return b * ag;
+		varptr<T> grad = args.at(0).second;
+		return b * grad;
 	}, opname);
 	out->extract_metadata(a.get());
 	return out;
@@ -1360,7 +1317,7 @@ varptr<T> operator * (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1381,15 +1338,13 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		assert(n == 2);
 		return *(group[0]) * *(group[1]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return ag * b + bg * a;
 	});
 }
@@ -1397,18 +1352,18 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 template<typename T>
 varptr<T> operator / (T a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == b.get()) return nullptr;
 	// we don't want to return constant a otherwise it could leak if we're returning root
 	// (roots will never have an audience, so it will never self-destroy)
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
 	if (bconst)
 	// optimize only applies to constants
 	{
-		if (*b == (T)0)
+		if (*bconst == (T)0)
 		{
 			throw std::logic_error("divide by constant node of value zero");
 		}
-		if (*b == (T)1)
+		if (*bconst == (T)1)
 		{
 			return constant<T>::get(a);
 		}
@@ -1436,12 +1391,11 @@ varptr<T> operator / (T a, const varptr<T> b)
 		assert(n == 1);
 		return a / *(group[0]);
 	})),
-	[a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
-		varptr<T> b = args.at(0);
-		varptr<T> bg;
-		b->get_leaf(bg, leaf);
+		varptr<T> b = args.at(0).first;
+		varptr<T> bg = args.at(0).second;
 		return -a * bg / (b * b);
 	}, opname);
 	out->extract_metadata(b.get());
@@ -1451,11 +1405,11 @@ varptr<T> operator / (T a, const varptr<T> b)
 template<typename T>
 varptr<T> operator / (const varptr<T> a, T b)
 {
-	if (nullptr == (inode<T>*)a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	if (aconst)
 	{
-		if (*a == (T)0)
+		if (*aconst == (T)0)
 		{
 			return constant<T>::get(0);
 		}
@@ -1484,11 +1438,10 @@ varptr<T> operator / (const varptr<T> a, T b)
 		assert(n == 1);
 		return *(group[0]) / b;
 	})),
-	[b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)/c
-		varptr<T> ag;
-		args.at(0)->get_leaf(ag, leaf);
+		varptr<T> ag = args.at(0).second;
 		return ag / b;
 	}, opname);
 	out->extract_metadata(a.get());
@@ -1498,7 +1451,7 @@ varptr<T> operator / (const varptr<T> a, T b)
 template <typename T>
 varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	optional<size_t> aaxis = a->get_metadata("grouping");
 	optional<size_t> baxis = b->get_metadata("grouping");
 	if (aaxis)
@@ -1519,15 +1472,13 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		assert(n == 2);
 		return *(group[0]) / *(group[1]);
 	})),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return (ag * b - bg * a) / (b * b);
 	});
 }
@@ -1535,7 +1486,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 template <typename T>
 varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
 	binary_axial_left(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
@@ -1543,12 +1494,10 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
 	}), axis_a),
-	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return add_axial_a(ag, bg, axis_a);
 	});
 	axial_set_jacobian(addout, a, axis_a);
@@ -1558,7 +1507,7 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 template <typename T>
 varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
 	binary_axial_right(
 	ELEM_FUNC<T>([](const T** group, size_t n) -> T
@@ -1566,12 +1515,10 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		assert(n == 2);
 		return *(group[0]) + *(group[1]);
 	}), axis_b),
-	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return add_axial_b(ag, bg, axis_b);
 	});
 	axial_set_jacobian(addout, b, axis_b);
@@ -1581,7 +1528,7 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 template <typename T>
 varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
 	binary_axial_left<T>(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
@@ -1589,12 +1536,10 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		assert(n == 2);
 		return *(group[0]) - *(group[1]);
 	}), axis_a),
-	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return sub_axial_a(ag, bg, axis_a);
 	});
 	axial_set_jacobian(subout, a, axis_a);
@@ -1604,7 +1549,7 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 template <typename T>
 varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
 	binary_axial_right<T>(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
@@ -1612,12 +1557,10 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		assert(n == 2);
 		return *(group[0]) - *(group[1]);
 	}), axis_b),
-	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> ag;
-		varptr<T> bg;
-		args.at(0)->get_leaf(ag, leaf);
-		args.at(1)->get_leaf(bg, leaf);
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return sub_axial_b(ag, bg, axis_b);
 	});
 	axial_set_jacobian(subout, b, axis_b);
@@ -1627,22 +1570,20 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 template <typename T>
 varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
 	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) * *(group[1]);
 	}), axis_a),
-	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return mul_axial_a(ag, b, axis_a) + mul_axial_a(a, bg, axis_a);
 	});
 	axial_set_jacobian(mulout, a, axis_a);
@@ -1652,22 +1593,20 @@ varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 template <typename T>
 varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
 	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) * *(group[1]);
 	}), axis_b),
-	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return mul_axial_b(ag, b, axis_b) + mul_axial_b(a, bg, axis_b);
 	});
 	axial_set_jacobian(mulout, b, axis_b);
@@ -1677,22 +1616,20 @@ varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 template <typename T>
 varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
 	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) / *(group[1]);
 	}), axis_a),
-	[axis_a](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return (mul_axial_a(ag, b, axis_a) - mul_axial_b(bg, a, axis_a)) / pow(b, 2);
 	});
 	axial_set_jacobian(divout, a, axis_a);
@@ -1702,22 +1639,20 @@ varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 template <typename T>
 varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
-	if (nullptr == (inode<T>*)a || nullptr == (inode<T>*)b) return nullptr;
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
 	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
 		return *(group[0]) / *(group[1]);
 	}), axis_b),
-	[axis_b](std::vector<inode<T>*> args, variable<T>* leaf)
+	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
-		varptr<T> ag;
-		varptr<T> bg;
-		varptr<T> a = args.at(0);
-		varptr<T> b = args.at(1);
-		a->get_leaf(ag, leaf);
-		b->get_leaf(bg, leaf);
+		varptr<T> a = args.at(0).first;
+		varptr<T> b = args.at(1).first;
+		varptr<T> ag = args.at(0).second;
+		varptr<T> bg = args.at(1).second;
 		return (mul_axial_b(ag, b, axis_b) - mul_axial_a(bg, a, axis_b)) / pow(b, 2);
 	});
 	axial_set_jacobian(divout, b, axis_b);

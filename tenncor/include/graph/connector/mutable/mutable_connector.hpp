@@ -59,7 +59,7 @@ class mutable_connector : public iconnector<T>
 		// inode METHODS
 		virtual tensorshape get_shape(void);
 		virtual tensor<T>* get_eval(void);
-		virtual bindable_toggle<T>* get_gradient(void);
+		virtual bindable_toggle<T>* derive(void);
 		virtual functor<T>* get_jacobian (void);
 
 		// ICONNECTOR METHODS

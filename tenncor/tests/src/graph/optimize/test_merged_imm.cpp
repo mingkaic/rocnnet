@@ -202,7 +202,7 @@ TEST(MERGE_IMM, Constructor_M000)
 	}
 	tensorshape origshape = root->get_shape();
 	std::vector<double> origdata = expose(root.get());
-	inode<double>* back = root->get_gradient(leaves[0]);
+	inode<double>* back = root->derive(leaves[0]);
 	tensorshape backshape = back->get_shape();
 	std::vector<double> backdata = expose(back);
 	std::vector<inode<double>*> intermediate = root.get()->get_arguments();
@@ -226,7 +226,7 @@ TEST(MERGE_IMM, Constructor_M000)
 		EXPECT_EQ(origdata[i], mergdata[i]);
 	}
 	// 2: same backward node values
-	inode<double>* mback = mroot->get_gradient(leaves[0]);
+	inode<double>* mback = mroot->derive(leaves[0]);
 	ASSERT_TRUE(tensorshape_equal(backshape, mback->get_shape()));
 	std::vector<double> mbackdata = expose(mback);
 	for (size_t i = 0, n = backdata.size(); i < n; i++)

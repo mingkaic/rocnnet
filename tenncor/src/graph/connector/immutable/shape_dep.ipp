@@ -124,12 +124,12 @@ inode<T>* shape_dep<T>::move_impl (void)
 }
 
 template <typename T>
-void shape_dep<T>::forward_pass (std::vector<size_t>)
+void shape_dep<T>::forward_pass (void)
 {
 	std::vector<tensorshape> shapes;
 	for (subject* sub : this->dependencies_)
 	{
-		shapes.push_back(static_cast<inode<T>*>(sub)->get_shape());
+		shapes.push_back(this->take_eval(static_cast<inode<T>*>(sub))->get_shape());
 	}
 	(*shaper_)(this->data_, shapes);
 }

@@ -44,13 +44,10 @@ constant<T>* constant<T>::get (std::vector<T> raw, tensorshape shape)
 }
 
 template <typename T>
-varptr<T> constant<T>::get_gradient (inode<T>*)
+varptr<T> constant<T>::derive (inode<T>*)
 {
 	return constant<T>::get_shared_zero();
 }
-
-template <typename T>
-void constant<T>::get_leaves (typename inode<T>::GRAD_CACHE&) const {}
 
 template <typename T>
 void constant<T>::be_managed (void)
@@ -59,9 +56,9 @@ void constant<T>::be_managed (void)
 }
 
 template <typename T>
-void constant<T>::get_leaf (varptr<T>& out, variable<T>*)
+inode<T>* constant<T>::get_gradient (variable<T>*)
 {
-	out = constant<T>::get_shared_zero();
+	return constant<T>::get_shared_zero();
 }
 
 template <typename T>
@@ -125,6 +122,20 @@ template <typename T>
 inode<T>* constant<T>::move_impl (void)
 {
 	return nullptr;
+}
+
+template <typename T>
+bool operator == (constant<T>& c, T scalar)
+{
+	std::vector<T> res = expose<T>(&c);
+	return 1 == res.size() && scalar == res[0];
+}
+
+template <typename T>
+bool operator != (constant<T>& c, T scalar)
+{
+	std::vector<T> res = expose<T>(&c);
+	return 1 != res.size() || scalar != res[0];
 }
 
 }
