@@ -36,7 +36,7 @@ bool write_inorder (std::vector<inode<T>*>& serialvec, std::string label, std::s
 		std::string node_label = label + ":" + std::to_string(i);
 		nnet::inode<T>* serialelem = serialvec[i];
 		tenncor::tensor_proto proto;
-		const nnet::tensor<T>* serialtens = serialelem->get_eval();
+		const nnet::tensor<T>* serialtens = serialelem->eval();
 		if (nullptr == serialtens) continue; // we can't serialize something not initialized
 		serialtens->serialize(&proto);
 		(*repo.mutable_node_map())[node_label] = proto;

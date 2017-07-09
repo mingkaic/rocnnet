@@ -16,7 +16,7 @@ namespace rocnnet
 {
 
 gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
-	nnet::gd_updater<double>& updater, std::string scope) :
+	nnet::gd_updater& updater, std::string scope) :
 ml_perceptron(n_input, hiddens, scope),
 updater_(updater.clone())
 {
@@ -30,8 +30,9 @@ updater_(updater.clone())
 
 gd_net::~gd_net (void)
 {
-	delete train_in_;
-	delete expected_out_;
+	if (updater_) delete updater_;
+	if (train_in_) delete train_in_;
+	if (expected_out_) delete expected_out_;
 }
 
 gd_net* gd_net::clone (std::string scope)
@@ -73,12 +74,12 @@ void gd_net::train (std::vector<double>& train_in, std::vector<double>& expected
 {
 	*train_in_ = train_in;
 	*expected_out_ = expected_out;
-	error_->update_status(true); // freeze
+	error_->freeze_status(true); // freeze
 	for (auto& trainer : updates_)
 	{
 		trainer();
 	}
-	error_->update_status(false); // update again
+	error_->freeze_status(false); // update again
 }
 
 gd_net::gd_net (const gd_net& other, std::string& scope) :
@@ -116,10 +117,10 @@ void gd_net::train_setup (void)
 void gd_net::copy_helper (const gd_net& other)
 {
 	if (updater_) delete updater_;
-	updater_ = other.updater_->clone();
-	updates_.clear();
 	if (train_in_) delete train_in_;
 	if (expected_out_) delete expected_out_;
+	updater_ = other.updater_->clone();
+	updates_.clear();
 	train_in_ = other.train_in_->clone();
 	expected_out_ = other.expected_out_->clone();
 	train_setup();

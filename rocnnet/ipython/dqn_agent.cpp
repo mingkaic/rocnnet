@@ -45,9 +45,7 @@ dqn_agent::dqn_agent (unsigned int n_input,
 		hiddens.push_back({hiddensizes[i], act});
 	}
 
-	nnet::rmspropupdater learner;
-	learner.learning_rate_ = learning_rate;
-	learner.discount_factor_ = decay;
+	nnet::rmspropupdater learner(learning_rate, decay);
 
 	rocnnet::dqn_param param;
 	param.train_interval_ = train_every_nth;

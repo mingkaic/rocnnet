@@ -41,7 +41,7 @@ public:
 
 	// >>>> BACKWARD DATA <<<<
 	//! get gradient wrt some node
-	virtual varptr<T> get_gradient (inode<T>* wrt);
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	// >>>> IVARIABLE SPECIAL <<<<
 	//! determine whether leaf node can be initiated

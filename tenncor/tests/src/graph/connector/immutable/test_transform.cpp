@@ -57,13 +57,13 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	variable<double> var(shape, rinit, "unar_var");
 	var.initialize();
 	{
-		const nnet::tensor<double>* vartens = var.get_eval();
+		const nnet::tensor<double>* vartens = var.eval();
 		ASSERT_NE(nullptr, vartens);
 		ASSERT_TRUE(vartens->is_alloc());
 	}
 	varptr<double> res = func(varptr<double>(&var), paramer(shape));
 	{
-		const nnet::tensor<double>* restens = res->get_eval();
+		const nnet::tensor<double>* restens = res->eval();
 		ASSERT_NE(nullptr, restens);
 		ASSERT_TRUE(restens->is_alloc());
 	}
@@ -71,9 +71,9 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> varout = expose(&var);
 	std::vector<double> expectout = expect_transfer(varout, shape);
-	nnet::inode<double>* vgrad = var.get_gradient(&var);
+	nnet::inode<double>* vgrad = var.derive(&var);
 	{
-		const nnet::tensor<double>* vgradtens = vgrad->get_eval();
+		const nnet::tensor<double>* vgradtens = vgrad->eval();
 		ASSERT_NE(nullptr, vgradtens);
 		ASSERT_TRUE(vgradtens->is_alloc());
 	}
@@ -91,9 +91,9 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	// test derivative
 	if ((bool) grad_transfer && (bool) grad_shape)
 	{
-		tensorshape gradoshape = (*grad_shape)(var.get_gradient(&var)->get_shape());
+		tensorshape gradoshape = (*grad_shape)(var.derive(&var)->get_shape());
 		std::vector<double> gradout = (*grad_transfer)(expose(vgrad), vgrad->get_shape());
-		const tensor<double>* backt = res->get_gradient(&var)->get_eval();
+		const tensor<double>* backt = res->derive(&var)->eval();
 		tensorshape outgshape = backt->get_shape();
 		std::vector<double> rgout = backt->expose();
 		EXPECT_TRUE(tensorshape_equal(gradoshape, outgshape));
@@ -105,7 +105,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	}
 	else
 	{
-		EXPECT_THROW(res->get_gradient(&var), std::exception);
+		EXPECT_THROW(res->derive(&var), std::exception);
 	}
 
 	// Behavior K000
@@ -263,7 +263,7 @@ TEST(TRANSFORM, Extend_K003To004)
 	rand_uniform<double> rinit(2, 12);
 	variable<double> var(rshape, rinit, "unar_var");
 	varptr<double> zaro = extend(varptr<double>(&var), extend_index, 0);
-	const tensor<double>* ztens = zaro->get_eval();
+	const tensor<double>* ztens = zaro->eval();
 	EXPECT_EQ((size_t) 1, ztens->get_shape().n_elems());
 	std::vector<double> zvec = ztens->expose();
 	ASSERT_EQ((size_t) 1, zvec.size());

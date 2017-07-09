@@ -15,7 +15,7 @@ LOGDIR=${BUILDDIR}/log
 PBX_CACHE=${1:-./prototxt}
 ERRORLOG=${LOGDIR}/test_out.txt
 FUZZLOG=fuzz.out
-TIMEOUT=300
+TIMEOUT=600
 
 assert_cmd() {
     eval timeout -s SIGKILL ${TIMEOUT} $*
@@ -61,15 +61,19 @@ do
     echo "still running! 3 tests complete"
 done
 
+rm ${ERRORLOG}
+
 # rocnnet demos
 echo "running gd_demo"
+assert_cmd "valgrind --tool=memcheck ${BINDIR}/gd_demo $PBX_CACHE 5 1"
 assert_cmd "${BINDIR}/gd_demo $PBX_CACHE"
 echo "gd_demo complete"
 
-#echo "running C++ dq_demo"
-#assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
-#echo "C++ dq_demo complete"
-#
+echo "running basic dq_demo"
+assert_cmd "valgrind --tool=memcheck ${BINDIR}/dq_demo $PBX_CACHE 1 5"
+assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
+echo "basic dq_demo complete"
+
 #echo "running python dq_demo"
 #assert_cmd "python ${BUILDDIR}/pydemo/dq_demo.py"
 

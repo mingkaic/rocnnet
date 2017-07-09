@@ -358,38 +358,37 @@ new transfer_func<T>(
 		}
 		return accum;
 	})),
-[](std::vector<inode<T>*>, variable<T>*)
+[](std::vector<std::pair<inode<T>*,inode<T>*> >)
 {
 	return constant<T>::get_shared_one();
 }, nnutils::formatter() << "matmul" << transposeA << transposeB)
 {
 	if (base_immutable<T>* imma = dynamic_cast<base_immutable<T>*>(a)) imma->mergible_ = false;
 	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b)) immb->mergible_ = false;
-	auto jtrans = [a, b, transposeA, transposeB](
-		inode<T>* root, variable<T>* wrt) -> inode<T>*
-	{
-		varptr<T> grada;
-		varptr<T> gradb;
-		a->get_leaf(grada, wrt);
-		b->get_leaf(gradb, wrt);
 
-		if (grada->good_status() && *grada == (T)0 &&
-			gradb->good_status() && *gradb == (T)0)
+	auto jtrans = [a, b, transposeA, transposeB](inode<T>* root, NODE_MAN<T> grad_getter) -> inode<T>*
+	{
+		varptr<T> grada = grad_getter(a);
+		varptr<T> gradb = grad_getter(b);
+
+		constant<T>* aconst = dynamic_cast<constant<T>*>(grada.get());
+		constant<T>* bconst = dynamic_cast<constant<T>*>(gradb.get());
+		if (aconst && *aconst == (T)0 && bconst && *bconst == (T)0)
 		{
 			return root;
 		}
 		varptr<T> mA;
 		varptr<T> mB;
-		if (1 == root->get_shape().n_elems())
-		{
-			mA = root;
-			mB = root;
-		}
-		else
-		{
+//		if (1 == root->get_shape().n_elems())
+//		{
+//			mA = root;
+//			mB = root;
+//		}
+//		else
+//		{
 			mA = matmul<T>::get(root, b, false, !transposeB);
 			mB = matmul<T>::get(a, root, !transposeA, false);
-		}
+//		}
 		if (transposeA)
 		{
 			mA = transpose<T>(mA);
@@ -401,12 +400,13 @@ new transfer_func<T>(
 		return mA * grada + mB * gradb;
 	};
 
-	typename inode<T>::GRAD_CACHE leaves;
-	this->get_leaves(leaves);
-	for (auto leaf_pair : leaves)
+	std::unordered_set<ileaf<T>*> leaves = this->get_leaves();
+	for (ileaf<T>* leaf : leaves)
 	{
-		variable<T>* leaf = leaf_pair.first;
-		this->jacobians_[leaf].list_.push_back(jtrans);
+		if (variable<T>* var = dynamic_cast<variable<T>*>(leaf))
+		{
+			this->jacobians_[var].list_.push_back(jtrans);
+		}
 	}
 }
 

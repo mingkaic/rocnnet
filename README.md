@@ -3,7 +3,7 @@
 
 ## Synopsis
 
-ROCNNet is a neural net implemented in C++ using custom library [Tenncor](https://github.com/mingkaic/rocnnet/blob/master/tenncor/README.md).
+ROCNNet is a neural net library implemented in C++ using [Tenncor](https://github.com/mingkaic/rocnnet/blob/master/tenncor/README.md) for automatic differentiation.
 
 ## Build
 

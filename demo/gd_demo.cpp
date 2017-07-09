@@ -39,18 +39,26 @@ static std::vector<double> avgevry2 (std::vector<double>& in)
 
 int main (int argc, char** argv)
 {
+	std::clock_t start;
+	double duration;
 	std::string outdir = ".";
+	size_t n_train = 3000;
+	size_t n_test = 500;
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
+	if (argc > 2)
+	{
+		n_train = std::stoi(std::string(argv[2]));
+	}
+	if (argc > 3)
+	{
+		n_test = std::stoi(std::string(argv[3]));
+	}
 	std::string serialname = "gd_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
-	std::clock_t start;
-	double duration;
-	size_t n_train = 3000;
-	size_t n_test = 500;
 	size_t n_in = 10;
 	size_t n_out = 5;
 	size_t n_batch = 3;
@@ -60,8 +68,7 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	nnet::vgb_updater bgd;
-	bgd.learning_rate_ = 0.9;
+	nnet::vgb_updater bgd(0.9); // learning rate = 0.9
 	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone("trained_gd_net");
@@ -126,7 +133,12 @@ int main (int argc, char** argv)
 	std::cout << "trained mlp error rate: " << trained_err * 100 << "%\n";
 	std::cout << "pretrained mlp error rate: " << pretrained_err * 100 << "%\n";
 
-	if (untrained_err < trained_err) exit_status = 1;
+	// fails if cumulative training is over threshold=250, 
+	// and trained is inferior to untrained
+	if (n_train > 250 && untrained_err < trained_err)
+	{
+		exit_status = 1;
+	}
 
 	if (exit_status == 0)
 	{
@@ -139,6 +151,7 @@ if (rocnnet_record::erec::rec_good)
 #endif /* EDGE_RCD */
 	
 	delete trained_gdn;
+	google::protobuf::ShutdownProtobufLibrary();
 
 	return exit_status;
 }

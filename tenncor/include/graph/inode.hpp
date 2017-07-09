@@ -27,19 +27,16 @@ template <typename T>
 class varptr;
 
 template <typename T>
-class variable;
+class ileaf;
 
 template <typename T>
-class iconnector;
+class variable;
 
 template <typename T>
 class inode : public subject
 {
 public:
 	virtual ~inode (void);
-
-	//! type for mapping leaf nodes to derivative with respect to leaf
-	using GRAD_CACHE = std::unordered_map<variable<T>*,varptr<T> >;
 
 	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
@@ -82,18 +79,18 @@ public:
 	bool find_audience (std::string label, std::unordered_set<inode<T>*>& audience) const;
 
 	// >>>> FORWARD & BACKWARD DATA <<<<
-	//! get forward passing value
-	virtual const tensor<T>* get_eval (void) const = 0;
+	//! get forward passing value, (pull data if necessary)
+	virtual const tensor<T>* eval (void) = 0;
 
 	//! get top-level gradient value, used by root nodes
-	virtual varptr<T> get_gradient (inode<T>* wrt) = 0;
+	virtual varptr<T> derive (inode<T>* wrt) = 0;
 
 	//! utility function: get forward data shape
 	virtual tensorshape get_shape (void) const = 0;
 
 	// >>>> GRAPH STATUS <<<<
 	//! merge/update the gradient/leaf info
-	virtual void get_leaves (GRAD_CACHE& leaves) const = 0;
+	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const = 0;
 
 	// >>>> NODE STATUS <<<<
 	//! check if data is available
@@ -111,11 +108,6 @@ public:
 
 	//! check for special-case numerical data
 	optional<size_t> get_metadata (std::string key) const;
-
-	// >>>> TODO: HIDE THIS <<<<
-	//! grab operational gradient node, used by other nodes
-	//! adds to internal caches if need be
-	virtual void get_leaf (varptr<T>& out, variable<T>* leaf) = 0;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -135,6 +127,19 @@ protected:
 	//! move abstraction function
 	virtual inode<T>* move_impl (void) = 0;
 
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! get forward passing value
+	virtual const tensor<T>* get_eval (void) const = 0;
+
+	//! grab operational gradient node, used by other nodes
+	//! adds to internal caches if need be
+	virtual inode<T>* get_gradient (variable<T>* leaf) = 0;
+
+	const tensor<T>* take_eval (inode<T>* source) const;
+
+	//! allow inheritants to access source's get_gradient with parameter leaf
+	inode<T>* take_gradient (inode<T>* source, variable<T>* leaf) const;
+
 private:
 	//! uniquely identifier for this node
 	const std::string id_ = nnutils::uuid(this);
@@ -148,15 +153,7 @@ private:
 
 //! helper function for exposing node's data (alternatively: node::get_eval()->expose())
 template <typename T>
-std::vector<T> expose (const inode<T>* var);
-
-//! equality check for node against scalars
-template <typename T>
-bool operator == (const inode<T>& c, T scalar);
-
-//! inequality check for node against scalars
-template <typename T>
-bool operator != (const inode<T>& c, T scalar);
+std::vector<T> expose (inode<T>* var);
 
 }
 

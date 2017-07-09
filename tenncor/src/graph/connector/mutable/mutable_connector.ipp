@@ -91,13 +91,13 @@ tensor<T>* mutable_connector<T>::get_eval(void)
 }
 
 template <typename T>
-bindable_toggle<T>* mutable_connector<T>::get_gradient(void)
+bindable_toggle<T>* mutable_connector<T>::derive(void)
 {
 	if (nullptr == ic_)
 	{
 		return nullptr;
 	}
-	return ic_->get_gradient();
+	return ic_->derive();
 }
 
 template <typename T>

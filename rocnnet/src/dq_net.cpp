@@ -16,7 +16,7 @@ namespace rocnnet
 {
 
 dq_net::dq_net (ml_perceptron* brain,
-	nnet::gd_updater<double>& updater,
+	nnet::gd_updater& updater,
 	dqn_param param, std::string scope) :
 params_(param),
 scope_(scope),
@@ -140,7 +140,7 @@ void dq_net::train (void)
 		*next_output_mask_ = new_states_mask;
 		*reward_ = rewards;
 
-		prediction_error_->update_status(true); // freeze
+		prediction_error_->freeze_status(true); // freeze
 		// update source
 		for (auto& trainer : source_updates_)
 		{
@@ -151,7 +151,7 @@ void dq_net::train (void)
 		{
 			trainer();
 		}
-		prediction_error_->update_status(false); // update again
+		prediction_error_->freeze_status(false); // update again
 		iteration_++;
 	}
 	n_train_called_++;
@@ -186,6 +186,8 @@ void dq_net::tear_down (void)
 	if (next_input_) delete next_input_;
 	if (next_output_mask_) delete next_output_mask_;
 	if (reward_) delete reward_;
+	
+	if (updater_) delete updater_;
 	
 	source_qnet_ = nullptr;
 	target_qnet_ = nullptr;
@@ -233,13 +235,7 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 	
 	source_qnet_ = other.source_qnet_->clone(scope);
 	target_qnet_ = other.target_qnet_->clone("target_"+scope);
-	input_ = other.input_->clone();
-	
-	train_input_ = other.train_input_->clone();
-	output_mask_ = other.output_mask_->clone();
-	next_input_ = other.next_input_->clone();
-	next_output_mask_ = other.next_output_mask_->clone();
-	reward_ = other.reward_->clone();
+
 	variable_setup();
 }
 
@@ -263,42 +259,37 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	
 	source_qnet_ = other.source_qnet_->move(scope);
 	target_qnet_ = other.target_qnet_->move("target_"+scope);
-	input_ = other.input_->move();
-	
-	train_input_ = other.train_input_->move();
-	output_mask_ = other.output_mask_->move();
-	next_input_ = other.next_input_->clone();
-	next_output_mask_ = other.next_output_mask_->move();
-	reward_ = other.reward_->move();
+
 	variable_setup();
 }
 
 void dq_net::variable_setup (void)
 {
-	// forward action score computation
 	input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 1}, "observation");
+	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "train_observation");
+	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "next_observation");
+	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_observation_mask");
+	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "rewards");
+	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_noutput(), 0}, "action_mask");
+
+	// forward action score computation
 	output_ = nnet::identity((*source_qnet_)(input_));
 	output_->set_label("action_scores");
 	best_output_ = nnet::arg_max(output_, 0);
 
-	train_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "train_observation");
 	train_output_ = nnet::identity((*source_qnet_)(train_input_));
 	train_output_->set_label("train_action_scores");
 
 	// predicting target future rewards
-	next_input_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_ninput(), 0}, "next_observation");
-	next_output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "next_observation_mask");
 	next_output_ = nnet::identity((*target_qnet_)(next_input_));
 	next_output_->set_label("next_action_scores");
 
-	reward_ = new nnet::placeholder<double>(std::vector<size_t>{0}, "rewards");
 	nnet::varptr<double> target_values =
 		nnet::reduce_max(nnet::varptr<double>(next_output_), 0) *
 		nnet::varptr<double>(next_output_mask_);
 	future_reward_ = nnet::varptr<double>(reward_) + params_.discount_rate_ * target_values; // reward for each instance in batch
 
 	// prediction error
-	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_noutput(), 0}, "action_mask");
 	nnet::varptr<double> masked_output_score = nnet::reduce_sum(
 		nnet::varptr<double>(train_output_) * nnet::varptr<double>(output_mask_), 0);
 	nnet::varptr<double> temp_diff = masked_output_score - future_reward_;

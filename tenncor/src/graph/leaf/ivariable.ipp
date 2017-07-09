@@ -57,7 +57,7 @@ ivariable<T>& ivariable<T>::operator = (ivariable<T>&& other)
 }
 
 template <typename T>
-varptr<T> ivariable<T>::get_gradient (inode<T>* wrt)
+varptr<T> ivariable<T>::derive (inode<T>* wrt)
 {
 	if (this == wrt)
 	{

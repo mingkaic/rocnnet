@@ -86,7 +86,7 @@ TEST(IVARIABLE, Move_E000)
 	EXPECT_EQ(c, ct.expose()[0]);
 	EXPECT_EQ(ii, mi);
 	EXPECT_EQ(nullptr, inited.get_initializer());
-	EXPECT_EQ(nullptr, inited.get_eval());
+	EXPECT_EQ(nullptr, inited.eval());
 
 	assign = std::move(*mv);
 	assign2 = std::move(*mv2);
@@ -99,7 +99,7 @@ TEST(IVARIABLE, Move_E000)
 	EXPECT_EQ(c, ct2.expose()[0]);
 	EXPECT_EQ(ii, ai);
 	EXPECT_EQ(nullptr, mv2->get_initializer());
-	EXPECT_EQ(nullptr, mv2->get_eval());
+	EXPECT_EQ(nullptr, mv2->eval());
 
 	delete mv;
 	delete mv2;
@@ -133,10 +133,10 @@ TEST(IVARIABLE, GetGradient_E002)
 	mock_ivariable noinit(shape, nullptr, label1);
 	mock_ivariable inited(shape, cinit, label1);
 
-	const tensor<double>* wun = noinit.get_gradient(&noinit)->get_eval();
-	const tensor<double>* wuntoo = inited.get_gradient(&inited)->get_eval();
-	const tensor<double>* zaro = noinit.get_gradient(&inited)->get_eval();
-	const tensor<double>* zarotoo = inited.get_gradient(&noinit)->get_eval();
+	const tensor<double>* wun = noinit.derive(&noinit)->eval();
+	const tensor<double>* wuntoo = inited.derive(&inited)->eval();
+	const tensor<double>* zaro = noinit.derive(&inited)->eval();
+	const tensor<double>* zarotoo = inited.derive(&noinit)->eval();
 
 	EXPECT_EQ((size_t) 1, wun->n_elems());
 	EXPECT_EQ((size_t) 1, wuntoo->n_elems());

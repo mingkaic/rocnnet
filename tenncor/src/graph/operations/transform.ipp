@@ -30,7 +30,6 @@ template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 {
 	if (nullptr == a) return nullptr;
-	assert(2 >= a->get_shape().rank());
 	std::string opname = nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
@@ -66,10 +65,9 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 		}
 		return tensorshape();
 	}),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return transpose(grad);
 	}, opname);
 }
@@ -78,7 +76,8 @@ template <typename T>
 varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
 	if (nullptr == a || nullptr == watch) return nullptr;
-	if (a->good_status() && *a == (T)0) return a;
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	if (aconst && *aconst == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
 	// dimensions greater or equal to a's dimensional value (shape.as_list()[i])
 	std::string opname = "fit";
@@ -122,10 +121,9 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 		},
 		[](size_t, tensorshape& ashape, const tensorshape&) -> std::vector<size_t> { return { ashape.n_elems() }; }
 	}, copyover<T>),
-	[](std::vector<inode<T>*> args, variable<T>* leaf)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return grad;
 	}, opname, watch);
 }
@@ -174,10 +172,9 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 		}
 		return tv;
 	}),
-	[index, multiplier](std::vector<inode<T>*> args, variable<T>* leaf)
+	[index, multiplier](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> grad;
-		args.front()->get_leaf(grad, leaf);
+		varptr<T> grad = args.front().second;
 		return grad;
 	}, opname);
 }
@@ -272,11 +269,10 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 		}, collector);
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
-	[index, bprop](std::vector<inode<T>*> args, variable<T>* leaf)
+	[index, bprop](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> bnode;
-		varptr<T> fnode = args.front();
-		fnode->get_leaf(bnode, leaf);
+		varptr<T> fnode = args.front().first;
+		varptr<T> bnode = args.front().second;
 		varptr<T> barg = bprop(bnode, fnode);
 		if (index)
 		{
@@ -439,7 +435,7 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 		}, search);
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
-	[dimension, search](std::vector<inode<T>*>, variable<T>*)
+	[dimension, search](std::vector<std::pair<inode<T>*,inode<T>*> >)
 	{
 		// arg_compression's gradient has no intrinsic meaning
 		throw std::logic_error("attempting to get gradient of arg compression: undefined and meaningless operation");

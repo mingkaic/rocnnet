@@ -127,17 +127,17 @@ void iobserver::replace_dependency (subject* dep, size_t idx)
 
 void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg)
 {
-	for (size_t dep_idx : dep_indices)
+	switch (msg)
 	{
-		switch (msg)
-		{
-			case UNSUBSCRIBE:
+		case UNSUBSCRIBE:
+			for (size_t dep_idx : dep_indices)
+			{
 				remove_dependency(dep_idx);
-				break;
-			case UPDATE:
-				update({dep_idx}); // value update
-				break;
-		}
+			}
+			break;
+		case UPDATE:
+			update(dep_indices); // value update
+			break;
 	}
 	if (UNSUBSCRIBE == msg)
 	{

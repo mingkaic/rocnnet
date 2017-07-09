@@ -52,7 +52,7 @@ static void unaryElemTest (UNARY_VAR func,
 	std::vector<double> indata = expose<double>(&var);
 
 	// compare data, shape must be equivalent, since we're testing elementary operations (Behavior J001)
-	const tensor<double>* rawtens = res->get_eval();
+	const tensor<double>* rawtens = res->eval();
 	std::vector<double> rawf = rawtens->expose();
 	ASSERT_TRUE(tensorshape_equal(shape, rawtens->get_shape()));
 	ASSERT_EQ(rawf.size(), inn);
@@ -65,7 +65,7 @@ static void unaryElemTest (UNARY_VAR func,
 		EXPECT_GE(epi, errf);
 	}
 
-	const tensor<double>* backtens = res->get_gradient(&var)->get_eval();
+	const tensor<double>* backtens = res->derive(&var)->eval();
 	std::vector<double> rawb = backtens->expose();
 	ASSERT_TRUE(tensorshape_equal(shape, backtens->get_shape()) || rawb.size() == 1);
 	if (rawb.size() == 1)
@@ -124,9 +124,9 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 	std::vector<double> indata2 = expose<double>(&var2);
 
 	// compare data, shape must be equivalent, since we're testing elementary operations (J001)
-	const tensor<double>* tenn = res->get_eval();
-	const tensor<double>* tenn1 = res1->get_eval();
-	const tensor<double>* tenn2 = res2->get_eval();
+	const tensor<double>* tenn = res->eval();
+	const tensor<double>* tenn1 = res1->eval();
+	const tensor<double>* tenn2 = res2->eval();
 	std::vector<double> raw = tenn->expose();
 	std::vector<double> raw1 = tenn1->expose();
 	std::vector<double> raw2 = tenn2->expose();
@@ -155,10 +155,10 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 		EXPECT_GE(epi, errf2);
 	}
 
-	const tensor<double>* backtens1 = res->get_gradient(&var)->get_eval();
-	const tensor<double>* backtens2 = res->get_gradient(&var2)->get_eval();
-	const tensor<double>* back1tens = res1->get_gradient(&var)->get_eval();
-	const tensor<double>* back2tens = res2->get_gradient(&var2)->get_eval();
+	const tensor<double>* backtens1 = res->derive(&var)->eval();
+	const tensor<double>* backtens2 = res->derive(&var2)->eval();
+	const tensor<double>* back1tens = res1->derive(&var)->eval();
+	const tensor<double>* back2tens = res2->derive(&var2)->eval();
 	std::vector<double> raw3 = backtens1->expose();
 	std::vector<double> raw4 = backtens2->expose();
 	std::vector<double> raw5 = back1tens->expose();
@@ -201,8 +201,11 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 	}
 
 	// Behavior J002
-	EXPECT_THROW(func(varptr<double>(&var), varptr<double>(&var3)), std::exception);
-	EXPECT_THROW(func(varptr<double>(&var3), varptr<double>(&var2)), std::exception);
+	varptr<double> bad1 = func(varptr<double>(&var), varptr<double>(&var3));
+	varptr<double> bad2 = func(varptr<double>(&var3), varptr<double>(&var2));
+
+	EXPECT_THROW(bad1->eval(), std::exception);
+	EXPECT_THROW(bad2->eval(), std::exception);
 }
 
 
@@ -402,8 +405,8 @@ TEST(ELEMENTARY, Sub_J000ToJ002_J004)
 	var2.initialize();
 	std::vector<double> indata2 = expose<double>(&var2);
 
-	const tensor<double>* rawtens = samenv2->get_eval();
-	const tensor<double>* rawtens2 = samenv22->get_eval();
+	const tensor<double>* rawtens = samenv2->eval();
+	const tensor<double>* rawtens2 = samenv22->eval();
 	std::vector<double> rawf = rawtens->expose();
 	std::vector<double> rawf2 = rawtens2->expose();
 	ASSERT_TRUE(tensorshape_equal(shape, rawtens->get_shape()));

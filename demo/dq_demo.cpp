@@ -19,13 +19,18 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 	return vec;
 }
 
-static std::vector<double> avgevry2 (std::vector<double>& in)
+static std::vector<double> observationfit (std::vector<double>& in, size_t n_actions)
 {
-	std::vector<double> out;
-	for (size_t i = 0, n = in.size()/2; i < n; i++)
+	std::vector<double> out(n_actions);
+	size_t n = in.size();
+	for (size_t i = 0; i < n; i++)
 	{
-		double val = (in.at(2*i) + in.at(2*i+1)) / 2;
-		out.push_back(val);
+		out[i / n_actions] = in[i];
+	}
+	n /= n_actions;
+	for (size_t i = 0; i < n_actions; i++)
+	{
+		out[i] /= n;
 	}
 	return out;
 }
@@ -40,17 +45,26 @@ inline size_t wrapdist (size_t A, size_t B, size_t wrap_size)
 
 int main (int argc, char** argv)
 {
+	std::clock_t start;
+	double duration;
 	std::string outdir = ".";
+	size_t episode_count = 250;
+	size_t max_steps = 100;
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
+	if (argc > 2)
+	{
+		episode_count = std::stoi(std::string(argv[2]));
+	}
+	if (argc > 3)
+	{
+		max_steps = std::stoi(std::string(argv[3]));
+	}
 	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
-	size_t episode_count = 250;
-//	size_t max_steps = 5000;
-	size_t max_steps = 100;
 	size_t n_observations = 10;
 	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
@@ -58,8 +72,7 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::tanh<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::identity<double>)
 	};
-	nnet::rmspropupdater bgd;
-	bgd.learning_rate_ = 0.1;
+	nnet::rmspropupdater bgd(0.1);
 	rocnnet::dqn_param param;
 	param.store_interval_ = 1;
 	param.discount_rate_ = 0.99;
@@ -69,7 +82,6 @@ int main (int argc, char** argv)
 	rocnnet::dq_net untrained_dqn(brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");
-//	trained_dqn->initialize(serialpath, "trained_dqn");
 
 	rocnnet::dq_net pretrained_dqn(untrained_dqn, "pretrained_dqn");
 	pretrained_dqn.initialize(serialpath, "trained_dqn");
@@ -85,12 +97,13 @@ int main (int argc, char** argv)
 	std::list<double> error_queue;
 	size_t err_queue_size = 10;
 	size_t action_dist = n_actions / 2;
+	start = std::clock();
 	for (size_t i = 0; i < episode_count; i++)
 	{
 		std::vector<double> output;
 		double avgreward = 0;
 		observations = batch_generate(n_observations, 1);
-		expect_out = avgevry2(observations);
+		expect_out = observationfit(observations, n_actions);
 		double episode_err = 0;
 		for (size_t j = 0; j < max_steps; j++)
 		{
@@ -105,7 +118,7 @@ int main (int argc, char** argv)
 			avgreward += reward;
 
 			new_observations = batch_generate(n_observations, 1);
-			expect_out = avgevry2(new_observations);
+			expect_out = observationfit(new_observations, n_actions);
 
 			trained_dqn.store(observations, action, reward, new_observations);
 			trained_dqn.train();
@@ -139,6 +152,8 @@ int main (int argc, char** argv)
 		if (std::isnan(episode_err)) throw std::exception();
 		std::cout << "episode " << i << " performance: " << episode_err * 100 << "% average error, reward: " << avgreward << std::endl;
 	}
+	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+	std::cout << "training time: " << duration << " seconds" << std::endl;
 
 	std::vector<double> untrained_output;
 	std::vector<double> trained_output;
@@ -149,7 +164,7 @@ int main (int argc, char** argv)
 	for (size_t j = 0; j < max_steps; j++)
 	{
 		observations = batch_generate(n_observations, 1);
-		expect_out = avgevry2(observations);
+		expect_out = observationfit(observations, n_actions);
 
 		double untrained_action = untrained_dqn.never_random(observations);
 		double trained_action = trained_dqn.never_random(observations);
@@ -173,7 +188,13 @@ int main (int argc, char** argv)
 	std::cout << "trained performance: " << total_trained_err * 100 << "% average error" << std::endl;
 	std::cout << "pretrained performance: " << total_pretrained_err * 100 << "% average error" << std::endl;
 
-	if (total_untrained_err < total_trained_err) exit_status = 2;
+	// fails if cumulative steps is over threshold=250, 
+	// and trained is inferior to untrained
+	if (episode_count * max_steps > 250 && 
+		total_untrained_err < total_trained_err)
+	{
+		exit_status = 2;
+	}
 
 	if (exit_status == 0)
 	{
@@ -185,6 +206,8 @@ if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(
 		static_cast<nnet::iconnector<double>*>(trained_dqn.get_trainout().get()));
 #endif /* EDGE_RCD */
+
+	google::protobuf::ShutdownProtobufLibrary();
 
 	return exit_status;
 }

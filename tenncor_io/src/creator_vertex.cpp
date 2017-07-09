@@ -428,7 +428,7 @@ void vertex_manager::get_backwards (std::unordered_set<std::string>& ids, CONNEC
 	nnet::iconnector<double>* grad;
 	for (auto ns : inst->nodes_)
 	{
-		grad = ns.second.ptr_->get_gradient();
+		grad = ns.second.ptr_->derive();
 		if (nullptr != grad)
 		{
 			ids.emplace(grad->get_uid());
