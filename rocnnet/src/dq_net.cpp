@@ -187,6 +187,8 @@ void dq_net::tear_down (void)
 	if (next_output_mask_) delete next_output_mask_;
 	if (reward_) delete reward_;
 	
+	if (updater_) delete updater_;
+	
 	source_qnet_ = nullptr;
 	target_qnet_ = nullptr;
 	

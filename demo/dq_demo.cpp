@@ -45,18 +45,26 @@ inline size_t wrapdist (size_t A, size_t B, size_t wrap_size)
 
 int main (int argc, char** argv)
 {
+	std::clock_t start;
+	double duration;
 	std::string outdir = ".";
+	size_t episode_count = 250;
+	size_t max_steps = 100;
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
+	if (argc > 2)
+	{
+		episode_count = std::stoi(std::string(argv[2]));
+	}
+	if (argc > 3)
+	{
+		max_steps = std::stoi(std::string(argv[3]));
+	}
 	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
-	std::clock_t start;
-	double duration;
-	size_t episode_count = 250;
-	size_t max_steps = 100;
 	size_t n_observations = 10;
 	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
@@ -181,7 +189,13 @@ int main (int argc, char** argv)
 	std::cout << "trained performance: " << total_trained_err * 100 << "% average error" << std::endl;
 	std::cout << "pretrained performance: " << total_pretrained_err * 100 << "% average error" << std::endl;
 
-	if (total_untrained_err < total_trained_err) exit_status = 2;
+	// fails if cumulative steps is over threshold=250, 
+	// and trained is inferior to untrained
+	if (episode_count * max_steps > 250 && 
+		total_untrained_err < total_trained_err)
+	{
+		exit_status = 2;
+	}
 
 	if (exit_status == 0)
 	{
@@ -193,6 +207,8 @@ if (rocnnet_record::erec::rec_good)
 	rocnnet_record::erec::rec.to_csv<double>(
 		static_cast<nnet::iconnector<double>*>(trained_dqn.get_trainout().get()));
 #endif /* EDGE_RCD */
+
+	google::protobuf::ShutdownProtobufLibrary();
 
 	return exit_status;
 }

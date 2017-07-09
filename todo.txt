@@ -1,5 +1,4 @@
 tenncor:
-- during the unfreeze update process, avoid duplicate updates by stopping at branching nodes to wait for dependency updates
 - implement convolution operator
 - shape and preparation functors should ideally use C++17 variant
     (replace with resulting shape and temporary cache)
@@ -10,6 +9,8 @@ tenncor:
 	also any shape padded by 0 or 1 maybe “optimized” for lower dimensional shape
 	(this should be an option, since some applications may not want to lose this information)
 - possible dangling pointers by propagating destruction in the graph
+- x~10 speed boost (tensorflow's CPU-only 32, 200, 200, 4 dqn 
+	with tanh, tanh, identity activators) [target on mac: ~0.01s per training operation]
 
 evaluate rocnnet principles:
 - practicality
@@ -18,7 +19,7 @@ evaluate rocnnet principles:
 - testability/program transparency
 
 interesting ideas:
-- scalable batch size (increasing batch size over generations)
+- variable batch size (increasing batch size over generations)
 
 tests:
 - improve tests (test base_immutable and immutable separately)
