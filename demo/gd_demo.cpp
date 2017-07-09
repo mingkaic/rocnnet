@@ -68,8 +68,7 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
-	nnet::vgb_updater bgd;
-	bgd.learning_rate_ = 0.9;
+	nnet::vgb_updater bgd(0.9); // learning rate = 0.9
 	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
 	rocnnet::gd_net* trained_gdn = untrained_gdn.clone("trained_gd_net");

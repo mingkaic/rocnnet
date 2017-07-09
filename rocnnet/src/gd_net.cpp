@@ -16,7 +16,7 @@ namespace rocnnet
 {
 
 gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
-	nnet::gd_updater<double>& updater, std::string scope) :
+	nnet::gd_updater& updater, std::string scope) :
 ml_perceptron(n_input, hiddens, scope),
 updater_(updater.clone())
 {

@@ -15,7 +15,7 @@ LOGDIR=${BUILDDIR}/log
 PBX_CACHE=${1:-./prototxt}
 ERRORLOG=${LOGDIR}/test_out.txt
 FUZZLOG=fuzz.out
-TIMEOUT=500
+TIMEOUT=600
 
 assert_cmd() {
     eval timeout -s SIGKILL ${TIMEOUT} $*

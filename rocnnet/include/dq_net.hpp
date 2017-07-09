@@ -39,7 +39,7 @@ class dq_net
 {
 public:
 	dq_net (ml_perceptron* brain,
-		nnet::gd_updater<double>& updater,
+		nnet::gd_updater& updater,
 		dqn_param param = dqn_param(),
 		std::string scope = "DQN");
 
@@ -152,13 +152,13 @@ private:
 
 	// === updates && optimizer ===
 	// update source network (this) using updater
-	std::vector<nnet::variable_updater<double> > source_updates_;
+	nnet::updates_t source_updates_;
 
 	// update target network (target_qnet) from source weights
-	std::vector<nnet::variable_updater<double> > target_updates_;
+	nnet::updates_t target_updates_;
 
 	// optimizer
-	nnet::gd_updater<double>* updater_ = nullptr;
+	nnet::gd_updater* updater_ = nullptr;
 
 	// === scalar parameters ===
 	// training parameters

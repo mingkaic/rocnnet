@@ -14,108 +14,66 @@
 namespace nnet
 {
 
-template <typename T>
-using grad_process = std::function<varptr<T>(varptr<T>,variable<T>*)>;
+using updates_t = std::vector<variable_updater<double> >;
 
-template <typename T>
-varptr<T> grad_identity (varptr<T> grad, variable<T>*)
-{
-	return grad;
-}
+using grad_process = std::function<varptr<double>(varptr<double>,variable<double>*)>;
 
 //! gradient descent algorithm abstraction
-template <typename T>
 class gd_updater
 {
 public:
-	virtual ~gd_updater(void) {}
+	gd_updater (double learning_rate);
 
-	gd_updater<T>* clone (void) { return clone_impl(); }
+	virtual ~gd_updater(void);
 
-	gd_updater<T>* move (void) { return move_impl(); }
+	gd_updater* clone (void) const;
 
-	virtual std::vector<variable_updater<T> > calculate (inode<T>* root,
-		grad_process<T> intermediate_process = grad_identity<T>)
-	{
-		std::vector<variable_updater<T> > updates;
-		std::unordered_set<ileaf<T>*> leafset = root->get_leaves();
-		std::vector<std::pair<inode<T>*,variable<T>*> > gress;
-		for (ileaf<T>* l : leafset)
-		{
-			variable<T>* Wb = dynamic_cast<variable<T>*>(l);
-			if (Wb && ignored_.end() == ignored_.find(Wb))
-			{
-				gress.push_back({root->derive(Wb), Wb});
-			}
-		}
+	gd_updater* move (void);
 
-		if (graph_optimize_)
-		{
-			std::transform(gress.begin(), gress.end(), gress.begin(),
-			[](std::pair<inode<T>*,variable<T>*>& gpair)
-			{
-				if (base_immutable<double>* imm = dynamic_cast<base_immutable<double>*>(gpair.first))
-				{
-					solo_audience_merge(imm);
-					gpair.first = imm;
-				}
-				return gpair;
-			});
-		}
+	virtual updates_t calculate (inode<double>* root, grad_process intermediate_process = 
+		[](varptr<double> grad, variable<double>*) { return grad; });
 
-		for (auto& gpair : gress)
-		{
-			varptr<T> gres = gpair.first;
-			updates.push_back(process_update(gres, gpair.second, intermediate_process));
-		}
-		return updates;
-	}
+	void ignore_subtree (inode<double>* subroot);
 
-	void ignore_subtree (inode<T>* subroot)
-	{
-		std::unordered_set<ileaf<T>*> leafset = subroot->get_leaves();
-		for (ileaf<T>* l : leafset)
-		{
-			if (variable<T>* Wb = dynamic_cast<variable<T>*>(l))
-			{
-				ignored_.emplace(Wb);
-			}
-		}
-	}
-
-	void clear_ignore (void) { ignored_.clear(); }
-
-	double learning_rate_ = 0.5;
-
-	bool graph_optimize_ = true;
+	void clear_ignore (void);
+	
+	void set_learning_rate (double learning_rate);
+	
+	void set_grad_optimization (bool optimize);
 
 protected:
-	virtual gd_updater<T>* clone_impl (void) = 0;
+	virtual gd_updater* clone_impl (void) const = 0;
 
-	virtual gd_updater<T>* move_impl (void) = 0;
+	virtual gd_updater* move_impl (void) = 0;
 
-	virtual variable_updater<T> process_update (varptr<T>& gres,
-		variable<T>* leaf, grad_process<T> intermediate_process) = 0;
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process intermediate_process) = 0;
 
+	double learning_rate_;
+	
 private:
-	std::unordered_set<variable<T>*> ignored_;
+	bool graph_optimize_ = true;
+	
+	std::unordered_set<variable<double>*> ignored_;
 };
 
 //! vanilla gradient descent algorithm
-class vgb_updater : public gd_updater<double>
+class vgb_updater : public gd_updater
 {
 public:
+	vgb_updater (double learning_rate = 0.5);
+
 	vgb_updater* clone (void);
 
 	vgb_updater* move (void);
 
 protected:
-	virtual gd_updater<double>* clone_impl (void);
+	virtual gd_updater* clone_impl (void) const;
 
-	virtual gd_updater<double>* move_impl (void);
+	virtual gd_updater* move_impl (void);
 
 	virtual variable_updater<double> process_update (varptr<double>& gres,
-		variable<double>* leaf, grad_process<double> intermediate_process);
+		variable<double>* leaf, grad_process intermediate_process);
 };
 
 //! momentum based gradient descent
@@ -130,20 +88,22 @@ protected:
 // Nestrov momentum:
 // 1. delta(var) = velocity_t-1, update by gd
 // 2. velocity_t = discount * velocity_(t-1) - learning * J'[v]
-class momentum_updater : public gd_updater<double>
+class momentum_updater : public gd_updater
 {
 public:
+	momentum_updater (double learning_rate = 0.5) : gd_updater(learning_rate) {}
+	
 	momentum_updater* clone (void);
 
 	momentum_updater* move (void);
 
 protected:
-	virtual gd_updater<double>* clone_impl (void);
+	virtual gd_updater* clone_impl (void) const;
 
-	virtual gd_updater<double>* move_impl (void);
+	virtual gd_updater* move_impl (void);
 
 	virtual variable_updater<double> process_update (varptr<double>& gres,
-		variable<double>* leaf, grad_process<double> intermediate_process);
+		variable<double>* leaf, grad_process intermediate_process);
 };
 
 // Separate adaptive learning rates
@@ -152,9 +112,11 @@ protected:
 // if J'[v]_t * J'[v]_(t-1) > 0:
 // then local_gain[v] += 0.05
 // else local_gain[v] *= 0.95
-class adadelta_updater : public gd_updater<double>
+class adadelta_updater : public gd_updater
 {
 public:
+	adadelta_updater (double learning_rate = 0.5) : gd_updater(learning_rate) {}
+	
 	adadelta_updater* clone (void);
 
 	adadelta_updater* move (void);
@@ -164,18 +126,20 @@ public:
 	double epsilon_ = std::numeric_limits<double>::epsilon();
 
 protected:
-	virtual gd_updater<double>* clone_impl (void);
+	virtual gd_updater* clone_impl (void) const;
 
-	virtual gd_updater<double>* move_impl (void);
+	virtual gd_updater* move_impl (void);
 
 	virtual variable_updater<double> process_update (varptr<double>& gres,
-		variable<double>* leaf, grad_process<double> intermediate_process);
+		variable<double>* leaf, grad_process intermediate_process);
 };
 
 // adaptive gradient
-class adagradupdater : public gd_updater<double>
+class adagradupdater : public gd_updater
 {
 public:
+	adagradupdater (double learning_rate = 0.5) : gd_updater(learning_rate) {}
+	
 	adagradupdater* clone (void);
 
 	adagradupdater* move (void);
@@ -183,12 +147,12 @@ public:
 	double init_accum_ = 0.1;
 
 protected:
-	virtual gd_updater<double>* clone_impl (void);
+	virtual gd_updater* clone_impl (void) const;
 
-	virtual gd_updater<double>* move_impl (void);
+	virtual gd_updater* move_impl (void);
 
 	virtual variable_updater<double> process_update (varptr<double>& gres,
-		variable<double>* leaf, grad_process<double> intermediate_process);
+		variable<double>* leaf, grad_process intermediate_process);
 };
 
 
@@ -196,27 +160,43 @@ protected:
 // rms_delta = J'(v)_t
 // rms_t = (1 - discount) * rms_t-1 + discount * rms_delta^2
 // delta(var) = v_t = learning * rms_delta / rms_t
-struct rmspropupdater : public gd_updater<double>
+// initial momentum is 1 (todo: decide whether or not parameterizing init momentum matters)
+class rmspropupdater : public gd_updater
 {
+public:
+	rmspropupdater (double learning_rate = 0.5, double discount_factor = 0.99);
+
 	virtual ~rmspropupdater (void);
 
 	rmspropupdater* clone (void);
 
 	rmspropupdater* move (void);
+	
+	virtual rmspropupdater& operator = (const rmspropupdater& other);
+	
+	virtual rmspropupdater& operator = (rmspropupdater&& other);
+	
+	void set_discount_factor (double discount_factor);
 
-	double discount_factor_ = 0.99;
+protected:
+	// never copy or move momentums_
+	rmspropupdater (const rmspropupdater& other);
+	
+	rmspropupdater (rmspropupdater&& other);
+
+	virtual gd_updater* clone_impl (void) const;
+
+	virtual gd_updater* move_impl (void);
+
+	virtual variable_updater<double> process_update (varptr<double>& gres,
+		variable<double>* leaf, grad_process intermediate_process);
+		
+private:
+	double discount_factor_;
 
 	std::vector<variable<double>*> momentums_;
 
-	double epsilon_ = std::numeric_limits<double>::epsilon();
-
-protected:
-	virtual gd_updater<double>* clone_impl (void);
-
-	virtual gd_updater<double>* move_impl (void);
-
-	virtual variable_updater<double> process_update (varptr<double>& gres,
-		variable<double>* leaf, grad_process<double> intermediate_process);
+	const double epsilon_ = std::numeric_limits<double>::epsilon();
 };
 
 }

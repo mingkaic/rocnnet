@@ -27,7 +27,7 @@ class gd_net : public ml_perceptron
 {
 public:
 	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
-		nnet::gd_updater<double>& updater, std::string scope = "MLP");
+		nnet::gd_updater& updater, std::string scope = "MLP");
 
 	~gd_net (void);
 
@@ -60,7 +60,7 @@ private:
 
 	void move_helper (gd_net&& other);
 
-	std::vector<nnet::variable_updater<double> > updates_;
+	nnet::updates_t updates_;
 
 	nnet::placeholder<double>* train_in_ = nullptr;
 
@@ -68,7 +68,7 @@ private:
 
 	nnet::iconnector<double>* error_ = nullptr;
 
-	nnet::gd_updater<double>* updater_ = nullptr;
+	nnet::gd_updater* updater_ = nullptr;
 };
 
 }

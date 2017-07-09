@@ -72,8 +72,7 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(9, nnet::tanh<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::identity<double>)
 	};
-	nnet::rmspropupdater bgd;
-	bgd.learning_rate_ = 0.1;
+	nnet::rmspropupdater bgd(0.1);
 	rocnnet::dqn_param param;
 	param.store_interval_ = 1;
 	param.discount_rate_ = 0.99;

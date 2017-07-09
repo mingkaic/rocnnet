@@ -16,7 +16,7 @@ namespace rocnnet
 {
 
 dq_net::dq_net (ml_perceptron* brain,
-	nnet::gd_updater<double>& updater,
+	nnet::gd_updater& updater,
 	dqn_param param, std::string scope) :
 params_(param),
 scope_(scope),
