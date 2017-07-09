@@ -175,49 +175,9 @@ static void strassen (T* c, const T* a, const T* b, size_t dimPad)
 	}
 }
 
-template <typename T>
-matmul<T>* matmul<T>::get (inode<T>* a, inode<T>* b,
-	bool transposeA, bool transposeB)
+static inline SHAPER get_matmul_shaper (bool transposeA, bool transposeB)
 {
-	if (a && b)
-	{
-		std::unordered_set<inode<T>*> audience;
-		if (a->find_audience(nnutils::formatter() << "matmul" << transposeA << transposeB, audience))
-		{
-			// share nodes when possible
-			for (inode<T>* aud : audience)
-			{
-				if (matmul<T>* mul = dynamic_cast<matmul<T>*>(aud))
-				{
-					std::vector<inode<T>*> args = mul->get_arguments();
-					if (args.size() == 2 && args[0] == a && args[1] == b)
-						return mul;
-				}
-			}
-		}
-		return new matmul<T>(a, b, transposeA, transposeB);
-	}
-	return nullptr;
-}
-
-template <typename T>
-matmul<T>* matmul<T>::clone (void) const
-{
-	return static_cast<matmul<T>*>(clone_impl());
-}
-
-template <typename T>
-matmul<T>* matmul<T>::move (void)
-{
-	return static_cast<matmul<T>*>(move_impl());
-}
-
-template <typename T>
-matmul<T>::matmul (inode<T>* a, inode<T>* b,
-	bool transposeA, bool transposeB) :
-immutable<T>((std::vector<inode<T>*>{a, b}),
-new transfer_func<T>(
-	[transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
+	return [transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape& t1s = shapes[0];
 		tensorshape& t2s = shapes[1];
@@ -298,57 +258,63 @@ new transfer_func<T>(
 		}
 		res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
 		return res_shape;
-	},
+	};
+}
+
+// todo: reconsider strassen
+// maps (i, j) to (0:n, j) if col_travel otherwise (i, 0:m)
+// behaves like value mapping for the first matrix of a matrix multiplication
+static inline OUT_MAPPER get_matmul_mapper (bool transp, size_t primary_travel, size_t secondary_travel)
+{
+	return [transp, primary_travel, secondary_travel](size_t i, tensorshape& ashape,
+		const tensorshape& outshape) -> std::vector<size_t>
 	{
-		[transposeA](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+		std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+		if (coord.size() < 2)
 		{
-			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-			if (coord.size() < 2)
-			{
-				coord.push_back(0);
-			}
-			std::vector<size_t> alist = ashape.as_list();
-			std::vector<size_t> indices;
-			size_t idx = 0;
-			size_t ncol = alist[0]; // traverse along the row
-			if (transposeA)
-			{
-				idx = 1;
-				ncol = alist.size() > 1 ? alist[1] : 1;
-				std::swap(coord[0], coord[1]);
-			}
-			for (size_t j = 0; j < ncol; j++)
-			{
-				coord[idx] = j;
-				indices.push_back(ashape.sequential_idx(coord));
-			}
-			return indices;
-		},
-		[transposeB](size_t i, tensorshape& bshape, const tensorshape& outshape) -> std::vector<size_t>
-		{
-			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-			if (coord.size() < 2)
-			{
-				coord.push_back(0);
-			}
-			std::vector<size_t> blist = bshape.as_list();
-			std::vector<size_t> indices;
-			size_t idx = 1;
-			size_t nrow = blist.size() > 1 ? blist[1] : 1; // traverse along the col
-			if (transposeB)
-			{
-				idx = 0;
-				nrow = blist[0];
-				std::swap(coord[0], coord[1]);
-			}
-			for (size_t j = 0; j < nrow; j++)
-			{
-				coord[idx] = j;
-				indices.push_back(bshape.sequential_idx(coord));
-			}
-			return indices;
+			coord.push_back(0);
 		}
-	},
+		std::vector<size_t> alist = ashape.as_list();
+		std::vector<size_t> indices;
+		size_t idx = primary_travel;
+		if (transp)
+		{
+			idx = secondary_travel;
+			std::swap(coord[0], coord[1]);
+		}
+		size_t ntravel = alist.size() > idx ? alist[idx] : 1; // traverse along first dimension
+		for (size_t j = 0; j < ntravel; j++)
+		{
+			coord[idx] = j;
+			indices.push_back(ashape.sequential_idx(coord));
+		}
+		return indices;
+	};
+}
+
+template <typename T>
+varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool transposeB)
+{
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::string opname = nnutils::formatter() << "matmul" << transposeA << transposeB;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 2 && args[0] == a && args[1] == b)
+				return aud;
+		}
+	}
+
+	if (base_immutable<T>* imma = dynamic_cast<base_immutable<T>*>(a.get())) imma->mergible_ = false;
+	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b.get())) immb->mergible_ = false;
+
+	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{a, b},
+	new transfer_func<T>(get_matmul_shaper(transposeA, transposeB),
+	{ get_matmul_mapper(transposeA, 0, 1), get_matmul_mapper(transposeB, 1, 0) },
 	ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		T accum = 0;
@@ -358,15 +324,22 @@ new transfer_func<T>(
 		}
 		return accum;
 	})),
-[](std::vector<std::pair<inode<T>*,inode<T>*> >)
-{
-	return constant<T>::get_shared_one();
-}, nnutils::formatter() << "matmul" << transposeA << transposeB)
-{
-	if (base_immutable<T>* imma = dynamic_cast<base_immutable<T>*>(a)) imma->mergible_ = false;
-	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b)) immb->mergible_ = false;
+	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
+	{
+		return constant<T>::get_shared_one();
+	}, opname);
 
-	auto jtrans = [a, b, transposeA, transposeB](inode<T>* root, NODE_MAN<T> grad_getter) -> inode<T>*
+	std::unordered_set<ileaf<T>*> temp = mmul->get_leaves();
+	std::vector<variable<T>*> leef;
+	for (ileaf<T>* ilef : temp)
+	{
+		if (variable<T>* var = dynamic_cast<variable<T>*>(ilef))
+		{
+			leef.push_back(var);
+		}
+	}
+	mmul->set_jacobian_back(
+	[a, b, transposeA, transposeB](inode<T>* root, NODE_MAN<T> grad_getter) -> inode<T>*
 	{
 		varptr<T> grada = grad_getter(a);
 		varptr<T> gradb = grad_getter(b);
@@ -377,18 +350,8 @@ new transfer_func<T>(
 		{
 			return root;
 		}
-		varptr<T> mA;
-		varptr<T> mB;
-//		if (1 == root->get_shape().n_elems())
-//		{
-//			mA = root;
-//			mB = root;
-//		}
-//		else
-//		{
-			mA = matmul<T>::get(root, b, false, !transposeB);
-			mB = matmul<T>::get(a, root, !transposeA, false);
-//		}
+		varptr<T> mA = matmul<T>(root, b, false, !transposeB);
+		varptr<T> mB = matmul<T>(a, root, !transposeA, false);
 		if (transposeA)
 		{
 			mA = transpose<T>(mA);
@@ -398,28 +361,8 @@ new transfer_func<T>(
 			mB = transpose<T>(mB);
 		}
 		return mA * grada + mB * gradb;
-	};
-
-	std::unordered_set<ileaf<T>*> leaves = this->get_leaves();
-	for (ileaf<T>* leaf : leaves)
-	{
-		if (variable<T>* var = dynamic_cast<variable<T>*>(leaf))
-		{
-			this->jacobians_[var].list_.push_back(jtrans);
-		}
-	}
-}
-
-template <typename T>
-inode<T>* matmul<T>::clone_impl (void) const
-{
-	return new matmul<T>(*this);
-}
-
-template <typename T>
-inode<T>* matmul<T>::move_impl (void)
-{
-	return new matmul<T>(std::move(*this));
+	}, leef);
+	return mmul;
 }
 
 }

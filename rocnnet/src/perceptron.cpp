@@ -66,7 +66,7 @@ perceptron& perceptron::operator = (perceptron&& other)
 nnet::varptr<double> perceptron::operator () (nnet::inode<double>* input)
 {
 	// weights are n_output column by n_input rows
-	nnet::varptr<double> weighed = nnet::matmul<double>::get(input, weights_);
+	nnet::varptr<double> weighed = nnet::matmul<double>(input, weights_);
 	return nnet::add_axial_b(weighed, nnet::varptr<double>(bias_), 1);
 }
 

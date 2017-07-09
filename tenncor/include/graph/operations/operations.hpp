@@ -20,10 +20,11 @@
 #include "graph/connector/immutable/immutable.hpp"
 #include "graph/leaf/constant.hpp"
 
+#pragma once
+
 namespace nnet
 {
 
-#pragma once
 #ifndef TENNCOR_ELEMENTARY_HPP
 #define TENNCOR_ELEMENTARY_HPP
 
@@ -161,11 +162,11 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b);
 
 #endif /* TENNCOR_ELEMENTARY_HPP */
 
-#pragma once
 #ifndef TENNCOR_TRANSFORM_HPP
 #define TENNCOR_TRANSFORM_HPP
 
 //! transpose a along first 2 dimension
+// todo: check if axis_swap are the same dimensions, if so, return a as is (invalid transpose) + leave warning
 template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap = {0, 1});
 
@@ -216,6 +217,14 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
+//! convolve a with filter, along window which defines which dimensions to convolve
+//! for example: window {0, 1} gives output f[i, j, :] = sum(a[i:i+filtshape[0], j:j+filtshape[1], :] * filter)
+//! whereas window {0,2} gives output f[i, :, j] = sum(a[i:i+filtshape[0], :, j:j+filtshape[1]] * filter)
+//! if pad == true, then pad output with zero to fit a's shape, otherwise leave as is after conv
+template <typename T>
+varptr<T> conv (const varptr<T> a, const varptr<T> filter,
+	std::unordered_set<size_t> dim_window = {0, 1}, bool pad = false);
+
 // todo: implement
 // [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
 //! trace of a
@@ -228,9 +237,21 @@ varptr<T> inverse (const varptr<T> a);
 
 #endif /* TENNCOR_TRANSFORM_HPP */
 
+#ifndef TENNCOR_MATMUL_HPP
+#define TENNCOR_MATMUL_HPP
+
+//! matrix multiplication (todo: expand to include matmul along other dimensions, currently {0, 1} only)
+template <typename T>
+varptr<T> matmul (const varptr<T> a, const varptr<T> b,
+	bool transposeA = false, bool transposeB = false);
+
+#endif /* TENNCOR_MATMUL_HPP */
+
 }
 
 #include "../../../src/graph/operations/elementary.ipp"
 
 #include "../../../src/graph/operations/transform.ipp"
+
+#include "../../../src/graph/operations/matmul.ipp"
 

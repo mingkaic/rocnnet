@@ -99,7 +99,11 @@ public:
 	virtual bool potential_descendent (const iconnector<T>* n) const;
 
 	// >>>> NODE STATUS <<<<
-	void set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves);
+	//! add jacobian to the front of the list mapped by leaves
+	void set_jacobian_front (JTRANSFER<T> jac, std::vector<variable<T>*> leaves);
+
+	//! add jacobian to the back of the list mapped by leaves
+	void set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>*> leaves);
 
 	//! freeze or unfreeze the current node
 	//! freeze prevents this from updating temporarily instead update is queued to g_man_

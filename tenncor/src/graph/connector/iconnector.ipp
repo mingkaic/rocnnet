@@ -150,11 +150,20 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 }
 
 template <typename T>
-void iconnector<T>::set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+void iconnector<T>::set_jacobian_front (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
 {
 	for (variable<T>* l : leaves)
 	{
 		jacobians_[l].list_.push_front(jac);
+	}
+}
+
+template <typename T>
+void iconnector<T>::set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+{
+	for (variable<T>* l : leaves)
+	{
+		jacobians_[l].list_.push_back(jac);
 	}
 }
 

@@ -11,6 +11,7 @@ tenncor:
 - possible dangling pointers by propagating destruction in the graph
 - x~10 speed boost (tensorflow's CPU-only 32, 200, 200, 4 dqn 
 	with tanh, tanh, identity activators) [target on mac: ~0.01s per training operation]
+- define data format: associate dimensions to some label (i.e.: [default] dim 0 = col, dim 1 = row)
 
 evaluate rocnnet principles:
 - practicality

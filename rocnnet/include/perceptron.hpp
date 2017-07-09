@@ -13,7 +13,6 @@
 #include <stack>
 
 #include "graph/leaf/variable.hpp"
-#include "graph/connector/immutable/matmul.hpp"
 #include "graph/operations/operations.hpp"
 
 #pragma once

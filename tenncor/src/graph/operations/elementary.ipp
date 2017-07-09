@@ -392,7 +392,7 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 				leef.push_back(var);
 			}
 		}
-		iconn->set_jacobian([axis](inode<T>* root, NODE_MAN<T>) -> inode<T>*
+		iconn->set_jacobian_front([axis](inode<T>* root, NODE_MAN<T>) -> inode<T>*
 		{
 			return reduce_sum(varptr<T>(root), axis);
 		}, leef);

@@ -10,7 +10,6 @@
 #include "graph/leaf/placeholder.hpp"
 #include "graph/connector/iconnector.hpp"
 #include "graph/connector/immutable/immutable.hpp"
-#include "graph/connector/immutable/matmul.hpp"
 #include "graph/varptr.hpp"
 
 namespace nnet
@@ -29,10 +28,6 @@ template class placeholder<double>;
 template class immutable<double>;
 
 template class immutable<unsigned>;
-
-template class matmul<double>;
-
-template class matmul<unsigned>;
 
 template class merged_immutable<double>;
 
