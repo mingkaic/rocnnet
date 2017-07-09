@@ -40,7 +40,8 @@ C001 - leaf get_shape returns the shape specified at construction
 C002 - leaf get_eval returns a tensor of the shape specified at construction,
         the tensor's initialization status is uncertain
 C003 - leaf good_status is good if the tensor is initialized, otherwise bad
-C004 - reading a valid tensor_proto should initialize the leaf
+(UNTESTED) C004 - reading a valid tensor_proto should initialize the leaf
+C005 - get_leaves adds returns a set containing itself
 
 // CONSTANT BEHAVIOR
 D000 - constant scalar constructor initializes data as a scalar of the same value
@@ -48,17 +49,16 @@ D000 - constant scalar constructor initializes data as a scalar of the same valu
         the tensor has shape specified in constructor
         if the input vector does not match shape, clip data or pad data to fit
 D001 - constant clone and move are deleted, clone and move return nullptr
-D002 - constant get_gradient returns 0 scalar node
-D003 - constant get_leaf returns 0 scalar node
-D004 - constant get_leaves does not change referenced leaf set
-D005 - constant self destructs when it loses all its subscribers if is_managed flag is off
+D002 - constant derive returns 0 scalar node
+D003 - constant get_gradient returns 0 scalar node
+D004 - constant self destructs when it loses all its subscribers if is_managed flag is off
         otherwise constant wouldnt self destruct
-D006 - constant tensors are always allocated
+D005 - constant tensors are always allocated
 
 // IVARIABLE BEHAVIOR
 E000 - ivariable clone and move copy and move over initializer
 E001 - ivariable can initialize when initializer is not null
-E002 - ivariable get_gradient returns 1 scalar node
+E002 - ivariable derive returns 1 scalar node
         if input is this otherwise return 0 scalar
 
 // VARIABLE BEHAVIOR
@@ -68,10 +68,9 @@ F000 - variable scalar constructor is initialized
 F001 - variable clone and move clones and moves from ivariable
 F002 - variable set_initializer deletes its existing initializer
         and clones new init from input
-F003 - variable get_leaf returns 1 scalar node if input leaf is this,
+F003 - variable get_gradient returns 1 scalar node if input leaf is this,
         otherwise return 0 scalar node
-F004 - variable get_leaves adds itself to the referenced leaf set
-F005 - variable initialize notifies on success.
+F004 - variable initialize notifies on success.
         variable initialization succeeds when initializer is not null,
         the existing tensorshape is well defined,
         or input shape is well defined and is compatible with tensor shape
@@ -82,12 +81,11 @@ G000 - placeholder specifying shape has non-null initialization,
 G001 - placeholder clone and move clones and moves from ivariable
 G002 - placeholder assigning raw data initializes tensor and notifies observers
 G003 - placeholder assigning tensor moves input tensor to inner tensor
-G004 - placeholder get_leaf returns 0 scalar node
-G005 - placeholder get_leaves does not change referenced leaf set
+G004 - placeholder get_gradient returns 0 scalar node
 
 // CONNECTOR BEHAVIOR
 H000 - copying connector copies over graph id, connector dependency (conform to definition of same graph),
-        moving moves over graph id regardless, moving gid_ will nullptr the original gid_ pointer,
+        moving moves over graph id regardless, moving g_man_ will nullptr the original g_man_ pointer,
         (UNTESTED) connector copies over jacobians
 H001 - connector name is the name of the connecting node in <> braces and
         its dependencies' labels separated by commas in () brackets
@@ -107,9 +105,9 @@ I005 - immutable dies when any of its dependencies dies
 I006 - temporary_eval grabs the resulting node from target node up to calling node.
         the target node's value is taken as scalar 1.
 I007 - immutable get_leaves return a map from leaf to nullptr
-I008 - given an input of leaf A, get_leaf returns the node mapped by A in
+I008 - given an input of leaf A, get_gradient returns the node mapped by A in
         back_map (provided during construction). leaf A is back_map's second argument.
-I009 - get_gradient calculates gradient node from any node and applies jacobian transformation appropriately
+I009 - derive calculates gradient node from any node and applies jacobian transformation appropriately
         if wrt is this, return (without jacobian) is scalar 1 node,
         else if wrt is not a leaf but is a potential descendent, return temporary_eval from wrt to this
         else if wrt is not a leaf and isn't a potential descendent, return scalar 0 node
@@ -137,8 +135,7 @@ J011 - a inode is equal (using operator ==) to a primitive value if it is scalar
         and its value is equivalent to the primitive value
         same applies for not equal (!=),
         equality and inequality fails assertion if input node has bad status
-(UNTESTED)
-J012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
+(UNTESTED) J012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
 
 // TRANSFORM BEHAVIORS
 K000 - any operation accepting nullptr as any operand returns nullptr

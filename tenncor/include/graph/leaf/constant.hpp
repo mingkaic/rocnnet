@@ -56,11 +56,7 @@ public:
 
 	// >>>> BACKWARD DATA <<<<
 	//! get gradient wrt some node
-	virtual varptr<T> get_gradient (inode<T>* wrt);
-
-	// >>>> GRAPH STATUS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	// >>>> NODE STATUS <<<<
 	//! set this constant as being managed by some node
@@ -87,7 +83,7 @@ protected:
 
 	// >>>> INTERNAL DATA TRANSFERS <<<<
 	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf);
+	virtual inode<T>* get_gradient (variable<T>* leaf);
 
 private:
 	//! commonly used constant: 0

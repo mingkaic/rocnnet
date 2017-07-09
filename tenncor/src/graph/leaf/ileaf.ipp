@@ -66,13 +66,9 @@ size_t ileaf<T>::n_arguments (void) const
 }
 
 template <typename T>
-const tensor<T>* ileaf<T>::get_eval (void) const
+const tensor<T>* ileaf<T>::eval (void)
 {
-	if (false == good_status())
-	{
-		return nullptr;
-	}
-	return data_;
+	return get_eval();
 }
 
 template <typename T>
@@ -83,6 +79,12 @@ tensorshape ileaf<T>::get_shape (void) const
 		return data_->get_shape();
 	}
 	return std::vector<size_t>{};
+}
+
+template <typename T>
+std::unordered_set<ileaf<T>*> ileaf<T>::get_leaves (void) const
+{
+	return {const_cast<ileaf<T>*>(this)};
 }
 
 template <typename T>
@@ -120,6 +122,16 @@ ileaf<T>::ileaf (ileaf<T>&& other) :
 	inode<T>(std::move(other))
 {
 	move_helper(std::move(other));
+}
+
+template <typename T>
+const tensor<T>* ileaf<T>::get_eval (void) const
+{
+	if (false == good_status())
+	{
+		return nullptr;
+	}
+	return data_;
 }
 
 template <typename T>

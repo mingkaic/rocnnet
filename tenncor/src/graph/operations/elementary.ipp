@@ -383,12 +383,14 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 {
 	if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(root.get()))
 	{
-		typename inode<T>::GRAD_CACHE temp;
-		branch->get_leaves(temp);
+		std::unordered_set<ileaf<T>*> temp = branch->get_leaves();
 		std::vector<variable<T>*> leef;
-		for (auto tpair : temp)
+		for (ileaf<T>* ilef : temp)
 		{
-			leef.push_back(tpair.first);
+			if (variable<T>* var = dynamic_cast<variable<T>*>(ilef))
+			{
+				leef.push_back(var);
+			}
 		}
 		iconn->set_jacobian([axis](inode<T>* root, NODE_MAN<T>) -> inode<T>*
 		{

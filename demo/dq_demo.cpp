@@ -19,13 +19,18 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 	return vec;
 }
 
-static std::vector<double> avgevry2 (std::vector<double>& in)
+static std::vector<double> observationfit (std::vector<double>& in, size_t n_actions)
 {
-	std::vector<double> out;
-	for (size_t i = 0, n = in.size()/2; i < n; i++)
+	std::vector<double> out(n_actions);
+	size_t n = in.size();
+	for (size_t i = 0; i < n; i++)
 	{
-		double val = (in.at(2*i) + in.at(2*i+1)) / 2;
-		out.push_back(val);
+		out[i / n_actions] = in[i];
+	}
+	n /= n_actions;
+	for (size_t i = 0; i < n_actions; i++)
+	{
+		out[i] /= n;
 	}
 	return out;
 }
@@ -91,7 +96,7 @@ int main (int argc, char** argv)
 		std::vector<double> output;
 		double avgreward = 0;
 		observations = batch_generate(n_observations, 1);
-		expect_out = avgevry2(observations);
+		expect_out = observationfit(observations, n_actions);
 		double episode_err = 0;
 		for (size_t j = 0; j < max_steps; j++)
 		{
@@ -106,7 +111,7 @@ int main (int argc, char** argv)
 			avgreward += reward;
 
 			new_observations = batch_generate(n_observations, 1);
-			expect_out = avgevry2(new_observations);
+			expect_out = observationfit(new_observations, n_actions);
 
 			trained_dqn.store(observations, action, reward, new_observations);
 			trained_dqn.train();
@@ -152,7 +157,7 @@ int main (int argc, char** argv)
 	for (size_t j = 0; j < max_steps; j++)
 	{
 		observations = batch_generate(n_observations, 1);
-		expect_out = avgevry2(observations);
+		expect_out = observationfit(observations, n_actions);
 
 		double untrained_action = untrained_dqn.never_random(observations);
 		double trained_action = trained_dqn.never_random(observations);

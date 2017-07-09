@@ -65,7 +65,7 @@ static void unaryElemTest (UNARY_VAR func,
 		EXPECT_GE(epi, errf);
 	}
 
-	const tensor<double>* backtens = res->get_gradient(&var)->eval();
+	const tensor<double>* backtens = res->derive(&var)->eval();
 	std::vector<double> rawb = backtens->expose();
 	ASSERT_TRUE(tensorshape_equal(shape, backtens->get_shape()) || rawb.size() == 1);
 	if (rawb.size() == 1)
@@ -155,10 +155,10 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 		EXPECT_GE(epi, errf2);
 	}
 
-	const tensor<double>* backtens1 = res->get_gradient(&var)->eval();
-	const tensor<double>* backtens2 = res->get_gradient(&var2)->eval();
-	const tensor<double>* back1tens = res1->get_gradient(&var)->eval();
-	const tensor<double>* back2tens = res2->get_gradient(&var2)->eval();
+	const tensor<double>* backtens1 = res->derive(&var)->eval();
+	const tensor<double>* backtens2 = res->derive(&var2)->eval();
+	const tensor<double>* back1tens = res1->derive(&var)->eval();
+	const tensor<double>* back2tens = res2->derive(&var2)->eval();
 	std::vector<double> raw3 = backtens1->expose();
 	std::vector<double> raw4 = backtens2->expose();
 	std::vector<double> raw5 = back1tens->expose();

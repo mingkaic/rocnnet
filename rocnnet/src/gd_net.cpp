@@ -73,12 +73,12 @@ void gd_net::train (std::vector<double>& train_in, std::vector<double>& expected
 {
 	*train_in_ = train_in;
 	*expected_out_ = expected_out;
-	error_->update_status(true); // freeze
+	error_->freeze_status(true); // freeze
 	for (auto& trainer : updates_)
 	{
 		trainer();
 	}
-	error_->update_status(false); // update again
+	error_->freeze_status(false); // update again
 }
 
 gd_net::gd_net (const gd_net& other, std::string& scope) :

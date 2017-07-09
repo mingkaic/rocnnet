@@ -357,17 +357,17 @@ TEST(MATMUL, Jacobian_L004)
 	tA.initialize();
 	tB.initialize();
 
-	inode<double>* dresA = res->get_gradient(&A);
-	inode<double>* dresB = res->get_gradient(&B);
+	inode<double>* dresA = res->derive(&A);
+	inode<double>* dresB = res->derive(&B);
 
-	inode<double>* drestAA = restA->get_gradient(&tA);
-	inode<double>* drestAB = restA->get_gradient(&B);
+	inode<double>* drestAA = restA->derive(&tA);
+	inode<double>* drestAB = restA->derive(&B);
 
-	inode<double>* drestBA = restB->get_gradient(&A);
-	inode<double>* drestBB = restB->get_gradient(&tB);
+	inode<double>* drestBA = restB->derive(&A);
+	inode<double>* drestBB = restB->derive(&tB);
 
-	inode<double>* dresTA = resT->get_gradient(&tA);
-	inode<double>* dresTB = resT->get_gradient(&tB);
+	inode<double>* dresTA = resT->derive(&tA);
+	inode<double>* dresTB = resT->derive(&tB);
 
 // requires on all elementary operations to be valid (not a great validation method...)
 	// res = 1/(1+e^-(A@B))

@@ -400,12 +400,13 @@ new transfer_func<T>(
 		return mA * grada + mB * gradb;
 	};
 
-	typename inode<T>::GRAD_CACHE leaves;
-	this->get_leaves(leaves);
-	for (auto leaf_pair : leaves)
+	std::unordered_set<ileaf<T>*> leaves = this->get_leaves();
+	for (ileaf<T>* leaf : leaves)
 	{
-		variable<T>* leaf = leaf_pair.first;
-		this->jacobians_[leaf].list_.push_back(jtrans);
+		if (variable<T>* var = dynamic_cast<variable<T>*>(leaf))
+		{
+			this->jacobians_[var].list_.push_back(jtrans);
+		}
 	}
 }
 

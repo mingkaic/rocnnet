@@ -50,10 +50,6 @@ public:
 	//! move function
 	variable<T>* move (void);
 
-	// >>>> GRAPH STATUS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
-
 	// >>>> VARIABLE SPECIAL <<<<
 	//! copy over initializer, replace current initializer
 	void set_initializer (const initializer<T>& init);
@@ -85,7 +81,7 @@ protected:
 
 	// >>>> INTERNAL DATA TRANSFERS <<<<
 	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* leaf);
+	virtual inode<T>* get_gradient (variable<T>* leaf);
 };
 
 }

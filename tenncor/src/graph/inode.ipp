@@ -152,9 +152,9 @@ const tensor<T>* inode<T>::take_eval (inode<T>* source) const
 }
 
 template <typename T>
-inode<T>* inode<T>::take_leaf (inode<T>* source, variable<T>* leaf) const
+inode<T>* inode<T>::take_gradient (inode<T>* source, variable<T>* leaf) const
 {
-	return source->get_leaf(leaf);
+	return source->get_gradient(leaf);
 }
 
 template <typename T>

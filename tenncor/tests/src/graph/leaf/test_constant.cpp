@@ -164,7 +164,7 @@ TEST(CONSTANT, CopyNMove_D001)
 }
 
 
-// covers constant get_gradient
+// covers constant derive
 TEST(CONSTANT, GetGradient_D002)
 {
 	FUZZ::reset_logger();
@@ -172,9 +172,9 @@ TEST(CONSTANT, GetGradient_D002)
 	constant<double>* res = constant<double>::get(c);
 	constant<double>* res2 = constant<double>::get(c+1);
 
-	const tensor<double>* g1 = res->get_gradient(nullptr)->eval();
-	const tensor<double>* g2 = res->get_gradient(res)->eval();
-	const tensor<double>* g3 = res->get_gradient(res2)->eval();
+	const tensor<double>* g1 = res->derive(nullptr)->eval();
+	const tensor<double>* g2 = res->derive(res)->eval();
+	const tensor<double>* g3 = res->derive(res2)->eval();
 
 	std::vector<double> gres = g1->expose();
 	std::vector<double> gres1 = g2->expose();
@@ -193,7 +193,7 @@ TEST(CONSTANT, GetGradient_D002)
 }
 
 
-// covers constant get_leaf
+// covers constant get_gradient
 TEST(CONSTANT, GetLeaf_D003)
 {
 	FUZZ::reset_logger();
@@ -208,24 +208,8 @@ TEST(CONSTANT, GetLeaf_D003)
 }
 
 
-// covers constant get_leaves
-TEST(CONSTANT, GetLeaves_D004)
-{
-	FUZZ::reset_logger();
-	double c = FUZZ::getDouble(1, "c")[0];
-	constant<double>* res = constant<double>::get(c);
-
-	typename inode<double>::GRAD_CACHE leafset;
-	res->get_leaves(leafset);
-
-	EXPECT_TRUE(leafset.empty());
-
-	delete res;
-}
-
-
 // covers constant death_on_noparent
-TEST(CONSTANT, SelfDestruct_D005)
+TEST(CONSTANT, SelfDestruct_D004)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];
@@ -242,7 +226,7 @@ TEST(CONSTANT, SelfDestruct_D005)
 
 
 // verifies data status
-TEST(CONSTANT, Allocated_D006)
+TEST(CONSTANT, Allocated_D005)
 {
 	FUZZ::reset_logger();
 	double c = FUZZ::getDouble(1, "c")[0];

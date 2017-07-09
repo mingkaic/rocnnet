@@ -24,11 +24,13 @@ immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
 	immutable<T>* imm = new immutable<T>(args, Nf, ginit, name);
 	if (nullptr != ignore_jacobian)
 	{
-		typename inode<T>::GRAD_CACHE leaves;
-		ignore_jacobian->get_leaves(leaves);
-		for (auto leafpair : leaves)
+		std::unordered_set<ileaf<T>*> leaves = ignore_jacobian->get_leaves();
+		for (ileaf<T>* leaf : leaves)
 		{
-			imm->jacobians_.erase(leafpair.first);
+			if (variable<T>* var = dynamic_cast<variable<T>*>(leaf))
+			{
+				imm->jacobians_.erase(var);
+			}
 		}
 	}
 	return imm;
@@ -174,7 +176,7 @@ void immutable<T>::backward_pass (variable<T>* leaf)
 	for (subject* s : this->dependencies_)
 	{
 		inode<T>* fn = static_cast<inode<T>*>(s);
-		inode<T>* bn = this->take_leaf(fn, leaf);
+		inode<T>* bn = this->take_gradient(fn, leaf);
 		deps.push_back({fn, bn});
 	}
 	this->gcache_[leaf] = ginit_(deps);

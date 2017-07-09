@@ -91,9 +91,6 @@ placeholder<T>& placeholder<T>::operator = (tensor<T>& data)
 }
 
 template <typename T>
-void placeholder<T>::get_leaves (typename inode<T>::GRAD_CACHE&) const {}
-
-template <typename T>
 inode<T>* placeholder<T>::clone_impl (void) const
 {
 	return new placeholder<T>(*this);
@@ -106,7 +103,7 @@ inode<T>* placeholder<T>::move_impl (void)
 }
 
 template <typename T>
-inode<T>* placeholder<T>::get_leaf (variable<T>*)
+inode<T>* placeholder<T>::get_gradient (variable<T>*)
 {
 	return constant<T>::get_shared_zero();
 }

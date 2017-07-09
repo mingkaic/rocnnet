@@ -128,12 +128,6 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 }
 
 template <typename T>
-void variable<T>::get_leaves (typename inode<T>::GRAD_CACHE& leaves) const
-{
-	leaves.emplace(const_cast<variable<T>*>(this), nullptr);
-}
-
-template <typename T>
 inode<T>* variable<T>::clone_impl (void) const
 {
 	return new variable(*this);
@@ -146,7 +140,7 @@ inode<T>* variable<T>::move_impl (void)
 }
 
 template <typename T>
-inode<T>* variable<T>::get_leaf (variable<T>* leaf)
+inode<T>* variable<T>::get_gradient (variable<T>* leaf)
 {
 	if (this == leaf)
 	{

@@ -19,13 +19,13 @@ public:
 	mock_ivariable (const tensorshape& shape,
 		initializer<double>* init,
 		std::string name) : ivariable<double>(shape, init, name) {}
-	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
+	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const { return {}; }
 	initializer<double>* get_initializer (void) { return static_cast<initializer<double>*>(this->init_); }
 
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_ivariable(*this); }
 	virtual inode<double>* move_impl (void) { return new mock_ivariable(std::move(*this)); }
-	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
+	virtual inode<double>* get_gradient (variable<double>*) { return nullptr; }
 };
 
 #endif //TENNCOR_MOCK_IVARIABLE_H

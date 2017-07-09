@@ -516,7 +516,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 	});
 
 	inode<double>* out = nullptr;
-	inode<double>::GRAD_CACHE lcache;
+	std::unordered_set<ileaf<double>*> lcache;
 	for (immutable<double>* coll : collector)
 	{
 		if (coll == root) continue;
@@ -527,7 +527,7 @@ TEST(IMMUTABLE, TemporaryEval_I006)
 		ASSERT_TRUE(tensorshape_equal(shape, outt->get_shape()));
 		// out data should be 1 + M * single_rando where M is the
 		// number of root's leaves that are not in coll's leaves
-		coll->get_leaves(lcache);
+		lcache = coll->get_leaves();
 		size_t M = leaves.size() - lcache.size();
 		double datum = M * single_rando + 1;
 		std::vector<double> odata = outt->expose();
@@ -582,8 +582,7 @@ TEST(IMMUTABLE, GetLeaves_I007)
 		});
 
 	// the root has all leaves
-	inode<double>::GRAD_CACHE lcache;
-	root->get_leaves(lcache);
+	std::unordered_set<ileaf<double>*> lcache = root->get_leaves();
 	for (variable<double>* l : leaves)
 	{
 		EXPECT_TRUE(lcache.end() != lcache.find(l));
@@ -592,10 +591,13 @@ TEST(IMMUTABLE, GetLeaves_I007)
 	for (immutable<double>* coll : collector)
 	{
 		lcache.clear();
-		coll->get_leaves(lcache);
-		for (auto useful : lcache)
+		lcache = coll->get_leaves();
+		for (ileaf<double>* useful : lcache)
 		{
-			EXPECT_TRUE(leaves.end() != leaves.find(useful.first));
+			if (variable<double>* uvar = dynamic_cast<variable<double>*>(useful))
+			{
+				EXPECT_TRUE(leaves.end() != leaves.find(uvar));
+			}
 		}
 	}
 
@@ -769,15 +771,15 @@ TEST(IMMUTABLE, GetGradient_I009)
 	});
 
 	variable<double>* notleaf = new variable<double>(0);
-	inode<double>::GRAD_CACHE lcache;
+	std::unordered_set<ileaf<double>*> lcache;
 	for (size_t i = 0; i < nnodes/3; i++)
 	{
 		ordering.clear();
 		variable<double>* rselected = *(FUZZ::rand_select<std::unordered_set<variable<double>*> >(leaves));
-		const tensor<double>* wun = root->get_gradient(rselected)->eval();
+		const tensor<double>* wun = root->derive(rselected)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
-		const tensor<double>* zaro = root->get_gradient(notleaf)->eval();
+		const tensor<double>* zaro = root->derive(notleaf)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ordering.clear();
 
@@ -789,14 +791,14 @@ TEST(IMMUTABLE, GetGradient_I009)
 		// SAME AS TEMPORARY EVAL
 		immutable<double>* coll = *(FUZZ::rand_select<std::unordered_set<immutable<double>*> >(collector));
 		if (coll == root) continue;
-		const tensor<double>* grad_too = root->get_gradient(coll)->eval();
+		const tensor<double>* grad_too = root->derive(coll)->eval();
 		EXPECT_TRUE(bottom_up(ordering));
 		ASSERT_NE(nullptr, grad_too);
 		ASSERT_TRUE(tensorshape_equal(shape, grad_too->get_shape()));
 		// out data should be 1 + M * single_rando where M is the
 		// number of root's leaves that are not in coll's leaves
 		lcache.clear();
-		coll->get_leaves(lcache);
+		lcache = coll->get_leaves();
 		size_t M = leaves.size() - lcache.size();
 		double datum = M * single_rando + 1;
 		std::vector<double> odata = grad_too->expose();

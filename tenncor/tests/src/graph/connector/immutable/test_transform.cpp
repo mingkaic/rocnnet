@@ -71,7 +71,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> varout = expose(&var);
 	std::vector<double> expectout = expect_transfer(varout, shape);
-	nnet::inode<double>* vgrad = var.get_gradient(&var);
+	nnet::inode<double>* vgrad = var.derive(&var);
 	{
 		const nnet::tensor<double>* vgradtens = vgrad->eval();
 		ASSERT_NE(nullptr, vgradtens);
@@ -91,9 +91,9 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	// test derivative
 	if ((bool) grad_transfer && (bool) grad_shape)
 	{
-		tensorshape gradoshape = (*grad_shape)(var.get_gradient(&var)->get_shape());
+		tensorshape gradoshape = (*grad_shape)(var.derive(&var)->get_shape());
 		std::vector<double> gradout = (*grad_transfer)(expose(vgrad), vgrad->get_shape());
-		const tensor<double>* backt = res->get_gradient(&var)->eval();
+		const tensor<double>* backt = res->derive(&var)->eval();
 		tensorshape outgshape = backt->get_shape();
 		std::vector<double> rgout = backt->expose();
 		EXPECT_TRUE(tensorshape_equal(gradoshape, outgshape));
@@ -105,7 +105,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	}
 	else
 	{
-		EXPECT_THROW(res->get_gradient(&var), std::exception);
+		EXPECT_THROW(res->derive(&var), std::exception);
 	}
 
 	// Behavior K000

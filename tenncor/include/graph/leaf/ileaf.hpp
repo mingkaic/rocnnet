@@ -49,13 +49,14 @@ public:
 
 	// >>>> FORWARD DATA <<<<
 	//! get forward passing value, (pull data if necessary)
-	virtual const tensor<T>* eval (void)
-	{
-		return get_eval();
-	}
+	virtual const tensor<T>* eval (void);
 
 	//! utility function: get data shape
 	virtual tensorshape get_shape (void) const;
+
+	// >>>> GRAPH STATUS <<<<
+	//! merge/update the gradient/leaf info
+	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const;
 
 	// >>>> NODE STATUS <<<<
 	//! check if data is available

@@ -49,7 +49,7 @@ base_immutable<T>& base_immutable<T>::operator = (base_immutable<T>&& other)
 }
 
 template <typename T>
-varptr<T> base_immutable<T>::get_gradient (inode<T>* wrt)
+varptr<T> base_immutable<T>::derive (inode<T>* wrt)
 {
 	varptr<T> out;
 	iconnector<T>* conn = dynamic_cast<iconnector<T>*>(wrt);
@@ -61,11 +61,11 @@ varptr<T> base_immutable<T>::get_gradient (inode<T>* wrt)
 	// check cache
 	else if (variable<T>* leaf = dynamic_cast<variable<T>*>(wrt))
 	{
-		out = this->get_leaf(leaf);
+		out = this->get_gradient(leaf);
 		// modify res with jacobian
 		auto& j = this->jacobians_[leaf];
 		auto leaf_finder = [this, leaf](inode<T>* arg)
-		{ return this->take_leaf(arg, leaf); };
+		{ return this->take_gradient(arg, leaf); };
 		for (auto it = j.list_.rbegin(), et = j.list_.rend(); it != et; it++)
 		{
 			out = (*it)(out, leaf_finder);
@@ -102,7 +102,7 @@ void base_immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& 
 template <typename T>
 tensorshape base_immutable<T>::get_shape (void) const
 {
-	if (this->gid_) this->gid_->update();
+	if (this->g_man_) this->g_man_->update();
 	if (nullptr == data_)
 	{
 		return tensorshape();
@@ -111,12 +111,14 @@ tensorshape base_immutable<T>::get_shape (void) const
 }
 
 template <typename T>
-void base_immutable<T>::get_leaves (typename inode<T>::GRAD_CACHE& leaves) const
+std::unordered_set<ileaf<T>*> base_immutable<T>::get_leaves (void) const
 {
+	std::unordered_set<ileaf<T>*> leaves;
 	for (auto leaf : gcache_)
 	{
-		leaves[leaf.first] = nullptr;
+		leaves.emplace(leaf.first);
 	}
+	return leaves;
 }
 
 template <typename T>
@@ -157,10 +159,10 @@ void base_immutable<T>::update (std::unordered_set<size_t>)
 	}
 	else if (allgood)
 	{
-		if (this->gid_->freeze_ || 1 < this->dependencies_.size())
+		if (this->freeze_ || 1 < this->dependencies_.size())
 		// n-aries are pull update
 		{
-			this->gid_->add_update(this, [this](){ forward_pass(); });
+			this->g_man_->add_update(this, [this](){ forward_pass(); });
 		}
 		else
 		// unaries are push update
@@ -176,9 +178,15 @@ template <typename T>
 base_immutable<T>::base_immutable (std::vector<inode<T>*> args, std::string label) :
 	iconnector<T>(args, label)
 {
+	std::unordered_set<ileaf<T>*> leafset;
 	for (subject* sub : this->dependencies_)
 	{
-		static_cast<inode<T>*>(sub)->get_leaves(gcache_);
+		std::unordered_set<ileaf<T>*> leef = static_cast<inode<T>*>(sub)->get_leaves();
+		leafset.insert(leef.begin(), leef.end());
+	}
+	for (ileaf<T>* l : leafset)
+	{
+		gcache_[l] = nullptr;
 	}
 }
 
@@ -209,7 +217,7 @@ const tensor<T>* base_immutable<T>::get_eval (void) const
 }
 
 template <typename T>
-inode<T>* base_immutable<T>::get_leaf (variable<T>* leaf)
+inode<T>* base_immutable<T>::get_gradient (variable<T>* leaf)
 {
 	auto it = gcache_.find(leaf);
 	if (gcache_.end() == it)
@@ -378,7 +386,7 @@ struct merged_immutable<T>::temp_immutable : public base_immutable<T>
 		out = gout_;
 	}
 
-	virtual varptr<T> get_gradient (inode<T>*)
+	virtual varptr<T> derive (inode<T>*)
 	{
 		return gout_;
 	}
@@ -388,7 +396,7 @@ struct merged_immutable<T>::temp_immutable : public base_immutable<T>
 		return { summ_ };
 	}
 
-	virtual inode<T>* get_leaf (variable<T>*)
+	virtual inode<T>* get_gradient (variable<T>*)
 	{
 		return gout_;
 	}
@@ -663,14 +671,14 @@ void merged_immutable<T>::backward_pass (variable<T>* leaf)
 		std::vector<std::pair<inode<T>*,inode<T>*> > fb_nodes;
 		for (inode<T>* fn : args)
 		{
-			varptr<T> bn = this->take_leaf(fn, leaf);
+			varptr<T> bn = this->take_gradient(fn, leaf);
 			fb_nodes.push_back({fn, bn});
 		}
 		temp_immutable* temp_out = new temp_immutable(args, summ, summ.ginit_(fb_nodes));
 		temps.push_back(temp_out);
 		return temp_out;
 	}));
-	base_immutable<T>* imm = static_cast<base_immutable<T>*>(out->get_gradient(leaf).get());
+	base_immutable<T>* imm = static_cast<base_immutable<T>*>(out->derive(leaf).get());
 	for (temp_immutable* t : temps)
 	{
 		t->gout_ = nullptr;

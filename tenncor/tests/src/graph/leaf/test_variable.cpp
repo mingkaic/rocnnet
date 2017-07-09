@@ -271,7 +271,7 @@ TEST(VARIABLE, SetInit_F002)
 
 
 // covers variable
-// get_leaf
+// get_gradient
 TEST(VARIABLE, GetLeaf_F003)
 {
 	FUZZ::reset_logger();
@@ -335,41 +335,8 @@ TEST(VARIABLE, GetLeaf_F003)
 
 
 // covers variable
-// get_leaves
-TEST(VARIABLE, GetLeaves_F004)
-{
-	FUZZ::reset_logger();
-	std::vector<size_t> strns = FUZZ::getInt(4, "strns", {14, 29});
-	std::string label1 = FUZZ::getString(strns[0]);
-	std::string label2 = FUZZ::getString(strns[1]);
-	std::string label3 = FUZZ::getString(strns[2]);
-	std::string label4 = FUZZ::getString(strns[3]);
-	tensorshape shape = random_def_shape();
-	double c = FUZZ::getDouble(1, "c")[0];
-
-	const_init<double> cinit(c);
-	rand_uniform<double> rinit(0, 1);
-
-	variable<double> scalar(c, label1);
-	variable<double> noinitv(shape, label2);
-	variable<double> cinitv(shape, cinit, label3);
-	variable<double> rinitv(shape, rinit, label4);
-
-	typename inode<double>::GRAD_CACHE leafset;
-	scalar.get_leaves(leafset);
-	EXPECT_TRUE(leafset.end() != leafset.find(&scalar));
-	noinitv.get_leaves(leafset);
-	EXPECT_TRUE(leafset.end() != leafset.find(&noinitv));
-	cinitv.get_leaves(leafset);
-	EXPECT_TRUE(leafset.end() != leafset.find(&cinitv));
-	rinitv.get_leaves(leafset);
-	EXPECT_TRUE(leafset.end() != leafset.find(&rinitv));
-}
-
-
-// covers variable
 // initialize
-TEST(VARIABLE, Initialize_F005)
+TEST(VARIABLE, Initialize_F004)
 {
 	mocker::usage_.clear();
 	FUZZ::reset_logger();

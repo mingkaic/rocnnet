@@ -133,10 +133,10 @@ TEST(IVARIABLE, GetGradient_E002)
 	mock_ivariable noinit(shape, nullptr, label1);
 	mock_ivariable inited(shape, cinit, label1);
 
-	const tensor<double>* wun = noinit.get_gradient(&noinit)->eval();
-	const tensor<double>* wuntoo = inited.get_gradient(&inited)->eval();
-	const tensor<double>* zaro = noinit.get_gradient(&inited)->eval();
-	const tensor<double>* zarotoo = inited.get_gradient(&noinit)->eval();
+	const tensor<double>* wun = noinit.derive(&noinit)->eval();
+	const tensor<double>* wuntoo = inited.derive(&inited)->eval();
+	const tensor<double>* zaro = noinit.derive(&inited)->eval();
+	const tensor<double>* zarotoo = inited.derive(&noinit)->eval();
 
 	EXPECT_EQ((size_t) 1, wun->n_elems());
 	EXPECT_EQ((size_t) 1, wuntoo->n_elems());

@@ -263,6 +263,19 @@ TEST(LEAF, GoodStatus_C003)
 //C004 - reading a valid tensor_proto should initialize the leaf
 
 
+TEST(LEAF, GetLeaves_G005)
+{
+	FUZZ::reset_logger();
+	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
+	tensorshape shape = random_def_shape();
+
+	mock_leaf res(shape, label1);
+
+	std::unordered_set<ileaf<double>*> leafset = res.get_leaves();
+	EXPECT_TRUE(leafset.end() != leafset.find(&res));
+}
+
+
 #endif /* DISABLE_LEAF_TEST */
 
 

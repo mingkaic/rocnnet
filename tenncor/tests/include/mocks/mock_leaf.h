@@ -21,8 +21,7 @@ public:
 	mock_leaf (std::string name) : ileaf<double>(random_def_shape(), name) {}
 	mock_leaf (const tensorshape& shape, std::string name) : ileaf<double>(shape, name) {}
 
-	virtual varptr<double> get_gradient (inode<double>*) { return nullptr; }
-	virtual void get_leaves (typename inode<double>::GRAD_CACHE&) const {}
+	virtual varptr<double> derive (inode<double>*) { return nullptr; }
 
 	void set_good (void) { this->is_init_ = true; }
 	void mock_init_data (initializer<double>& initer) { initer(this->data_); }
@@ -30,7 +29,7 @@ public:
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_leaf(*this); }
 	virtual inode<double>* move_impl (void) { return new mock_leaf(std::move(*this)); }
-	virtual inode<double>* get_leaf (variable<double>*) { return nullptr; }
+	virtual inode<double>* get_gradient (variable<double>*) { return nullptr; }
 };
 
 

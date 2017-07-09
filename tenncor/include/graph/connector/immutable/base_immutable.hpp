@@ -30,6 +30,9 @@ template <typename T>
 class base_immutable : public iconnector<T>
 {
 public:
+	//! type for mapping leaf nodes to derivative with respect to leaf
+	using GRAD_CACHE = std::unordered_map<ileaf<T>*,varptr<T> >;
+
 	virtual ~base_immutable (void);
 
 	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
@@ -51,15 +54,15 @@ public:
 	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
-	//! may call get_leaf
-	virtual varptr<T> get_gradient (inode<T>* wrt);
+	//! may call get_gradient
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	//! Utility function: get data shape
 	virtual tensorshape get_shape (void) const;
 
 	// >>>> GRAPH STATUS <<<<
 	//! get gradient leaves
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
+	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const;
 
 	// >>>> NODE STATUS <<<<
 	//! check if the arguments are good; data is available
@@ -100,7 +103,7 @@ protected:
 
 	//! grab operational gradient node, used by other nodes
 	//! delay instantiate gcache elements if target leaf was never instantiated
-	virtual inode<T>* get_leaf (variable<T>* leaf);
+	virtual inode<T>* get_gradient (variable<T>* leaf);
 
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
@@ -113,7 +116,7 @@ protected:
 	//! lazy instantiates gradient nodes
 	//! - stores the gradient value wrt each leaf
 	//! - record leaf set
-	typename inode<T>::GRAD_CACHE gcache_;
+	typename base_immutable<T>::GRAD_CACHE gcache_;
 
 // todo: have an option to disable data_ caching for performance boost
 	//! inner tensor to cache forward evaluated values

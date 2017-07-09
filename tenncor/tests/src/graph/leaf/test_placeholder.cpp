@@ -235,20 +235,6 @@ TEST(PLACHOLDER, GetLeaf_G004)
 }
 
 
-TEST(PLACHOLDER, GetLeaves_G005)
-{
-	FUZZ::reset_logger();
-	std::string label1 = FUZZ::getString(FUZZ::getInt(1, "label1.size", {14, 29})[0], "label1");
-	tensorshape shape = random_def_shape();
-
-	placeholder<double> place(shape, label1);
-
-	typename inode<double>::GRAD_CACHE leafset;
-	place.get_leaves(leafset);
-	EXPECT_TRUE(leafset.empty());
-}
-
-
 #endif /* DISABLE_PLACEHOLDER_TEST */
 
 

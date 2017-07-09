@@ -63,10 +63,6 @@ public:
 	//! assign tensor to inner tensor
 	virtual placeholder<T>& operator = (tensor<T>& data);
 
-	// >>>> GRAPH STATUS <<<<
-	//! merge/update the gradient/leaf info
-	virtual void get_leaves (typename inode<T>::GRAD_CACHE& leaves) const;
-
 protected:
 	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone implementation
@@ -77,7 +73,7 @@ protected:
 
 	// >>>> INTERNAL DATA TRANSFERS <<<<
 	//! grab operational gradient node, used by other nodes
-	virtual inode<T>* get_leaf (variable<T>* );
+	virtual inode<T>* get_gradient (variable<T>* );
 };
 
 }
