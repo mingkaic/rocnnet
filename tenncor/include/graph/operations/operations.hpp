@@ -217,13 +217,15 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
+template <typename T>
+varptr<T> symmetric (const varptr<T> a, std::pair<size_t,size_t> dims, ELEM_FUNC<T> collector, std::string name);
+
 //! convolve a with filter, along window which defines which dimensions to convolve
 //! for example: window {0, 1} gives output f[i, j, :] = sum(a[i:i+filtshape[0], j:j+filtshape[1], :] * filter)
 //! whereas window {0,2} gives output f[i, :, j] = sum(a[i:i+filtshape[0], :, j:j+filtshape[1]] * filter)
 //! if pad == true, then pad output with zero to fit a's shape, otherwise leave as is after conv
 template <typename T>
-varptr<T> conv (const varptr<T> a, const varptr<T> filter,
-	std::unordered_set<size_t> dim_window = {0, 1}, bool pad = false);
+varptr<T> conv2d (const varptr<T> a, const varptr<T> filter, std::pair<size_t,size_t> dim_window = {0, 1});
 
 // todo: implement
 // [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]

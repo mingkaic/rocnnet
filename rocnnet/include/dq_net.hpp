@@ -55,8 +55,6 @@ public:
 
 	double action (std::vector<double>& input);
 
-	double never_random (std::vector<double>& input);
-
 	void store (std::vector<double> observation, size_t action_idx,
 		double reward, std::vector<double> new_obs);
 

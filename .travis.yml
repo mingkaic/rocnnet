@@ -8,7 +8,7 @@ cache:
   - $HOME/prototxts
 
 install:
-- sudo bash -x $TRAVIS_BUILD_DIR/travis.sh $HOME/rocnnet-dep $TRAVIS_BUILD_DIR
+- sudo bash -x $TRAVIS_BUILD_DIR/setup.sh $HOME/rocnnet-dep $TRAVIS_BUILD_DIR
 
 script:
 - bash tests.sh $HOME/prototxts

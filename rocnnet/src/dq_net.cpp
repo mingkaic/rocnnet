@@ -71,13 +71,9 @@ double dq_net::action (std::vector<double>& input)
 		return std::floor(get_random() * source_qnet_->get_noutput());
 	}
 	*input_ = input;
-	return nnet::expose<double>(best_output_)[0];
-}
-
-double dq_net::never_random (std::vector<double>& input)
-{
-	*input_ = input;
-	return nnet::expose<double>(best_output_)[0];
+	std::vector<double> best = nnet::expose<double>(best_output_);
+	assert(false == best.empty());
+	return best[0];
 }
 
 void dq_net::store (std::vector<double> observation, size_t action_idx,

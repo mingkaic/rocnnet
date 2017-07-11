@@ -166,9 +166,9 @@ int main (int argc, char** argv)
 		observations = batch_generate(n_observations, 1);
 		expect_out = observationfit(observations, n_actions);
 
-		double untrained_action = untrained_dqn.never_random(observations);
-		double trained_action = trained_dqn.never_random(observations);
-		double pretrained_action = pretrained_dqn.never_random(observations);
+		double untrained_action = untrained_dqn.action(observations);
+		double trained_action = trained_dqn.action(observations);
+		double pretrained_action = pretrained_dqn.action(observations);
 
 		auto mit = std::max_element(expect_out.begin(), expect_out.end());
 		size_t expect_action = std::distance(expect_out.begin(), mit);

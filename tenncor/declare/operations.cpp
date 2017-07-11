@@ -80,8 +80,9 @@ template varptr<double> arg_compress (const varptr<double> a, optional<size_t> d
 
 template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
-template varptr<double> conv (const varptr<double> a, const varptr<double> filter,
-	std::unordered_set<size_t> dim_window = {0, 1}, bool pad = false);
+template varptr<double> symmetric (const varptr<double> a, std::pair<size_t,size_t> dims, ELEM_FUNC<double> collector, std::string name);
+
+template varptr<double> conv2d (const varptr<double> a, const varptr<double> filter, std::pair<size_t,size_t> dim_window = {0, 1});
 
 //template varptr<double> trace (const varptr<double> a);
 

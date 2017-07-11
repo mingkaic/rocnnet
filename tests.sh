@@ -69,13 +69,14 @@ assert_cmd "valgrind --tool=memcheck ${BINDIR}/gd_demo $PBX_CACHE 5 1"
 assert_cmd "${BINDIR}/gd_demo $PBX_CACHE"
 echo "gd_demo complete"
 
-echo "running basic dq_demo"
+echo "running C++ dq_demo"
 assert_cmd "valgrind --tool=memcheck ${BINDIR}/dq_demo $PBX_CACHE 1 5"
 assert_cmd "${BINDIR}/dq_demo $PBX_CACHE"
-echo "basic dq_demo complete"
+echo "C++ dq_demo complete"
 
-#echo "running python dq_demo"
-#assert_cmd "python ${BUILDDIR}/pydemo/dq_demo.py"
+echo "running python dq_demo"
+assert_cmd "python ${BUILDDIR}/pydemo/dq_demo.py"
+echo "python dq_demo complete"
 
 # coverage analysis
 pushd ${BUILDDIR}

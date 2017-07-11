@@ -312,18 +312,20 @@ varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 }
 
 template <typename T>
+inline T mean (const T** data, size_t n)
+{
+	T accum = 0;
+	for (size_t i = 0; i < n; i++)
+	{
+		accum += *data[i];
+	}
+	return accum / n;
+}
+
+template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
-	return compress<T>(a, dimension,
-	[](const T** data, size_t n) -> T
-	{
-		T accum = 0;
-		for (size_t i = 0; i < n; i++)
-		{
-			accum += *data[i];
-		}
-		return accum / n;
-	}, "reduce_mean",
+	return compress<T>(a, dimension, mean<T>, "reduce_mean",
 	[dimension](varptr<T> back, varptr<T> forward)
 	{
 		varptr<T> denom;
@@ -455,11 +457,121 @@ varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 }
 
 template <typename T>
-varptr<T> conv (const varptr<T> a, const varptr<T> filter,
-	std::unordered_set<size_t> dim_window, bool pad)
+varptr<T> symmetric (const varptr<T> a, std::pair<size_t,size_t> dims, ELEM_FUNC<T> collector, std::string name)
+{
+	if (nullptr == a.get()) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::string opname = nnutils::formatter() << "sym_" << dims.first << "_" << dims.second << "_" << name;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 1 && args[0] == a)
+				return aud;
+		}
+	}
+
+	immutable<T>* sym = immutable<T>::get(std::vector<inode<T>*>{a},
+	new transfer_func<T>(
+	[](std::vector<tensorshape> shapes) -> tensorshape
+	{
+		return shapes[0].as_list();
+	},
+	{
+		[](size_t i, tensorshape&, const tensorshape&) -> std::vector<size_t>
+		{
+			return {i};
+		},
+		[dims](size_t i, tensorshape&, const tensorshape& outshape) -> std::vector<size_t>
+		{
+			std::vector<size_t> outlist = outshape.as_list();
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			coord[dims.first] = outlist[dims.first] - coord[dims.first] - 1;
+			coord[dims.second] = outlist[dims.second] - coord[dims.second] - 1;
+			return {outshape.sequential_idx(coord)};
+		}
+	}, collector),
+	[dims, collector, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		return symmetric<T>(args.front().second, dims, collector, name);
+	}, opname);
+	return sym;
+}
+
+template <typename T>
+varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
+	std::pair<size_t, size_t> dim_window)
 {
 	if (nullptr == a.get() || nullptr == filter.get()) return nullptr;
-	return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::string opname = nnutils::formatter() << "conv_" << dim_window.first << "_" << dim_window.second;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 2 && args[0] == a && args[1] == filter)
+				return aud;
+		}
+	}
+
+	immutable<T>* cv = immutable<T>::get(std::vector<inode<T>*>{a, symmetric<T>(filter, dim_window, mean<T>, "mean")},
+	new transfer_func<T>(
+	[dim_window](std::vector<tensorshape> shapes) -> tensorshape
+	{
+		std::vector<size_t> outshape = shapes[0].as_list();
+		std::vector<size_t> filtshape = shapes[1].as_list();
+		outshape[dim_window.first] -= filtshape[dim_window.first] + 1;
+		outshape[dim_window.second] -= filtshape[dim_window.second] + 1;
+		return outshape;
+	},
+	{
+		[dim_window](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+		{
+			std::vector<size_t> outlist = outshape.as_list();
+			std::vector<size_t> alist = ashape.as_list();
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			size_t firstn = alist[dim_window.first] - outlist[dim_window.first];
+			size_t secondn = alist[dim_window.second] - outlist[dim_window.second];
+
+			std::vector<size_t> indices;
+			for (size_t i = 0; i < secondn; i++)
+			{
+				coord[dim_window.second]++;
+				std::vector<size_t> temp = coord;
+				for (size_t j = 0; j < firstn; j++)
+				{
+					temp[dim_window.first]++;
+					indices.push_back(ashape.sequential_idx(temp));
+				}
+			}
+			return indices;
+		},
+		[](size_t, tensorshape& filtshape, const tensorshape&) -> std::vector<size_t>
+		{
+			std::vector<size_t> all;
+			for (size_t i = 0, n = filtshape.n_elems(); i < n; i++) { all.push_back(i); }
+			return all;
+		}
+	},
+	ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		T accum = 0;
+		for (size_t i = 0; i < n; i += 2)
+		{
+			accum += *(group[i]) * *(group[i+1]);
+		}
+		return accum;
+	})),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
+	{
+		return constant<T>::get_shared_one();
+	}, opname);
+
+	return cv;
 }
 
 }
