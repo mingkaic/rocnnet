@@ -38,17 +38,23 @@ exec_cmd() {
 
 PROTODIR="protobuf-3.2.0"
 GTESTDIR="googletest-release-1.8.0"
+INSTALLER="apt-get"
+if [ ! -z $1 ]; then
+    INSTALLER=$1
+fi
 
 # ===== install installation dependencies =====
-sudo apt-get install -y ruby1.9.3
+sudo $INSTALLER install -y ruby1.9.3
 gem1.9.1 --version
 
-# ===== build dependencies =====
+if [$INSTALLER == "apt-get"]; then
+    exec_cmd "apt-get autoremove -y"
+    exec_cmd "apt-add-repository -y ppa:ubuntu-toolchain-r/test"
+fi
 
+# ===== build dependencies =====
 # install compilers
-exec_cmd "apt-get autoremove -y"
-exec_cmd "apt-add-repository -y ppa:ubuntu-toolchain-r/test"
-exec_cmd "apt-get update && apt-get install -y g++-6 gcc-6"
+exec_cmd "$INSTALLER update && $INSTALLER install -y g++-6 gcc-6"
 rm /usr/bin/g++ 
 rm /usr/bin/gcc
 exec_cmd "mv /usr/bin/g++-6 /usr/bin/g++"
@@ -63,11 +69,15 @@ fi
 # install protobuf3
 exec_cmd "pushd $1/$PROTODIR && make install && ldconfig && popd"
 
+# install pip
+$INSTALLER install python-setuptools python-dev build-essential
+easy_install pip
+
 # install swig
-exec_cmd "apt-get update && apt-get install -y swig"
+exec_cmd "$INSTALLER update && $INSTALLER install -y swig"
 
 # install PythonLibs and tk
-exec_cmd "apt-get update && apt-get install -y python-dev python-tk"
+exec_cmd "$INSTALLER update && $INSTALLER install -y python-dev python-tk"
 
 # install python requirements
 exec_cmd "pushd $2 && pip install -r requirements.txt && popd"
@@ -85,8 +95,8 @@ exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/include/gmock googletest/includ
 exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so  /usr/lib/ && popd"
 
 # download valgrind for profiling
-apt-get -qq update
-apt-get install -y libgtest-dev valgrind
+$INSTALLER -qq update
+$INSTALLER install -y libgtest-dev valgrind
 
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz
