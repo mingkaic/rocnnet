@@ -44,8 +44,12 @@ if [ ! -z $3 ]; then
 fi
 
 # ===== install installation dependencies =====
-sudo $INSTALLER install -y ruby1.9.3
-gem1.9.1 --version
+CURR_GEM_VER="$(gcc -v)"
+REQ_GEM_VER="1.9.1"
+if [ "$(printf "$REQ_GEM_VER\n$CURR_GEM_VER" | sort -V | head -n1)" == "$CURR_GEM_VER" ] && [ "$CURR_GEM_VER" != "$REQ_GEM_VER" ]; then
+    exec_cmd "$INSTALLER update && $INSTALLER install -y ruby 1.9.3"
+    gem --version
+fi
 
 if [ "$INSTALLER" == "apt-get" ]; then
     exec_cmd "apt-get autoremove -y"
@@ -115,7 +119,7 @@ tar xf lcov_1.13.orig.tar.gz
 make -C lcov-1.13/ install
 
 # download coverall-lconv (ruby)
-gem1.9.1 install coveralls-lcov
+gem install coveralls-lcov
 
 # downlaod open-ai gym
 exec_cmd "pushd $2/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
