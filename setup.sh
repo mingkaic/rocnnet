@@ -81,7 +81,7 @@ fi
 exec_cmd "pushd $1/$PROTODIR && make install && ldconfig && popd"
 
 # install pip
-$INSTALLER install python-setuptools python-dev build-essential
+$INSTALLER install -y python-setuptools python-dev build-essential
 easy_install pip
 
 # install swig
