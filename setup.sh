@@ -39,26 +39,37 @@ exec_cmd() {
 PROTODIR="protobuf-3.2.0"
 GTESTDIR="googletest-release-1.8.0"
 INSTALLER="apt-get"
-if [ ! -z $1 ]; then
-    INSTALLER=$1
+if [ ! -z $3 ]; then
+    INSTALLER=$3
 fi
 
 # ===== install installation dependencies =====
 sudo $INSTALLER install -y ruby1.9.3
 gem1.9.1 --version
 
-if [$INSTALLER == "apt-get"]; then
+if [ "$INSTALLER" == "apt-get" ]; then
     exec_cmd "apt-get autoremove -y"
     exec_cmd "apt-add-repository -y ppa:ubuntu-toolchain-r/test"
 fi
 
 # ===== build dependencies =====
-# install compilers
-exec_cmd "$INSTALLER update && $INSTALLER install -y g++-6 gcc-6"
-rm /usr/bin/g++ 
-rm /usr/bin/gcc
-exec_cmd "mv /usr/bin/g++-6 /usr/bin/g++"
-exec_cmd "mv /usr/bin/gcc-6 /usr/bin/gcc"
+REQUIRED_GCC_VER="6.0.0"
+REQUIRED_GPLUS_VER="6.0.0"
+
+# upgrade compilers
+CURR_GCC_VER="$(gcc -dumpversion)"
+if [ "$(printf "$REQUIRED_GCC_VER\n$CURR_GCC_VER" | sort -V | head -n1)" == "$CURR_GCC_VER" ] && [ "$CURR_GCC_VER" != "$REQUIRED_GCC_VER" ]; then
+    exec_cmd "$INSTALLER update && $INSTALLER install -y gcc-6"
+    rm /usr/bin/gcc
+    exec_cmd "mv /usr/bin/gcc-6 /usr/bin/gcc"
+fi
+
+CURR_GPLUS_VER="$(g++ -dumpversion)"
+if [ "$(printf "$REQUIRED_GPLUS_VER\n$CURR_GPLUS_VER" | sort -V | head -n1)" == "$CURR_GPLUS_VER" ] && [ "$CURR_GPLUS_VER" != "$REQUIRED_GPLUS_VER" ]; then
+    exec_cmd "$INSTALLER update && $INSTALLER install -y g++-6"
+    rm /usr/bin/g++
+    exec_cmd "mv /usr/bin/g++-6 /usr/bin/g++"
+fi
 
 # download protobuf3 and cache if necessary
 if [ ! -d $1/$PROTODIR/ ]; then
