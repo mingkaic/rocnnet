@@ -4,6 +4,40 @@
 # this script installs all the dependencies necessary to run the project
 #
 
+# ===== Check and define directories
+
+PROTODIR="protobuf-3.2.0"
+GTESTDIR="googletest-release-1.8.0"
+INSTALLER="apt-get"
+
+# ===== Parameter sanity check =====
+
+if [ $# -ne 2 ];
+then
+    usage
+fi
+
+if [ ! -d $1 ];
+then
+    echo "Unpack directory $1 does not exist"
+    echo ""
+    usage;
+fi
+
+if [ ! -d $2 ];
+then
+    echo "Build directory $2 does not exist"
+    echo ""
+    usage;
+fi
+
+if [ ! -z $3 ];
+then
+    INSTALLER=$3
+fi
+
+# ===== Define functions
+
 function usage() {
     echo "$0: <unpack location> <build directory>";
     echo "  Unpack location is used to store downloaded dependent packages";
@@ -11,72 +45,71 @@ function usage() {
     exit 1;
 }
 
-if [ $# -ne 2 ]; then
-    usage
-fi
-
-if [ ! -d $1 ]; then
-    echo "Unpack directory $1 does not exist"
-    echo ""
-    usage;
-fi
-
-if [ ! -d $2 ]; then
-    echo "Build directory $2 does not exist"
-    echo ""
-    usage;
-fi
-
-exec_cmd() {
+# executes command, echo usage if it fails
+function exec_cmd() {
     eval $*
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ];
+    then
         echo "Command $* failed"
         usage
     fi
     return $!
 }
 
-PROTODIR="protobuf-3.2.0"
-GTESTDIR="googletest-release-1.8.0"
-INSTALLER="apt-get"
-if [ ! -z $3 ]; then
-    INSTALLER=$3
-fi
+# executes commands (third param) if required version (first param) is greater than current version (second param)
+function meets_version() {
+    REQ_VER=#1
+    CUR_VER=#2
+    EXC_CMD=#3
+    if [ "$(printf "$REQ_VER\n$CUR_VER" | sort -V | head -n1)" == "$CUR_VER" ] && [ "$CUR_VER" != "$REQ_VER" ];
+    then
+        exec_cmd $EXC_CMD
+    fi
+}
 
-# ===== install installation dependencies =====
-CURR_GEM_VER="$(gcc -v)"
-REQ_GEM_VER="1.9.1"
-if [ "$(printf "$REQ_GEM_VER\n$CURR_GEM_VER" | sort -V | head -n1)" == "$CURR_GEM_VER" ] && [ "$CURR_GEM_VER" != "$REQ_GEM_VER" ]; then
-    exec_cmd "$INSTALLER update && $INSTALLER install -y ruby 1.9.3"
-    gem --version
-fi
+# executes installation using INSTALLER
+function install() {
+    $INSTALLER update && $INSTALLER install -y $*
+}
 
-if [ "$INSTALLER" == "apt-get" ]; then
+# ===== Grab apt-get repositories =====
+
+if [ "$INSTALLER" == "apt-get" ];
+then
     exec_cmd "apt-get autoremove -y"
     exec_cmd "apt-add-repository -y ppa:ubuntu-toolchain-r/test"
 fi
 
-# ===== build dependencies =====
-REQUIRED_GCC_VER="6.0.0"
-REQUIRED_GPLUS_VER="6.0.0"
+# ===== Install ruby, python and essentials =====
 
-# upgrade compilers
-CURR_GCC_VER="$(gcc -dumpversion)"
-if [ "$(printf "$REQUIRED_GCC_VER\n$CURR_GCC_VER" | sort -V | head -n1)" == "$CURR_GCC_VER" ] && [ "$CURR_GCC_VER" != "$REQUIRED_GCC_VER" ]; then
-    exec_cmd "$INSTALLER update && $INSTALLER install -y gcc-6"
-    rm /usr/bin/gcc
-    exec_cmd "mv /usr/bin/gcc-6 /usr/bin/gcc"
-fi
+REQ_GEM_VER="1.9.1"
+CUR_GEM_VER="$(gcc -v)"
+meets_version $REQ_GEM_VER $CUR_GEM_VER "install ruby 1.9.3"
 
-CURR_GPLUS_VER="$(g++ -dumpversion)"
-if [ "$(printf "$REQUIRED_GPLUS_VER\n$CURR_GPLUS_VER" | sort -V | head -n1)" == "$CURR_GPLUS_VER" ] && [ "$CURR_GPLUS_VER" != "$REQUIRED_GPLUS_VER" ]; then
-    exec_cmd "$INSTALLER update && $INSTALLER install -y g++-6"
-    rm /usr/bin/g++
-    exec_cmd "mv /usr/bin/g++-6 /usr/bin/g++"
-fi
+# install pip
+$INSTALLER install -y python-setuptools python-dev build-essential
+easy_install pip
+
+# ===== Install/Upgrade compilers =====
+
+REQ_GCC_VER="6.0.0"
+CUR_GCC_VER="$(gcc -dumpversion)"
+meets_version $REQ_GCC_VER $CUR_GCC_VER "install gcc-6 && rm /usr/bin/gcc && mv /usr/bin/gcc-6 /usr/bin/gcc"
+
+REQ_GPP_VER="6.0.0"
+CUR_GPP_VER="$(g++ -dumpversion)"
+meets_version $REQ_GPP_VER $CUR_GPP_VER "install g++-6 && rm /usr/bin/g++ && mv /usr/bin/g++-6 /usr/bin/g++"
+
+# ===== Install Cmake =====
+REQ_GPP_VER="3.0.0"
+CUR_GPP_VER="$(cmake --version)"
+meets_version $REQ_CMAKE_VER $CUR_CMAKE_VER "install build-essential && wget http://www.cmake.org/files/v3.2/cmake-3.2.2.tar.gz && tar xf cmake-3.2.2.tar.gz && pushd cmake-3.2.2 && ./configure && make && popd"
+
+# ===== Build dependencies =====
 
 # download protobuf3 and cache if necessary
-if [ ! -d $1/$PROTODIR/ ]; then
+if [ ! -d $1/$PROTODIR/ ];
+then
     echo "Not Found: $1/$PROTODIR/"
     exec_cmd "pushd $1/ && wget https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz && popd";
     exec_cmd "pushd $1/ && tar xvfz protobuf-cpp-3.2.0.tar.gz && pushd $PROTODIR && ./configure --prefix=/usr && make && popd && popd";
@@ -84,30 +117,31 @@ fi
 # install protobuf3
 exec_cmd "pushd $1/$PROTODIR && make install && ldconfig && popd"
 
-# install pip
-$INSTALLER install -y python-setuptools python-dev build-essential
-easy_install pip
-
 # install swig
-exec_cmd "$INSTALLER update && $INSTALLER install -y swig"
+exec_cmd "install swig"
 
 # install PythonLibs and tk
-exec_cmd "$INSTALLER update && $INSTALLER install -y python-dev python-tk"
+exec_cmd "install python-dev python-tk"
 
 # install python requirements
 exec_cmd "pushd $2 && pip install -r requirements.txt && popd"
 
-# ===== tests and analysis tools =====
+# ===== Install tests and analysis tools =====
 
 # download googletest (and gmock) and cache if necessary
-if [ ! -d $1/$GTESTDIR/ ]; then
+if [ ! -d $1/$GTESTDIR/ ];
+then
     echo "Not Found: $1/$GTESTDIR/"
     exec_cmd "pushd $1/ && wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && popd"
-    exec_cmd "pushd $1/ && tar xf release-1.8.0.tar.gz && pushd $GTESTDIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd && popd"
+    exec_cmd "pushd $1/ && tar xf release-1.8.0.tar.gz && popd"
+fi
+if [ ! -e "googlemock/libgmock_main.so" ];
+then
+    exec_cmd "pushd $1/$GTESTDIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd"
 fi
 # move googletest to /usr
 exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/include/gmock googletest/include/gtest /usr/include && popd"
-exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so  /usr/lib/ && popd"
+exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/ && popd"
 
 # download valgrind for profiling
 $INSTALLER -qq update
@@ -121,5 +155,10 @@ make -C lcov-1.13/ install
 # download coverall-lconv (ruby)
 gem install coveralls-lcov
 
-# downlaod open-ai gym
-exec_cmd "pushd $2/ && git clone https://github.com/openai/gym && pushd gym && pip install -e . && popd"
+# download open-ai gym
+if [ ! -e "$2/gym" ];
+then
+    exec_cmd "pushd $2/ && git clone https://github.com/openai/gym && popd"
+fi
+exec_cmd "pushd $2/gym && pip install -e . && popd"
+echo "============ SETUP SUCCESS============"
