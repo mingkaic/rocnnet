@@ -14,26 +14,34 @@ function usage() {
     exit 1;
 }
 
-# ===== Check and define directories
+# ===== Check and define settings
 
-CMAKEDIR="cmake-3.2.2";
-PROTODIR="protobuf-3.2.0";
-GTESTDIR="googletest-release-1.8.0";
-
-CACHEDIR="rocnnet-dep";
-BUILDDIR=".";
+CACHE_DIR="rocnnet-dep";
+BUILD_DIR=".";
 INSTALLER="apt-get";
+
+PB_TAR=protobuf-cpp-3.2.0.tar.gz
+PB_LINK=https://github.com/google/protobuf/releases/download/v3.2.0/$PB_TAR
+PROTO_DIR="protobuf-3.2.0";
+
+GTEST_TAR=release-1.8.0.tar.gz
+GTEST_LINK=https://github.com/google/googletest/archive/$GTEST_TAR
+GTEST_DIR="googletest-release-1.8.0";
+
+VALG_TAR=valgrind-3.10.1.tar.bz2
+VALG_LINK=http://valgrind.org/downloads/$VALG_TAR
+VALG_DIR=valgrind-3.10.1
 
 # ===== Parameter sanity check =====
 
 if [ ! -z $1 ];
 then
-    CACHEDIR=$1;
+    CACHE_DIR=$1;
 fi
 
 if [ ! -z $2 ];
 then
-    BUILDDIR=$2;
+    BUILD_DIR=$2;
 fi
 
 if [ ! -z $3 ];
@@ -41,14 +49,14 @@ then
     INSTALLER=$3;
 fi
 
-if [ ! -d $CACHEDIR ];
+if [ ! -d $CACHE_DIR ];
 then
-    mkdir $CACHEDIR;
+    mkdir $CACHE_DIR;
 fi
 
-if [ ! -d $BUILDDIR ];
+if [ ! -d $BUILD_DIR ];
 then
-    echo "Build directory $BUILDDIR does not exist";
+    echo "Build directory $BUILD_DIR does not exist";
     usage;
 fi
 
@@ -90,17 +98,17 @@ function download_cfg_build() {
     SRC_LINK=$1;
     TAR_NAME=$2;
     TAR_DIR=$3;
-    wget $SRC_LINK && tar xvfz $TAR_NAME && pushd $TAR_DIR && ./configure --prefix=/usr && make && popd;
+    wget $SRC_LINK && tar xvf $TAR_NAME && pushd $TAR_DIR && ./configure --prefix=/usr && make && popd;
 }
 
-# execute command CMD in cache and execute a command only if TARDIR directory does not exist
+# execute command CMD in cache and execute a command only if TAR_DIR directory does not exist
 function incache() {
-    TARDIR=$1;
+    TAR_DIR=$1;
     CMD=${@:2:$#-1};
-    if [ ! -d $CACHEDIR/$TARDIR/ ];
+    if [ ! -d $CACHE_DIR/$TAR_DIR/ ];
     then
-        echo "Not Found: $CACHEDIR/$TARDIR/";
-        exec_cmd "pushd $CACHEDIR && $CMD && popd";
+        echo "Not Found: $CACHE_DIR/$TAR_DIR/";
+        exec_cmd "pushd $CACHE_DIR && $CMD && popd";
     fi
 }
 
@@ -141,8 +149,8 @@ meets_version "$REQ_CMAKE_VER" "$CUR_CMAKE_VER" "update_install cmake";
 # ===== Build dependencies =====
 
 # download protobuf3 and cache if necessary
-incache $PROTODIR "download_cfg_build https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz protobuf-cpp-3.2.0.tar.gz $PROTODIR";
-exec_cmd "pushd $CACHEDIR/$PROTODIR && make install && ldconfig && popd" 
+incache $PROTO_DIR "download_cfg_build $PB_LINK $PB_TAR $PROTO_DIR";
+exec_cmd "pushd $CACHE_DIR/$PROTO_DIR && make install && ldconfig && popd" 
 
 # install swig
 exec_cmd "update_install swig";
@@ -151,7 +159,7 @@ exec_cmd "update_install swig";
 exec_cmd "update_install python-dev python-tk";
 
 # install python requirements
-exec_cmd "pushd $BUILDDIR && pip install -r requirements.txt && popd";
+exec_cmd "pushd $BUILD_DIR && pip install -r requirements.txt && popd";
 
 update_install checkinstall;
 checkinstall -y;
@@ -159,20 +167,20 @@ checkinstall -y;
 # ===== Install tests and analysis tools =====
 
 # download googletest (and gmock) and cache if necessary
-incache $GTESTDIR "wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && tar xf release-1.8.0.tar.gz"
-if [ ! -e "$CACHEDIR/$GTESTDIR/googlemock/libgmock_main.so" ];
+incache $GTEST_DIR "wget $GTEST_LINK && tar xf $GTEST_TAR"
+if [ ! -e "$CACHE_DIR/$GTEST_DIR/googlemock/libgmock_main.so" ];
 then
-    exec_cmd "pushd $CACHEDIR/$GTESTDIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd";
+    exec_cmd "pushd $CACHE_DIR/$GTEST_DIR && cmake -DBUILD_SHARED_LIBS=ON . && make && popd";
 fi
 # move googletest to /usr
-exec_cmd "pushd $CACHEDIR/$GTESTDIR && cp -a googlemock/include/gmock googletest/include/gtest /usr/include && popd";
-exec_cmd "pushd $CACHEDIR/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/ && popd";
+exec_cmd "pushd $CACHE_DIR/$GTEST_DIR && cp -a googlemock/include/gmock googletest/include/gtest /usr/include && popd";
+exec_cmd "pushd $CACHE_DIR/$GTEST_DIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/ && popd";
 
 # download valgrind for profiling
 update_install libgtest-dev;
 REQ_VALG_VER="3.10.0";
 CUR_VALG_VER="$(valgrind --version)";
-meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "update_install valgrind=3.10.0";
+meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "incache $VALG_DIR 'download_cfg_build $VALG_LINK $VALG_TAR $VALG_DIR && pushd $CACHE_DIR/$VALG_DIR && make install && popd'"
 
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz;
@@ -183,10 +191,10 @@ make -C lcov-1.13/ install;
 gem install coveralls-lcov;
 
 # download open-ai gym
-if [ ! -e "$BUILDDIR/gym" ];
+if [ ! -e "$BUILD_DIR/gym" ];
 then
-    exec_cmd "pushd $BUILDDIR/ && git clone https://github.com/openai/gym && popd";
+    exec_cmd "pushd $BUILD_DIR/ && git clone https://github.com/openai/gym && popd";
 fi
-exec_cmd "pushd $BUILDDIR/gym && pip install -e . && popd";
+exec_cmd "pushd $BUILD_DIR/gym && pip install -e . && popd";
 echo ""
 echo "============ SETUP SUCCESS============";
