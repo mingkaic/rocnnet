@@ -1,5 +1,5 @@
 tenncor:
-- implement convolution operator
+- implement convolution operator; backprop
 - shape and preparation functors should ideally use C++17 variant
     (replace with resulting shape and temporary cache)
 - remove move and clone functions for classes that don't need it
