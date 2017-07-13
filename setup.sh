@@ -169,7 +169,10 @@ exec_cmd "pushd $CACHEDIR/$GTESTDIR && cp -a googlemock/include/gmock googletest
 exec_cmd "pushd $CACHEDIR/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/ && popd";
 
 # download valgrind for profiling
-update_install libgtest-dev valgrind;
+update_install libgtest-dev;
+REQ_VALG_VER="3.10.0";
+CUR_VALG_VER="$(valgrind --version)";
+meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "update_install valgrind=3.10.0";
 
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz;
