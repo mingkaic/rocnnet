@@ -16,7 +16,7 @@ namespace rocnnet
 ml_perceptron::ml_perceptron (
 	size_t n_input,
 	std::vector<IN_PAIR> hiddens,
-    std::string scope) :
+	std::string scope) :
 n_input_(n_input),
 n_output_(hiddens.back().first),
 scope_(scope)
@@ -45,7 +45,7 @@ ml_perceptron::~ml_perceptron (void)
 
 ml_perceptron* ml_perceptron::clone (std::string scope)
 {
-    return clone_impl(scope);
+	return clone_impl(scope);
 }
 
 ml_perceptron* ml_perceptron::move (std::string scope)

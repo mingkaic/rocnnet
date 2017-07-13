@@ -3,11 +3,11 @@ syntax = "proto3";
 package tenncor;
 
 message tensor_proto {
-    bytes data = 1;
-    repeated uint64 allow_shape = 2;
-    repeated uint64 alloc_shape = 3;
+	bytes data = 1;
+	repeated uint64 allow_shape = 2;
+	repeated uint64 alloc_shape = 3;
 }
 
 message repository {
-    map<string, tensor_proto> node_map = 1;
+	map<string, tensor_proto> node_map = 1;
 }

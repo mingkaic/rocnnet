@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 on_travis() {
-    if [ "$TRAVIS" == "true" ];
-    then
-        "$@"
-    fi
+	if [ "$TRAVIS" == "true" ];
+	then
+		"$@"
+	fi
 }
 
 BUILDDIR=.
 if [ "$TRAVIS" == "true" ];
 then
-    BUILDDIR=$TRAVIS_BUILD_DIR
+	BUILDDIR=$TRAVIS_BUILD_DIR
 fi
 
 LOGDIR=$BUILDDIR/log
@@ -20,19 +20,19 @@ FUZZLOG=fuzz.out
 TIMEOUT=600
 
 assert_cmd() {
-    eval timeout -s SIGKILL $TIMEOUT $*
-    if [ $? -ne 0 ]; then
-        echo "Command $* failed"
-        cat $ERRORLOG
-        cat $FUZZLOG
-        exit 1;
-    fi
-    return $!
+	eval timeout -s SIGKILL $TIMEOUT $*
+	if [ $? -ne 0 ]; then
+		echo "Command $* failed"
+		cat $ERRORLOG
+		cat $FUZZLOG
+		exit 1;
+	fi
+	return $!
 }
 
 if [ ! -d $PBX_CACHE ];
 then
-    mkdir $PBX_CACHE
+	mkdir $PBX_CACHE
 fi
 
 # compilation
@@ -40,11 +40,11 @@ pushd $BUILDDIR
 lcov --directory . --zerocounters
 if [ ! -d $LOGDIR ];
 then
-    mkdir $LOGDIR
+	mkdir $LOGDIR
 fi
 if [ ! -d build ];
 then
-    mkdir build
+	mkdir build
 fi
 pushd build
 cmake -DTENNCOR_TEST=ON ..
@@ -57,17 +57,17 @@ ls $LOGDIR
 # valgrind check
 for _ in {1..5}
 do
-    echo "running tenncortest with memcheck"
-    assert_cmd "valgrind --tool=memcheck $BINDIR/tenncortest --gtest_break_on_failure --gtest_shuffle > $ERRORLOG"
-    echo "tenncortest valgrind check complete"
+	echo "running tenncortest with memcheck"
+	assert_cmd "valgrind --tool=memcheck $BINDIR/tenncortest --gtest_break_on_failure --gtest_shuffle > $ERRORLOG"
+	echo "tenncortest valgrind check complete"
 done
 
 # tenncor tests
 for _ in {1..9}
 do
-    echo "running batch of 3 tenncortest"
-    assert_cmd "$BINDIR/tenncortest --gtest_break_on_failure --gtest_repeat=3 --gtest_shuffle > ${ERRORLOG}"
-    echo "still running! 3 tests complete"
+	echo "running batch of 3 tenncortest"
+	assert_cmd "$BINDIR/tenncortest --gtest_break_on_failure --gtest_repeat=3 --gtest_shuffle > ${ERRORLOG}"
+	echo "still running! 3 tests complete"
 done
 
 rm $ERRORLOG

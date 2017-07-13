@@ -1,7 +1,7 @@
 tenncor:
 - implement convolution operator; backprop
 - shape and preparation functors should ideally use C++17 variant
-    (replace with resulting shape and temporary cache)
+	(replace with resulting shape and temporary cache)
 - remove move and clone functions for classes that don't need it
 - define alloc shape as mutable and allowed shape as immutable (enforce this rule)
 	placeholder of (4, 0) should accept input of size of any multiple of 4
