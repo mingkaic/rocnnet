@@ -137,12 +137,13 @@ meets_version $REQ_GPP_VER $CUR_GPP_VER "update_install g++-6 && rm /usr/bin/g++
 
 REQ_CMAKE_VER="3.0.0";
 CUR_CMAKE_VER="$(cmake --version)";
-meets_version $REQ_CMAKE_VER $CUR_CMAKE_VER "incache $CMAKEDIR 'download_cfg_build http://www.cmake.org/files/v3.2/cmake-3.2.2.tar.gz cmake-3.2.2.tar.gz $CMAKEDIR'";
+meets_version $REQ_CMAKE_VER $CUR_CMAKE_VER "update_install cmake";
 
 # ===== Build dependencies =====
 
 # download protobuf3 and cache if necessary
 incache $PROTODIR "download_cfg_build https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz protobuf-cpp-3.2.0.tar.gz $PROTODIR";
+exec_cmd "pushd $CACHEDIR/$PROTODIR && make install && ldconfig && popd"
 
 # install swig
 exec_cmd "update_install swig";

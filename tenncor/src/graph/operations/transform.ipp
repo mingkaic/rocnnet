@@ -457,11 +457,17 @@ varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 }
 
 template <typename T>
-varptr<T> symmetric (const varptr<T> a, std::pair<size_t,size_t> dims, ELEM_FUNC<T> collector, std::string name)
+varptr<T> flip (const varptr<T> a, std::vector<size_t> dims)
 {
 	if (nullptr == a.get()) return nullptr;
 	std::unordered_set<inode<T>*> audience;
-	std::string opname = nnutils::formatter() << "sym_" << dims.first << "_" << dims.second << "_" << name;
+	std::stringstream ss;
+	ss << "flip";
+	for (size_t d : dims)
+	{
+		ss << "_" << d;
+	}
+	std::string opname = ss.str();
 	if (a->find_audience(opname, audience))
 	{
 		// share nodes when possible
@@ -480,33 +486,31 @@ varptr<T> symmetric (const varptr<T> a, std::pair<size_t,size_t> dims, ELEM_FUNC
 		return shapes[0].as_list();
 	},
 	{
-		[](size_t i, tensorshape&, const tensorshape&) -> std::vector<size_t>
-		{
-			return {i};
-		},
 		[dims](size_t i, tensorshape&, const tensorshape& outshape) -> std::vector<size_t>
 		{
 			std::vector<size_t> outlist = outshape.as_list();
 			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-			coord[dims.first] = outlist[dims.first] - coord[dims.first] - 1;
-			coord[dims.second] = outlist[dims.second] - coord[dims.second] - 1;
+			for (size_t d : dims)
+			{
+				coord[d] = outlist[d] - coord[d] - 1;
+			}
 			return {outshape.sequential_idx(coord)};
 		}
-	}, collector),
-	[dims, collector, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	}, copyover<T>),
+	[dims](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		return symmetric<T>(args.front().second, dims, collector, name);
+		return flip<T>(args.front().second, dims);
 	}, opname);
 	return sym;
 }
 
 template <typename T>
-varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
-	std::pair<size_t, size_t> dim_window)
+varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
+	std::pair<size_t, size_t> dims)
 {
 	if (nullptr == a.get() || nullptr == filter.get()) return nullptr;
 	std::unordered_set<inode<T>*> audience;
-	std::string opname = nnutils::formatter() << "conv_" << dim_window.first << "_" << dim_window.second;
+	std::string opname = nnutils::formatter() << "cross_conv_" << dims.first << "_" << dims.second;
 	if (a->find_audience(opname, audience))
 	{
 		// share nodes when possible
@@ -518,33 +522,33 @@ varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
 		}
 	}
 
-	immutable<T>* cv = immutable<T>::get(std::vector<inode<T>*>{a, symmetric<T>(filter, dim_window, mean<T>, "mean")},
+	immutable<T>* cv = immutable<T>::get(std::vector<inode<T>*>{a, filter},
 	new transfer_func<T>(
-	[dim_window](std::vector<tensorshape> shapes) -> tensorshape
+	[dims](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		std::vector<size_t> outshape = shapes[0].as_list();
 		std::vector<size_t> filtshape = shapes[1].as_list();
-		outshape[dim_window.first] -= filtshape[dim_window.first] + 1;
-		outshape[dim_window.second] -= filtshape[dim_window.second] + 1;
+		outshape[dims.first] -= filtshape[dims.first] + 1;
+		outshape[dims.second] -= filtshape[dims.second] + 1;
 		return outshape;
 	},
 	{
-		[dim_window](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+		[dims](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
 		{
 			std::vector<size_t> outlist = outshape.as_list();
 			std::vector<size_t> alist = ashape.as_list();
 			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-			size_t firstn = alist[dim_window.first] - outlist[dim_window.first];
-			size_t secondn = alist[dim_window.second] - outlist[dim_window.second];
+			size_t firstn = alist[dims.first] - outlist[dims.first];
+			size_t secondn = alist[dims.second] - outlist[dims.second];
 
 			std::vector<size_t> indices;
 			for (size_t i = 0; i < secondn; i++)
 			{
-				coord[dim_window.second]++;
+				coord[dims.second]++;
 				std::vector<size_t> temp = coord;
 				for (size_t j = 0; j < firstn; j++)
 				{
-					temp[dim_window.first]++;
+					temp[dims.first]++;
 					indices.push_back(ashape.sequential_idx(temp));
 				}
 			}
@@ -572,6 +576,13 @@ varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
 	}, opname);
 
 	return cv;
+}
+
+template <typename T>
+varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
+	std::pair<size_t, size_t> dims)
+{
+	return cross_corr2d<T>(a, flip<T>(filter, {dims.first, dims.second}), dims);
 }
 
 }
