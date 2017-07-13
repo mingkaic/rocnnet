@@ -101,9 +101,13 @@ CUR_GPP_VER="$(g++ -dumpversion)"
 meets_version $REQ_GPP_VER $CUR_GPP_VER "install g++-6 && rm /usr/bin/g++ && mv /usr/bin/g++-6 /usr/bin/g++"
 
 # ===== Install Cmake =====
+
 REQ_GPP_VER="3.0.0"
 CUR_GPP_VER="$(cmake --version)"
 meets_version $REQ_CMAKE_VER $CUR_CMAKE_VER "install build-essential && wget http://www.cmake.org/files/v3.2/cmake-3.2.2.tar.gz && tar xf cmake-3.2.2.tar.gz && pushd cmake-3.2.2 && ./configure && make && popd"
+
+install checkinstall
+checkinstall -y
 
 # ===== Build dependencies =====
 
@@ -144,8 +148,7 @@ exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/include/gmock googletest/includ
 exec_cmd "pushd $1/$GTESTDIR && cp -a googlemock/libgmock_main.so googlemock/libgmock.so googlemock/gtest/libgtest_main.so googlemock/gtest/libgtest.so /usr/lib/ && popd"
 
 # download valgrind for profiling
-$INSTALLER -qq update
-$INSTALLER install -y libgtest-dev valgrind
+install libgtest-dev valgrind
 
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz
