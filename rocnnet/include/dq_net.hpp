@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "mlp.hpp"
+#include "compound/mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
@@ -38,7 +38,7 @@ struct dqn_param
 class dq_net
 {
 public:
-	dq_net (ml_perceptron* brain,
+	dq_net (mlp* brain,
 		nnet::gd_updater& updater,
 		dqn_param param = dqn_param(),
 		std::string scope = "DQN");
@@ -100,10 +100,10 @@ private:
 	std::vector<exp_batch> random_sample (void);
 
 	// source network
-	ml_perceptron* source_qnet_ = nullptr;
+	mlp* source_qnet_ = nullptr;
 
 	// target network
-	ml_perceptron* target_qnet_ = nullptr;
+	mlp* target_qnet_ = nullptr;
 
 	// === forward computation ===
 	// fanin: shape <ninput>

@@ -15,7 +15,7 @@
 namespace rocnnet
 {
 
-dq_net::dq_net (ml_perceptron* brain,
+dq_net::dq_net (mlp* brain,
 	nnet::gd_updater& updater,
 	dqn_param param, std::string scope) :
 params_(param),
@@ -253,8 +253,8 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	updater_ = other.updater_->move();
 	updater_->clear_ignore();
 	
-	source_qnet_ = other.source_qnet_->move(scope);
-	target_qnet_ = other.target_qnet_->move("target_"+scope);
+	source_qnet_ = other.source_qnet_->move();
+	target_qnet_ = other.target_qnet_->move();
 
 	variable_setup();
 }
@@ -303,22 +303,17 @@ void dq_net::variable_setup (void)
 	});
 
 	// update target network
-	std::vector<WB_PAIR> target_vars = target_qnet_->get_variables();
-	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
+	std::vector<nnet::variable<double>*> target_vars = target_qnet_->get_variables();
+	std::vector<nnet::variable<double>*> source_vars = source_qnet_->get_variables();
 	size_t nvars = target_vars.size();
 	assert(source_vars.size() == nvars); // must be identical, since they're copies
 	for (size_t i = 0; i < nvars; i++)
 	{
 		// this is equivalent to target = (1-alpha) * target + alpha * source
-		nnet::variable<double>* tweight;
-		nnet::varptr<double> tarweight = tweight = target_vars[i].first;
-		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(tweight->assign_sub(params_.target_update_rate_ * (tarweight - srcweight)));
-
-		nnet::variable<double>* tbias;
-		nnet::varptr<double> tarbias = tbias = target_vars[i].second;
-		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(tbias->assign_sub(params_.target_update_rate_ * (tarbias - srcbias)));
+		nnet::variable<double>* target;
+		nnet::varptr<double> tarvar = target = target_vars[i];
+		nnet::varptr<double> srcvar = source_vars[i];
+		target_updates_.push_back(target->assign_sub(params_.target_update_rate_ * (tarvar - srcvar)));
 	}
 }
 

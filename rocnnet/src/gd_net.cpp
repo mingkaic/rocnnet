@@ -17,7 +17,7 @@ namespace rocnnet
 
 gd_net::gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
 	nnet::gd_updater& updater, std::string scope) :
-ml_perceptron(n_input, hiddens, scope),
+mlp(n_input, hiddens, scope),
 updater_(updater.clone())
 {
 	size_t n_output = hiddens.back().first;
@@ -30,26 +30,25 @@ updater_(updater.clone())
 
 gd_net::~gd_net (void)
 {
-	if (updater_) delete updater_;
-	if (train_in_) delete train_in_;
-	if (expected_out_) delete expected_out_;
+	clean_up();
 }
 
-gd_net* gd_net::clone (std::string scope)
+gd_net* gd_net::clone (std::string scope) const
 {
-	return static_cast<gd_net*>(clone_impl(scope));
+	return static_cast<gd_net*>(this->clone_impl(scope));
 }
 
-gd_net* gd_net::move (std::string scope)
+gd_net* gd_net::move (void)
 {
-	return static_cast<gd_net*>(move_impl(scope));
+	return static_cast<gd_net*>(this->move_impl());
 }
 
 gd_net& gd_net::operator = (const gd_net& other)
 {
 	if (&other != this)
 	{
-		ml_perceptron::operator = (other);
+		mlp::operator = (other);
+		clean_up();
 		copy_helper(other);
 	}
 	return *this;
@@ -59,7 +58,8 @@ gd_net& gd_net::operator = (gd_net&& other)
 {
 	if (&other != this)
 	{
-		ml_perceptron::operator = (std::move(other));
+		mlp::operator = (std::move(other));
+		clean_up();
 		move_helper(std::move(other));
 	}
 	return *this;
@@ -83,30 +83,30 @@ void gd_net::train (std::vector<double>& train_in, std::vector<double>& expected
 }
 
 gd_net::gd_net (const gd_net& other, std::string& scope) :
-	ml_perceptron(other, scope)
+	mlp(other, scope)
 {
 	copy_helper(other);
 }
 
-gd_net::gd_net (gd_net&& other, std::string scope) :
-	ml_perceptron(std::move(other), scope)
+gd_net::gd_net (gd_net&& other) :
+	mlp(std::move(other))
 {
 	move_helper(std::move(other));
 }
 
-ml_perceptron* gd_net::clone_impl (std::string& scope)
+ilayer* gd_net::clone_impl (std::string& scope) const
 {
 	return new gd_net(*this, scope);
 }
 
-ml_perceptron* gd_net::move_impl (std::string& scope)
+ilayer* gd_net::move_impl (void)
 {
-	return new gd_net(std::move(*this), scope);
+	return new gd_net(std::move(*this));
 }
 
 void gd_net::train_setup (void)
 {
-	nnet::varptr<double> output = ml_perceptron::operator()(train_in_);
+	nnet::varptr<double> output = mlp::operator()(train_in_);
 	nnet::varptr<double> diff = nnet::varptr<double>(expected_out_) - output;
 	nnet::varptr<double> error = diff * diff;
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());
@@ -116,11 +116,7 @@ void gd_net::train_setup (void)
 
 void gd_net::copy_helper (const gd_net& other)
 {
-	if (updater_) delete updater_;
-	if (train_in_) delete train_in_;
-	if (expected_out_) delete expected_out_;
 	updater_ = other.updater_->clone();
-	updates_.clear();
 	train_in_ = other.train_in_->clone();
 	expected_out_ = other.expected_out_->clone();
 	train_setup();
@@ -128,14 +124,18 @@ void gd_net::copy_helper (const gd_net& other)
 
 void gd_net::move_helper (gd_net&& other)
 {
-	if (updater_) delete updater_;
 	updater_ = other.updater_->move();
-	updates_.clear();
-	if (train_in_) delete train_in_;
-	if (expected_out_) delete expected_out_;
 	train_in_ = other.train_in_->move();
 	expected_out_ = other.expected_out_->move();
 	train_setup();
+}
+
+void gd_net::clean_up (void)
+{
+	if (updater_) delete updater_;
+	if (train_in_) delete train_in_;
+	if (expected_out_) delete expected_out_;
+	updates_.clear();
 }
 
 }

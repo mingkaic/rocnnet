@@ -1,6 +1,0 @@
-
-// VARIABLE NODE EXECUTORS
-G000 - iexecutor should prevent its destination from being updated when its source nodes notify
-G001 - iexecutor should remove its source nodes when they are destroyed
-G002 - iexecutor should remove its destination nodes when they are destroyed
-G003 - group should execute its executors in order of when they are added

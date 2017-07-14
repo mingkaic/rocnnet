@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "mlp.hpp"
+#include "compound/mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once
@@ -21,9 +21,7 @@ namespace rocnnet
 
 // wrapper for
 // gradient descent
-// look for good optimization algorithms that auto determine good learning rates
-// and other parameters to minimize training issues
-class gd_net : public ml_perceptron
+class gd_net : public mlp
 {
 public:
 	gd_net (size_t n_input, std::vector<IN_PAIR> hiddens,
@@ -31,9 +29,9 @@ public:
 
 	~gd_net (void);
 
-	gd_net* clone (std::string scope = "");
+	gd_net* clone (std::string scope = "") const;
 
-	gd_net* move (std::string scope = "");
+	gd_net* move (void);
 
 	gd_net& operator = (const gd_net& other);
 
@@ -47,11 +45,11 @@ public:
 protected:
 	gd_net (const gd_net& other, std::string& scope);
 
-	gd_net (gd_net&& other, std::string scope);
+	gd_net (gd_net&& other);
 
-	virtual ml_perceptron* clone_impl (std::string& scope);
+	virtual ilayer* clone_impl (std::string& scope) const;
 
-	virtual ml_perceptron* move_impl (std::string& scope);
+	virtual ilayer* move_impl (void);
 
 private:
 	void train_setup (void);
@@ -59,6 +57,8 @@ private:
 	void copy_helper (const gd_net& other);
 
 	void move_helper (gd_net&& other);
+
+	void clean_up (void);
 
 	nnet::updates_t updates_;
 

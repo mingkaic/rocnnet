@@ -78,7 +78,7 @@ int main (int argc, char** argv)
 	param.discount_rate_ = 0.99;
 	param.exploration_period_ = 0;
 
-	rocnnet::ml_perceptron* brain = new rocnnet::ml_perceptron(n_observations, hiddens);
+	rocnnet::mlp* brain = new rocnnet::mlp(n_observations, hiddens);
 	rocnnet::dq_net untrained_dqn(brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");

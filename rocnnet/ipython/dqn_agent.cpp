@@ -57,7 +57,7 @@ dqn_agent::dqn_agent (unsigned int n_input,
 	param.mini_batch_size_ = minibatch_size;
 	param.max_exp_ = max_experience;
 
-	rocnnet::ml_perceptron* brain = new rocnnet::ml_perceptron(n_input, hiddens);
+	rocnnet::mlp* brain = new rocnnet::mlp(n_input, hiddens);
 	brain_ = new rocnnet::dq_net(brain, learner, param, "pynet");
 }
 

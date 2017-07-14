@@ -7,8 +7,10 @@
 //
 
 #include "utils/futils.hpp"
-#include "perceptron.hpp"
+#include "layers/fc_layer.hpp"
 #include "memory/tensor_io.hpp"
+
+#include "layers/ilayer.hpp"
 
 #pragma once
 #ifndef ROCNNET_MLP_HPP
@@ -19,24 +21,24 @@ namespace rocnnet
 
 using VAR_FUNC = std::function<nnet::varptr<double>(nnet::inode<double>*)>;
 using IN_PAIR = std::pair<size_t, VAR_FUNC>;
-using HID_PAIR = std::pair<perceptron*, VAR_FUNC>;
+using HID_PAIR = std::pair<fc_layer*, VAR_FUNC>;
 
-class ml_perceptron
+class mlp : public ilayer
 {
 public:
 	// trust that passed in operations are unconnected
-	ml_perceptron (size_t n_input, std::vector<IN_PAIR> hiddens,
+	mlp (size_t n_input, std::vector<IN_PAIR> hiddens,
 		std::string scope = "MLP");
 
-	virtual ~ml_perceptron (void);
+	virtual ~mlp (void);
 
-	ml_perceptron* clone (std::string scope = "");
+	mlp* clone (std::string scope = "") const;
 
-	ml_perceptron* move (std::string scope = "");
+	mlp* move (void);
 
-	ml_perceptron& operator = (const ml_perceptron& other);
+	mlp& operator = (const mlp& other);
 
-	ml_perceptron& operator = (ml_perceptron&& other);
+	mlp& operator = (mlp&& other);
 
 	void initialize (std::string serialname = "", std::string readscope = "");
 
@@ -45,7 +47,7 @@ public:
 	// outputs are expected to have shape output by batch_size
 	nnet::varptr<double> operator () (nnet::inode<double>* input);
 
-	std::vector<WB_PAIR> get_variables (void) const;
+	std::vector<nnet::variable<double>*> get_variables (void) const;
 
 	bool save (std::string fname) const;
 
@@ -54,24 +56,24 @@ public:
 	size_t get_noutput (void) const { return n_output_; }
 
 protected:
-	ml_perceptron (const ml_perceptron& other, std::string& scope);
+	mlp (const mlp& other, std::string& scope);
 
-	ml_perceptron (ml_perceptron&& other, std::string& scope);
+	mlp (mlp&& other);
 
-	virtual ml_perceptron* clone_impl (std::string& scope);
+	virtual ilayer* clone_impl (std::string& scope) const;
 
-	virtual ml_perceptron* move_impl (std::string& scope);
+	virtual ilayer* move_impl (void);
 
 private:
-	void copy_helper (const ml_perceptron& other, std::string& scope);
+	void copy_helper (const mlp& other);
 
-	void move_helper (ml_perceptron&& other, std::string& scope);
+	void move_helper (mlp&& other);
+
+	void clean_up (void);
 
 	size_t n_input_;
 
 	size_t n_output_;
-
-	std::string scope_;
 
 	std::vector<HID_PAIR> layers_;
 };
