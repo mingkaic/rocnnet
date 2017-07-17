@@ -52,7 +52,7 @@ protected:
 	double learning_rate_;
 	
 private:
-	bool graph_optimize_ = true;
+	bool graph_optimize_ = false;
 	
 	std::unordered_set<variable<double>*> ignored_;
 };

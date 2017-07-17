@@ -121,7 +121,7 @@ size_t iconnector<T>::n_arguments (void) const
 template <typename T>
 const tensor<T>* iconnector<T>::eval (void)
 {
-	if (this->g_man_) this->g_man_->update();
+	if (this->g_man_ && false == this->g_man_->freeze_) this->g_man_->update();
 	return this->get_eval();
 }
 
@@ -170,7 +170,12 @@ void iconnector<T>::set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>
 template <typename T>
 void iconnector<T>::freeze_status (bool freeze)
 {
-	freeze_ = freeze;
+	assert(this->g_man_);
+	if (freeze)
+	{
+		this->g_man_->update();
+	}
+	this->g_man_->freeze_ = freeze;
 }
 
 template <typename T>
@@ -321,8 +326,10 @@ struct iconnector<T>::graph_manager
 		}
 	}
 
+	bool freeze_ = false;
+
 private:
-	std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, small_leafset<T> > updates_;
+	std::priority_queue<iconnector<T>*,std::vector<iconnector<T>*>,small_leafset<T> > updates_;
 
 	std::unordered_map<iconnector<T>*,std::function<void(void)> > update_map_;
 

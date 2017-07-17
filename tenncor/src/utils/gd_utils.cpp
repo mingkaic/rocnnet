@@ -123,7 +123,7 @@ variable_updater<double> momentum_updater::process_update (varptr<double>& /*gre
 	variable<double>* /*leaf*/, grad_process /*intermediate_process*/)
 {
 	throw std::bad_function_call();
-	return [](void) {};
+	return [](bool) {};
 }
 
 
@@ -145,7 +145,7 @@ variable_updater<double> adadelta_updater::process_update (varptr<double>& /*gre
 	variable<double>* /*leaf*/, grad_process /*intermediate_process*/)
 {
 	throw std::bad_function_call();
-	return [](void) {};
+	return [](bool) {};
 }
 
 
@@ -167,7 +167,7 @@ variable_updater<double> adagradupdater::process_update (varptr<double>& /*gres*
 	variable<double>* /*leaf*/, grad_process /*intermediate_process*/)
 {
 	throw std::bad_function_call();
-	return [](void) {};
+	return [](bool) {};
 }
 
 
@@ -245,10 +245,10 @@ variable_updater<double> rmspropupdater::process_update (varptr<double>& gres,
 	varptr<double> leaf_step = dres * learning_rate_ / (sqrt<double>(momentum_step) + epsilon_);
 	auto momentum_update = momentum->assign(momentum_step);
 	auto leaf_update = leaf->assign_sub(leaf_step);
-	return [momentum_update, leaf_update, momentum, dres, leaf_step]()
+	return [momentum_update, leaf_update, momentum, dres, leaf_step](bool notify)
 	{
-		momentum_update();
-		leaf_update();
+		momentum_update(false);
+		leaf_update(notify);
 	};
 }
 

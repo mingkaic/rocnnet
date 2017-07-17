@@ -140,14 +140,14 @@ void dq_net::train (void)
 		// update source
 		for (auto& trainer : source_updates_)
 		{
-			trainer();
+			trainer(true);
 		}
+		prediction_error_->freeze_status(false); // update again
 		// update target
 		for (auto& trainer : target_updates_)
 		{
-			trainer();
+			trainer(true);
 		}
-		prediction_error_->freeze_status(false); // update again
 		iteration_++;
 	}
 	n_train_called_++;

@@ -77,7 +77,7 @@ void gd_net::train (std::vector<double>& train_in, std::vector<double>& expected
 	error_->freeze_status(true); // freeze
 	for (auto& trainer : updates_)
 	{
-		trainer();
+		trainer(true);
 	}
 	error_->freeze_status(false); // update again
 }

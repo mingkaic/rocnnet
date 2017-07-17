@@ -144,9 +144,6 @@ protected:
 
 	//! graph meta_data/manager
 	graph_manager* g_man_ = nullptr;
-
-	//! stop this from updating if true
-	bool freeze_ = false;
 };
 
 }
