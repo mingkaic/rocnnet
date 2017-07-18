@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "dq_net.hpp"
+#include "models/dq_net.hpp"
 
 #ifdef ROCNNET_DQN_HPP
 

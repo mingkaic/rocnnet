@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "compound/mlp.hpp"
+#include "compounds/mlp.hpp"
 #include "utils/gd_utils.hpp"
 
 #pragma once

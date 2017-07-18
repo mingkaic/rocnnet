@@ -2,13 +2,15 @@
 //  mlp.hpp
 //  cnnet
 //
+//	Implements Multilayer Perceptron
+//
 //  Created by Mingkai Chen on 2016-08-29.
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
 #include "utils/futils.hpp"
 
-#include "compound/icompound.hpp"
+#include "compounds/icompound.hpp"
 
 #pragma once
 #ifndef ROCNNET_MLP_HPP

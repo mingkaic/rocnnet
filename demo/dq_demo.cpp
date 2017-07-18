@@ -1,6 +1,6 @@
 // test dq_demo on c++ side
 
-#include "dq_net.hpp"
+#include "models/dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
 static std::default_random_engine rnd_device(std::time(NULL));
@@ -68,7 +68,7 @@ int main (int argc, char** argv)
 	size_t n_observations = 10;
 	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
-		// use same sigmoid in static memory once deep copy is established
+		// use same sigmoid in static memory once models copy is established
 		rocnnet::IN_PAIR(9, nnet::tanh<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::identity<double>)
 	};

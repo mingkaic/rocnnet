@@ -6,7 +6,7 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "compound/mlp.hpp"
+#include "compounds/mlp.hpp"
 
 #ifdef ROCNNET_ICOMPOUND_HPP
 

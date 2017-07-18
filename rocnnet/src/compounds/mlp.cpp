@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "compound/mlp.hpp"
+#include "compounds/mlp.hpp"
 
 #ifdef ROCNNET_MLP_HPP
 
@@ -50,6 +50,7 @@ mlp& mlp::operator = (const mlp& other)
 {
 	if (&other != this)
 	{
+		ilayer::operator = (other);
 		clean_up();
 		copy_helper(other);
 	}
@@ -60,6 +61,7 @@ mlp& mlp::operator = (mlp&& other)
 {
 	if (&other != this)
 	{
+		ilayer::operator = (std::move(other));
 		clean_up();
 		move_helper(std::move(other));
 	}

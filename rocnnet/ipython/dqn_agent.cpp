@@ -7,7 +7,7 @@
 #ifdef ROCNNET_DQN_AGENT_HPP
 
 
-#include "dq_net.hpp"
+#include "models/dq_net.hpp"
 
 
 dqn_agent::dqn_agent (unsigned int n_input,

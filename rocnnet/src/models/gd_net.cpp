@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "gd_net.hpp"
+#include "models/gd_net.hpp"
 
 #ifdef ROCNNET_GDN_HPP
 

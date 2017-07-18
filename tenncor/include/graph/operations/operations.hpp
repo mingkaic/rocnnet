@@ -84,6 +84,10 @@ varptr<T> clip_val (const varptr<T> a, T min, T max);
 template <typename T>
 varptr<T> clip_norm (const varptr<T> a, T cap);
 
+//! output value 0 if false == compare(a, b) else 1 for each element
+template <typename T>
+varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare) { return nullptr; }
+
 //! add scalar a and b
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b);

@@ -7,7 +7,7 @@
 #include <iterator>
 #include <ctime>
 
-#include "gd_net.hpp"
+#include "models/gd_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
 static std::default_random_engine rnd_device(std::time(NULL));
@@ -64,7 +64,7 @@ int main (int argc, char** argv)
 	size_t n_batch = 3;
 	size_t show_every_n = 500;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
-		// use same sigmoid in static memory once deep copy is established
+		// use same sigmoid in static memory once models copy is established
 		rocnnet::IN_PAIR(9, nnet::sigmoid<double>),
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
