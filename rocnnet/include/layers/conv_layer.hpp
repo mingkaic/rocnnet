@@ -39,7 +39,7 @@ public:
 
 	// input are expected to have shape n_input by batch_size
 	// outputs are expected to have shape n_output by batch_size
-	virtual nnet::varptr<double> operator () (nnet::inode<double>* input);
+	nnet::varptr<double> operator () (nnet::inode<double>* input);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 

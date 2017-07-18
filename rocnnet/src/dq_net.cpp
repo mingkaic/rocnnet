@@ -47,6 +47,7 @@ dq_net& dq_net::operator = (const dq_net& other)
 {
 	if (this != &other)
 	{
+		tear_down();
 		copy_helper(other, "");
 	}
 	return *this;
@@ -56,9 +57,16 @@ dq_net& dq_net::operator = (dq_net&& other)
 {
 	if (this != &other)
 	{
+		tear_down();
 		move_helper(std::move(other), "");
 	}
 	return *this;
+}
+
+std::vector<double> dq_net::operator () (std::vector<double>& input)
+{
+	*input_ = input;
+	return nnet::expose<double>(output_);
 }
 
 double dq_net::action (std::vector<double>& input)
@@ -160,10 +168,11 @@ void dq_net::initialize (std::string serialname, std::string readscope)
 	target_qnet_->initialize(serialname, "target_" + readscope);
 }
 
-bool dq_net::save (std::string fname) const
+bool dq_net::save (std::string fname, std::string writescope) const
 {
-	bool source_save = source_qnet_->save(fname);
-	bool target_save = target_qnet_->save(fname);
+	if (writescope.empty()) writescope = scope_;
+	bool source_save = source_qnet_->save(fname, writescope);
+	bool target_save = target_qnet_->save(fname, "target_" + writescope);
 	return source_save && target_save;
 }
 
@@ -225,7 +234,6 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 	generator_ = other.generator_;
 
 	// copy over actors
-	tear_down();
 	updater_ = other.updater_->clone();
 	updater_->clear_ignore();
 	
@@ -249,7 +257,6 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	generator_ = std::move(other.generator_);
 
 	// move over actors
-	tear_down();
 	updater_ = other.updater_->move();
 	updater_->clear_ignore();
 	

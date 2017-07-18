@@ -49,7 +49,7 @@ fc_layer& fc_layer::operator = (const fc_layer& other)
 	if (&other != this)
 	{
 		clean_up();
-		this->copy_helper(other);
+		copy_helper(other);
 	}
 	return *this;
 }
@@ -59,22 +59,22 @@ fc_layer& fc_layer::operator = (fc_layer&& other)
 	if (&other != this)
 	{
 		clean_up();
-		this->move_helper(std::move(other));
+		move_helper(std::move(other));
 	}
 	return *this;
 }
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape n_output by batch_size
-nnet::varptr<double> fc_layer::operator () (nnet::inode<double>* input)
+nnet::varptr<double> fc_layer::operator () (std::vector<nnet::inode<double>*> inputs)
 {
 	// weights are n_output column by n_input rows
-	nnet::varptr<double> weighed = nnet::matmul<double>(input, weights_n_bias_[0].first);
+	nnet::varptr<double> weighed = nnet::matmul<double>(inputs[0], weights_n_bias_[0].first);
 	nnet::varptr<double> result = nnet::add_axial_b(weighed,
 		nnet::varptr<double>(weights_n_bias_[0].second), 1);
-	for (size_t i = 0, n = weights_n_bias_.size(); i < n; i++)
+	for (size_t i = 1, n = weights_n_bias_.size(); i < n; i++)
 	{
-		weighed = nnet::matmul<double>(input, weights_n_bias_[i].first);
+		weighed = nnet::matmul<double>(inputs[i], weights_n_bias_[i].first);
 		result = result + nnet::add_axial_b(weighed,
 			nnet::varptr<double>(weights_n_bias_[i].second), 1);
 	}

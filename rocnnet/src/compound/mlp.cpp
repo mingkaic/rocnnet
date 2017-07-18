@@ -14,7 +14,7 @@ namespace rocnnet
 {
 
 mlp::mlp (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope) :
-	ilayer(scope),
+	icompound(scope),
 	n_input_(n_input),
 	n_output_(hiddens.back().first)
 {
@@ -66,24 +66,6 @@ mlp& mlp::operator = (mlp&& other)
 	return *this;
 }
 
-void mlp::initialize (std::string serialname, std::string readscope)
-{
-	if (readscope.empty()) readscope = scope_;
-	std::vector<nnet::inode<double>*> vars;
-	for (HID_PAIR hp : layers_)
-	{
-		std::vector<nnet::variable<double>*> temp = hp.first->get_variables();
-		vars.insert(vars.end(), temp.begin(), temp.end());
-	}
-
-	if (nnet::read_inorder<double>(vars, readscope, serialname) && vars.empty()) return;
-
-	for (nnet::inode<double>* v : vars)
-	{
-		static_cast<nnet::variable<double>*>(v)->initialize();
-	}
-}
-
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
 nnet::varptr<double> mlp::operator () (nnet::inode<double>* input)
@@ -96,7 +78,7 @@ nnet::varptr<double> mlp::operator () (nnet::inode<double>* input)
 	nnet::inode<double>* output = input;
 	for (HID_PAIR hp : layers_)
 	{
-		nnet::inode<double>* hypothesis = (*hp.first)(output);
+		nnet::inode<double>* hypothesis = (*hp.first)({output});
 		output = (hp.second)(hypothesis);
 	}
 	return output;
@@ -113,25 +95,14 @@ std::vector<nnet::variable<double>*> mlp::get_variables (void) const
 	return vars;
 }
 
-bool mlp::save (std::string fname) const
-{
-	std::vector<nnet::inode<double>*> vars;
-	for (HID_PAIR hp : layers_)
-	{
-		std::vector<nnet::variable<double>*> temp = hp.first->get_variables();
-		vars.insert(vars.end(), temp.begin(), temp.end());
-	}
-	return nnet::write_inorder<double>(vars, scope_, fname);
-}
-
 mlp::mlp (const mlp& other, std::string& scope) :
-	ilayer(other, scope)
+	icompound(other, scope)
 {
 	copy_helper(other);
 }
 
 mlp::mlp (mlp&& other) :
-	ilayer(std::move(other))
+	icompound(std::move(other))
 {
 	move_helper(std::move(other));
 }

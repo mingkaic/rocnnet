@@ -69,11 +69,11 @@ int main (int argc, char** argv)
 		rocnnet::IN_PAIR(n_out, nnet::sigmoid<double>)
 	};
 	nnet::vgb_updater bgd(0.9); // learning rate = 0.9
-	rocnnet::gd_net untrained_gdn(n_in, hiddens, bgd, "untrained_gd_net");
+	rocnnet::mlp* brain = new rocnnet::mlp(n_in, hiddens);
+	rocnnet::gd_net untrained_gdn(brain, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
-	rocnnet::gd_net* trained_gdn = untrained_gdn.clone("trained_gd_net");
-
-	rocnnet::gd_net pretrained_gdn(n_in, hiddens, bgd, "pretrained_gd_net");
+	rocnnet::gd_net trained_gdn(untrained_gdn, "trained_gd_net");
+	rocnnet::gd_net pretrained_gdn(untrained_gdn, "pretrained_gd_net");
 	pretrained_gdn.initialize(serialpath, "trained_gd_net");
 
 	// train mlp to output input
@@ -83,17 +83,10 @@ int main (int argc, char** argv)
 		if (i % show_every_n == show_every_n-1) std::cout << "training " << i+1 << std::endl;
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		trained_gdn->train(batch, batch_out);
+		trained_gdn.train(batch, batch_out);
 	}
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	std::cout << "training time: " << duration << " seconds" << std::endl;
-
-	nnet::placeholder<double> untrained_in((std::vector<size_t>{n_in, n_batch}), "test_untrain_layerin");
-	nnet::placeholder<double> trained_in((std::vector<size_t>{n_in, n_batch}), "test_train_layerin");
-	nnet::placeholder<double> pretrained_in((std::vector<size_t>{n_in, n_batch}), "test_pretrain_layerin");
-	nnet::varptr<double> untrained_out = untrained_gdn(&untrained_in);
-	nnet::varptr<double> trained_out = (*trained_gdn)(&trained_in);
-	nnet::varptr<double> pretrained_out = pretrained_gdn(&pretrained_in);
 
 	int exit_status = 0;
 	// exit code:
@@ -107,12 +100,9 @@ int main (int argc, char** argv)
 		if (i % show_every_n == show_every_n-1) std::cout << "testing " << i+1 << "\n";
 		std::vector<double> batch = batch_generate(n_in, n_batch);
 		std::vector<double> batch_out = avgevry2(batch);
-		untrained_in = batch;
-		trained_in = batch;
-		pretrained_in = batch;
-		std::vector<double> untrained_res = nnet::expose<double>(untrained_out);
-		std::vector<double> trained_res = nnet::expose<double>(trained_out);
-		std::vector<double> pretrained_res = nnet::expose<double>(pretrained_out);
+		std::vector<double> untrained_res = untrained_gdn(batch);
+		std::vector<double> trained_res = trained_gdn(batch);
+		std::vector<double> pretrained_res = pretrained_gdn(batch);
 		double untrained_avgerr = 0;
 		double trained_avgerr = 0;
 		double pretrained_avgerr = 0;
@@ -142,15 +132,14 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0)
 	{
-		trained_gdn->save(serialpath);
+		trained_gdn.save(serialpath);
 	}
 
 #ifdef EDGE_RCD
 if (rocnnet_record::erec::rec_good)
-	rocnnet_record::erec::rec.to_csv<double>(trained_gdn->get_error());
+	rocnnet_record::erec::rec.to_csv<double>(trained_gdn.get_error());
 #endif /* EDGE_RCD */
-	
-	delete trained_gdn;
+
 	google::protobuf::ShutdownProtobufLibrary();
 
 	return exit_status;

@@ -34,10 +34,6 @@ public:
 
 	ilayer& operator = (ilayer&& other);
 
-	// input are expected to have shape n_input by batch_size
-	// outputs are expected to have shape n_output by batch_size
-	virtual nnet::varptr<double> operator () (nnet::inode<double>* input) = 0;
-
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const = 0;
 
 protected:

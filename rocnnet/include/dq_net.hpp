@@ -53,6 +53,8 @@ public:
 
 	dq_net& operator = (dq_net&& other);
 
+	std::vector<double> operator () (std::vector<double>& input);
+
 	double action (std::vector<double>& input);
 
 	void store (std::vector<double> observation, size_t action_idx,
@@ -62,11 +64,11 @@ public:
 
 	void initialize (std::string serialname = "", std::string readscope = "");
 
-	bool save (std::string fname) const;
+	bool save (std::string fname, std::string writescope = "") const;
+
+	const nnet::iconnector<double>* get_error (void) const { return prediction_error_; }
 	
 	size_t get_numtrained (void) const { return iteration_; }
-
-	nnet::varptr<double> get_trainout (void) const { return train_output_; }
 
 	// feel free to seed it
 	std::default_random_engine generator_;

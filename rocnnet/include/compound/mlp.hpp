@@ -7,10 +7,8 @@
 //
 
 #include "utils/futils.hpp"
-#include "layers/fc_layer.hpp"
-#include "memory/tensor_io.hpp"
 
-#include "layers/ilayer.hpp"
+#include "compound/icompound.hpp"
 
 #pragma once
 #ifndef ROCNNET_MLP_HPP
@@ -19,11 +17,7 @@
 namespace rocnnet
 {
 
-using VAR_FUNC = std::function<nnet::varptr<double>(nnet::inode<double>*)>;
-using IN_PAIR = std::pair<size_t, VAR_FUNC>;
-using HID_PAIR = std::pair<fc_layer*, VAR_FUNC>;
-
-class mlp : public ilayer
+class mlp : public icompound
 {
 public:
 	// trust that passed in operations are unconnected
@@ -40,16 +34,12 @@ public:
 
 	mlp& operator = (mlp&& other);
 
-	void initialize (std::string serialname = "", std::string readscope = "");
-
 	// PLACEHOLDER CONNECTION
 	// input are expected to have shape n_input by batch_size
 	// outputs are expected to have shape output by batch_size
 	nnet::varptr<double> operator () (nnet::inode<double>* input);
 
-	std::vector<nnet::variable<double>*> get_variables (void) const;
-
-	bool save (std::string fname) const;
+	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
 	size_t get_ninput (void) const { return n_input_; }
 
