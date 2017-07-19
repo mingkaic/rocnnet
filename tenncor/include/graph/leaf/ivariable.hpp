@@ -51,7 +51,7 @@ protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! construct to init zero and one
 	ivariable (const tensorshape& shape,
-		itensor_handler<T>* init,
+		initializer<T>* init,
 		std::string name);
 
 	//! copy construct to init zero and one
@@ -61,7 +61,7 @@ protected:
 	ivariable (ivariable<T>&& other);
 
 	//! initialization handler, owns this
-	itensor_handler<T>* init_ = nullptr;
+	initializer<T>* init_ = nullptr;
 
 private:
 	//! copy helper

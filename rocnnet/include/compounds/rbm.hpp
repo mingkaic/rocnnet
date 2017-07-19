@@ -21,8 +21,9 @@ namespace rocnnet
 struct rbm_param
 {
 	size_t n_contrastive_divergence_ = 1;
-	size_t n_epochs_ = 10;
 	size_t n_batch_ = 32;
+	size_t n_epoch = 10;
+	double learning_rate_ = 1e-3;
 };
 
 class rbm : public icompound
@@ -30,8 +31,6 @@ class rbm : public icompound
 public:
 	// trust that passed in operations are unconnected
 	rbm (size_t n_input, IN_PAIR hidden_info,
-		double learning_rate = 1e-3,
-		rbm_param param = rbm_param(),
 		std::string scope = "RBM");
 
 	virtual ~rbm (void);
@@ -51,7 +50,9 @@ public:
 
 	nnet::varptr<double> back (nnet::inode<double>* hidden);
 
-	void train (nnet::inode<double>* input); // todo: move out
+	// input a 2-D vector of shape <n_input, n_batch>
+	nnet::updates_t train (nnet::inode<double>* input,
+		double learning_rate = 1e-3, size_t n_cont_div = 1);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
@@ -78,8 +79,6 @@ private:
 	HID_PAIR hidden_;
 
 	nnet::variable<double>* vbias_;
-
-	nnet::vgb_updater bgd_;
 
 	rbm_param params_;
 };

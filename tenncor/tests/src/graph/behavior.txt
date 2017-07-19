@@ -136,6 +136,7 @@ J011 - a inode is equal (using operator ==) to a primitive value if it is scalar
 		same applies for not equal (!=),
 		equality and inequality fails assertion if input node has bad status
 (UNTESTED) J012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
+(UNTESTED) conditional
 
 // TRANSFORM BEHAVIORS
 K000 - any operation accepting nullptr as any operand returns nullptr
@@ -176,3 +177,6 @@ M002 - solo_audience_merge is operationally identical to the original graph
 		any node whose jacobian different from its parent is unmergible
 M003 - all_merge has same behavior as solo_audience_merge, except nodes with multiple audiences are split and merged
 		e.g.: A is consumed by B and C, merge on C splits A to A1 and A2, B consumes A1, C consumes A2
+
+// GENERATOR BEHAVIORS
+todo: test

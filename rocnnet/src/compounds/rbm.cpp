@@ -14,12 +14,10 @@
 namespace rocnnet
 {
 
-rbm::rbm (size_t n_input, IN_PAIR hidden_info, double learning_rate, rbm_param param, std::string scope) :
+rbm::rbm (size_t n_input, IN_PAIR hidden_info, std::string scope) :
 	icompound(scope),
-	n_input_(n_input),
-	params_(param)
+	n_input_(n_input)
 {
-	bgd_.set_learning_rate(learning_rate);
 	nnet::const_init<double> zinit(0);
 	hidden_ = { new fc_layer({n_input}, hidden_info.first), hidden_info.second };
 	vbias_ = new nnet::variable<double>(std::vector<size_t>{n_input},
@@ -77,22 +75,45 @@ nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
 	return (hidden_.second)(pre_nl);
 }
 
-void rbm::train (nnet::inode<double>* input)
+nnet::updates_t rbm::train (nnet::inode<double>* input,
+	double learning_rate = 1e-3, size_t n_cont_div = 1)
 {
-	// contrastive divergence
-	nnet::inode<double>* v0;
-	nnet::inode<double>* vt;
-	v0 = vt = input;
+	// grad approx by contrastive divergence
+	nnet::varptr<double> v0;
+	nnet::varptr<double> vt;
+	v0 = vt = input; // of shape <n_input, n_batch>
 
 	nnet::rand_uniform<double> rinit(0, 1);
-	// Sampling
-//	for (size_t i = 0; i < params_.n_contrastive_divergence_; i++)
-//	{
-//		nnet::varptr<double> hidden_sample = this->back(vt);
-//		nnet::varptr<double> sample = nnet::generator<double>::get(hidden_sample, rinit);
-//		nnet::varptr<double> ht = nnet::conditional<double>(sample, hidden_sample, [](double s, double hs) { return s < hs; });
-//		vt = rbm::operator () (ht);
-//	}
+	// sampling
+	for (size_t i = 0; i < n_cont_div; i++)
+	{
+		nnet::varptr<double> hidden_sample = this->back(vt);
+		nnet::varptr<double> sample = nnet::generator<double>::get(hidden_sample, rinit);
+		nnet::varptr<double> ht = nnet::conditional<double>(sample, hidden_sample,
+			[](double s, double hs) { return s < hs; }, "less");
+		vt = rbm::operator () (ht);
+	}
+
+	// compute deltas
+	nnet::varptr<double> h0 = back(v0); // of shape <n_hidden, n_batch>
+	nnet::varptr<double> hk = back(vt);
+	v0 = nnet::reduce_mean(v0, 1); // reduce to shape <n_input>
+	vt = nnet::reduce_mean(vt, 1);
+	h0 = nnet::reduce_mean(h0, 1); // reduce to shape <n_hidden>
+	hk = nnet::reduce_mean(hk, 1);
+	nnet::varptr<double> dW = nnet::matmul<double>(h0, v0) - nnet::matmul<double>(hk, vt);
+	nnet::varptr<double> dhb = h0 - hk;
+	nnet::varptr<double> dvb = v0 - vt;
+
+	std::vector<nnet::variable<double>*> vars = hidden_.first->get_variables();
+	nnet::variable<double>* weight = vars[0];
+	nnet::variable<double>* hbias = vars[1];
+
+	nnet::updates_t uvec;
+	uvec.push_back(weight->assign_add(learning_rate * dW));
+	uvec.push_back(hbias->assign_add(learning_rate * dhb));
+	uvec.push_back(vbias_->assign_add(learning_rate * dvb));
+	return uvec;
 }
 
 std::vector<nnet::variable<double>*> rbm::get_variables (void) const

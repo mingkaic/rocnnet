@@ -982,6 +982,40 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 	return out;
 }
 
+template <typename T>
+varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name)
+{
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::string opname = "conditional_" + name;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 2 && args[0] == a && args[1] == b)
+				return aud;
+		}
+	}
+
+	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	binary_elem_agg(ELEM_FUNC<T>(
+	[](const T** group, size_t n) -> T
+	{
+		assert(n == 2);
+		return *(group[0]) < *(group[1]) ? 1 : 0;
+	})),
+	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		assert(args.size() == 2);
+		varptr<T> grada = args[0].second;
+		varptr<T> gradb = args[1].second;
+		// todo: consider correctness
+		return conditional<T>(grada, gradb, compare, name);
+	}, opname);
+}
+
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {

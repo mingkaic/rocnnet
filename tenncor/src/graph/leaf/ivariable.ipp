@@ -74,7 +74,7 @@ bool ivariable<T>::can_init (void) const
 
 template <typename T>
 ivariable<T>::ivariable (const tensorshape& shape,
-	itensor_handler<T>* init,
+	initializer<T>* init,
 	std::string name) :
 ileaf<T>(shape, name), init_(init) {}
 
