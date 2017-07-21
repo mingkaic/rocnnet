@@ -7,6 +7,7 @@
 //
 
 #include "memory/tensor_io.hpp"
+#include "utils/futils.hpp"
 
 #include "layers/fc_layer.hpp"
 

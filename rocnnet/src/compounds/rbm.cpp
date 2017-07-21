@@ -7,7 +7,6 @@
 //
 
 #include "compounds/rbm.hpp"
-#include "graph/connector/immutable/generator.hpp"
 
 #ifdef ROCNNET_RBM_HPP
 
@@ -64,44 +63,52 @@ rbm& rbm::operator = (rbm&& other)
 nnet::varptr<double> rbm::operator () (nnet::inode<double>* input)
 {
 	// prop forward
+	// weight is <n_hidden, n_input>
+	// in is <n_input, ?>
+	// out = in @ weight, so out is <n_hidden, ?>
 	return (hidden_.second)((*hidden_.first)({input}));
 }
 
 nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
 {
+	// weight is <n_hidden, n_input>
+	// in is <n_hidden, ?>
+	// out = in @ weight.T, so out is <n_input, ?>
 	nnet::varptr<double> weight = hidden_.first->get_variables()[0];
 	nnet::varptr<double> weighed = nnet::matmul<double>(hidden, weight, false, true);
 	nnet::varptr<double> pre_nl = nnet::add_axial_b(weighed, nnet::varptr<double>(vbias_), 1);
 	return (hidden_.second)(pre_nl);
 }
 
-nnet::updates_t rbm::train (nnet::inode<double>* input,
-	double learning_rate = 1e-3, size_t n_cont_div = 1)
+nnet::updates_t rbm::train (generators_t& gens,
+	nnet::inode<double>* input, double learning_rate, size_t n_cont_div)
 {
 	// grad approx by contrastive divergence
 	nnet::varptr<double> v0;
 	nnet::varptr<double> vt;
 	v0 = vt = input; // of shape <n_input, n_batch>
 
-	nnet::rand_uniform<double> rinit(0, 1);
+	nnet::rand_normal<double> rinit(0);
 	// sampling
 	for (size_t i = 0; i < n_cont_div; i++)
 	{
-		nnet::varptr<double> hidden_sample = this->back(vt);
-		nnet::varptr<double> sample = nnet::generator<double>::get(hidden_sample, rinit);
+		nnet::varptr<double> hidden_sample = rbm::operator () (vt); // <n_hidden, n_batch>
+		nnet::generator<double>* gen;
+		nnet::varptr<double> sample = gen = nnet::generator<double>::get(hidden_sample, rinit);
+		gens.push_back(gen);
 		nnet::varptr<double> ht = nnet::conditional<double>(sample, hidden_sample,
 			[](double s, double hs) { return s < hs; }, "less");
-		vt = rbm::operator () (ht);
+		vt = this->back(ht);  // <n_input, n_batch>
 	}
 
 	// compute deltas
-	nnet::varptr<double> h0 = back(v0); // of shape <n_hidden, n_batch>
-	nnet::varptr<double> hk = back(vt);
+	nnet::varptr<double> h0 = rbm::operator () (v0); // of shape <n_hidden, n_batch>
+	nnet::varptr<double> hk = rbm::operator () (vt);
 	v0 = nnet::reduce_mean(v0, 1); // reduce to shape <n_input>
 	vt = nnet::reduce_mean(vt, 1);
 	h0 = nnet::reduce_mean(h0, 1); // reduce to shape <n_hidden>
 	hk = nnet::reduce_mean(hk, 1);
-	nnet::varptr<double> dW = nnet::matmul<double>(h0, v0) - nnet::matmul<double>(hk, vt);
+	nnet::varptr<double> dW = nnet::matmul<double>(h0, v0, true) - nnet::matmul<double>(hk, vt, true); // of shape <n_hidden, n_input>
 	nnet::varptr<double> dhb = h0 - hk;
 	nnet::varptr<double> dvb = v0 - vt;
 
@@ -166,6 +173,31 @@ void rbm::clean_up (void)
 
 	hidden_.first = nullptr;
 	vbias_ = nullptr;
+}
+
+void fit (rbm& model, std::vector<double> batch, rbm_param params)
+{
+	size_t n_input = model.get_ninput();
+	assert(0 == batch.size() % n_input);
+	size_t n_batch = batch.size() / n_input;
+	nnet::placeholder<double> in(std::vector<size_t>{n_input, n_batch}, "rbm_train_in");
+	rocnnet::generators_t gens;
+	nnet::updates_t trainers = model.train(gens, &in, params.learning_rate_, params.n_cont_div_);
+	trainers.push_back([gens](bool)
+	{
+		for (nnet::generator<double>* gen : gens)
+		{
+			gen->update({}); // re-randomize
+		}
+	});
+	in = batch;
+	for (size_t i = 0; i < params.n_epoch_; i++)
+	{
+		for (nnet::variable_updater<double>& trainer : trainers)
+		{
+			trainer(true);
+		}
+	}
 }
 
 }

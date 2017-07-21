@@ -200,9 +200,9 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 					auto jit = this->jacobians_.find(leaf);
 					// different jacobians originating from the same leaf cannot overlap
 					auto& j = jpair.second;
-					if (false == j.list_.empty())
+					if (false == j.list_.empty() && // prevent duplicate jacobians
+						(this->jacobians_.end() == jit || jit->second.uid_ == j.uid_))
 					{
-						assert (this->jacobians_.end() == jit || jit->second.uid_ == j.uid_);
 						this->jacobians_[leaf] = j;
 					}
 				}

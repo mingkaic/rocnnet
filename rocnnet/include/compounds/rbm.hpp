@@ -8,8 +8,10 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "compounds/icompound.hpp"
+#include "graph/connector/immutable/generator.hpp"
 #include "utils/gd_utils.hpp"
+
+#include "compounds/icompound.hpp"
 
 #pragma once
 #ifndef ROCNNET_RBM_HPP
@@ -18,13 +20,7 @@
 namespace rocnnet
 {
 
-struct rbm_param
-{
-	size_t n_contrastive_divergence_ = 1;
-	size_t n_batch_ = 32;
-	size_t n_epoch = 10;
-	double learning_rate_ = 1e-3;
-};
+using generators_t = std::vector<nnet::generator<double>*>;
 
 class rbm : public icompound
 {
@@ -44,14 +40,16 @@ public:
 	rbm& operator = (rbm&& other);
 
 	// PLACEHOLDER CONNECTION
-	// input are expected to have shape n_input by batch_size
-	// outputs are expected to have shape output by batch_size
+	// accept input of shape <n_input, n_batch>
+	// output of shape <n_hidden, n_batch>
 	nnet::varptr<double> operator () (nnet::inode<double>* input);
 
+	// accept input of shape <n_hidden, n_batch>
+	// output shape of <n_input, n_batch>
 	nnet::varptr<double> back (nnet::inode<double>* hidden);
 
 	// input a 2-D vector of shape <n_input, n_batch>
-	nnet::updates_t train (nnet::inode<double>* input,
+	nnet::updates_t train (generators_t& gens, nnet::inode<double>* input,
 		double learning_rate = 1e-3, size_t n_cont_div = 1);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
@@ -79,9 +77,16 @@ private:
 	HID_PAIR hidden_;
 
 	nnet::variable<double>* vbias_;
-
-	rbm_param params_;
 };
+
+struct rbm_param
+{
+	size_t n_epoch_ = 10;
+	size_t n_cont_div_ = 1;
+	double learning_rate_ = 1e-3;
+};
+
+void fit (rbm& model, std::vector<double> batch, rbm_param params);
 
 }
 

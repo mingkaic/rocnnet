@@ -24,208 +24,96 @@ template <typename T>
 class generator : public iconnector<T>
 {
 public:
-	virtual ~generator (void)
-	{
-		clean_up();
-	}
+	virtual ~generator (void);
 
 	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
 	//! builder for generator, clones init
 	static generator<T>* get (inode<T>* shape_dep,
-		const initializer<T>& init, std::string name = "generator")
-	{
-		return new generator(shape_dep, init, name);
-	}
+		const initializer<T>& init, std::string name = "generator");
 
 	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
 	//! clone function
-	generator<T>* clone (void) const
-	{
-		return static_cast<generator<T>*>(this->clone_impl());
-	}
+	generator<T>* clone (void) const;
 
 	//! move function
-	generator<T>* move (void)
-	{
-		return static_cast<generator<T>*>(this->move_impl());
-	}
+	generator<T>* move (void);
 
-	//! declare copy assignment to copy over ?
-	virtual generator<T>& operator = (const generator<T>& other)
-	{
-		if (this != &other)
-		{
-			iconnector<T>::operator = (other);
-			clean_up();
-			copy_helper(other);
-			this->notify(UPDATE);
-		}
-		return *this;
-	}
+	//! declare copy assignment to copy over data and init
+	virtual generator<T>& operator = (const generator<T>& other);
 
-	//! declare move assignment to move over ?
-	virtual generator<T>& operator = (generator<T>&& other)
-	{
-		if (this != &other)
-		{
-			iconnector<T>::operator = (std::move(other));
-			clean_up();
-			move_helper(std::move(other));
-			this->notify(UPDATE);
-		}
-		return *this;
-	}
+	//! declare move assignment to move over data and init
+	virtual generator<T>& operator = (generator<T>&& other);
 
 	// >>>> FORWARD & BACKWARD DATA <<<<
 	//! grab a temporary value traversing top-down
 	//! allocates out tensor. caller owns out
-	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const
-	{
-		out = constant<T>::get(1);
-	}
+	virtual void temporary_eval (const iconnector<T>* target, inode<T>*& out) const;
 
 	//! get gradient wrt some node, applies jacobians before evaluting resulting tensor
 	//! may call get_gradient
-	virtual varptr<T> derive (inode<T>* wrt)
-	{
-		if (this != wrt)
-		{
-			return constant<T>::get_shared_zero();
-		}
-		return constant<T>::get_shared_one();
-	}
+	virtual varptr<T> derive (inode<T>* wrt);
 
 	//! Utility function: get data shape
-	virtual tensorshape get_shape (void) const
-	{
-		return data_->get_shape();
-	}
+	virtual tensorshape get_shape (void) const;
 
 	// >>>> GRAPH STATUS <<<<
 	//! get gradient leaves
-	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const
-	{
-		return {};
-	}
+	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const;
+
+	//! summarize this connector
+	virtual typename iconnector<T>::summary_series summarize (void) const;
 
 	// >>>> NODE STATUS <<<<
 	//! check if the arguments are good; data is available
-	virtual bool good_status (void) const
-	{
-		return nullptr != data_;
-	}
+	virtual bool good_status (void) const;
 
 	//! Inherited from inode: data_ takes data from proto
-	virtual bool read_proto (const tenncor::tensor_proto&) {}
+	virtual bool read_proto (const tenncor::tensor_proto&);
 
 	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
-	virtual void update (std::unordered_set<size_t> argidx)
-	{
-		inode<T>* dep = dynamic_cast<inode<T>*>(this->dependencies_[0]);
-		if (nullptr == dep)
-		{
-			// self destroy
-			this->notify(UNSUBSCRIBE);
-		}
-		tensorshape depshape = dep->get_shape();
-		if (false == dep->good_status() || false == depshape.is_fully_defined())
-		{
-			return;
-		}
-		if (nullptr == data_)
-		{
-			// init
-			data_ = new tensor<T>(depshape);
-			(*init_)(data_);
-			this->notify(UPDATE);
-		}
-		else if (false == data_->get_shape().is_compatible_with(depshape))
-		{
-			// reshape
-			data_->set_shape(depshape);
-			(*init_)(data_);
-			this->notify(UPDATE);
-		}
-	}
+	virtual void update (std::unordered_set<size_t> argidx);
 
 protected:
-	generator (inode<T>* shape_dep, const initializer<T>& init, std::string name) :
-		iconnector<T>({shape_dep}, name)
-	{
-		this->init_ = init.clone();
-		this->mergible_ = false;
-	}
+	// >>>> CONSTRUCTORS <<<<
+	//! default constructor
+	generator (inode<T>* shape_dep, const initializer<T>& init, std::string name);
 
-	generator (const generator<T>& other)
-	{
-		copy_helper(other);
-	}
+	//! declare copy constructor to copy over init and data
+	generator (const generator<T>& other);
 
-	generator (generator<T>&& other)
-	{
-		move_helper(std::move(other));
-	}
+	//! declare copy constructor to copy over init and data
+	generator (generator<T>&& other);
 
 	// >>>> POLYMORPHIC CLONERS <<<<
 	//! clone abstraction function
-	virtual inode<T>* clone_impl (void) const
-	{
-		return new generator(*this);
-	}
+	virtual inode<T>* clone_impl (void) const;
 
 	//! move abstraction function
-	virtual inode<T>* move_impl (void)
-	{
-		return new generator(std::move(*this));
-	}
+	virtual inode<T>* move_impl (void);
 
-	virtual const tensor<T>* get_eval (void) const
-	{
-		return data_;
-	}
+	// >>>> INTERNAL DATA TRANSFERS <<<<
+	//! get forward passing value
+	virtual const tensor<T>* get_eval (void) const;
 
-	virtual inode<T>* get_gradient (variable<T>* leaf)
-	{
-		return constant<T>::get_shared_zero();
-	}
+	//! grab operational gradient node, used by other nodes
+	//! adds to internal caches if need be
+	virtual inode<T>* get_gradient (variable<T>* leaf);
 
-	virtual void death_on_broken (void)
-	{
-		delete this;
-	}
+	// >>>> KILL CONDITION <<<<
+	//! suicides when all observers die
+	virtual void death_on_broken (void);
 
-	virtual void death_on_noparent (void)
-	{
-		delete this;
-	}
-
-	virtual typename iconnector<T>::summary_series summarize (void) const
-	{
-		return {};
-	}
+	//! suicides when this loses all observers (unless this is_managed)
+	virtual void death_on_noparent (void);
 
 private:
-	void copy_helper (const generator<T>& other) const
-	{
-		init_ = other.init_->clone();
-		data_ = other.data_->clone();
-	}
+	void copy_helper (const generator<T>& other);
 
-	void move_helper (generator<T>&& other)
-	{
-		init_ = other.init_->move();
-		data_ = other.data_->move();
-	}
+	void move_helper (generator<T>&& other);
 
-	void clean_up (void)
-	{
-		if (init_) delete init_;
-		if (data_) delete data_;
-		init_ = nullptr;
-		data_ = nullptr;
-	}
+	void clean_up (void);
 
 	//! initialization handler, owns this
 	initializer<T>* init_ = nullptr;
@@ -235,5 +123,7 @@ private:
 };
 
 }
+
+#include "../../../../src/graph/connector/immutable/generator.ipp"
 
 #endif /* ROCNNET_GENERATOR_HPP */

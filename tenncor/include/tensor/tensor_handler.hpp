@@ -252,10 +252,10 @@ private:
 };
 
 template <typename T>
-using general_distribution = std::conditional_t<
+using general_uniform = std::conditional_t<
 	std::is_integral<T>::value, std::uniform_int_distribution<T>,
-	std::conditional_t<
-		std::is_floating_point<T>::value, std::uniform_real_distribution<T>, void> >;
+	std::conditional_t<std::is_floating_point<T>::value,
+		std::uniform_real_distribution<T>, void> >;
 
 //! Uniformly Random Initializer
 template <typename T>
@@ -282,7 +282,53 @@ protected:
 	virtual void calc_data (T* dest, tensorshape outshape);
 
 private:
-	general_distribution<T>  distribution_;
+	general_uniform<T>  distribution_;
+};
+
+//! Normal Random Initializer
+template <typename T>
+class rand_normal : public initializer<T>
+{
+public:
+	//! initialize tensors with a random value between min and max
+	rand_normal (T mean = 0, T stdev = 1) :
+		distribution_(mean, stdev) {}
+
+	//! clone function for copying from parents
+	rand_normal<T>* clone (void) const
+	{
+		return static_cast<rand_normal<T>*>(clone_impl());
+	}
+
+	//! clone function for copying from parents
+	rand_normal<T>* move (void)
+	{
+		return static_cast<rand_normal<T>*>(move_impl());
+	}
+
+protected:
+	//! clone implementation for copying from parents
+	virtual itensor_handler<T>* clone_impl (void) const
+	{
+		return new rand_normal(*this);
+	}
+
+	//! clone function for copying from parents
+	virtual itensor_handler<T>* move_impl (void)
+	{
+		return new rand_normal(std::move(*this));
+	}
+
+	//! initialize data as constant
+	virtual void calc_data (T* dest, tensorshape outshape)
+	{
+		size_t len = outshape.n_elems();
+		auto gen = std::bind(distribution_, nnutils::get_generator());
+		std::generate(dest, dest+len, gen);
+	}
+
+private:
+	std::normal_distribution<T> distribution_;
 };
 
 }
