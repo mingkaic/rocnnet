@@ -74,7 +74,7 @@ int main (int argc, char** argv)
 	untrained_gdn.initialize();
 	rocnnet::gd_net trained_gdn(untrained_gdn, "trained_gd_net");
 	rocnnet::gd_net pretrained_gdn(untrained_gdn, "pretrained_gd_net");
-	pretrained_gdn.initialize(serialpath, "trained_gd_net");
+	pretrained_gdn.initialize(serialpath, "gd_demo");
 
 	// train mlp to output input
 	start = std::clock();
@@ -132,7 +132,7 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0)
 	{
-		trained_gdn.save(serialpath);
+		trained_gdn.save(serialpath, "gd_demo");
 	}
 
 #ifdef EDGE_RCD

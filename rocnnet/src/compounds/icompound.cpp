@@ -33,7 +33,7 @@ void icompound::initialize (std::string serialname, std::string readscope)
 	std::vector<nnet::variable<double>*> vars = this->get_variables();
 
 	std::vector<nnet::inode<double>*> nv(vars.begin(), vars.end());
-	if (nnet::read_inorder<double>(nv, readscope, serialname) && vars.empty())
+	if (nnet::read_inorder<double>(nv, readscope, serialname) && nv.empty())
 	{
 		return;
 	}

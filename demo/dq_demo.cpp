@@ -84,7 +84,7 @@ int main (int argc, char** argv)
 	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");
 
 	rocnnet::dq_net pretrained_dqn(untrained_dqn, "pretrained_dqn");
-	pretrained_dqn.initialize(serialpath, "trained_dqn");
+	pretrained_dqn.initialize(serialpath, "dq_demo");
 
 	int exit_status = 0;
 	// exit code:
@@ -198,7 +198,7 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0)
 	{
-		trained_dqn.save(serialname);
+		trained_dqn.save(serialname, "dq_demo");
 	}
 
 #ifdef EDGE_RCD
