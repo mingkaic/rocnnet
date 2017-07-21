@@ -7,6 +7,10 @@
 #include <iterator>
 #include <ctime>
 
+#ifdef __GNUC__
+#include <unistd.h>
+#endif
+
 #include "models/gd_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
@@ -44,18 +48,56 @@ int main (int argc, char** argv)
 	std::string outdir = ".";
 	size_t n_train = 3000;
 	size_t n_test = 500;
+	size_t seed_val;
+	bool seed = false;
+
+#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
+	int c;
+	while ((c = getopt (argc, argv, "o:r:t:s")) != -1)
+	{
+		switch(c)
+		{
+			case 'o': // output directory
+				outdir = std::string(optarg);
+				break;
+			case 'r': // training iterations
+				n_train = atoi(optarg);
+				break;
+			case 't': // testing iterations
+				n_test = atoi(optarg);
+				break;
+			case 's': // seed value
+				seed_val = atoi(optarg);
+				seed = true;
+				break;
+		}
+	}
+#else
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
 	if (argc > 2)
 	{
-		n_train = std::stoi(std::string(argv[2]));
+		n_train = atoi(argv[2]);
 	}
 	if (argc > 3)
 	{
-		n_test = std::stoi(std::string(argv[3]));
+		n_test = atoi(argv[3]);
 	}
+	if (argc > 4)
+	{
+		seed_val = atoi(argv[4]);
+		seed = true;
+	}
+#endif
+
+	if (seed)
+	{
+		rnd_device.seed(seed_val);
+		nnutils::seed_generator(seed_val);
+	}
+
 	std::string serialname = "gd_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 

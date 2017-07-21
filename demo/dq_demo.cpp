@@ -3,6 +3,10 @@
 #include "models/dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
 
+#ifdef __GNUC__
+#include <unistd.h>
+#endif
+
 static std::default_random_engine rnd_device(std::time(NULL));
 
 static std::vector<double> batch_generate (size_t n, size_t batchsize)
@@ -50,18 +54,56 @@ int main (int argc, char** argv)
 	std::string outdir = ".";
 	size_t episode_count = 250;
 	size_t max_steps = 100;
+	size_t seed_val;
+	bool seed = false;
+
+#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
+	int c;
+	while ((c = getopt (argc, argv, "o:r:t:s")) != -1)
+	{
+		switch(c)
+		{
+			case 'o': // output directory
+				outdir = std::string(optarg);
+				break;
+			case 'e': // number of episodes
+				episode_count = atoi(optarg);
+				break;
+			case 'm': // number of steps per episodes
+				max_steps = atoi(optarg);
+				break;
+			case 's': // seed value
+				seed_val = atoi(optarg);
+				seed = true;
+				break;
+		}
+	}
+#else
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
 	if (argc > 2)
 	{
-		episode_count = std::stoi(std::string(argv[2]));
+		episode_count = atoi(argv[2]);
 	}
 	if (argc > 3)
 	{
-		max_steps = std::stoi(std::string(argv[3]));
+		max_steps = atoi(argv[3]);
 	}
+	if (argc > 4)
+	{
+		seed_val = atoi(argv[4]);
+		seed = true;
+	}
+#endif
+
+	if (seed)
+	{
+		rnd_device.seed(seed_val);
+		nnutils::seed_generator(seed_val);
+	}
+
 	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 

@@ -74,13 +74,13 @@ rm $ERRORLOG
 
 # rocnnet demos
 echo "running gd_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/gd_demo $PBX_CACHE 5 1"
-assert_cmd "$BINDIR/gd_demo $PBX_CACHE"
+assert_cmd "valgrind --tool=memcheck $BINDIR/gd_demo -o $PBX_CACHE -r 5 -t 1"
+assert_cmd "$BINDIR/gd_demo -o $PBX_CACHE"
 echo "gd_demo complete"
 
 echo "running C++ dq_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/dq_demo $PBX_CACHE 1 5"
-assert_cmd "$BINDIR/dq_demo $PBX_CACHE"
+assert_cmd "valgrind --tool=memcheck $BINDIR/dq_demo -o $PBX_CACHE -e 1 -m 5"
+assert_cmd "$BINDIR/dq_demo -o $PBX_CACHE"
 echo "C++ dq_demo complete"
 
 echo "running python dq_demo"
