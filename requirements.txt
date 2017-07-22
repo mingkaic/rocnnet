@@ -3,3 +3,4 @@ matplotlib==2.0.2
 redis==2.10.5
 euclid==0.1
 ipython==5.3.0
+numpy==1.11.1
