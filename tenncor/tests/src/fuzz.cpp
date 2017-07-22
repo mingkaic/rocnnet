@@ -7,14 +7,14 @@ namespace FUZZ
 
 void reset_logger (void)
 {
-    fuzzLogger.close();
+	fuzzLogger.close();
 	remove(FUZZ_FILE);
-    fuzzLogger.open(FUZZ_FILE);
+	fuzzLogger.open(FUZZ_FILE);
 }
 
 std::vector<double> getDouble (size_t len,
 	std::string purpose,
-    std::pair<double,double> range)
+	std::pair<double,double> range)
 {
 	double min, max;
 	if (range.first == range.second)
@@ -46,7 +46,7 @@ std::vector<double> getDouble (size_t len,
 
 std::vector<size_t> getInt (size_t len,
 	std::string purpose,
-    std::pair<size_t,size_t> range)
+	std::pair<size_t,size_t> range)
 {
 	size_t min, max;
 	if (range.first == range.second)
@@ -78,7 +78,7 @@ std::vector<size_t> getInt (size_t len,
 
 std::string getString (size_t len,
 	std::string purpose,
-    std::string alphanum)
+	std::string alphanum)
 {
 	std::vector<size_t> indices = FUZZ::getInt(len, "indices", {0, alphanum.size()-1});
 	std::string s(len, ' ');

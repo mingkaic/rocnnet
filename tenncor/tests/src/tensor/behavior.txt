@@ -2,81 +2,82 @@
 A000 - copy and move creates/moves a data equivalent shape
 A001 - as_list returns a shallow copy of the dimension values provided during construction
 A002 - n_elems returns the product of all dimension value. non-fully defined shapes have n_elems of 0
-        n_known obtains the product of all known dimensions
+		n_known obtains the product of all known dimensions
 A003 - rank returns the length of the dimension vector
 A004 - tensorshape is compatible if one of the shapes are undefined,
-        or the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
+		or the tensors are of the same rank and dimension values equal for defined dimensions (> 0)
 A005 - a tensorshapes is partially defined if it has a rank > 0
 A006 - a tensorshapes is fully defined if it is at least partially defined
-        and all its dimensional values are defined (> 0)
+		and all its dimensional values are defined (> 0)
 A007 - a tensorshape assert its rank wrt to another value or shape.
-        undefined shapes can have any rank
+		undefined shapes can have any rank
 A008 - a tensorshape can be undefined explicitly
 A009 - tensorshape merge return the most defined most defined shape
-        (that is dimension values > 0 are preferred)
-        merging incompatible tensorshapes results in a logic error
+		(that is dimension values > 0 are preferred)
+		merging incompatible tensorshapes results in a logic error
 A010 - a tensorshape can have its leading and trailing 1s removed
 A011 - two tensorshapes can concatenate to form a tensorshape depending on the order of
-        concatenation assuming both tensors are at least partially defined
+		concatenation assuming both tensors are at least partially defined
 A012 - a tensorshape's rank can be manipulated by padding with ones or clipping
 
 A013 - converting coordinates C to sequential index I on a tensorshape S takes form:
-        I = SIGMA_i=0:n(C[i]*PI_j=0:i-1(S[i])) where n is rank of S, and S[-1] is 1
+		I = SIGMA_i=0:n(C[i]*PI_j=0:i-1(S[i])) where n is rank of S, and S[-1] is 1
 A014 - index from coordinate C on a tensorshape equals the initial index converted to C (reverse of A013)
 A015 - n_elems and n_known account for shapes with groupings
 A016 - groupings on unknown dimensions (ones with value of 0) do not set grouping (is_grouped returns false)
 A017 - memory_indices maps shape index obtained from sequential index to every element along grouped dimension
 A018 - shapes are padded with ones may match shapes with shapes of similar non-padded values and vice versa
-        zero paddings may substitute ones (for example: <0, 1, 5, 6> matches <1, 5, 6> or <5, 6> or <0, 0, 5, 6>)
-        todo: THIS IS DEFINITELY BROKEN, <0, 1, 5, 6> will not match <1, 5, 6> because leading 1's are culled before 0s
+		zero paddings may substitute ones (for example: <0, 1, 5, 6> matches <1, 5, 6> or <5, 6> or <0, 0, 5, 6>)
+		todo: THIS IS DEFINITELY BROKEN, <0, 1, 5, 6> will not match <1, 5, 6> because leading 1's are culled before 0s
 
 // TENSOR
 B000 - scalar tensor constructrion creates allocates a tensor of rank 1, nelems = 1
-        scalar tensor's raw data is initialized as the scalar
+		scalar tensor's raw data is initialized as the scalar
 B001 - default tensor construction creates an undefined tensor
-        constructing with a fully_defined_shape is allocated on construction
-        otherwise tensor is not allocated
-        unallocated tensors have 0 bytes, allocated tensors have bytes of n_elems * sizeof(type)
+		constructing with a fully_defined_shape is allocated on construction
+		otherwise tensor is not allocated
+		unallocated tensors have 0 bytes, allocated tensors have bytes of n_elems * sizeof(type)
 B002 - copy and move creates/moves a tensor of equivalent shape and raw data
-        cloning from itensor on tensor instance will return tensor instance (not tested)
+		cloning from itensor on tensor instance will return tensor instance (not tested)
 B003 - tensor can access through a shallow copy of the shape, or through shape info
 B004 - two tensors are the same size if their allowed shapes are compatible or
-        they are both allocated and their trimmed shapes are compatible
+		they are both allocated and their trimmed shapes are compatible
 B005 - two tensors are compatible if their alloc_shape if allocated (or allowed_shape) are compatible
 B006 - a tensor is compatible with a data vector if data is compatible
-        if data.size() == alloc_shape if allocated (or allowed_shape) size
-        loosely compatible if data.size() < alloc_shape if allocated (or allowed_shape) size
-        unmet condition returns undefined optional
+		if data.size() == alloc_shape if allocated (or allowed_shape) size
+		loosely compatible if data.size() < alloc_shape if allocated (or allowed_shape) size
+		unmet condition returns undefined optional
 B007 - guess shape return a shape if the shape has n_elems == data.size() and is compatible
-        with allowed_shape otherwise return undefined optional
-        loosely guess return a shape if n_elems < data.size() and is compatible
-        with allowed_shape shape otherwise return undefined optional
+		with allowed_shape otherwise return undefined optional
+		loosely guess return a shape if n_elems < data.size() and is compatible
+		with allowed_shape shape otherwise return undefined optional
 B008 - tensors coordinates <c0, c1, ..., cn> are mapped to
-        output tensor vector with shape <d0, d1, ..., dn> by sum_i=0:n(product_j=0:i(dj) * ci)
+		output tensor vector with shape <d0, d1, ..., dn> by sum_i=0:n(product_j=0:i(dj) * ci)
 B009 - reshape changes clips or pads raw data with zeros if the tensor is allocated
-        if this is nonfully defined, it will not be allocated
-        additionally allowed shape is undated to be more defined
+		if this is nonfully defined, it will not be allocated
+		additionally allowed shape is undated to be more defined
 B010 - default allocate (no provided shape) returns false if allowed shape is not fully defined.
-        otherwise it is allocated. will not reallocate if already allocated
+		otherwise it is allocated. will not reallocate if already allocated
 B011 - deallocation fails if tensor is not allocated,
-        otherwise alloc_shape must be undefined and raw_data is nullptr
+		otherwise alloc_shape must be undefined and raw_data is nullptr
 B012 - allocate will fail if provided shape is not compatible with allowed shape
-        allocate will not reallocate if this is allocated and shape is identical to current allocated shape
-        otherwise allocate may reallocate
+		allocate will not reallocate if this is allocated and shape is identical to current allocated shape
+		otherwise allocate may reallocate
 B013 - copy_from another tensor will return true if other tensor is allocated
-        and shape is fully defined. resulting tensor will have the same value as
-        other within specified shape dimensions, data not specified by other is 0
+		and shape is fully defined. resulting tensor will have the same value as
+		other within specified shape dimensions, data not specified by other is 0
 B014 - reading a valid tensor_proto should allocate the tensor if not already.
-        data should be identical to the data saved in protobuf (check via some adhoc data values)
-        both allowed and allocated shapes should be identical to the shape specified in protobuf
+		data should be identical to the data saved in protobuf (check via some adhoc data values)
+		both allowed and allocated shapes should be identical to the shape specified in protobuf
 
 // TENSOR_HANDLER
 C000 - transfer function takes output tensor and some argument tensors.
 C001 - constant initializer fills a tensor with a
-        particular scalar defined at the construction of initializer
+		particular scalar defined at the construction of initializer
 C002 - random initializer fills a tensor with values
-        between low and high bounds specified at initializer construction
+		between low and high bounds specified at initializer construction
 C003 - copying and moving transfer, const_init,
-        rand_uniform creates/moves the shaper and forward functions
-        cloning from itensor_handler on any of the handlers instances
-        will return their respective instances
+		rand_uniform creates/moves the shaper and forward functions
+		cloning from itensor_handler on any of the handlers instances
+		will return their respective instances
+todo: test rand_normal

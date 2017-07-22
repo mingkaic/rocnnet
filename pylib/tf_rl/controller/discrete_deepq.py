@@ -40,7 +40,7 @@ class DiscreteDeepQ(object):
         self.agent.train()
 
 
-    def initialize(self, save_dir):
+    def initialize(self, save_dir=""):
         self.agent.initialize(save_dir)
 
 

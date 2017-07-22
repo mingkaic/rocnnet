@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "graph/connector/immutable/matmul.hpp"
 #include "graph/operations/operations.hpp"
 
 #include "gtest/gtest.h"
@@ -99,7 +98,7 @@ varptr<double> random_2layer_graph (tensorshape main_shape,
 		{
 			return scalars[sidx++] / args[0];
 		}, 1}, // DIV
-		{[](OP_ARG args) { return matmul<double>::get(args[0], args[1]); }, 2,
+		{[](OP_ARG args) { return matmul<double>(args[0], args[1]); }, 2,
 		[](tensorshape expectshape, tensorshape& shapea, tensorshape& shapeb) // <m, n> <k, m> -> <k, n>
 		{
 			size_t alt = FUZZ::getInt(1, "ncol for alternate shape", {1, 17})[0];
@@ -107,7 +106,7 @@ varptr<double> random_2layer_graph (tensorshape main_shape,
 			shapea = std::vector<size_t>{alt, exlist[1]};
 			shapeb = std::vector<size_t>{exlist[0], alt};
 		}}, // MATMUL
-		{[](OP_ARG args) { return matmul<double>::get(args[0], args[1], true); }, 2,
+		{[](OP_ARG args) { return matmul<double>(args[0], args[1], true); }, 2,
 		[](tensorshape expectshape, tensorshape& shapea, tensorshape& shapeb) // <n, m> <k, m> -> <k, n>
 		{
 			size_t alt = FUZZ::getInt(1, "ncol for alternate shape", {1, 17})[0];
@@ -115,7 +114,7 @@ varptr<double> random_2layer_graph (tensorshape main_shape,
 			shapea = std::vector<size_t>{exlist[1], alt};
 			shapeb = std::vector<size_t>{exlist[0], alt};
 		}}, // MATMULT
-		{[](OP_ARG args) { return matmul<double>::get(args[0], args[1], false, true); }, 2,
+		{[](OP_ARG args) { return matmul<double>(args[0], args[1], false, true); }, 2,
 		[](tensorshape expectshape, tensorshape& shapea, tensorshape& shapeb) // <m, n> <m, k> -> <k, n>
 		{
 			size_t alt = FUZZ::getInt(1, "ncol for alternate shape", {1, 17})[0];
@@ -123,7 +122,7 @@ varptr<double> random_2layer_graph (tensorshape main_shape,
 			shapea = std::vector<size_t>{alt, exlist[1]};
 			shapeb = std::vector<size_t>{alt, exlist[0]};
 		}}, // MATMULFT
-		{[](OP_ARG args) { return matmul<double>::get(args[0], args[1], true, true); }, 2,
+		{[](OP_ARG args) { return matmul<double>(args[0], args[1], true, true); }, 2,
 		[](tensorshape expectshape, tensorshape& shapea, tensorshape& shapeb) // <n, m> <m, k> -> <k, n>
 		{
 			size_t alt = FUZZ::getInt(1, "ncol for alternate shape", {1, 17})[0];

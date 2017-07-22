@@ -1,7 +1,11 @@
 // test dq_demo on c++ side
 
-#include "dq_net.hpp"
+#include "models/dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
+
+#ifdef __GNUC__
+#include <unistd.h>
+#endif
 
 static std::default_random_engine rnd_device(std::time(NULL));
 
@@ -50,25 +54,63 @@ int main (int argc, char** argv)
 	std::string outdir = ".";
 	size_t episode_count = 250;
 	size_t max_steps = 100;
+	size_t seed_val;
+	bool seed = false;
+
+#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
+	int c;
+	while ((c = getopt (argc, argv, "o:r:t:s:")) != -1)
+	{
+		switch(c)
+		{
+			case 'o': // output directory
+				outdir = std::string(optarg);
+				break;
+			case 'e': // number of episodes
+				episode_count = atoi(optarg);
+				break;
+			case 'm': // number of steps per episodes
+				max_steps = atoi(optarg);
+				break;
+			case 's': // seed value
+				seed_val = atoi(optarg);
+				seed = true;
+				break;
+		}
+	}
+#else
 	if (argc > 1)
 	{
 		outdir = std::string(argv[1]);
 	}
 	if (argc > 2)
 	{
-		episode_count = std::stoi(std::string(argv[2]));
+		episode_count = atoi(argv[2]);
 	}
 	if (argc > 3)
 	{
-		max_steps = std::stoi(std::string(argv[3]));
+		max_steps = atoi(argv[3]);
 	}
+	if (argc > 4)
+	{
+		seed_val = atoi(argv[4]);
+		seed = true;
+	}
+#endif
+
+	if (seed)
+	{
+		rnd_device.seed(seed_val);
+		nnutils::seed_generator(seed_val);
+	}
+
 	std::string serialname = "dqn_test.pbx";
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t n_observations = 10;
 	size_t n_actions = 9;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
-		// use same sigmoid in static memory once deep copy is established
+		// use same sigmoid in static memory once models copy is established
 		rocnnet::IN_PAIR(9, nnet::tanh<double>),
 		rocnnet::IN_PAIR(n_actions, nnet::identity<double>)
 	};
@@ -78,13 +120,13 @@ int main (int argc, char** argv)
 	param.discount_rate_ = 0.99;
 	param.exploration_period_ = 0;
 
-	rocnnet::ml_perceptron* brain = new rocnnet::ml_perceptron(n_observations, hiddens);
+	rocnnet::mlp* brain = new rocnnet::mlp(n_observations, hiddens);
 	rocnnet::dq_net untrained_dqn(brain, bgd, param, "untrained_dqn");
 	untrained_dqn.initialize();
 	rocnnet::dq_net trained_dqn(untrained_dqn, "trained_dqn");
 
 	rocnnet::dq_net pretrained_dqn(untrained_dqn, "pretrained_dqn");
-	pretrained_dqn.initialize(serialpath, "trained_dqn");
+	pretrained_dqn.initialize(serialpath, "dq_demo");
 
 	int exit_status = 0;
 	// exit code:
@@ -143,7 +185,7 @@ int main (int argc, char** argv)
 			avgerr += last_error;
 		}
 		avgerr /= error_queue.size();
-		if (avgerr - episode_err > 0.15)
+		if (episode_err - avgerr > 0.15)
 		{
 			std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
 			exit_status = 1;
@@ -166,9 +208,9 @@ int main (int argc, char** argv)
 		observations = batch_generate(n_observations, 1);
 		expect_out = observationfit(observations, n_actions);
 
-		double untrained_action = untrained_dqn.never_random(observations);
-		double trained_action = trained_dqn.never_random(observations);
-		double pretrained_action = pretrained_dqn.never_random(observations);
+		double untrained_action = untrained_dqn.action(observations);
+		double trained_action = trained_dqn.action(observations);
+		double pretrained_action = pretrained_dqn.action(observations);
 
 		auto mit = std::max_element(expect_out.begin(), expect_out.end());
 		size_t expect_action = std::distance(expect_out.begin(), mit);
@@ -198,13 +240,12 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0)
 	{
-		trained_dqn.save(serialname);
+		trained_dqn.save(serialname, "dq_demo");
 	}
 
 #ifdef EDGE_RCD
 if (rocnnet_record::erec::rec_good)
-	rocnnet_record::erec::rec.to_csv<double>(
-		static_cast<nnet::iconnector<double>*>(trained_dqn.get_trainout().get()));
+	rocnnet_record::erec::rec.to_csv<double>(trained_dqn.get_error());
 #endif /* EDGE_RCD */
 
 	google::protobuf::ShutdownProtobufLibrary();

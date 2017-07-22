@@ -94,7 +94,7 @@ protected:
 	base_immutable (base_immutable<T>&& other);
 
 	// >>>> KILL CONDITION <<<<
-	//! suicides when all observ
+	//! suicides when all observers die
 	void death_on_broken (void);
 
 	// >>>> INTERNAL DATA TRANSFERS <<<<

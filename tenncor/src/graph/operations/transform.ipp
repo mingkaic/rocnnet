@@ -29,7 +29,7 @@ inline transfer_func<T>* unary_trans_agg (OUT_MAPPER indexer, SHAPER shaper)
 template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	std::string opname = nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(opname, audience))
@@ -75,7 +75,7 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 template <typename T>
 varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 {
-	if (nullptr == a || nullptr == watch) return nullptr;
+	if (nullptr == a.get() || nullptr == watch.get()) return nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	if (aconst && *aconst == (T)0) return a;
 	// additional constraint that watch shape must be have shape with
@@ -131,7 +131,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	if (multiplier == 0) return constant<T>::get(0);
 	if (multiplier == 1) return a;
 	std::string opname = nnutils::formatter() << "extend_" << index << "_" << multiplier;
@@ -184,7 +184,7 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 	ELEM_FUNC<T> collector, std::string name,
 	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	std::string imm_name = (bool) index ? nnutils::formatter() << name << "_" << *index : name;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(imm_name, audience))
@@ -312,18 +312,20 @@ varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 }
 
 template <typename T>
+inline T mean (const T** data, size_t n)
+{
+	T accum = 0;
+	for (size_t i = 0; i < n; i++)
+	{
+		accum += *data[i];
+	}
+	return accum / n;
+}
+
+template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
-	return compress<T>(a, dimension,
-	[](const T** data, size_t n) -> T
-	{
-		T accum = 0;
-		for (size_t i = 0; i < n; i++)
-		{
-			accum += *data[i];
-		}
-		return accum / n;
-	}, "reduce_mean",
+	return compress<T>(a, dimension, mean<T>, "reduce_mean",
 	[dimension](varptr<T> back, varptr<T> forward)
 	{
 		varptr<T> denom;
@@ -352,7 +354,7 @@ template <typename T>
 varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 	ELEM_FUNC<T> search, std::string name)
 {
-	if (nullptr == a) return nullptr;
+	if (nullptr == a.get()) return nullptr;
 	std::string imm_name = (bool) dimension ? nnutils::formatter() << name << "_" << *dimension : name;
 	std::unordered_set<inode<T>*> audience;
 	if (a->find_audience(imm_name, audience))
@@ -452,6 +454,135 @@ varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 		auto mit = std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
 		return std::distance(data, mit);
 	}, "arg_max");
+}
+
+template <typename T>
+varptr<T> flip (const varptr<T> a, std::vector<size_t> dims)
+{
+	if (nullptr == a.get()) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::stringstream ss;
+	ss << "flip";
+	for (size_t d : dims)
+	{
+		ss << "_" << d;
+	}
+	std::string opname = ss.str();
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 1 && args[0] == a)
+				return aud;
+		}
+	}
+
+	immutable<T>* sym = immutable<T>::get(std::vector<inode<T>*>{a},
+	new transfer_func<T>(
+	[](std::vector<tensorshape> shapes) -> tensorshape
+	{
+		return shapes[0].as_list();
+	},
+	{
+		[dims](size_t i, tensorshape&, const tensorshape& outshape) -> std::vector<size_t>
+		{
+			std::vector<size_t> outlist = outshape.as_list();
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			for (size_t d : dims)
+			{
+				coord[d] = outlist[d] - coord[d] - 1;
+			}
+			return {outshape.sequential_idx(coord)};
+		}
+	}, copyover<T>),
+	[dims](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		return flip<T>(args.front().second, dims);
+	}, opname);
+	return sym;
+}
+
+template <typename T>
+varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
+	std::pair<size_t, size_t> dims)
+{
+	if (nullptr == a.get() || nullptr == filter.get()) return nullptr;
+	std::unordered_set<inode<T>*> audience;
+	std::string opname = nnutils::formatter() << "cross_conv_" << dims.first << "_" << dims.second;
+	if (a->find_audience(opname, audience))
+	{
+		// share nodes when possible
+		for (inode<T>* aud : audience)
+		{
+			std::vector<inode<T>*> args = aud->get_arguments();
+			if (args.size() == 2 && args[0] == a && args[1] == filter)
+				return aud;
+		}
+	}
+
+	immutable<T>* cv = immutable<T>::get(std::vector<inode<T>*>{a, filter},
+	new transfer_func<T>(
+	[dims](std::vector<tensorshape> shapes) -> tensorshape
+	{
+		std::vector<size_t> outshape = shapes[0].as_list();
+		std::vector<size_t> filtshape = shapes[1].as_list();
+		outshape[dims.first] -= filtshape[dims.first] + 1;
+		outshape[dims.second] -= filtshape[dims.second] + 1;
+		return outshape;
+	},
+	{
+		[dims](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+		{
+			std::vector<size_t> outlist = outshape.as_list();
+			std::vector<size_t> alist = ashape.as_list();
+			std::vector<size_t> coord = outshape.coordinate_from_idx(i);
+			size_t firstn = alist[dims.first] - outlist[dims.first];
+			size_t secondn = alist[dims.second] - outlist[dims.second];
+
+			std::vector<size_t> indices;
+			for (size_t i = 0; i < secondn; i++)
+			{
+				coord[dims.second]++;
+				std::vector<size_t> temp = coord;
+				for (size_t j = 0; j < firstn; j++)
+				{
+					temp[dims.first]++;
+					indices.push_back(ashape.sequential_idx(temp));
+				}
+			}
+			return indices;
+		},
+		[](size_t, tensorshape& filtshape, const tensorshape&) -> std::vector<size_t>
+		{
+			std::vector<size_t> all;
+			for (size_t i = 0, n = filtshape.n_elems(); i < n; i++) { all.push_back(i); }
+			return all;
+		}
+	},
+	ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		T accum = 0;
+		for (size_t i = 0; i < n; i += 2)
+		{
+			accum += *(group[i]) * *(group[i+1]);
+		}
+		return accum;
+	})),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
+	{
+		return constant<T>::get_shared_one();
+	}, opname);
+
+	return cv;
+}
+
+template <typename T>
+varptr<T> conv2d (const varptr<T> a, const varptr<T> filter,
+	std::pair<size_t, size_t> dims)
+{
+	return cross_corr2d<T>(a, flip<T>(filter, {dims.first, dims.second}), dims);
 }
 
 }

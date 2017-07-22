@@ -1,49 +1,110 @@
 #!/usr/bin/env python
 
+import numpy as np
+
 import _init_paths
-import gym
 from tf_rl.controller import DiscreteDeepQ, NL
+from collections import deque
 
-specname = 'CartPole-v0'
-serializedname = 'dqntest_'+specname+'.pbx'
+def batch_generate(n):
+	batch = np.random.random(n)
+	return batch
 
-spec = gym.spec(specname)
-env = spec.make()
-episode_count = 250
-max_steps = 10000
+def avgevry2(batch):
+	out = np.zeros(len(batch)/2)
+	for i, b in enumerate(batch):
+		out[i/2] = out[i/2] + b
+	return out/2
 
-action_space = env.action_space
-maxaction = action_space.n
+def data_prep(n):
+	X = batch_generate(n)
+	Y = avgevry2(X)
+	return X, Y
 
-observation_space = env.observation_space
-maxobservation = observation_space.shape[0]
+# calculates the circumference distance between A and B assuming A and B represent positions on a circle with circumference wrap_size
+def wrapdist(A, B, wrapsize):
+	within_dist = max(A - B, B - A)
+	wraparound_dist = min(A + wrapsize - B, B + wrapsize - A)
+	return min(within_dist, wraparound_dist)
 
-batchsize = 12 # store at least 12 times before training
-controller = DiscreteDeepQ(maxobservation, [5, 5, maxaction],
-    [NL.SIGMOID, NL.SIGMOID, NL.IDENTITY], learning_rate=0.001, decay=0.9,
-    minibatch_size=batchsize, discount_rate=0.99, exploration_period=5000,
-    max_experience=10000, store_every_nth=4, train_every_nth=4)
-controller.initialize(serializedname)
+episode_count = 500
+max_steps = 100
 
-# training step
-for ep in xrange(episode_count):
-    observation = env.reset()
-    reward = done = None
-    total_reward = 0
-    nsteps = 0
-    for step_it in range(max_steps):
-        action = controller.action(observation)
-        new_observation, reward, done, _ = env.step(action)
-        
-        controller.store(observation, action, reward, new_observation)
-        controller.training_step()
-        
-        observation = new_observation
-        total_reward = total_reward + reward
-        # env.render()
-        nsteps = step_it # record step iteration since episode can end early
-        if done:
-            break
-    print 'episode {}: total reward of {} in {} steps'.format(ep, total_reward, nsteps+1)
+n_observations = 10
+n_actions = 9
+n_hiddens = [9, n_actions]
+n_acts = [NL.TANH, NL.IDENTITY]
+learning_rate = 0.1
+decay = 0.9
+store_interval = 1
+discount_rate = 0.99
+exploration_period = 0
 
-# controller.save(serializedname)
+current_controller = DiscreteDeepQ(n_observations, n_hiddens, n_acts,
+	learning_rate = learning_rate, decay=decay, exploration_period=exploration_period,
+	store_every_nth=store_interval, discount_rate=discount_rate)
+untrained_controller = DiscreteDeepQ(n_observations, n_hiddens, n_acts,
+	learning_rate = learning_rate, decay=decay, exploration_period=exploration_period,
+	store_every_nth=store_interval, discount_rate=discount_rate)
+
+current_controller.initialize()
+untrained_controller.initialize()
+
+error_queue_size = 10
+action_dist = n_actions / 2
+error_queue = deque()
+for i in range(episode_count):
+	avgreward = 0
+	observations, expect_out = data_prep(n_observations)
+
+	episode_err = 0
+	for j in range(max_steps):
+		action = current_controller.action(observations)
+		# perform action
+		expect_action = np.argmax(expect_out)
+		err = wrapdist(expect_action, action, n_actions)
+		reward = 1 - 2.0 * err / action_dist
+		avgreward = avgreward + reward
+
+		new_observations, expect_out = data_prep(n_observations)
+
+		current_controller.store(observations, action, reward, new_observations)
+		current_controller.training_step()
+
+		observations = new_observations
+		episode_err = episode_err + float(err)/action_dist
+
+	avgreward = avgreward / max_steps
+	episode_err = episode_err / max_steps
+	error_queue.append(episode_err)
+	if (len(error_queue) > error_queue_size):
+		error_queue.popleft()
+		# allow ~15% decrease in accuracy (15% increase in error) since last episode
+		# otherwise declare that we overfitted and quit
+		avgerr = 0
+		for last_err in error_queue:
+			avgerr = avgerr + last_err
+		avgerr = avgerr / len(error_queue)
+
+		if (avgerr - episode_err > 0.15):
+			break
+
+	print("episode {} performance: {}% average error, reward: {}".format(i, episode_err * 100, avgreward))
+
+trained_episode_err = 0
+untrained_episode_err = 0
+for j in range(max_steps):
+	observations, expect_out = data_prep(n_observations)
+	trained_action = current_controller.action(observations)
+	untrained_action = untrained_controller.action(observations)
+	# perform action
+	expect_action = np.argmax(expect_out)
+	trained_err = wrapdist(expect_action, trained_action, n_actions)
+	untrained_err = wrapdist(expect_action, untrained_action, n_actions)
+
+	trained_episode_err = trained_episode_err + float(trained_err)/action_dist
+	untrained_episode_err = untrained_episode_err + float(untrained_err)/action_dist
+
+print("{}% trained error vs {}% untrained error".format(
+	trained_episode_err,
+	untrained_episode_err))

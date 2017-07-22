@@ -20,10 +20,11 @@
 #include "graph/connector/immutable/immutable.hpp"
 #include "graph/leaf/constant.hpp"
 
+#pragma once
+
 namespace nnet
 {
 
-#pragma once
 #ifndef TENNCOR_ELEMENTARY_HPP
 #define TENNCOR_ELEMENTARY_HPP
 
@@ -82,6 +83,10 @@ varptr<T> clip_val (const varptr<T> a, T min, T max);
 //! normalize clip values with capacity cap
 template <typename T>
 varptr<T> clip_norm (const varptr<T> a, T cap);
+
+//! output value 0 if false == compare(a, b) else 1 for each element
+template <typename T>
+varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name);
 
 //! add scalar a and b
 template<typename T>
@@ -161,11 +166,11 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b);
 
 #endif /* TENNCOR_ELEMENTARY_HPP */
 
-#pragma once
 #ifndef TENNCOR_TRANSFORM_HPP
 #define TENNCOR_TRANSFORM_HPP
 
 //! transpose a along first 2 dimension
+// todo: check if axis_swap are the same dimensions, if so, return a as is (invalid transpose) + leave warning
 template <typename T>
 varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap = {0, 1});
 
@@ -216,6 +221,19 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
+//! flip a in specified dimensions
+template <typename T>
+varptr<T> flip (const varptr<T> a, std::vector<size_t> dims);
+//! for example: window {0, 1} gives output f[i, j, :] = sum(a[i:i+filtshape[0], j:j+filtshape[1], :] * filter)
+//! whereas window {0,2} gives output f[i, :, j] = sum(a[i:i+filtshape[0], :, j:j+filtshape[1]] * filter)
+//! if pad == true, then pad output with zero to fit a's shape, otherwise leave as is after cross_corr
+template <typename T>
+varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter, std::pair<size_t,size_t> dims = {0, 1});
+	
+//! convolve a with filter, conv(a, filter, dims) = cross_conv(a, flip(filter), dims)
+template <typename T>
+varptr<T> conv2d (const varptr<T> a, const varptr<T> filter, std::pair<size_t,size_t> dims = {0, 1});
+
 // todo: implement
 // [grad(trace(f(x)), x) = transpose(scalar_grad(f(x), x))]
 //! trace of a
@@ -228,9 +246,21 @@ varptr<T> inverse (const varptr<T> a);
 
 #endif /* TENNCOR_TRANSFORM_HPP */
 
+#ifndef TENNCOR_MATMUL_HPP
+#define TENNCOR_MATMUL_HPP
+
+//! matrix multiplication (todo: expand to include matmul along other dimensions, currently {0, 1} only)
+template <typename T>
+varptr<T> matmul (const varptr<T> a, const varptr<T> b,
+	bool transposeA = false, bool transposeB = false);
+
+#endif /* TENNCOR_MATMUL_HPP */
+
 }
 
 #include "../../../src/graph/operations/elementary.ipp"
 
 #include "../../../src/graph/operations/transform.ipp"
+
+#include "../../../src/graph/operations/matmul.ipp"
 

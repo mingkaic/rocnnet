@@ -80,8 +80,17 @@ template varptr<double> arg_compress (const varptr<double> a, optional<size_t> d
 
 template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
+template varptr<double> flip (const varptr<double> a, std::vector<size_t> dims);
+
+template varptr<double> cross_corr2d (const varptr<double> a, const varptr<double> filter, std::pair<size_t,size_t> dims = {0, 1});
+
+template varptr<double> conv2d (const varptr<double> a, const varptr<double> filter, std::pair<size_t,size_t> dims = {0, 1});
+
 //template varptr<double> trace (const varptr<double> a);
 
 //template varptr<double> inverse (const varptr<double> a);
+
+template varptr<double> matmul (const varptr<double> a, const varptr<double> b,
+	bool transposeA = false, bool transposeB = false);
 
 }

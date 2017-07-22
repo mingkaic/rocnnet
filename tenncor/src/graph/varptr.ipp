@@ -50,8 +50,8 @@ placeptr<T>& placeptr<T>::operator = (placeholder<T>* other)
 template <typename T>
 placeptr<T>& placeptr<T>::operator = (std::vector<T> vec)
 {
-    *get() = vec;
-    return *this;
+	*get() = vec;
+	return *this;
 }
 
 template <typename T>
@@ -64,25 +64,25 @@ placeptr<T>& placeptr<T>::operator = (tensor<T>& ten)
 template <typename T>
 placeptr<T>::operator placeholder<T>* (void) const
 {
-    return get();
+	return get();
 }
 
 template <typename T>
 placeholder<T>& placeptr<T>::operator * (void)
 {
-    return *get();
+	return *get();
 }
 
 template <typename T>
 placeholder<T>* placeptr<T>::operator -> (void)
 {
-    return get();
+	return get();
 }
 
 template <typename T>
 placeholder<T>* placeptr<T>::get (void) const
 {
-    return static_cast<placeholder<T>*>(varptr<T>::get());
+	return static_cast<placeholder<T>*>(varptr<T>::get());
 }
 
 }

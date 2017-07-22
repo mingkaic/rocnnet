@@ -81,13 +81,21 @@ include_directories(${ROCNNET_INCLUDE})
 add_executable(gd_demo ${DEMODIR}/gd_demo.cpp)
 target_link_libraries(gd_demo ${ROCNNET_SLIB})
 
-# DEMO 2.0: c++ deep q network rudimentary test
+# DEMO 2: c++ deep q network rudimentary test
 if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
 add_executable(dq_demo ${DEMODIR}/dq_demo.cpp)
 target_link_libraries(dq_demo ${ROCNNET_SLIB})
+
+# DEMO 3: rbm
+if (LCOVERAGE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+endif(LCOVERAGE)
+include_directories(${ROCNNET_INCLUDE})
+add_executable(rbm_demo ${DEMODIR}/rbm_demo.cpp)
+target_link_libraries(rbm_demo ${ROCNNET_SLIB})
 
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig

@@ -89,41 +89,50 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 template <typename T>
 variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
-	return [this, input]()
+	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
 		this->assigner_(out_tens, in_tens);
-//		this->notify(notification::UPDATE);
+		if (notify)
+		{
+			this->notify(notification::UPDATE);
+		}
 	};
 }
 
 template <typename T>
 variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 {
-	return [this, input]()
+	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
 		this->assigner_(out_tens, in_tens,
 			[](const T& e1, const T& e2) { return e1 + e2; });
-//		this->notify(notification::UPDATE);
+		if (notify)
+		{
+			this->notify(notification::UPDATE);
+		}
 	};
 }
 
 template <typename T>
 variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 {
-	return [this, input]()
+	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
 		this->assigner_(out_tens, in_tens,
 			[](const T& e1, const T& e2) { return e1 - e2; });
-//		this->notify(notification::UPDATE);
+		if (notify)
+		{
+			this->notify(notification::UPDATE);
+		}
 	};
 }
 

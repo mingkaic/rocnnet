@@ -13,7 +13,7 @@ namespace nnet
 
 template <typename T>
 placeholder<T>::placeholder (const tensorshape& shape, std::string name) :
-	ivariable<T>(shape, new assign_func<T>(), name) {}
+	ivariable<T>(shape, nullptr, name) {}
 
 template <typename T>
 placeholder<T>::placeholder (const placeholder<T>& other) : ivariable<T>(other) {}

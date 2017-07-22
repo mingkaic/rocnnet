@@ -25,7 +25,7 @@ namespace nnet
 {
 
 template <typename T>
-using variable_updater = std::function<void(void)>;
+using variable_updater = std::function<void(bool)>;
 
 template <typename T>
 class variable final : public ivariable<T>

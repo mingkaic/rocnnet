@@ -4,7 +4,7 @@ find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
 if (NOT MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif()
 
 find_package(PythonLibs 2 REQUIRED)
@@ -26,8 +26,8 @@ swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})
 
 # manual relink python library on OSX
 if(APPLE)
-    add_custom_target(py_relink ALL
-        DEPENDS _dqn
-        COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+	add_custom_target(py_relink ALL
+		DEPENDS _dqn
+		COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif(APPLE)

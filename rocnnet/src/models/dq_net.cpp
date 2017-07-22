@@ -6,7 +6,7 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
-#include "dq_net.hpp"
+#include "models/dq_net.hpp"
 
 #ifdef ROCNNET_DQN_HPP
 
@@ -15,7 +15,7 @@
 namespace rocnnet
 {
 
-dq_net::dq_net (ml_perceptron* brain,
+dq_net::dq_net (mlp* brain,
 	nnet::gd_updater& updater,
 	dqn_param param, std::string scope) :
 params_(param),
@@ -47,6 +47,7 @@ dq_net& dq_net::operator = (const dq_net& other)
 {
 	if (this != &other)
 	{
+		tear_down();
 		copy_helper(other, "");
 	}
 	return *this;
@@ -56,9 +57,16 @@ dq_net& dq_net::operator = (dq_net&& other)
 {
 	if (this != &other)
 	{
+		tear_down();
 		move_helper(std::move(other), "");
 	}
 	return *this;
+}
+
+std::vector<double> dq_net::operator () (std::vector<double>& input)
+{
+	*input_ = input;
+	return nnet::expose<double>(output_);
 }
 
 double dq_net::action (std::vector<double>& input)
@@ -71,13 +79,9 @@ double dq_net::action (std::vector<double>& input)
 		return std::floor(get_random() * source_qnet_->get_noutput());
 	}
 	*input_ = input;
-	return nnet::expose<double>(best_output_)[0];
-}
-
-double dq_net::never_random (std::vector<double>& input)
-{
-	*input_ = input;
-	return nnet::expose<double>(best_output_)[0];
+	std::vector<double> best = nnet::expose<double>(best_output_);
+	assert(false == best.empty());
+	return best[0];
 }
 
 void dq_net::store (std::vector<double> observation, size_t action_idx,
@@ -144,14 +148,14 @@ void dq_net::train (void)
 		// update source
 		for (auto& trainer : source_updates_)
 		{
-			trainer();
+			trainer(true);
 		}
+		prediction_error_->freeze_status(false); // update again
 		// update target
 		for (auto& trainer : target_updates_)
 		{
-			trainer();
+			trainer(true);
 		}
-		prediction_error_->freeze_status(false); // update again
 		iteration_++;
 	}
 	n_train_called_++;
@@ -164,10 +168,11 @@ void dq_net::initialize (std::string serialname, std::string readscope)
 	target_qnet_->initialize(serialname, "target_" + readscope);
 }
 
-bool dq_net::save (std::string fname) const
+bool dq_net::save (std::string fname, std::string writescope) const
 {
-	bool source_save = source_qnet_->save(fname);
-	bool target_save = target_qnet_->save(fname);
+	if (writescope.empty()) writescope = scope_;
+	bool source_save = source_qnet_->save(fname, writescope);
+	bool target_save = target_qnet_->save(fname, "target_" + writescope);
 	return source_save && target_save;
 }
 
@@ -229,7 +234,6 @@ void dq_net::copy_helper (const dq_net& other, std::string scope)
 	generator_ = other.generator_;
 
 	// copy over actors
-	tear_down();
 	updater_ = other.updater_->clone();
 	updater_->clear_ignore();
 	
@@ -253,12 +257,11 @@ void dq_net::move_helper (dq_net&& other, std::string scope)
 	generator_ = std::move(other.generator_);
 
 	// move over actors
-	tear_down();
 	updater_ = other.updater_->move();
 	updater_->clear_ignore();
 	
-	source_qnet_ = other.source_qnet_->move(scope);
-	target_qnet_ = other.target_qnet_->move("target_"+scope);
+	source_qnet_ = other.source_qnet_->move();
+	target_qnet_ = other.target_qnet_->move();
 
 	variable_setup();
 }
@@ -307,22 +310,17 @@ void dq_net::variable_setup (void)
 	});
 
 	// update target network
-	std::vector<WB_PAIR> target_vars = target_qnet_->get_variables();
-	std::vector<WB_PAIR> source_vars = source_qnet_->get_variables();
+	std::vector<nnet::variable<double>*> target_vars = target_qnet_->get_variables();
+	std::vector<nnet::variable<double>*> source_vars = source_qnet_->get_variables();
 	size_t nvars = target_vars.size();
 	assert(source_vars.size() == nvars); // must be identical, since they're copies
 	for (size_t i = 0; i < nvars; i++)
 	{
 		// this is equivalent to target = (1-alpha) * target + alpha * source
-		nnet::variable<double>* tweight;
-		nnet::varptr<double> tarweight = tweight = target_vars[i].first;
-		nnet::varptr<double> srcweight = source_vars[i].first;
-		target_updates_.push_back(tweight->assign_sub(params_.target_update_rate_ * (tarweight - srcweight)));
-
-		nnet::variable<double>* tbias;
-		nnet::varptr<double> tarbias = tbias = target_vars[i].second;
-		nnet::varptr<double> srcbias = source_vars[i].second;
-		target_updates_.push_back(tbias->assign_sub(params_.target_update_rate_ * (tarbias - srcbias)));
+		nnet::variable<double>* target;
+		nnet::varptr<double> tarvar = target = target_vars[i];
+		nnet::varptr<double> srcvar = source_vars[i];
+		target_updates_.push_back(target->assign_sub(params_.target_update_rate_ * (tarvar - srcvar)));
 	}
 }
 

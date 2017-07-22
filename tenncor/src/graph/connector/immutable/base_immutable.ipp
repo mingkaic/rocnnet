@@ -159,7 +159,8 @@ void base_immutable<T>::update (std::unordered_set<size_t>)
 	}
 	else if (allgood)
 	{
-		if (this->freeze_ || 1 < this->dependencies_.size())
+		assert(this->g_man_);
+		if (this->g_man_->freeze_ || 1 < this->dependencies_.size())
 		// n-aries are pull update
 		{
 			this->g_man_->add_update(this, [this](){ forward_pass(); });
@@ -318,15 +319,17 @@ void solo_audience_merge (base_immutable<T>*& root)
 		std::unordered_set<size_t> ignore_args; // ignore leaves and nodes with multiple observers
 		if (imm->mergible_)
 		{
+			std::unordered_set<inode<T>*> delset(args.begin(), args.end());
 			for (size_t i = 0, n = args.size(); i < n; i++)
 			{
 				base_immutable<T>* a = dynamic_cast<base_immutable<T>*>(args[i]);
 				if (nullptr == a || false == a->mergible_ || 1 != a->n_audience() || 0 == a->n_arguments()) // is leaf
 				{
 					ignore_args.emplace(i);
+					delset.erase(args[i]);
 				}
 			}
-			if (ignore_args.size() < args.size()) // as long as there is at least one merged subject, merge
+			if (0 < delset.size()) // as long as there is at least one merged subject, merge
 			{
 				merged_immutable<T>* mnode = merged_immutable<T>::get(imm, ignore_args);
 				node_q.push_front(mnode);
@@ -339,20 +342,20 @@ void solo_audience_merge (base_immutable<T>*& root)
 				mnode->steal_observers(imm);
 				// delete merged observers
 				delete imm;
+				// delete merged subjects
+				for (inode<T>* del : delset)
+				{
+					delete del;
+				}
 			}
-			// delete merged subjects, and enqueue non-merged nodes
-			for (size_t i = 0, n = args.size(); i < n; i++)
+		}
+		for (size_t i : ignore_args)
+		{
+			base_immutable<T>* imarg = dynamic_cast<base_immutable<T>*>(args[i]);
+			if (imarg && visited.end() == visited.find(imarg))
 			{
-				base_immutable<T>* imarg = dynamic_cast<base_immutable<T>*>(args[i]);
-				if (ignore_args.end() == ignore_args.find(i))
-				{
-					delete args[i];
-				}
-				else if (imarg && visited.end() == visited.find(imarg))
-				{
-					node_q.push_back(imarg);
-					visited.emplace(imarg);
-				}
+				node_q.push_back(imarg);
+				visited.emplace(imarg);
 			}
 		}
 	}

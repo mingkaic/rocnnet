@@ -1,7 +1,10 @@
 tenncor:
-- implement convolution operator
+- complete rbm
+- implement dbn
+- comb through asserts and either convert to static_assert or throw
+- implement convolution operator; backprop
 - shape and preparation functors should ideally use C++17 variant
-    (replace with resulting shape and temporary cache)
+	(replace with resulting shape and temporary cache)
 - remove move and clone functions for classes that don't need it
 - define alloc shape as mutable and allowed shape as immutable (enforce this rule)
 	placeholder of (4, 0) should accept input of size of any multiple of 4
@@ -11,6 +14,7 @@ tenncor:
 - possible dangling pointers by propagating destruction in the graph
 - x~10 speed boost (tensorflow's CPU-only 32, 200, 200, 4 dqn 
 	with tanh, tanh, identity activators) [target on mac: ~0.01s per training operation]
+- define data format: associate dimensions to some label (i.e.: [default] dim 0 = col, dim 1 = row)
 
 evaluate rocnnet principles:
 - practicality

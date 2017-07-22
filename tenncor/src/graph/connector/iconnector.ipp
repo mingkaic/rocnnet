@@ -121,7 +121,7 @@ size_t iconnector<T>::n_arguments (void) const
 template <typename T>
 const tensor<T>* iconnector<T>::eval (void)
 {
-	if (this->g_man_) this->g_man_->update();
+	if (this->g_man_ && false == this->g_man_->freeze_) this->g_man_->update();
 	return this->get_eval();
 }
 
@@ -150,7 +150,7 @@ bool iconnector<T>::potential_descendent (const iconnector<T>* n) const
 }
 
 template <typename T>
-void iconnector<T>::set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+void iconnector<T>::set_jacobian_front (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
 {
 	for (variable<T>* l : leaves)
 	{
@@ -159,9 +159,23 @@ void iconnector<T>::set_jacobian (JTRANSFER<T> jac, std::vector<variable<T>*> le
 }
 
 template <typename T>
+void iconnector<T>::set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>*> leaves)
+{
+	for (variable<T>* l : leaves)
+	{
+		jacobians_[l].list_.push_back(jac);
+	}
+}
+
+template <typename T>
 void iconnector<T>::freeze_status (bool freeze)
 {
-	freeze_ = freeze;
+	assert(this->g_man_);
+	if (freeze)
+	{
+		this->g_man_->update();
+	}
+	this->g_man_->freeze_ = freeze;
 }
 
 template <typename T>
@@ -186,9 +200,9 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 					auto jit = this->jacobians_.find(leaf);
 					// different jacobians originating from the same leaf cannot overlap
 					auto& j = jpair.second;
-					if (false == j.list_.empty())
+					if (false == j.list_.empty() && // prevent duplicate jacobians
+						(this->jacobians_.end() == jit || jit->second.uid_ == j.uid_))
 					{
-						assert (this->jacobians_.end() == jit || jit->second.uid_ == j.uid_);
 						this->jacobians_[leaf] = j;
 					}
 				}
@@ -312,8 +326,10 @@ struct iconnector<T>::graph_manager
 		}
 	}
 
+	bool freeze_ = false;
+
 private:
-	std::priority_queue<iconnector<T>*, std::vector<iconnector<T>*>, small_leafset<T> > updates_;
+	std::priority_queue<iconnector<T>*,std::vector<iconnector<T>*>,small_leafset<T> > updates_;
 
 	std::unordered_map<iconnector<T>*,std::function<void(void)> > update_map_;
 
