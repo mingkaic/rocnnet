@@ -59,7 +59,7 @@ int main (int argc, char** argv)
 
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
 	int c;
-	while ((c = getopt (argc, argv, "o:r:t:s")) != -1)
+	while ((c = getopt (argc, argv, "o:r:t:s:")) != -1)
 	{
 		switch(c)
 		{
@@ -185,7 +185,7 @@ int main (int argc, char** argv)
 			avgerr += last_error;
 		}
 		avgerr /= error_queue.size();
-		if (avgerr - episode_err > 0.15)
+		if (episode_err - avgerr > 0.15)
 		{
 			std::cout << "uh oh, we hit a snag, we shouldn't save for this round" << std::endl;
 			exit_status = 1;
