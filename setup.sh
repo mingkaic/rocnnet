@@ -60,7 +60,7 @@ then
 	usage;
 fi
 
-# ===== Define functions
+# ===== Define functions =====
 
 # executes command CMD, echo usage if it fails
 function exec_cmd() {
@@ -183,7 +183,8 @@ update_install libc6-dbg
 
 REQ_VALG_VER="3.12.0";
 CUR_VALG_VER="$(valgrind --version)";
-meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "incache $VALG_DIR 'download_cfg_build $VALG_LINK $VALG_TAR $VALG_DIR && pushd $VALG_DIR && make install && popd'"
+incache $VALG_DIR "download_cfg_build $VALG_LINK $VALG_TAR $VALG_DIR"
+meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "pushd $CACHE_DIR/$VALG_DIR && make install && popd"
 
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz;
