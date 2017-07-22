@@ -178,6 +178,9 @@ exec_cmd "pushd $CACHE_DIR/$GTEST_DIR && cp -a googlemock/libgmock_main.so googl
 
 # download valgrind for profiling
 update_install libgtest-dev;
+# lacking libc6-dbg on 32-bit systems, use installer to install
+update_install libc6-dbg
+
 REQ_VALG_VER="3.12.0";
 CUR_VALG_VER="$(valgrind --version)";
 meets_version "$REQ_VALG_VER" "$CUR_VALG_VER" "incache $VALG_DIR 'download_cfg_build $VALG_LINK $VALG_TAR $VALG_DIR && pushd $VALG_DIR && make install && popd'"
