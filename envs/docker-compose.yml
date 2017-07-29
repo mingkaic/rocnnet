@@ -7,7 +7,7 @@ services:
       context: ..
       dockerfile: ./envs/Dockerfile-ubuntu
     volumes:
-      - /usr/src/rocapp
+      - /usr/src/rocenv
 
   ubuntu-test-env:
     image: mkaichen/rocnnet-test-env:latest
@@ -17,5 +17,5 @@ services:
       args:
         TEST_ENV: 1
     volumes:
-      - /usr/src/rocapp
+      - /usr/src/rocenv
 
