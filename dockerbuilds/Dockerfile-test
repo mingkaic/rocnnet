@@ -1,7 +1,8 @@
 FROM mkaichen/rocnnet-test-env:latest
 
 # build rocnnet
-RUN mkdir build && cd build && \
+RUN lcov --directory . --zerocounters\
+    mkdir build && cd build && \
     cmake -DTENNCOR_TEST=ON .. && \
     cmake --build .;
 

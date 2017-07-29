@@ -24,8 +24,6 @@ assert_cmd() {
 	return $!
 }
 
-lcov --directory . --zerocounters
-
 # ===== Run Tenncor Gtest =====
 
 # valgrind check
