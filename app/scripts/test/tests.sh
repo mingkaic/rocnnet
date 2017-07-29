@@ -67,7 +67,7 @@ gcov --version
 lcov --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
 lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '/usr/*' --output-file coverage.info # filter out system and test code
 lcov --list coverage.info # debug < see coverage here
-if [ -z "$COVERALLS_TOKEN" ];
+if ! [ -z "$COVERALLS_TOKEN" ];
 then
     coveralls-lcov --repo-token $COVERALLS_TOKEN coverage.info # uploads to coveralls
 fi

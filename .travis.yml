@@ -12,7 +12,7 @@ jobs:
         - docker-compose push
     - stage: test
       script:
-        - docker run --rm $DOCKER_USERNAME/rocnnet-test
+        - docker run --env COVERALLS_TOKEN=$COVERALLS_TOKEN --rm $DOCKER_USERNAME/rocnnet-test
 
 # safelist
 branches:
