@@ -6,6 +6,7 @@ RUN mkdir -p $RBUILD_DIR
 WORKDIR $RBUILD_DIR
 
 COPY ./app $RBUILD_DIR
+COPY ./.git
 
 # build rocnnet
 RUN mkdir build && cd build && \

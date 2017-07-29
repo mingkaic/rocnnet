@@ -65,7 +65,7 @@ echo "python dq_demo complete"
 lcov --version
 gcov --version
 lcov --base-directory . --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
-lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
+lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
 lcov --list coverage.info # debug < see coverage here
 if ! [ -z "$COVERALLS_TOKEN" ];
 then
