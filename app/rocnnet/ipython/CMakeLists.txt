@@ -28,6 +28,6 @@ swig_link_libraries(dqn ${PYTHON_LIBRARIES} ${ROCNNET_DLIB})
 if(APPLE)
 	add_custom_target(py_relink ALL
 		DEPENDS _dqn
-		COMMAND bash mac_fix.sh ${PYTHON_LIBRARY}
+		COMMAND bash ${RBUILD_DIR}/scripts/mac_fix.sh ${PYTHON_LIBRARY} ${RBUILD_DIR}
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif(APPLE)

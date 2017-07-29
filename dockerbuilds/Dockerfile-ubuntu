@@ -1,0 +1,6 @@
+FROM mkaichen/rocnnet-ubuntu-env:latest
+
+# build rocnnet
+RUN mkdir build && cd build && \
+    cmake -DTENNCOR_TEST=OFF -DLCOVERAGE=OFF .. && \
+    cmake --build .;

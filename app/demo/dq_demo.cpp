@@ -56,10 +56,11 @@ int main (int argc, char** argv)
 	size_t max_steps = 100;
 	size_t seed_val;
 	bool seed = false;
+	bool save = false;
 
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
 	int c;
-	while ((c = getopt (argc, argv, "o:e:m:s:")) != -1)
+	while ((c = getopt (argc, argv, "o:e:m:s:w:")) != -1)
 	{
 		switch(c)
 		{
@@ -75,6 +76,9 @@ int main (int argc, char** argv)
 			case 's': // seed value
 				seed_val = atoi(optarg);
 				seed = true;
+				break;
+			case 'w': // save test file
+				save = true;
 				break;
 		}
 	}
@@ -238,9 +242,9 @@ int main (int argc, char** argv)
 		exit_status = 2;
 	}
 
-	if (exit_status == 0)
+	if (exit_status == 0 && save)
 	{
-		trained_dqn.save(serialname, "dq_demo");
+		trained_dqn.save(serialpath, "dq_demo");
 	}
 
 #ifdef EDGE_RCD

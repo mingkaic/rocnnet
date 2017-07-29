@@ -23,6 +23,7 @@
 namespace FUZZ
 {
 
+// todo: set FUZZ_FILE directory
 static const char* FUZZ_FILE = "fuzz.out";
 static std::ofstream fuzzLogger(FUZZ_FILE);
 

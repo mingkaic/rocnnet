@@ -1,0 +1,19 @@
+FROM ubuntu:latest
+
+ARG TEST_ENV=0
+
+# standard setup
+ENV RBUILD_DIR /usr/src/rocapp
+
+RUN mkdir -p $RBUILD_DIR
+WORKDIR $RBUILD_DIR
+
+COPY ./app $RBUILD_DIR
+
+RUN bash ./scripts/env/ubuntu_setup.sh
+
+# setup analysis tools IF we're testing
+RUN if [ "$TEST_ENV" -eq "1" ]; \
+    then \
+        bash ./scripts/env/ubuntu_analysis.sh; \
+    fi

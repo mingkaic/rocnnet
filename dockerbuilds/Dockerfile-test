@@ -1,0 +1,8 @@
+FROM mkaichen/rocnnet-test-env:latest
+
+# build rocnnet
+RUN mkdir build && cd build && \
+    cmake -DTENNCOR_TEST=ON .. && \
+    cmake --build .;
+
+CMD [ "bash", "./scripts/test/tests.sh", "|", "tee" ]
