@@ -34,3 +34,4 @@ need testing:
 - copying immutable of uninitialized variables
 - updates should be handled by graph_manager
 - reactive updates by default should be restricted to unary connectors, n-ary connectors should update lazily
+- implement numerical gradient checking outlined (https://www.youtube.com/watch?v=pHMzNW8Agq4)
