@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  ubuntu-env:
+    image: mkaichen/rocnnet-ubuntu-env:latest
+    build:
+      context: ..
+      dockerfile: ./envs/Dockerfile-ubuntu
+    volumes:
+      - /usr/src/rocenv
+
+  ubuntu-test-env:
+    image: mkaichen/rocnnet-test-env:latest
+    build:
+      context: ..
+      dockerfile: ./envs/Dockerfile-ubuntu
+      args:
+        TEST_ENV: 1
+    volumes:
+      - /usr/src/rocenv
+

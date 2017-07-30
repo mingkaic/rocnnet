@@ -1,0 +1,27 @@
+// ALLOCATOR
+A000 - default allocator clone and move copies content of child instances
+		(UNTESTED)
+		tracked allocator clone ...
+A001 - default allocator allocates bytes by num_elements * sizeof(type)
+A002 - default allocator deallocates the continguous region regardless of the specified memory size
+A003 - default allocators that do not track will throw when requested size,
+		return false for tracks_size, and undefined optional for alloc_id
+(UNTESTED, UNIMPLEMENTED)
+A004 - tracked allocator keeps track of the memory size, 
+		deallocate poisoned region will throw otherwise rely on address santizer
+		Tracking allows a number of elements to be deallocated,
+		otherwise deallocate the continguous region
+A005 - tracked allocator return the allocated size, return true, and alloc_id
+
+// ALLOCATOR BUILDER
+B000 - alloc_builder is a singleton: only a single instance is accessible across threads
+B001 - registering multiple instances of the same type of allocator is allowed
+		registering a pre-existing identifier will return false
+		registering a non-allocator will fail at compile time (untestable?)
+B002 - getting an allocator that doesn't exist will return nullptr,
+		otherwise return that alloc's registry instance
+B003 - checking for a type of allocator with a particular identifier will fail if the instance
+		at identifier isn't of that type or no instance is found at identifier. otherwise succeed
+
+// SERIALIZER
+? todo: define

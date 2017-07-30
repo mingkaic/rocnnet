@@ -2,16 +2,17 @@ language: generic
 sudo: required
 dist: xenial
 
-cache:
-  directories:
-  - $HOME/rocnnet-dep
-  - $HOME/prototxts
-
-install:
-- sudo bash -x $TRAVIS_BUILD_DIR/travis.sh $HOME/rocnnet-dep $TRAVIS_BUILD_DIR
-
-script:
-- bash tests.sh $HOME/prototxts
+jobs:
+  include:
+    - stage: build docker image
+      script:
+        - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+        - docker-compose build
+        - docker images
+        - docker-compose push
+    - stage: test
+      script:
+        - docker run --env COVERALLS_TOKEN=$COVERALLS_TOKEN --rm $DOCKER_USERNAME/rocnnet-test
 
 # safelist
 branches:

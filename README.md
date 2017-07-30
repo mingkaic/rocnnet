@@ -13,10 +13,10 @@ Download cmake: https://cmake.org/download/
 
 Building from another directory is recommended:
 
-    mkdir build 
-    cd build
-    cmake <flags> <path/to/rocnnet>
-    cmake --build .
+	mkdir build 
+	cd build
+	cmake <flags> <path/to/rocnnet>
+	cmake --build .
 
 Binaries and libraries should be found in the /bin directory
 
@@ -35,8 +35,8 @@ recording all nodes and connections.
 To visualize the graph, install [graphviz (and its dependencies)](https://pygraphviz.github.io/documentation/pygraphviz-1.3rc1/install.html),
 then run 
 
-    pushd scripts && bash imgify.sh
-    
+	pushd scripts && bash imgify.sh
+	
 ## Demos
 
 DQN Demos taken from https://github.com/siemanko/tensorflow-deepq

@@ -54,6 +54,11 @@ docs/
 build/
 cmake-build-*/
 
+**/*.csv
+**/*.pbx
+
 # whitelist
 !.gitignore
 !.travis.yml
+!.dockerignore
+!app/prebuilt_models/*.pbx
