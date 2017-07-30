@@ -63,7 +63,7 @@ assert_cmd "python $BASEDIR/pydemo/dq_demo.py"
 echo "python dq_demo complete"
 
 echo "running rbm_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo"
+assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo -e 1"
 assert_cmd "$BINDIR/rbm_demo"
 echo "rbm_demo complete"
 
