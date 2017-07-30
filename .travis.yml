@@ -12,7 +12,11 @@ jobs:
         - docker-compose push
     - stage: test
       script:
-        - docker run --env COVERALLS_TOKEN=$COVERALLS_TOKEN --rm $DOCKER_USERNAME/rocnnet-test
+        - docker run -e COVERALLS_TOKEN=$COVERALLS_TOKEN
+          -e TRAVIS=true
+          -e TRAVIS_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER
+          -e TRAVIS_BUILD_ID=$TRAVIS_BUILD_ID
+          -e TRAVIS_BRANCH=$TRAVIS_BRANCH --rm $DOCKER_USERNAME/rocnnet-test
 
 # safelist
 branches:
