@@ -188,7 +188,7 @@ std::vector<size_t> ops = {2,8,4};
 #include "edgeinfo/comm_record.hpp"
 
 
-TEST(MERGE_IMM, Constructor_M000)
+TEST(MERGE_IMM, Constructor_J000)
 {
 	FUZZ::reset_logger();
 	tensorshape shape = random_def_shape(2, 2);

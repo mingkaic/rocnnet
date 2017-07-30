@@ -983,6 +983,80 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 }
 
 template <typename T>
+varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name)
+{
+	if (nullptr == b.get()) return nullptr;
+	if (constant<T>* bconst = dynamic_cast<constant<T>*>(b.get()))
+	{
+		std::vector<T> bcvec = expose<T>(bconst);
+		for (T& bcv : bcvec)
+		{
+			bcv = (T) compare(a, bcv);
+		}
+		return constant<T>::get(bcvec, bconst->get_shape());
+	}
+	std::string opname = nnutils::formatter() << "conditional_" << name << "_" << a;
+	std::unordered_set<inode<T>*> audience;
+	if (b->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
+	unary_elem_agg(ELEM_FUNC<T>(
+	[compare, a](const T** group, size_t n) -> T
+	{
+		assert(n == 1);
+		return (T)compare(a, *(group[0]));
+	})),
+	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		// todo: consider correctness
+		varptr<T> gradb = args[0].second;
+		return conditional<T>(0, gradb, compare, name);
+	}, opname);
+	out->extract_metadata(b.get());
+	return out;
+}
+
+template <typename T>
+varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare, std::string name)
+{
+	if (nullptr == a.get()) return nullptr;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		std::vector<T> acvec = expose<T>(aconst);
+		for (T& acv : acvec)
+		{
+			acv = (T) compare(acv, b);
+		}
+		return constant<T>::get(acvec, aconst->get_shape());
+	}
+	std::string opname = nnutils::formatter() << "conditional_" << name << "_" << b;
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
+	unary_elem_agg(ELEM_FUNC<T>(
+	[compare, b](const T** group, size_t n) -> T
+	{
+		assert(n == 1);
+		return (T) compare(*(group[0]), b);
+	})),
+	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		// todo: consider correctness
+		varptr<T> grada = args[0].second;
+		return conditional<T>(grada, 0, compare, name);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
+}
+
+template <typename T>
 varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
@@ -998,13 +1072,25 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 				return aud;
 		}
 	}
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst && 1 == aconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(aconst);
+		return conditional(outconst[0], b, compare, name);
+	}
+	else if (bconst && 1 == bconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(bconst);
+		return conditional(a, outconst[0], compare, name);
+	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b},
 	binary_elem_agg(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	[compare](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
-		return *(group[0]) < *(group[1]) ? 1 : 0;
+		return (T)compare(*(group[0]), *(group[1]));
 	})),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{

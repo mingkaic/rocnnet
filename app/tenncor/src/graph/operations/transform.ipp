@@ -180,8 +180,8 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 }
 
 template <typename T>
-varptr<T> compress (const varptr<T> a, optional<size_t> index,
-	ELEM_FUNC<T> collector, std::string name,
+varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
+	optional<size_t> index, std::string name,
 	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop)
 {
 	if (nullptr == a.get()) return nullptr;
@@ -289,17 +289,17 @@ varptr<T> compress (const varptr<T> a, optional<size_t> index,
 template <typename T>
 varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension)
 {
-	return compress<T>(a, dimension,
+	return compress<T>(a,
 	[](const T** data, size_t n) -> T
 	{
 		return **std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
-	}, "reduce_max");
+	}, dimension, "reduce_max");
 }
 
 template <typename T>
 varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 {
-	return compress<T>(a, dimension,
+	return compress<T>(a,
 	[](const T** data, size_t n) -> T
 	{
 		T accum = 0;
@@ -308,7 +308,7 @@ varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 			accum += *data[i];
 		}
 		return accum;
-	}, "reduce_sum");
+	}, dimension, "reduce_sum");
 }
 
 template <typename T>
@@ -325,7 +325,7 @@ inline T mean (const T** data, size_t n)
 template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 {
-	return compress<T>(a, dimension, mean<T>, "reduce_mean",
+	return compress<T>(a, mean<T>, dimension, "reduce_mean",
 	[dimension](varptr<T> back, varptr<T> forward)
 	{
 		varptr<T> denom;
@@ -351,8 +351,8 @@ varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension)
 }
 
 template <typename T>
-varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
-	ELEM_FUNC<T> search, std::string name)
+varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
+	optional<size_t> dimension, std::string name)
 {
 	if (nullptr == a.get()) return nullptr;
 	std::string imm_name = (bool) dimension ? nnutils::formatter() << name << "_" << *dimension : name;
@@ -448,12 +448,12 @@ varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
 template <typename T>
 varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension)
 {
-	return arg_compress<T>(a, dimension,
+	return arg_compress<T>(a,
 	[](const T** data, size_t n) -> T
 	{
 		auto mit = std::max_element(data, data+n, [](const T* a, const T* b)->bool { return *a < *b; });
 		return std::distance(data, mit);
-	}, "arg_max");
+	}, dimension, "arg_max");
 }
 
 template <typename T>
@@ -483,7 +483,7 @@ varptr<T> flip (const varptr<T> a, std::vector<size_t> dims)
 	new transfer_func<T>(
 	[](std::vector<tensorshape> shapes) -> tensorshape
 	{
-		return shapes[0].as_list();
+		return shapes[0];
 	},
 	{
 		[dims](size_t i, tensorshape&, const tensorshape& outshape) -> std::vector<size_t>
@@ -572,6 +572,7 @@ varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
 	})),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
 	{
+		throw std::bad_function_call(); // NOT IMPLEMENTED
 		return constant<T>::get_shared_one();
 	}, opname);
 

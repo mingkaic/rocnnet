@@ -108,12 +108,12 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 		EXPECT_THROW(res->derive(&var), std::exception);
 	}
 
-	// Behavior K000
+	// Behavior B000
 	EXPECT_EQ(nullptr, func(varptr<double>(nullptr), paramer(shape)));
 }
 
 
-TEST(TRANSFORM, Transpose_K001)
+TEST(TRANSFORM, Transpose_B001)
 {
 	FUZZ::reset_logger();
 	DATA_CHANGE transfer =
@@ -150,7 +150,7 @@ TEST(TRANSFORM, Transpose_K001)
 }
 
 
-TEST(TRANSFORM, Fit_K002)
+TEST(TRANSFORM, Fit_B002)
 {
 	FUZZ::reset_logger();
 	tensorshape realshape = random_def_shape();
@@ -203,9 +203,9 @@ TEST(TRANSFORM, Fit_K002)
 }
 
 
-TEST(TRANSFORM, Extend_K003To004)
+TEST(TRANSFORM, Extend_B003To004)
 {
-	// K004
+	// B004
 	FUZZ::reset_logger();
 	size_t extend_index;
 	size_t multiplier;
@@ -258,7 +258,7 @@ TEST(TRANSFORM, Extend_K003To004)
 		return nnet::extend(in, index, multiplier);
 	},
 	transfer, shape, gradtransfer, gradshape, extendparam);
-	// K005
+	// B005
 	tensorshape rshape = random_def_shape(2, 13);
 	rand_uniform<double> rinit(2, 12);
 	variable<double> var(rshape, rinit, "unar_var");
@@ -273,7 +273,7 @@ TEST(TRANSFORM, Extend_K003To004)
 }
 
 
-TEST(TRANSFORM, Compress_K005)
+TEST(TRANSFORM, Compress_B005)
 {
 	FUZZ::reset_logger();
 	size_t compress_index;
@@ -334,12 +334,73 @@ TEST(TRANSFORM, Compress_K005)
 	optional<SHAPE_CHANGE> gradshape = (SHAPE_CHANGE) as_is;
 
 	unaryTransTest<size_t>({2, 13},
-	[&compression](varptr<double> in, size_t compidx) { return compress(in, compidx, compression); },
+	[&compression](varptr<double> in, size_t compidx) { return compress(in, compression, compidx); },
 	transfer, shape, gradtransfer, gradshape, compressparam);
 }
 
 
-TEST(TRANSFORM, ArgCompress_K006To007)
+TEST(TRANSFORM, CompressScalar_B006)
+{
+	FUZZ::reset_logger();
+	tensorshape shape = random_def_shape(2, 13);
+	rand_uniform<double> rinit(2, 12);
+	variable<double> var(shape, rinit, "unar_var");
+	var.initialize();
+
+	static std::vector<ELEM_FUNC<double> > comps = {
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				accum += *(a[i]);
+			}
+			return accum;
+		},
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				accum += *(a[i]);
+			}
+			return accum / n;
+		},
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				accum = std::max(accum, *(a[i]));
+			}
+			return accum;
+		},
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				accum = std::min(accum, *(a[i]));
+			}
+			return accum;
+		}
+	};
+	ELEM_FUNC<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
+
+	varptr<double> scal = compress(varptr<double>(&var), comp, optional<size_t>());
+
+	std::vector<double> raw = expose<double>(&var);
+	std::vector<const double*> ptrs;
+	for (double& e : raw)
+	{
+		ptrs.push_back(&e);
+	}
+	double real_val = comp(&(ptrs[0]), ptrs.size());
+	EXPECT_EQ(real_val, expose<double>(scal)[0]);
+}
+
+
+TEST(TRANSFORM, ArgCompress_B008To009)
 {
 	FUZZ::reset_logger();
 	size_t arg_index;
@@ -423,8 +484,99 @@ TEST(TRANSFORM, ArgCompress_K006To007)
 	optional<SHAPE_CHANGE> gradshape;
 
 	unaryTransTest<size_t>({3, 13},
-	[&search](varptr<double> in, size_t arg_index) { return arg_compress(in, arg_index, search); },
+	[&search](varptr<double> in, size_t arg_index) { return arg_compress(in, search, arg_index); },
 	transfer, shape, gradtransfer, gradshape, argcompressparam);
+}
+
+
+TEST(TRANSFORM, ArgCompressScalar_B010)
+{
+	FUZZ::reset_logger();
+	tensorshape shape = random_def_shape(2, 13);
+	rand_uniform<double> rinit(2, 12);
+	variable<double> var(shape, rinit, "unar_var");
+	var.initialize();
+
+	static std::vector<ELEM_FUNC<double> > comps = {
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			size_t idx = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				if (accum < *(a[i]))
+				{
+					accum = *(a[i]);
+					idx = i;
+				}
+			}
+			return (double) idx;
+		},
+		[](const double** a, size_t n)
+		{
+			double accum = 0;
+			size_t idx = 0;
+			for (size_t i = 0; i < n; i++)
+			{
+				if (accum > *(a[i]))
+				{
+					accum = *(a[i]);
+					idx = i;
+				}
+			}
+			return (double) idx;
+		}
+	};
+	ELEM_FUNC<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
+
+	varptr<double> scal = arg_compress(varptr<double>(&var), comp, optional<size_t>());
+
+	std::vector<double> raw = expose<double>(&var);
+	std::vector<const double*> ptrs;
+	for (double& e : raw)
+	{
+		ptrs.push_back(&e);
+	}
+	double real_idx = comp(&(ptrs[0]), ptrs.size());
+	EXPECT_EQ(real_idx, expose<double>(scal)[0]);
+}
+
+
+TEST(ELEMENTARY, Flip_B012)
+{
+	FUZZ::reset_logger();
+	tensorshape shape = random_def_shape();
+	std::vector<size_t> shapelist = shape.as_list();
+	size_t inn = shape.n_elems();
+	rand_uniform<double> rinit(2, 12);
+
+	size_t flipdim = FUZZ::getInt(1, "flipdim", {0, shape.rank() - 1})[0];
+
+	variable<double> var(shape, rinit, "unar_var");
+	varptr<double> res = flip(varptr<double>(&var), std::vector<size_t>{ flipdim });
+
+	// Behavior A000
+	EXPECT_EQ(nullptr, flip<double>(nullptr, std::vector<size_t>{0}));
+
+	// initialize
+	var.initialize();
+	std::vector<double> indata = expose<double>(&var);
+
+	// compare data, shape must be equivalent, since we're testing elementary operations (Behavior A001)
+	const tensor<double>* rawtens = res->eval();
+	std::vector<double> rawf = rawtens->expose();
+	ASSERT_TRUE(tensorshape_equal(shape, rawtens->get_shape()));
+	ASSERT_EQ(rawf.size(), inn);
+	for (size_t i = 0; i < inn; i++)
+	{
+		std::vector<size_t> coord = shape.coordinate_from_idx(i);
+		coord[flipdim] = shapelist[flipdim] - coord[flipdim] - 1;
+		double out = rawf[i];
+		double in = indata[shape.sequential_idx(coord)];
+		EXPECT_EQ(in, out);
+	}
+
+	// todo: (test) flip back prop
 }
 
 

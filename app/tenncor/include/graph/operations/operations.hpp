@@ -86,6 +86,12 @@ varptr<T> clip_norm (const varptr<T> a, T cap);
 
 //! output value 0 if false == compare(a, b) else 1 for each element
 template <typename T>
+varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name);
+
+template <typename T>
+varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare, std::string name);
+
+template <typename T>
 varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name);
 
 //! add scalar a and b
@@ -185,36 +191,36 @@ template <typename T>
 varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 
 //! compresses data along dimensions specified by index
-//! -1 index compresses all elements in the tensor (output is a scalar)
+//! unspecified index compresses all elements in the tensor (output is a scalar)
 template <typename T>
-varptr<T> compress (const varptr<T> a, optional<size_t> index,
-	ELEM_FUNC<T> collector, std::string name = "compress",
+varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
+	optional<size_t> index, std::string name = "compress",
 	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop =
 	[](varptr<T> back, varptr<T>){ return back; });
 
 // Dimensionality Reduction Functions (Wrappers for compress)
 //! compress tensor by taking maximum value across specified dimension
-//! -1 dimension obtains maximum value in the entire tensor
+//! unspecified dimension obtains maximum value in the entire tensor
 template <typename T>
 varptr<T> reduce_max (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compress tensor by taking the sum of values across specified dimension(s)
-//! -1 dimension obtains the sum of all values in the entire tensor
+//! unspecified dimension obtains the sum of all values in the entire tensor
 template <typename T>
 varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compress tensor by taking the mean of values across specified dimension(s)
-//! -1 dimension obtains the mean of values in the entire tensor
+//! unspecified dimension obtains the mean of values in the entire tensor
 template <typename T>
 varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension = optional<size_t>());
 
 //! compresses data along dimensions specified by dimension
 //! by taking the index using the compare function
-//! -1 index compresses all elements in the tensor (output is a scalar)
+//! unspecified dimension compresses all elements in the tensor (output is a scalar)
 //! takes left argument of compare if compare evaluates to true
 template <typename T>
-varptr<T> arg_compress (const varptr<T> a, optional<size_t> dimension,
-	ELEM_FUNC<T> compare, std::string name = "argcompress");
+varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> compare,
+	optional<size_t> dimension, std::string name = "argcompress");
 
 //! obtains the indices of the maximum value across specified dimension
 //! -1 index looks returns a vector coordinate specifying max value in tensor a
@@ -224,6 +230,7 @@ varptr<T> arg_max (const varptr<T> a, optional<size_t> dimension = optional<size
 //! flip a in specified dimensions
 template <typename T>
 varptr<T> flip (const varptr<T> a, std::vector<size_t> dims);
+
 //! for example: window {0, 1} gives output f[i, j, :] = sum(a[i:i+filtshape[0], j:j+filtshape[1], :] * filter)
 //! whereas window {0,2} gives output f[i, :, j] = sum(a[i:i+filtshape[0], :, j:j+filtshape[1]] * filter)
 //! if pad == true, then pad output with zero to fit a's shape, otherwise leave as is after cross_corr

@@ -1,5 +1,6 @@
 tenncor:
 - complete rbm
+- test speed against direct read from raw_data_, instead of the current implementation, "ptr cache"
 - implement dbn
 - comb through asserts and either convert to static_assert or throw
 - implement convolution operator; backprop
@@ -15,12 +16,6 @@ tenncor:
 - x~10 speed boost (tensorflow's CPU-only 32, 200, 200, 4 dqn 
 	with tanh, tanh, identity activators) [target on mac: ~0.01s per training operation]
 - define data format: associate dimensions to some label (i.e.: [default] dim 0 = col, dim 1 = row)
-
-evaluate rocnnet principles:
-- practicality
-- efficiency
-– logical correctness
-- testability/program transparency
 
 interesting ideas:
 - variable batch size (increasing batch size over generations)

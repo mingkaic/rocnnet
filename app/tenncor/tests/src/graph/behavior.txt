@@ -115,67 +115,18 @@ I009 - derive calculates gradient node from any node and applies jacobian transf
 I010 - update explicitly runs its forward transfer function with current depdendency states as its argument
 I011 - immutable will throw error if existing output shape is incompatible with shaper result
 
-// ELEMENTARY BEHAVIORS
-J000 - any operation accepting nullptr as any operand returns nullptr
-J001 - both unary and binary elementary operations output shape is the same as input shape
-J002 - binary elementary operations with 2 nodal input having different shapes throw error during evaluation
-J003 - addition accepting 0 as a scalar or node constant returns the non-zero node
-J004 - subtraction accepting 0 as a scalar or node constant
-		returns first node if 0 is subtrahend (operand 2)
-		return negative of first node if 0 is minuend (operand 1)
-J005 - multiplication accepting 0 as scalar or node constant returns 0 constant
-J006 - multiplication accepting 1 as scalar or node constant return non-one node
-J007 - division accepting 0 as s scalar or node constant
-		returns 0 constant if 0 is dividend (operand 1)
-		throws error if 0 is divisor (operand 2)
-J008 - division accepting 1 as a scalar or node constant returns non-one, if 1 is divisor (operand 2)
-J009 - powers of accepting 0 as the scalar exponent returns a 1 constant
-J010 - powers of accepting 1 as the input node
-J011 - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
-		and its value is equivalent to the primitive value
-		same applies for not equal (!=),
-		equality and inequality fails assertion if input node has bad status
-(UNTESTED) J012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
-(UNTESTED) conditional
-
-// TRANSFORM BEHAVIORS
-K000 - any operation accepting nullptr as any operand returns nullptr
-K001 - transpose accepts tensors of 1-D and 2-D, output tensor is always 2-D,
-		with 1-D shapes interpreted as shape <dim1, 1>
-K002 - fit pads data with zeros for elements not found in the initial shape,
-		and truncates elements not in the new shape
-K003 - extend duplicates data across a dimension (index) a number of times specified by input multiplier
-K004 - extend with multiplier 0 returns constant 0, multiplier 1 returns input node
-K005 - compress aggregates elements along a specific dimension if dimension value > -1 otherwise aggregate all elements
-K006 - arg_compress obtains of the index of an element found by some search parameter of specific dimension if dimension value > -1
-		otherwise obtain the coordinate of the element
-K007 - arg_compress will throw when dimension is greater than or equal to rank
-
-// MATMUL BEHAVIORS
-L000 - matmul with nullptr arguments returns nullptr
-L001 - matmul matrix multiplies the first 2 dimensions of tensors
-		shapes must match by according to the following (<m, n, a, b, c, ...>, <k, m, a, b, c, ...>)
-		where m is shape value of index 0, and 1 for first and second argument respectively (note: column is index 0)
-		any shape value following the first two must be identical
-		(probabilistically verified by Freivald's algorithm) (N-dimensional Matmul UNTESTED and UNIMPLEMENTED)
-L002 - matrix multiplying incompatible shapes throws logic_error during evaluation
-L003 - matmul(a, b) appends a jacobian operator to it's observers (and super-observers)
-		the jacobian operator is defined as: a' * matmul(k, b^T) + b' * matmul(a^T, k) where k is the graph root
-L004 - matrix of shapes with dimension value greater than Q (Q=100) is calculated by strassen
-		matmul shape X, Y (X=?, Y=?) takes at most N seconds
-
 // MERGE_IMM BEHAVIORS
-M000 - constructed merged immutable is operationally identical to the original connector:
+J000 - constructed merged immutable is operationally identical to the original connector:
 		it has the same forward value,
 		it has the same backward node value
 		deleting the original graph (except the leaves) does not damage the merged node
 		note: merge_immutable automatically breaks and deletes the input connector
 (UNTESTED)
-M001 - cloning or moving merge_immutable copies or moves over the original operations
-M002 - solo_audience_merge is operationally identical to the original graph
+J001 - cloning or moving merge_immutable copies or moves over the original operations
+J002 - solo_audience_merge is operationally identical to the original graph
 		any node with multiple audiences is not merged
 		any node whose jacobian different from its parent is unmergible
-M003 - all_merge has same behavior as solo_audience_merge, except nodes with multiple audiences are split and merged
+J003 - all_merge has same behavior as solo_audience_merge, except nodes with multiple audiences are split and merged
 		e.g.: A is consumed by B and C, merge on C splits A to A1 and A2, B consumes A1, C consumes A2
 
 // GENERATOR BEHAVIORS

@@ -115,7 +115,7 @@ bool freivald (TWODV a, TWODV b, TWODV c)
 }
 
 
-TEST(MATMUL, NullptrRet_L000)
+TEST(MATMUL, NullptrRet_C000)
 {
 	FUZZ::reset_logger();
 	variable<double>* zero = new variable<double>(0);
@@ -126,7 +126,7 @@ TEST(MATMUL, NullptrRet_L000)
 }
 
 
-TEST(MATMUL, Matmul_L001)
+TEST(MATMUL, Matmul_C001)
 {
 	FUZZ::reset_logger();
 	// we get at most 49 elements per matrix
@@ -191,13 +191,13 @@ TEST(MATMUL, Matmul_L001)
 
 // tests matrix multiplication but for n dimensions, matrix sizes reduced to 2-5, (we get at most 5x25 matmuls)
 // todo: test
-TEST(MATMUL, DISABLED_NDim_Matmul_L001)
+TEST(MATMUL, DISABLED_NDim_Matmul_C001)
 {
 	FUZZ::reset_logger();
 }
 
 
-TEST(MATMUL, Incompatible_L002)
+TEST(MATMUL, Incompatible_C002)
 {
 	FUZZ::reset_logger();
 	// we get at most 49 elements per matrix
@@ -218,7 +218,7 @@ TEST(MATMUL, Incompatible_L002)
 }
 
 
-TEST(MATMUL, Jacobian_L003)
+TEST(MATMUL, Jacobian_C003)
 {
 	FUZZ::reset_logger();
 	// we get at most 49 elements per matrix
@@ -346,7 +346,7 @@ TEST(MATMUL, Jacobian_L003)
 
 
 // tests large matrices sizes (100-112), 2D only
-TEST(MATMUL, DISABLED_Strassen_L004)
+TEST(MATMUL, DISABLED_Strassen_C004)
 {
 	FUZZ::reset_logger();
 	// we get at most 12996 elements per matrix
