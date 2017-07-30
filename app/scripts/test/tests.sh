@@ -10,7 +10,8 @@
 FUZZLOG=fuzz.out
 TIMEOUT=600
 
-BINDIR=./bin/bin
+BASEDIR=$1
+BINDIR=$BASEDIR/bin/bin
 
 # ===== Define Functions =====
 
@@ -48,18 +49,23 @@ done
 
 # rocnnet demos
 echo "running gd_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/gd_demo -o ./prebuilt_models -r 5 -t 1"
-assert_cmd "$BINDIR/gd_demo -o ./prebuilt_models"
+assert_cmd "valgrind --tool=memcheck $BINDIR/gd_demo -o $BASEDIR/prebuilt_models -r 5 -t 1"
+assert_cmd "$BINDIR/gd_demo -o $BASEDIR/prebuilt_models"
 echo "gd_demo complete"
 
 echo "running C++ dq_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/dq_demo -o ./prebuilt_models -e 1 -m 5"
-assert_cmd "$BINDIR/dq_demo -o ./prebuilt_models"
+assert_cmd "valgrind --tool=memcheck $BINDIR/dq_demo -o $BASEDIR/prebuilt_models -e 1 -m 5"
+assert_cmd "$BINDIR/dq_demo -o $BASEDIR/prebuilt_models"
 echo "C++ dq_demo complete"
 
 echo "running python dq_demo"
-assert_cmd "python ./pydemo/dq_demo.py"
+assert_cmd "python $BASEDIR/pydemo/dq_demo.py"
 echo "python dq_demo complete"
+
+echo "running rbm_demo"
+assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo"
+assert_cmd "$BINDIR/rbm_demo"
+echo "rbm_demo complete"
 
 # ===== Coverage Analysis ======
 lcov --version

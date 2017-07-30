@@ -5,12 +5,11 @@ ENV RBUILD_DIR /usr/src/rocapp
 RUN mkdir -p $RBUILD_DIR
 WORKDIR $RBUILD_DIR
 
-COPY ./app $RBUILD_DIR
-COPY ./.git $RBUILD_DIR
+COPY . $RBUILD_DIR
 
 # build rocnnet
-RUN mkdir build && cd build && \
+RUN mkdir app/build && cd app/build && \
     cmake -DTENNCOR_TEST=ON .. && \
     cmake --build .;
 
-CMD [ "bash", "./scripts/test/tests.sh", "|", "tee" ]
+CMD [ "bash", "./app/scripts/test/tests.sh", "./app", "|", "tee" ]
