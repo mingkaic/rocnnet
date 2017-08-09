@@ -44,7 +44,7 @@ std::string uuid (const void* addr)
 
 std::default_random_engine& get_generator (void)
 {
-	static std::default_random_engine common_generator;
+	static std::default_random_engine common_generator(std::time(nullptr));
 	return common_generator;
 }
 

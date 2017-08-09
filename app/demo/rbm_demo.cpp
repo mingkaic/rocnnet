@@ -24,10 +24,11 @@ int main (int argc, char** argv)
 
 	std::string outdir = ".";
 	size_t n_input = 6;
+	size_t n_hidden = 2;
 	size_t n_epoch = 5000;
 	double learning_rate = 0.1;
 
-#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
+#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
 	while ((c = getopt (argc, argv, "o:e:")) != -1)
 	{
@@ -52,8 +53,7 @@ int main (int argc, char** argv)
 	}
 #endif
 
-	rocnnet::IN_PAIR hiddens = {2, nnet::sigmoid<double>};
-	rocnnet::rbm model(n_input, hiddens, "movie_rater");
+	rocnnet::rbm model(n_input, n_hidden, "movie_rater");
 	model.initialize();
 
 	rocnnet::fit(model, training_data, {n_epoch, 1, learning_rate});

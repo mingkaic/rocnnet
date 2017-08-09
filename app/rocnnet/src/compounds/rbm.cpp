@@ -13,12 +13,12 @@
 namespace rocnnet
 {
 
-rbm::rbm (size_t n_input, IN_PAIR hidden_info, std::string scope) :
+rbm::rbm (size_t n_input, size_t n_hidden, std::string scope) :
 	icompound(scope),
 	n_input_(n_input)
 {
 	nnet::const_init<double> zinit(0);
-	hidden_ = { new fc_layer({n_input}, hidden_info.first), hidden_info.second };
+	hidden_ = new fc_layer({n_input}, n_hidden);
 	vbias_ = new nnet::variable<double>(std::vector<size_t>{n_input},
 		zinit, nnutils::formatter() << scope << "_visible_bias");
 }
@@ -66,7 +66,7 @@ nnet::varptr<double> rbm::operator () (nnet::inode<double>* input)
 	// weight is <n_hidden, n_input>
 	// in is <n_input, ?>
 	// out = in @ weight, so out is <n_hidden, ?>
-	return (hidden_.second)((*hidden_.first)({input}));
+	return nnet::sigmoid<double>((*hidden_)({input}));
 }
 
 nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
@@ -74,10 +74,10 @@ nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
 	// weight is <n_hidden, n_input>
 	// in is <n_hidden, ?>
 	// out = in @ weight.T, so out is <n_input, ?>
-	nnet::varptr<double> weight = hidden_.first->get_variables()[0];
+	nnet::varptr<double> weight = hidden_->get_variables()[0];
 	nnet::varptr<double> weighed = nnet::matmul<double>(hidden, weight, false, true);
 	nnet::varptr<double> pre_nl = nnet::add_axial_b(weighed, nnet::varptr<double>(vbias_), 1);
-	return (hidden_.second)(pre_nl);
+	return nnet::sigmoid<double>(pre_nl);
 }
 
 nnet::updates_t rbm::train (generators_t& gens,
@@ -112,7 +112,7 @@ nnet::updates_t rbm::train (generators_t& gens,
 	nnet::varptr<double> dhb = h0 - hk;
 	nnet::varptr<double> dvb = v0 - vt;
 
-	std::vector<nnet::variable<double>*> vars = hidden_.first->get_variables();
+	std::vector<nnet::variable<double>*> vars = hidden_->get_variables();
 	nnet::variable<double>* weight = vars[0];
 	nnet::variable<double>* hbias = vars[1];
 
@@ -125,7 +125,7 @@ nnet::updates_t rbm::train (generators_t& gens,
 
 std::vector<nnet::variable<double>*> rbm::get_variables (void) const
 {
-	std::vector<nnet::variable<double>*> vars = hidden_.first->get_variables();
+	std::vector<nnet::variable<double>*> vars = hidden_->get_variables();
 	vars.push_back(vbias_);
 	return vars;
 }
@@ -155,7 +155,7 @@ ilayer* rbm::move_impl (void)
 void rbm::copy_helper (const rbm& other)
 {
 	n_input_ = other.n_input_;
-	hidden_ = { other.hidden_.first->clone(), other.hidden_.second };
+	hidden_ = other.hidden_->clone();
 	vbias_ = other.vbias_->clone();
 }
 
@@ -168,10 +168,10 @@ void rbm::move_helper (rbm&& other)
 
 void rbm::clean_up (void)
 {
-	delete hidden_.first;
+	delete hidden_;
 	if (vbias_) delete vbias_;
 
-	hidden_.first = nullptr;
+	hidden_ = nullptr;
 	vbias_ = nullptr;
 }
 
