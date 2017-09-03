@@ -3,7 +3,7 @@ set(PROJECT_NAME rocboostpy)
 project(rboostpy)
 
 if (NOT RBUILD_DIR)
-    set(RBUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+	set(RBUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 set(CMAKE_BINARY_DIR ${RBUILD_DIR}/bin)
@@ -16,12 +16,12 @@ find_package(PythonLibs REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost COMPONENTS python)
+find_package(Boost COMPONENTS python numpy)
 
 set(RBP_INCLUDE include)
 FILE(GLOB_RECURSE RBP_SRC src/*.cpp)
 
 include_directories(${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 
-add_executable(rboostpy_test main.cpp ${RBP_SRC})
+add_executable(rboostpy_test tests/test_embedding.cpp ${RBP_SRC})
 target_link_libraries(rboostpy_test ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})

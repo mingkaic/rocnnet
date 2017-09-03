@@ -4,10 +4,12 @@
 
 #include "embedding.hpp"
 
+#ifdef ROCBOOST_EMBEDDING_HPP
+
 // relative path from bin/bin to python
 const bp::str pickle_script = "../../boostpy/python/pickle.py";
 
-bp::tuple pickle(std::string data_path)
+bp::tuple pickle (std::string data_path)
 {
 	// Retrieve the main module.
 	bp::object main = bp::import("__main__");
@@ -30,3 +32,5 @@ bp::tuple pickle(std::string data_path)
 
 	return data;
 }
+
+#endif

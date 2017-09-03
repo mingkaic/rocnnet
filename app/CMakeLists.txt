@@ -15,6 +15,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(TENNCOR_DIR ${PROJECT_SOURCE_DIR}/tenncor)
 set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
+set(BOOSTPY_DIR ${PROJECT_SOURCE_DIR}/boostpy)
 
 set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 
@@ -71,6 +72,10 @@ set(ROCNNET_DLIB rocnnet_shared)
 include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(${ROCNNET_DLIB} SHARED ${ROCNNET_SRC})
 target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})
+
+#>>>>>>>>>>>>>>>>>>>> BUILD BOOST-PYTHON INTERFACE <<<<<<<<<<<<<<<<<<<<
+
+add_subdirectory(${BOOSTPY_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
 set(DEMODIR ${PROJECT_SOURCE_DIR}/demo)

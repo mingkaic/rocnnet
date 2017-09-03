@@ -6,9 +6,10 @@
 
 namespace bp = boost::python;
 
+#pragma once
 #ifndef ROCBOOST_EMBEDDING_HPP
 #define ROCBOOST_EMBEDDING_HPP
 
-bp::tuple pickle(std::string data_path);
+bp::tuple pickle (std::string data_path);
 
-#endif //ROCBOOST_EMBEDDING_HPP
+#endif /* ROCBOOST_EMBEDDING_HPP */
