@@ -31,7 +31,7 @@ dbn::~dbn (void)
 	clean_up();
 }
 
-dbn* dbn::clone (std::string scope = "") const
+dbn* dbn::clone (std::string scope) const
 {
 	return static_cast<dbn*>(this->clone_impl(scope));
 }

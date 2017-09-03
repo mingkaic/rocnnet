@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(tenncor C CXX)
 
+if (NOT RBUILD_DIR)
+	set(RBUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
 if (NOT TENNCOR_LIB)
 	set(TENNCOR_LIB tenncor)
 endif()
