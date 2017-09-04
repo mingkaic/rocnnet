@@ -286,7 +286,7 @@ static inline OUT_MAPPER get_matmul_mapper (bool transp, size_t primary_travel, 
 		for (size_t j = 0; j < ntravel; j++)
 		{
 			coord[idx] = j;
-			indices.push_back(ashape.sequential_idx(coord));
+			indices.push_back(ashape.flat_idx(coord));
 		}
 		return indices;
 	};

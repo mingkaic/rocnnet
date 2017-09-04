@@ -3,7 +3,6 @@
 //
 
 #include "mnist_data.hpp"
-#include <iostream>
 
 #ifdef ROCBOOST_MNIST_DATA_HPP
 

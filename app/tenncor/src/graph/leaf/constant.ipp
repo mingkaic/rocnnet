@@ -138,6 +138,19 @@ bool operator != (constant<T>& c, T scalar)
 	return 1 != res.size() || scalar != res[0];
 }
 
+template <typename T>
+constant<T>* const_axis (size_t dimension, size_t index, T scalar, tensorshape shape)
+{
+	std::vector<T> data(shape.n_elems(), 0);
+	shape.iterate([&data, dimension, index, scalar](std::vector<size_t> coord, size_t idx) {
+		if (coord[dimension] == index)
+		{
+			data[idx] = scalar;
+		}
+	});
+	return constant<T>::get(data, shape);
+}
+
 }
 
 #endif

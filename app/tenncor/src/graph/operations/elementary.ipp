@@ -289,7 +289,7 @@ inline OUT_MAPPER get_axis_mapper (size_t axis)
 		{
 			coord[axis] = 0;
 		}
-		i = inshape.sequential_idx(coord);
+		i = inshape.flat_idx(coord);
 		return { i };
 	};
 }
@@ -789,6 +789,76 @@ varptr<T> sqrt (const varptr<T> a)
 		varptr<T> a = args.front().first;
 		varptr<T> grad = args.front().second;
 		return grad / ((T)2 * sqrt(a));
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
+}
+
+template <typename T>
+varptr<T> round (const varptr<T> a)
+{
+	if (nullptr == a.get()) return nullptr;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		std::vector<T> acvec = expose<T>(aconst);
+		for (T& acv : acvec)
+		{
+			acv = std::round(acv);
+		}
+		return constant<T>::get(acvec, aconst->get_shape());
+	}
+	std::string opname = "round";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		assert(n == 1);
+		return std::round((*group[0]));
+	})),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		// round'(f(x)) = round(f'(x))
+		varptr<T> grad = args.front().second;
+		return nnet::round(grad);
+	}, opname);
+	out->extract_metadata(a.get());
+	return out;
+}
+
+template <typename T>
+varptr<T> log (const varptr<T> a)
+{
+	if (nullptr == a.get()) return nullptr;
+	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
+	{
+		std::vector<T> acvec = expose<T>(aconst);
+		for (T& acv : acvec)
+		{
+			acv = std::log(acv);
+		}
+		return constant<T>::get(acvec, aconst->get_shape());
+	}
+	std::string opname = "log";
+	std::unordered_set<inode<T>*> audience;
+	if (a->find_audience(opname, audience))
+	{
+		return *audience.begin(); // share nodes when possible
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
+	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	{
+		assert(n == 1);
+		return std::log((*group[0]));
+	})),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		// log'(f(x)) = 1 / f(x)
+		varptr<T> a = args.front().first;
+		return (T) 1 / a;
 	}, opname);
 	out->extract_metadata(a.get());
 	return out;

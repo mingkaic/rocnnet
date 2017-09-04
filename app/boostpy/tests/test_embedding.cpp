@@ -1,5 +1,4 @@
 #include <iostream>
-#include <boost/python/numpy.hpp>
 #include "mnist_data.hpp"
 
 int main (int argc, char** argv)
@@ -22,6 +21,6 @@ int main (int argc, char** argv)
 	{
 		std::cerr << ">>> Error! Uncaught exception:\n";
 		PyErr_Print();
-		return 0;
+		return 1;
 	}
 }

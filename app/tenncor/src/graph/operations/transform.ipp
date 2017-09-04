@@ -47,7 +47,7 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 			coords.insert(coords.end(), max_axis - coords.size() + 1, 0);
 		}
 		std::swap(coords[axis_swap.first], coords[axis_swap.second]);
-		return { ashape.sequential_idx(coords) };
+		return { ashape.flat_idx(coords) };
 	},
 	[axis_swap](std::vector<tensorshape> shapes) -> tensorshape
 	{
@@ -117,7 +117,7 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 			{
 				return { ashape.n_elems() };
 			}
-			return { ashape.sequential_idx(coords) };
+			return { ashape.flat_idx(coords) };
 		},
 		[](size_t, tensorshape& ashape, const tensorshape&) -> std::vector<size_t> { return { ashape.n_elems() }; }
 	}, copyover<T>),
@@ -147,7 +147,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 		size_t adim = ashape.as_list()[index];
 		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
 		coords[index] = coords[index] % adim;
-		return { ashape.sequential_idx(coords) };
+		return { ashape.flat_idx(coords) };
 	},
 	[index, multiplier](std::vector<tensorshape> shapes) -> tensorshape
 	{
@@ -245,7 +245,7 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 				for (size_t j = 0, adim = ashape.as_list()[*index]; j < adim; j++)
 				{
 					coords[*index] = j;
-					outidx.push_back(ashape.sequential_idx(coords));
+					outidx.push_back(ashape.flat_idx(coords));
 				}
 				return outidx;
 			}
@@ -410,7 +410,7 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 				for (size_t j = 0, adim = ashape.as_list()[*dimension]; j < adim; j++)
 				{
 					coords[*dimension] = j;
-					outidx.push_back(ashape.sequential_idx(coords));
+					outidx.push_back(ashape.flat_idx(coords));
 				}
 				return outidx;
 			}
@@ -494,7 +494,7 @@ varptr<T> flip (const varptr<T> a, std::vector<size_t> dims)
 			{
 				coord[d] = outlist[d] - coord[d] - 1;
 			}
-			return {outshape.sequential_idx(coord)};
+			return {outshape.flat_idx(coord)};
 		}
 	}, copyover<T>),
 	[dims](std::vector<std::pair<inode<T>*,inode<T>*> > args)
@@ -549,7 +549,7 @@ varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
 				for (size_t j = 0; j < firstn; j++)
 				{
 					temp[dims.first]++;
-					indices.push_back(ashape.sequential_idx(temp));
+					indices.push_back(ashape.flat_idx(temp));
 				}
 			}
 			return indices;

@@ -856,7 +856,7 @@ TEST(TENSOR, CopyWithShape_B013)
 		}
 		if (b)
 		{
-			size_t outidx = cshape3.sequential_idx(incoord);
+			size_t outidx = cshape3.flat_idx(incoord);
 			EXPECT_EQ(compdata[i], undefdata[outidx]);
 		}
 	}
@@ -878,7 +878,7 @@ TEST(TENSOR, CopyWithShape_B013)
 		}
 		if (b)
 		{
-			size_t outidx = cshape3.sequential_idx(incoord);
+			size_t outidx = cshape3.flat_idx(incoord);
 			EXPECT_EQ(compdata2[i], pdefdata[outidx]);
 		}
 	}

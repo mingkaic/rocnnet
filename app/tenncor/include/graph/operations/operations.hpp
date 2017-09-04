@@ -72,6 +72,14 @@ varptr<T> exp (const varptr<T> a);
 template <typename T>
 varptr<T> sqrt (const varptr<T> a);
 
+//! round a
+template <typename T>
+varptr<T> round (const varptr<T> a);
+
+//! natural log a
+template <typename T>
+varptr<T> log (const varptr<T> a);
+
 //! a to the power of scalar
 template <typename T>
 varptr<T> pow (const varptr<T> a, double scalar);

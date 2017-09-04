@@ -129,7 +129,7 @@ TEST(TRANSFORM, Transpose_B001)
 		for (size_t i = 0, n = in.size(); i < n; i++)
 		{
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
-			size_t j = outshape.sequential_idx({incoord[1], incoord[0]});
+			size_t j = outshape.flat_idx({incoord[1], incoord[0]});
 			out[j] = in[i];
 		}
 		return out;
@@ -186,7 +186,7 @@ TEST(TRANSFORM, Fit_B002)
 			}
 			if (b)
 			{
-				size_t outidx = realshape.sequential_idx(incoord);
+				size_t outidx = realshape.flat_idx(incoord);
 				out[outidx] = in[i];
 			}
 		}
@@ -304,7 +304,7 @@ TEST(TRANSFORM, Compress_B005)
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
 			if (incoord[compress_index] == 0)
 			{
-				size_t outidx = outshape.sequential_idx(incoord);
+				size_t outidx = outshape.flat_idx(incoord);
 				out[outidx] = in[i];
 			}
 		}
@@ -448,11 +448,11 @@ TEST(TRANSFORM, ArgCompress_B008To009)
 			if (incoord[arg_index] == 0)
 			{
 				std::vector<const double*> vecs;
-				size_t outidx = outshape.sequential_idx(incoord);
+				size_t outidx = outshape.flat_idx(incoord);
 				for (size_t i = 0; i < n; i++)
 				{
 					incoord[arg_index] = i;
-					size_t inidx = inshape.sequential_idx(incoord);
+					size_t inidx = inshape.flat_idx(incoord);
 					vecs.push_back(&in[inidx]);
 				}
 				out[outidx] = search(&vecs[0], vecs.size());
@@ -572,7 +572,7 @@ TEST(ELEMENTARY, Flip_B012)
 		std::vector<size_t> coord = shape.coordinate_from_idx(i);
 		coord[flipdim] = shapelist[flipdim] - coord[flipdim] - 1;
 		double out = rawf[i];
-		double in = indata[shape.sequential_idx(coord)];
+		double in = indata[shape.flat_idx(coord)];
 		EXPECT_EQ(in, out);
 	}
 
