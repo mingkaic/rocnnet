@@ -79,18 +79,9 @@ itensor_handler<T>* assign_func<T>::move_impl (void)
 }
 
 template <typename T>
-transfer_func<T>::transfer_func (SHAPER shaper,
-	std::vector<OUT_MAPPER> outidxer,
-	ELEM_FUNC<T> aggregate) :
-shaper_(shaper),
-aggregate_(aggregate),
-outidxer_(outidxer) {}
-
-template <typename T>
-tensorshape transfer_func<T>::calc_shape (std::vector<tensorshape> shapes) const
-{
-	return shaper_(shapes);
-}
+transfer_func<T>::transfer_func (std::vector<OUT_MAPPER> outidxer, ELEM_FUNC<T> aggregate) :
+	aggregate_(aggregate),
+	outidxer_(outidxer) {}
 
 template <typename T>
 transfer_func<T>* transfer_func<T>::clone (void) const

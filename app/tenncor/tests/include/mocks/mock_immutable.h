@@ -53,10 +53,9 @@ public:
 		ELEM_FUNC<double> elem = testforward,
 		std::vector<OUT_MAPPER> omap = {},
 		BACK_MAP<double> back = testback) :
-	immutable<double>(args,
-	new transfer_func<double>(shapes, nconfirm(omap, args.size()), elem),
-	back,
-	label) {}
+	immutable<double>(args, shapes,
+	new transfer_func<double>(nconfirm(omap, args.size()), elem),
+	back, label) {}
 
 	std::function<void(mock_immutable*)> triggerOnDeath;
 

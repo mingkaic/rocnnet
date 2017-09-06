@@ -16,12 +16,12 @@ immutable<T>::~immutable (void) {}
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
-	transfer_func<T>* Nf,
-	BACK_MAP<T> ginit,
-	std::string name, inode<T>* ignore_jacobian)
+	SHAPER shaper, transfer_func<T>* Nf,
+	BACK_MAP<T> ginit, std::string name,
+	inode<T>* ignore_jacobian)
 {
 	assert(false == args.empty());
-	immutable<T>* imm = new immutable<T>(args, Nf, ginit, name);
+	immutable<T>* imm = new immutable<T>(args, shaper, Nf, ginit, name);
 	if (nullptr != ignore_jacobian)
 	{
 		std::unordered_set<ileaf<T>*> leaves = ignore_jacobian->get_leaves();
@@ -73,7 +73,7 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 template <typename T>
 typename iconnector<T>::summary_series immutable<T>::summarize (void) const
 {
-	typename iconnector<T>::conn_summary summ(this->get_name(), Nf_, ginit_);
+	typename iconnector<T>::conn_summary summ(this->get_name(), shaper_, Nf_, ginit_);
 	for (subject* sb : this->dependencies_)
 	{
 		summ.arg_ids_.push_back(static_cast<inode<T>*>(sb)->get_summaryid());
@@ -84,9 +84,11 @@ typename iconnector<T>::summary_series immutable<T>::summarize (void) const
 template <typename T>
 immutable<T>::immutable (
 	std::vector<inode<T>*> args,
+	SHAPER shaper,
 	transfer_func<T>* Nf,
 	BACK_MAP<T> ginit, std::string label) :
 base_immutable<T>(args, label),
+shaper_(shaper),
 Nf_(Nf),
 ginit_(ginit) { this->update({}); }
 
@@ -135,7 +137,7 @@ void immutable<T>::forward_pass (void)
 		}
 		tens.push_back(arg);
 	}
-	tensorshape s = Nf_->calc_shape(ts);
+	tensorshape s = shaper_(ts);
 	if (nullptr == this->data_)
 	{
 		s.assert_is_fully_defined();

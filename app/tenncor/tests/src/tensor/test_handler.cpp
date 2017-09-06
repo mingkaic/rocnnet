@@ -59,12 +59,6 @@ static double marked_forward (const double**, size_t)
 }
 
 
-static tensorshape marked_shape (std::vector<tensorshape>)
-{
-	return std::vector<size_t>{(size_t)SUPERMARK};
-}
-
-
 // cover transfer_function
 // operator ()
 TEST(HANDLER, Transfer_C000)
@@ -81,7 +75,7 @@ TEST(HANDLER, Transfer_C000)
 	args.push_back(&arg1);
 	args.push_back(&arg2);
 
-	transfer_func<double> tf(shaper, {forward_mapper, forward_mapper}, forward);
+	transfer_func<double> tf({forward_mapper, forward_mapper}, forward);
 	std::vector<const double*> arg = tf.prepare_args(goodptr->get_shape(), args);
 	tf(goodptr, arg);
 	std::vector<double> d1 = arg1.expose();
@@ -159,7 +153,7 @@ TEST(HANDLER, Copy_C003)
 {
 	FUZZ::reset_logger();
 	SUPERMARK = 0;
-	transfer_func<double> tfassign(marked_shape, {forward_mapper}, marked_forward);
+	transfer_func<double> tfassign({forward_mapper}, marked_forward);
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
 
@@ -167,7 +161,7 @@ TEST(HANDLER, Copy_C003)
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
 	double low = FUZZ::getDouble(1, "low", {23, 127})[0];
 	double high = FUZZ::getDouble(1, "high", {low*2, low*3+50})[0];
-	transfer_func<double> tf(marked_shape, {forward_mapper}, marked_forward);
+	transfer_func<double> tf({forward_mapper}, marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
 
@@ -253,7 +247,7 @@ TEST(HANDLER, Move_C003)
 {
 	FUZZ::reset_logger();
 	SUPERMARK = 0;
-	transfer_func<double> tfassign(marked_shape, {forward_mapper}, marked_forward);
+	transfer_func<double> tfassign({forward_mapper}, marked_forward);
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
 
@@ -261,7 +255,7 @@ TEST(HANDLER, Move_C003)
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
 	double low = FUZZ::getDouble(1, "low", {23, 127})[0];
 	double high = FUZZ::getDouble(1, "high", {low*2, low*3+50})[0];
-	transfer_func<double> tf(marked_shape, {forward_mapper}, marked_forward);
+	transfer_func<double> tf({forward_mapper}, marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
 

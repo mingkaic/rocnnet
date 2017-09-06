@@ -31,7 +31,8 @@ public:
 	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
 	//! builder for immutables, grabs ownership of Nf
 	static immutable<T>* get (std::vector<inode<T>*> args,
-		transfer_func<T>* Nf, BACK_MAP<T> ginit, std::string name,
+		SHAPER shaper, transfer_func<T>* Nf,
+		BACK_MAP<T> ginit, std::string name,
 		inode<T>* ignore_jacobian = nullptr);
 
 	// >>>> CLONER & ASSIGNMENT OPERATORS <<<<
@@ -55,8 +56,8 @@ protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! immutable constructing an aggregate transfer function
 	immutable (std::vector<inode<T>*> args,
-		transfer_func<T>* Nf, BACK_MAP<T> ginit,
-		std::string label);
+		SHAPER shaper, transfer_func<T>* Nf,
+		BACK_MAP<T> ginit, std::string label);
 
 	//! declare copy constructor to copy over transfer functions
 	immutable (const immutable<T>& other);
@@ -84,6 +85,9 @@ private:
 
 	//! move helper
 	void move_helper (immutable&& other);
+
+	//! calculates shape of this node
+	SHAPER shaper_;
 
 	//! forward transfer function
 	//! calculates forward passing data

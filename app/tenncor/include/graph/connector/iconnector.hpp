@@ -33,6 +33,9 @@ using NODE_MAN = std::function<inode<T>*(inode<T>*)>;
 template <typename T>
 using JTRANSFER = std::function<inode<T>*(inode<T>*,NODE_MAN<T>)>;
 
+//! calculate output shape from argument shapes
+using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
+
 template <typename T>
 class iconnector : public inode<T>, public iobserver
 {
@@ -40,10 +43,13 @@ public:
 	//! iconnector summary
 	struct conn_summary
 	{
-		conn_summary (std::string id, std::shared_ptr<transfer_func<T> > forward, BACK_MAP<T> back) :
-				id_(id), Nf_(forward), ginit_(back) {}
+		conn_summary (std::string id, SHAPER shaper,
+			std::shared_ptr<transfer_func<T> > forward, BACK_MAP<T> back) :
+				id_(id), shaper_(shaper), Nf_(forward), ginit_(back) {}
 
 		std::string id_;
+
+		SHAPER shaper_;
 
 		std::shared_ptr<transfer_func<T> > Nf_;
 

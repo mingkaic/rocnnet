@@ -22,9 +22,6 @@ namespace nnet
 
 using SHAPE_EXTRACT = std::function<std::vector<size_t>(tensorshape&)>;
 
-//! Accumulate an array of shape
-using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
-
 using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
 
 template <typename T>
@@ -158,8 +155,7 @@ class transfer_func : public itensor_handler<T>
 {
 public:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
-	transfer_func (SHAPER shaper,
-		std::vector<OUT_MAPPER> outidxer,
+	transfer_func (std::vector<OUT_MAPPER> outidxer,
 		ELEM_FUNC<T> aggregate);
 
 	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
@@ -183,9 +179,6 @@ public:
 	// mimicks preparation from tensors
 	std::vector<const T*> prepare_args (tensorshape outshape,
 		std::vector<std::pair<T*,tensorshape> > args) const;
-	
-	//! calls shape transformer
-	tensorshape calc_shape (std::vector<tensorshape> shapes) const;
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -193,8 +186,6 @@ protected:
 
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void);
-
-	SHAPER shaper_; //! shape transformation
 
 	//! element-wise aggregate elements
 	ELEM_FUNC<T> aggregate_;

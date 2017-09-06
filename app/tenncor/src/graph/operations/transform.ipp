@@ -21,9 +21,9 @@ inline T copyover (const T** data, size_t)
 }
 
 template <typename T>
-inline transfer_func<T>* unary_trans_agg (OUT_MAPPER indexer, SHAPER shaper)
+inline transfer_func<T>* unary_trans_agg (OUT_MAPPER indexer)
 {
-	return new transfer_func<T>(shaper, {indexer}, copyover<T>);
+	return new transfer_func<T>({indexer}, copyover<T>);
 }
 
 template <typename T>
@@ -37,18 +37,6 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 		return *audience.begin(); // share nodes when possible
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_trans_agg<T>(
-	[axis_swap](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
-	{
-		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
-		size_t max_axis = std::max(axis_swap.first, axis_swap.second);
-		if (max_axis >= coords.size())
-		{
-			coords.insert(coords.end(), max_axis - coords.size() + 1, 0);
-		}
-		std::swap(coords[axis_swap.first], coords[axis_swap.second]);
-		return { ashape.flat_idx(coords) };
-	},
 	[axis_swap](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape ts = shapes[0];
@@ -64,6 +52,18 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 			return inl;
 		}
 		return tensorshape();
+	},
+	unary_trans_agg<T>(
+	[axis_swap](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+	{
+		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+		size_t max_axis = std::max(axis_swap.first, axis_swap.second);
+		if (max_axis >= coords.size())
+		{
+			coords.insert(coords.end(), max_axis - coords.size() + 1, 0);
+		}
+		std::swap(coords[axis_swap.first], coords[axis_swap.second]);
+		return { ashape.flat_idx(coords) };
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -93,11 +93,11 @@ varptr<T> fit (const varptr<T> a, const varptr<T> watch)
 		}
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a, watch},
-	new transfer_func<T>(
 	[](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		return shapes[1]; // watch is always argument 2
 	},
+	new transfer_func<T>(
 	{
 		[](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
 		{
@@ -141,14 +141,6 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 		return *audience.begin(); // share nodes when possible
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_trans_agg<T>(
-	[index, multiplier](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
-	{
-		size_t adim = ashape.as_list()[index];
-		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
-		coords[index] = coords[index] % adim;
-		return { ashape.flat_idx(coords) };
-	},
 	[index, multiplier](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape ts = shapes[0];
@@ -171,6 +163,14 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 			tv[index] *= multiplier;
 		}
 		return tv;
+	},
+	unary_trans_agg<T>(
+	[index, multiplier](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
+	{
+		size_t adim = ashape.as_list()[index];
+		std::vector<size_t> coords = outshape.coordinate_from_idx(i);
+		coords[index] = coords[index] % adim;
+		return { ashape.flat_idx(coords) };
 	}),
 	[index, multiplier](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -191,11 +191,11 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 	{
 		return *audience.begin(); // share nodes when possible
 	}
+	SHAPER shaper;
 	transfer_func<T>* forward;
 	if ((bool) index)
 	{
-		forward = new transfer_func<T>(
-		[index](std::vector<tensorshape> shapes) -> tensorshape
+		shaper = [index](std::vector<tensorshape> shapes) -> tensorshape
 		{
 			size_t idx = *index;
 			tensorshape& ts = shapes[0];
@@ -212,7 +212,7 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 				tv[0] = 1;
 			}
 			else if (0 == idx)
-			// pop front
+				// pop front
 			{
 				tv = std::vector<size_t>(tv.begin()+1, tv.end());
 			}
@@ -225,8 +225,9 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 				tv[idx] = 1;
 			}
 			return tensorshape(tv);
-		},
-		{
+		};
+
+		forward = new transfer_func<T>({
 			[index](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
 			{
 				if (ashape.rank() <= *index) return {i};
@@ -253,10 +254,9 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 	}
 	else
 	{
+		shaper = [](std::vector<tensorshape>) -> tensorshape { return std::vector<size_t>{1}; };
 		// scalar shape
-		forward = new transfer_func<T>(
-		[](std::vector<tensorshape>) -> tensorshape { return std::vector<size_t>{1}; },
-		{
+		forward = new transfer_func<T>({
 			[](size_t, tensorshape &ashape, const tensorshape&)
 			{
 				std::vector<size_t> outidx;
@@ -268,7 +268,7 @@ varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
 			}
 		}, collector);
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, forward,
 	[index, bprop](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> fnode = args.front().first;
@@ -361,11 +361,11 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 	{
 		return *audience.begin(); // share nodes when possible
 	}
+	SHAPER shaper;
 	transfer_func<T>* forward;
 	if (dimension)
 	{
-		forward = new transfer_func<T>(
-		[dimension](std::vector<tensorshape> shapes) -> tensorshape
+		shaper = [dimension](std::vector<tensorshape> shapes) -> tensorshape
 		{
 			size_t dim = *dimension;
 			tensorshape ts = shapes[0];
@@ -373,15 +373,15 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 			if (dim >= ts.rank())
 			{
 				throw std::logic_error(nnutils::formatter()
-					<< "attempting to obtain arg index along dimension "
-					<< dim << " on a " << ts.rank() << " tensor");
+					  << "attempting to obtain arg index along dimension "
+					  << dim << " on a " << ts.rank() << " tensor");
 			}
 			std::vector<size_t> tv = ts.as_list();
 			tv[dim] = 1;
 			if (tv.size() > 1)
 			{
 				if (0 == dim)
-				// pop front
+					// pop front
 				{
 					tv = std::vector<size_t>(tv.begin()+1, tv.end());
 				}
@@ -391,8 +391,8 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 				}
 			}
 			return tv;
-		},
-		{
+		};
+		forward = new transfer_func<T>({
 			[dimension](size_t i, tensorshape& ashape, const tensorshape& outshape)
 			{
 				std::vector<size_t> outidx;
@@ -418,13 +418,12 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 	}
 	else
 	{
-		// scalar shape
-		forward = new transfer_func<T>(
-		[](std::vector<tensorshape> inshapes) -> tensorshape
+		shaper = [](std::vector<tensorshape> inshapes) -> tensorshape
 		{
 			return std::vector<size_t>{inshapes[0].rank()};
-		},
-		{
+		};
+		// scalar shape
+		forward = new transfer_func<T>({
 			[](size_t, tensorshape &ashape, const tensorshape&)
 			{
 				std::vector<size_t> outidx;
@@ -436,7 +435,7 @@ varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> search,
 			}
 		}, search);
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a}, forward,
+	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, forward,
 	[dimension, search](std::vector<std::pair<inode<T>*,inode<T>*> >)
 	{
 		// arg_compression's gradient has no intrinsic meaning
@@ -480,12 +479,11 @@ varptr<T> flip (const varptr<T> a, std::vector<size_t> dims)
 	}
 
 	immutable<T>* sym = immutable<T>::get(std::vector<inode<T>*>{a},
-	new transfer_func<T>(
-	[](std::vector<tensorshape> shapes) -> tensorshape
-	{
-		return shapes[0];
-	},
-	{
+				 [](std::vector<tensorshape> shapes) -> tensorshape
+				 {
+					 return shapes[0];
+				 },
+	new transfer_func<T>({
 		[dims](size_t i, tensorshape&, const tensorshape& outshape) -> std::vector<size_t>
 		{
 			std::vector<size_t> outlist = outshape.as_list();
@@ -523,7 +521,6 @@ varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
 	}
 
 	immutable<T>* cv = immutable<T>::get(std::vector<inode<T>*>{a, filter},
-	new transfer_func<T>(
 	[dims](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		std::vector<size_t> outshape = shapes[0].as_list();
@@ -532,7 +529,7 @@ varptr<T> cross_corr2d (const varptr<T> a, const varptr<T> filter,
 		outshape[dims.second] -= filtshape[dims.second] + 1;
 		return outshape;
 	},
-	{
+	new transfer_func<T>({
 		[dims](size_t i, tensorshape& ashape, const tensorshape& outshape) -> std::vector<size_t>
 		{
 			std::vector<size_t> outlist = outshape.as_list();

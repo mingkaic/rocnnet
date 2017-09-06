@@ -37,7 +37,7 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 
 template <typename T>
 static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
 	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
@@ -81,12 +81,12 @@ static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 			}
 		}
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
 }
 
 template <typename T>
 static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
 	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
@@ -132,12 +132,12 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 			}
 		}
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
 }
 
 template <typename T>
 static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
 	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
@@ -185,12 +185,12 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 			}
 		}
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
 }
 
 template <typename T>
 static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, transfer_func<T>* Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
 {
 	varptr<T> out = nullptr;
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
@@ -238,16 +238,12 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 			}
 		}
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, Nf, ginit, opname);
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
 }
 
-template <typename T>
-inline transfer_func<T>* unary_elem_agg (ELEM_FUNC<T> aggregate)
+inline std::vector<size_t> unary_map (size_t i, tensorshape&, const tensorshape&)
 {
-	return new transfer_func<T>(elementary_shaper,
-	{
-		[](size_t i, tensorshape&, const tensorshape&) -> std::vector<size_t> { return {i}; }
-	}, aggregate);
+	return {i};
 }
 
 inline std::vector<size_t> injective (size_t i, tensorshape& ashape, const tensorshape&)
@@ -259,7 +255,7 @@ inline std::vector<size_t> injective (size_t i, tensorshape& ashape, const tenso
 template <typename T>
 inline transfer_func<T>* binary_elem_agg (ELEM_FUNC<T> aggregate)
 {
-	return new transfer_func<T>(elementary_shaper, { injective, injective }, aggregate);
+	return new transfer_func<T>({ injective, injective }, aggregate);
 }
 
 inline OUT_MAPPER get_axis_mapper (size_t axis)
@@ -294,14 +290,23 @@ inline OUT_MAPPER get_axis_mapper (size_t axis)
 	};
 }
 
-template <typename T>
-inline transfer_func<T>* binary_axial_left (ELEM_FUNC<T> aggregate, size_t axis)
+inline SHAPER binary_axial_shape (size_t axis, bool left)
 {
-	return new transfer_func<T>(
-	[axis](std::vector<tensorshape> shapes) -> tensorshape
-			{
-		tensorshape shape1 = shapes[0];
-		tensorshape shape2 = shapes[1];
+	return
+	[axis, left](std::vector<tensorshape> shapes) -> tensorshape
+	{
+		tensorshape shape1;
+		tensorshape shape2;
+		if (left)
+		{
+			shape1 = shapes[0];
+			shape2 = shapes[1];
+		}
+		else
+		{
+			shape1 = shapes[1];
+			shape2 = shapes[2];
+		}
 
 		if (shape2.n_elems() == 1) return shape1;
 
@@ -332,50 +337,19 @@ inline transfer_func<T>* binary_axial_left (ELEM_FUNC<T> aggregate, size_t axis)
 
 		if (false == shape2.is_fully_defined()) return std::vector<size_t>{1};
 		return shape2;
-	},
-	{ get_axis_mapper(axis), injective }, aggregate);
+	};
+}
+
+template <typename T>
+inline transfer_func<T>* binary_axial_left (ELEM_FUNC<T> aggregate, size_t axis)
+{
+	return new transfer_func<T>({ get_axis_mapper(axis), injective }, aggregate);
 }
 
 template <typename T>
 inline transfer_func<T>* binary_axial_right (ELEM_FUNC<T> aggregate, size_t axis)
 {
-	return new transfer_func<T>(
-	[axis](std::vector<tensorshape> shapes) -> tensorshape
-	{
-		tensorshape shape1 = shapes[0];
-		tensorshape shape2 = shapes[1];
-
-		if (shape1.n_elems() == 1) return shape2;
-
-		std::vector<size_t> s1list = shape1.as_list();
-
-		if (axis == 0)
-		{
-			s1list = std::vector<size_t>(s1list.begin()+1, s1list.end());
-		}
-		else if (axis < s1list.size())
-		{
-			s1list[axis] = 1;
-		}
-		else
-		{
-			s1list.push_back(1);
-		}
-		if (false == shape2.is_compatible_with(tensorshape(s1list)))
-		{
-			std::stringstream ss;
-			ss << "shape ";
-			print_shape(shape1, ss);
-			ss << " is incompatible with shape ";
-			print_shape(shape2, ss);
-			ss << " along axis " << axis;
-			throw std::runtime_error(ss.str());
-		}
-
- 		if (false == shape1.is_fully_defined()) return std::vector<size_t>{1};
-		return shape1;
-	},
-	{ injective, get_axis_mapper(axis) }, aggregate);
+	return new transfer_func<T>({ injective, get_axis_mapper(axis) }, aggregate);
 }
 
 template <typename T>
@@ -409,12 +383,13 @@ varptr<T> identity (varptr<T> x)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]);
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> grad = args.front().second;
@@ -443,12 +418,13 @@ varptr<T> operator + (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return +(*group[0]);
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> grad = args.front().second;
@@ -486,12 +462,13 @@ varptr<T> operator - (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return -(*group[0]);
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> grad = args.front().second;
@@ -520,12 +497,13 @@ varptr<T> sin (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::sin((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sin'(f(x)) = f'(x)*cos(f(x))
@@ -556,12 +534,13 @@ varptr<T> cos (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::cos((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// cos'(f(x)) = -f'(x)*sin(f(x))
@@ -592,12 +571,13 @@ varptr<T> tan (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::tan((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sec'(f(x)) = f'(x)*sec^2(f(x))
@@ -630,12 +610,13 @@ varptr<T> csc (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return 1/std::sin((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// csc'(f(x)) = -f'(x)*csc(f(x))*cot(f(x))
@@ -667,12 +648,13 @@ varptr<T> sec (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return 1/std::cos((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sec'(f(x)) = f'(x)*tan(f(x))*sec(f(x))
@@ -704,12 +686,13 @@ varptr<T> cot (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::cos((*group[0])) / std::sin((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// cot'(f(x)) = -f'(x)*csc^2(f(x))
@@ -741,12 +724,13 @@ varptr<T> exp (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::exp((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// exp'(f(x)) = f'(x)*exp(f(x))
@@ -777,12 +761,13 @@ varptr<T> sqrt (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::sqrt((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sqrt'(f(x)) = f'(x)/(2*sqrt(f(x)))
@@ -813,12 +798,13 @@ varptr<T> round (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::round((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// round'(f(x)) = round(f'(x))
@@ -848,12 +834,13 @@ varptr<T> log (const varptr<T> a)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::log((*group[0]));
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// log'(f(x)) = 1 / f(x)
@@ -891,12 +878,13 @@ varptr<T> pow (const varptr<T> a, double scalar)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([scalar](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[scalar](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return std::pow((*group[0]), scalar);
-	})),
+	}),
 	[scalar](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// sqrt'(f(x)) = f'(x) * (scalar*f(x)^(scalar-1))
@@ -929,15 +917,16 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>([min, max](const T** group, size_t n) -> T
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
+	[min, max](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		T v = *(group[0]);
 		if (min > v) v = min;
 		else if (max < v) v = max;
 		return v;
-	})),
+	}),
 	[min, max](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> a = args.front().first;
@@ -969,9 +958,8 @@ varptr<T> l2norm (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	new transfer_func<T>(
 	[](std::vector<tensorshape>) { return std::vector<size_t>{1}; },
-	{
+	new transfer_func<T>({
 		[](size_t, tensorshape& ashape, const tensorshape&)
 		{
 			std::vector<size_t> outidx;
@@ -1030,6 +1018,7 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{l2norm(a), a},
+	elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>([cap](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1072,13 +1061,13 @@ varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare,
 		return *audience.begin(); // share nodes when possible
 	}
 
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[compare, a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return (T)compare(a, *(group[0]));
-	})),
+	}),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// todo: consider correctness
@@ -1109,13 +1098,13 @@ varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare,
 		return *audience.begin(); // share nodes when possible
 	}
 
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[compare, b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return (T) compare(*(group[0]), b);
-	})),
+	}),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// todo: consider correctness
@@ -1155,7 +1144,7 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 		return conditional(a, outconst[0], compare, name);
 	}
 
-	return immutable<T>::get(std::vector<inode<T>*>{a, b},
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>(
 	[compare](const T** group, size_t n) -> T
 	{
@@ -1198,13 +1187,13 @@ varptr<T> operator + (T a, const varptr<T> b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[a](const T** group, size_t n) -> T
 	 {
 	 	assert(n == 1);
 		return a + *(group[0]);
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = g'(x)
@@ -1239,13 +1228,13 @@ varptr<T> operator + (const varptr<T> a, T b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) + b;
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)
@@ -1273,7 +1262,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 	{
 		return add_axial_a(a, b, *baxis);
 	}
-	return add_helper<T>(a, b, "add",
+	return add_helper<T>(a, b, "add", elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1315,13 +1304,13 @@ varptr<T> operator - (T a, const varptr<T> b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a - *(group[0]);
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = -g'(x)
@@ -1356,13 +1345,13 @@ varptr<T> operator - (const varptr<T> a, T b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) - b;
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)
@@ -1390,7 +1379,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 	{
 		return sub_axial_a(a, b, *baxis);
 	}
-	return sub_helper<T>(a, b, "sub",
+	return sub_helper<T>(a, b, "sub", elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1440,12 +1429,13 @@ varptr<T> operator * (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>(
+	elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a * *(group[0]);
-	})),
+	}),
 	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = c*g'(x)
@@ -1488,12 +1478,13 @@ varptr<T> operator * (const varptr<T> a, T b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>(
+	elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) * b;
-	})),
+	}),
 	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = c*f'(x)
@@ -1521,7 +1512,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 	{
 		return mul_axial_a(a, b, *baxis);
 	}
-	return mul_helper<T>(a, b, "mul",
+	return mul_helper<T>(a, b, "mul", elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1574,13 +1565,13 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[a](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return a / *(group[0]);
-	})),
+	}),
 	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(c, g(x)) = -c*g'(x)/g^2(x)
@@ -1621,13 +1612,13 @@ varptr<T> operator / (const varptr<T> a, T b)
 	{
 		return *audience.begin(); // share nodes when possible
 	}
-	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
-	unary_elem_agg(ELEM_FUNC<T>(
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
+	new transfer_func<T>({ unary_map },
 	[b](const T** group, size_t n) -> T
 	{
 		assert(n == 1);
 		return *(group[0]) / b;
-	})),
+	}),
 	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), c) = f'(x)/c
@@ -1655,7 +1646,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 	{
 		return div_axial_a(a, b, *baxis);
 	}
-	return div_helper<T>(a, b, "div",
+	return div_helper<T>(a, b, "div", elementary_shaper,
 	binary_elem_agg(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1678,6 +1669,7 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
+									 binary_axial_shape(axis_a, true),
 	binary_axial_left(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1699,6 +1691,7 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
+									 binary_axial_shape(axis_b, false),
 	binary_axial_right(
 	ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
@@ -1720,6 +1713,7 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
+									 binary_axial_shape(axis_a, true),
 	binary_axial_left<T>(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1741,6 +1735,7 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
+									 binary_axial_shape(axis_b, false),
 	binary_axial_right<T>(ELEM_FUNC<T>(
 	[](const T** group, size_t n) -> T
 	{
@@ -1762,6 +1757,7 @@ varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
+									 binary_axial_shape(axis_a, true),
 	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1785,6 +1781,7 @@ varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
+									 binary_axial_shape(axis_b, false),
 	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1808,6 +1805,7 @@ varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
+									 binary_axial_shape(axis_a, true),
 	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);
@@ -1831,6 +1829,7 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
+									 binary_axial_shape(axis_b, false),
 	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		assert(n == 2);

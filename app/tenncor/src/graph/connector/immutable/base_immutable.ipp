@@ -557,7 +557,7 @@ void merged_immutable<T>::forward_pass (void)
 	std::function<tensorshape(std::vector<tensorshape>,typename iconnector<T>::conn_summary&)>(
 	[&shape_map](std::vector<tensorshape> args, typename iconnector<T>::conn_summary& s) -> tensorshape
 	{
-		tensorshape outs = s.Nf_->calc_shape(args);
+		tensorshape outs = s.shaper_(args);
 		shape_map[s.id_] = outs;
 		return outs;
 	}));

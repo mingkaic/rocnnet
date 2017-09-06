@@ -313,8 +313,8 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b.get())) immb->mergible_ = false;
 
 	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{a, b},
-	new transfer_func<T>(get_matmul_shaper(transposeA, transposeB),
-	{ get_matmul_mapper(transposeA, 0, 1), get_matmul_mapper(transposeB, 1, 0) },
+	get_matmul_shaper(transposeA, transposeB),
+	new transfer_func<T>({ get_matmul_mapper(transposeA, 0, 1), get_matmul_mapper(transposeB, 1, 0) },
 	ELEM_FUNC<T>([](const T** group, size_t n) -> T
 	{
 		T accum = 0;
