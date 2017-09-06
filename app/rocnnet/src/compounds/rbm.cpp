@@ -123,6 +123,7 @@ nnet::updates_t rbm::train (generators_t& gens,
 	return uvec;
 }
 
+// implementation taken from http://deeplearning.net/tutorial/rbm.html
 double rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t x_idx) const
 {
 	// zeros everywhere except for x-axis = x_idx (x is the first dimension)
@@ -135,7 +136,12 @@ double rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t
 	nnet::varptr<double> fe_xi_flip = free_energy(xi_flip);
 
 	nnet::varptr<double> cost = nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
-	return nnet::expose<double>(cost)[0];
+	double cost_scalar = nnet::expose<double>(cost)[0];
+
+	delete one_i.get();
+	delete xi.get();
+
+	return cost_scalar;
 }
 
 std::vector<nnet::variable<double>*> rbm::get_variables (void) const
@@ -225,6 +231,9 @@ void fit (rbm& model, std::vector<double> batch, rbm_param params)
 		{
 			trainer(true);
 		}
+
+		double cost = model.get_pseudo_likelihood_cost(in, i);
+		std::cout << "Training epoch " << i << ", cost is " << cost << std::endl;
 	}
 }
 

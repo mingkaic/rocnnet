@@ -11,8 +11,8 @@
 
 struct test_params
 {
-	size_t n_epoch_;
-	std::string outdir_;
+	size_t n_epoch_ = 10;
+	std::string outdir_ = ".";
 };
 
 void test_rbm(xy_data* train, xy_data* test, test_params params)
@@ -41,8 +41,6 @@ void test_rbm(xy_data* train, xy_data* test, test_params params)
 		std::vector<double> itest(it, et);
 
 		test_in = itest; // push update
-		double cost = model.get_pseudo_likelihood_cost(test_in, i);
-
 		std::vector<double> out = nnet::expose<double>(test_out);
 		for (double o : out)
 		{
