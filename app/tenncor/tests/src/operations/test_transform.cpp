@@ -278,9 +278,9 @@ TEST(TRANSFORM, Compress_B005)
 	FUZZ::reset_logger();
 	size_t compress_index;
 	AGGREGATE<double> compression =
-	[](double, double b) -> double
+	[](double a, double b) -> double
 	{
-		return b;
+		return a + b;
 	};
 
 	PARAM_EVAL<size_t> compressparam =
@@ -312,7 +312,7 @@ TEST(TRANSFORM, Compress_B005)
 			}
 
 			size_t outidx = outshape.flat_idx(incoord);
-			out[outidx] = in[i];
+			out[outidx] += in[i];
 		}
 		return out;
 	};

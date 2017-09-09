@@ -40,8 +40,8 @@ static inline SHAPER binary_axial_shape (size_t axis, bool left)
 	return
 	[axis, left](std::vector<tensorshape> shapes) -> tensorshape
 	{
-		tensorshape shape1;
-		tensorshape shape2;
+		tensorshape shape1; // axial shape
+		tensorshape shape2; // real shape
 		if (left)
 		{
 			shape1 = shapes[0];
@@ -61,13 +61,13 @@ static inline SHAPER binary_axial_shape (size_t axis, bool left)
 		{
 			s2list = std::vector<size_t>(s2list.begin()+1, s2list.end());
 		}
-		else if (axis < s2list.size())
+		else if (axis == s2list.size() - 1)
 		{
-			s2list[axis] = 1;
+			s2list.pop_back();
 		}
 		else
 		{
-			s2list.push_back(1);
+			s2list[axis] = 1;
 		}
 		if (false == shape1.is_compatible_with(tensorshape(s2list)))
 		{
@@ -86,7 +86,7 @@ static inline SHAPER binary_axial_shape (size_t axis, bool left)
 }
 
 template <typename T>
-static TRANSFER_FUNC<T> binary_elem_agg (AGGREGATE<T> aggregate)
+static TRANSFER_FUNC<T> binary_elem (AGGREGATE<T> aggregate)
 {
 	return [aggregate](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
@@ -119,26 +119,25 @@ static TRANSFER_FUNC<T> binary_axial (AGGREGATE<T> aggregate, size_t axis, bool 
 	{
 		assert(2 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		size_t n_axis = shapes.ins_[idx].n_elems();
 		std::vector<size_t> olist = shapes.outs_.as_list();
 		std::vector<size_t> ilist = shapes.ins_[idx].as_list();
 
-		std::vector<size_t> coords;
-		for (size_t i = 0; i < n_elems; i++)
+		if (1 == shapes.ins_[idx].n_elems())
 		{
-			size_t axis_idx;
-			if (1 < n_axis)
+			for (size_t i = 0; i < n_elems; i++)
 			{
-				axis_idx = 0;
+				dest[i] = aggregate(srcs[idx][0], srcs[(idx + 1) % 2][i]);
 			}
-			else
+		}
+		else
+		{
+			for (size_t i = 0; i < n_elems; i++)
 			{
-				coords = shapes.outs_.coordinate_from_idx(i);
+				size_t axis_idx = i;
 				if (axis == 0 && ilist[axis] != olist[axis])
 				{
-					if (ilist[axis] == olist[axis+1])
-						coords = std::vector<size_t>(coords.begin()+1, coords.end());
-					else
+					std::vector<size_t> coords = shapes.outs_.coordinate_from_idx(i);
+					if (ilist[axis] != olist[axis+1])
 					{
 						std::stringstream ss;
 						ss << "failed to map ";
@@ -148,14 +147,17 @@ static TRANSFER_FUNC<T> binary_axial (AGGREGATE<T> aggregate, size_t axis, bool 
 						ss << " along axis 0";
 						throw std::logic_error(ss.str());
 					}
+					coords = std::vector<size_t>(coords.begin()+1, coords.end());
+					axis_idx = shapes.ins_[idx].flat_idx(coords);
 				}
-				else
+				else if (axis >= ilist.size() || (ilist[axis] == 1 && olist[axis] > 1))
 				{
+					std::vector<size_t> coords = shapes.outs_.coordinate_from_idx(i);
 					coords[axis] = 0;
+					axis_idx = shapes.ins_[idx].flat_idx(coords);
 				}
-				axis_idx = shapes.ins_[idx].flat_idx(coords);
+				dest[i] = aggregate(srcs[idx][axis_idx], srcs[(idx + 1) % 2][i]);
 			}
-			dest[i] = aggregate(srcs[idx][axis_idx], srcs[(idx + 1) % 2][i]);
 		}
 	};
 }
@@ -1094,7 +1096,7 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	new transfer_func<T>(binary_elem_agg(
+	new transfer_func<T>(binary_elem(
 	AGGREGATE<T>([compare](T left, T right) -> T
 	{
 		return (T) compare(left, right);
@@ -1218,7 +1220,7 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		return add_axial_a(a, b, *baxis);
 	}
 	return add_helper<T>(a, b, "add", elementary_shaper,
-	binary_elem_agg(
+	binary_elem(
 	AGGREGATE<T>([](const T left, const T right) -> T
 	{
 		return left + right;
@@ -1341,7 +1343,7 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		return sub_axial_a(a, b, *baxis);
 	}
 	return sub_helper<T>(a, b, "sub", elementary_shaper,
-	binary_elem_agg(
+	binary_elem(
 	AGGREGATE<T>([](const T left, const T right) -> T
 	{
 		return left - right;
@@ -1480,7 +1482,7 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		return mul_axial_a(a, b, *baxis);
 	}
 	return mul_helper<T>(a, b, "mul", elementary_shaper,
-	binary_elem_agg(
+	binary_elem(
 	AGGREGATE<T>([](const T left, const T right) -> T
 	{
 		return left * right;
@@ -1620,7 +1622,7 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		return div_axial_a(a, b, *baxis);
 	}
 	return div_helper<T>(a, b, "div", elementary_shaper,
-	binary_elem_agg(
+	binary_elem(
 	AGGREGATE<T>([](const T left, const T right) -> T
 	{
 		return left / right;
@@ -1645,7 +1647,7 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left + right;
-	}), axis_a, false),
+	}), axis_a, true),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1665,7 +1667,7 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left + right;
-	}), axis_b, true),
+	}), axis_b, false),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1685,7 +1687,7 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left - right;
-	}), axis_a, false),
+	}), axis_a, true),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1705,7 +1707,7 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left - right;
-	}), axis_b, true),
+	}), axis_b, false),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1725,7 +1727,7 @@ varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left * right;
-	}), axis_a, false),
+	}), axis_a, true),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
@@ -1748,7 +1750,7 @@ varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left * right;
-	}), axis_b, true),
+	}), axis_b, false),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
@@ -1771,7 +1773,7 @@ varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left / right;
-	}), axis_a, false),
+	}), axis_a, true),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
@@ -1794,7 +1796,7 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
 		return left / right;
-	}), axis_b, true),
+	}), axis_b, false),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)

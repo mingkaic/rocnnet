@@ -253,10 +253,16 @@ varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
 						coords = {0};
 						coords.insert(coords.end(), temp.begin(), temp.end());
 					}
-					for (size_t j = 0; j < adim; j++)
+					else
+					{
+						coords[*index] = 0;
+					}
+					size_t src_idx = shape.ins_[0].flat_idx(coords);
+					dest[i] = src[0][src_idx];
+					for (size_t j = 1; j < adim; j++)
 					{
 						coords[*index] = j;
-						size_t src_idx = shape.ins_[0].flat_idx(coords);
+						src_idx = shape.ins_[0].flat_idx(coords);
 						dest[i] = collector(dest[i], src[0][src_idx]);
 					}
 				}
