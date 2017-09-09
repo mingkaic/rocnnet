@@ -38,8 +38,6 @@ public:
 	void clear_ignore (void);
 	
 	void set_learning_rate (double learning_rate);
-	
-	void set_grad_optimization (bool optimize);
 
 protected:
 	virtual gd_updater* clone_impl (void) const = 0;
@@ -52,8 +50,6 @@ protected:
 	double learning_rate_;
 	
 private:
-	bool graph_optimize_ = false;
-	
 	std::unordered_set<variable<double>*> ignored_;
 };
 

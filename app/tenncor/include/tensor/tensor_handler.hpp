@@ -22,10 +22,14 @@ namespace nnet
 
 using SHAPE_EXTRACT = std::function<std::vector<size_t>(tensorshape&)>;
 
-using OUT_MAPPER = std::function<std::vector<size_t>(size_t,tensorshape&,const tensorshape&)>;
+struct shape_io
+{
+	tensorshape outs_;
+	std::vector<tensorshape> ins_;
+};
 
 template <typename T>
-using ELEM_FUNC = std::function<T(const T**,size_t)>;
+using TRANSFER_FUNC = std::function<void(T*, std::vector<const T*>, shape_io)>;
 
 //! Generic Tensor Handler
 template <typename T>
@@ -49,16 +53,16 @@ protected:
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void) = 0;
 
-	T* get_raw (tensor<T>* ten) const
+	T* get_raw (tensor<T>& ten) const
 	{
-		assert(ten->is_alloc());
-		return ten->raw_data_;
+		assert(ten.is_alloc());
+		return ten.raw_data_;
 	}
 
-	const T* get_raw (const tensor<T>* ten) const
+	const T* get_raw (const tensor<T>& ten) const
 	{
-		assert(ten->is_alloc());
-		return ten->raw_data_;
+		assert(ten.is_alloc());
+		return ten.raw_data_;
 	}
 };
 
@@ -82,13 +86,13 @@ public:
 	}
 
 	//! extract tensor information and store in out
-	void operator () (tensor<T>* out, std::vector<tensorshape>& ts) const
+	void operator () (tensor<T>& out, std::vector<tensorshape>& ts) const
 	{
 		T* raw = this->get_raw(out);
-		std::vector<size_t> shapes = out->get_shape().as_list();
+		std::vector<size_t> shapes = out.get_shape().as_list();
 		size_t ncol = shapes[0];
 		size_t nrow = shapes.size() < 2 ? 1 : shapes[1];
-		std::fill(raw, raw+out->n_elems(), (T) 1);
+		std::fill(raw, raw + out.n_elems(), (T) 1);
 		for (size_t i = 0; i < nrow; i++)
 		{
 			std::vector<size_t> sv = shaper_(ts[i]);
@@ -98,6 +102,8 @@ public:
 			}
 		}
 	}
+
+	SHAPE_EXTRACT get_shaper (void) const { return shaper_; }
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -134,11 +140,11 @@ public:
 	assign_func<T>* move (void);
 
 	//! performs tensor transfer function given an input tensor
-	void operator () (tensor<T>* out, const tensor<T>* arg,
+	void operator () (tensor<T>& out, const tensor<T>& arg,
 		std::function<T(const T&,const T&)> f = default_assign<T>) const;
 
 	//! performs tensor transfer function given an input array
-	void operator () (tensor<T>* out, std::vector<T> indata,
+	void operator () (tensor<T>& out, std::vector<T> indata,
 		std::function<T(const T&,const T&)> f = default_assign<T>) const;
 
 protected:
@@ -155,8 +161,7 @@ class transfer_func : public itensor_handler<T>
 {
 public:
 	//! tensor handler accepts a shape manipulator and a forward transfer function
-	transfer_func (std::vector<OUT_MAPPER> outidxer,
-		ELEM_FUNC<T> aggregate);
+	transfer_func (TRANSFER_FUNC<T> transfer);
 
 	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
 	//! clone function for copying from itensor_handler
@@ -165,20 +170,10 @@ public:
 	//! clone function for copying from itensor_handler
 	transfer_func<T>* move (void);
 
-	//! performs tensor transfer function given an input cache
-	void operator () (tensor<T>* out, std::vector<const T*>& args);
+	//! performs tensor transfer function given an input tensors
+	void operator () (tensor<T>& out, std::vector<const tensor<T>*>& args);
 
-	// todo: test
-	void operator () (std::vector<T>& out, std::vector<const T*>& args);
-
-	// only need to execute once per immutable
-	std::vector<const T*> prepare_args (tensorshape outshape,
-		std::vector<const tensor<T>*> args) const;
-
-	// todo: test
-	// mimicks preparation from tensors
-	std::vector<const T*> prepare_args (tensorshape outshape,
-		std::vector<std::pair<T*,tensorshape> > args) const;
+	TRANSFER_FUNC<T> get_transfer (void) const { return transfer_; }
 
 protected:
 	//! clone implementation for copying from itensor_handler
@@ -187,12 +182,8 @@ protected:
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void);
 
-	//! element-wise aggregate elements
-	ELEM_FUNC<T> aggregate_;
-
-// todo: move out to immutable, since handlers should not say WHAT and WHERE the data is, just HOW it is calculated
-	//! element-wise reference input from output (only used once when populating new tensor)
-	std::vector<OUT_MAPPER> outidxer_;
+private:
+	TRANSFER_FUNC<T> transfer_;
 };
 
 //! Initializer Handler
@@ -208,7 +199,7 @@ public:
 	initializer<T>* move (void);
 
 	//! perform initialization
-	void operator () (tensor<T>* out);
+	void operator () (tensor<T>& out);
 
 protected:
 	virtual void calc_data (T* dest, tensorshape outshape) = 0;

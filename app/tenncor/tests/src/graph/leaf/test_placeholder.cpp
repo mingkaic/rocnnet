@@ -199,7 +199,7 @@ TEST(PLACHOLDER, AssignTensor_G003)
 	const_init<double> cinit(c);
 	tensor<double> rawtens(shape);
 	tensor<double>* rawtenptr = &rawtens;
-	cinit(rawtenptr);
+	cinit(*rawtenptr);
 
 	mock_connector conn({&place}, label2);
 	conn.inst_ = "conn";

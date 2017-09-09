@@ -72,6 +72,13 @@ protected:
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 
+	// >>>> PROTECTED CLONER <<<<
+	//! create a deep copy of this with args
+	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const
+	{
+		return new immutable<T>(args, shaper_, Nf_, ginit_, this->get_label());
+	}
+
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
 	virtual void forward_pass (void);
@@ -91,15 +98,11 @@ private:
 
 	//! forward transfer function
 	//! calculates forward passing data
-	std::shared_ptr<transfer_func<T> > Nf_ = nullptr;
+	transfer_func<T>* Nf_ = nullptr;
 
 	//! backward transfer function to
 	//! lazy instantiate gradient cache values
 	BACK_MAP<T> ginit_;
-
-	//! pointers to raw_ptrs of dependency tensors,
-	//! order by corresponding output index
-	std::vector<const T*> temp_in_;
 };
 
 }

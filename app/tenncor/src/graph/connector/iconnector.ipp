@@ -52,10 +52,7 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 	{
 		iobserver::operator = (other);
 		inode<T>::operator = (other);
-		jacobians_ = other.jacobians_;
-		// this copies other's dependencies so, this and other share a graph
-		g_man_->suicide(this);
-		g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+		copy_helper(other);
 	}
 	return *this;
 }
@@ -67,12 +64,7 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 	{
 		iobserver::operator = (std::move(other));
 		inode<T>::operator = (std::move(other));
-		jacobians_ = std::move(other.jacobians_);
-		// this copies other's dependencies so, this and other share a graph
-		g_man_->suicide(this);
-		g_man_ = graph_manager::get(&other, this);
-		other.g_man_->suicide(&other);
-		other.g_man_ = nullptr;
+		move_helper(std::move(other));
 	}
 	return *this;
 }
@@ -154,7 +146,7 @@ void iconnector<T>::set_jacobian_front (JTRANSFER<T> jac, std::vector<variable<T
 {
 	for (variable<T>* l : leaves)
 	{
-		jacobians_[l].list_.push_front(jac);
+		jacobians_[l].list_.push_front({jac, this});
 	}
 }
 
@@ -163,7 +155,7 @@ void iconnector<T>::set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>
 {
 	for (variable<T>* l : leaves)
 	{
-		jacobians_[l].list_.push_back(jac);
+		jacobians_[l].list_.push_back({jac, this});
 	}
 }
 
@@ -216,23 +208,17 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
 	inode<T>(other),
-	iobserver(other),
-	jacobians_(other.jacobians_)
+	iobserver(other)
 {
-	if (g_man_) g_man_->suicide(this);
-	g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+	copy_helper(other);
 }
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
 	inode<T>(std::move(other)),
-	iobserver(std::move(other)),
-	jacobians_(std::move(other.jacobians_))
+	iobserver(std::move(other))
 {
-	if (g_man_) g_man_->suicide(this);
-	g_man_ = graph_manager::get(&other, this);
-	other.g_man_->suicide(&other);
-	other.g_man_ = nullptr;
+	move_helper(std::move(other));
 }
 
 template <typename T>

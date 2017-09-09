@@ -61,7 +61,7 @@ tensor<T>& variable<T>::initialize (void)
 		throw std::runtime_error(this->get_label() + " data is not allocated");
 	}
 	initializer<T>* init = static_cast<initializer<T>*>(this->init_);
-	(*init)(this->data_);
+	(*init)(*(this->data_));
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
@@ -80,7 +80,7 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 		throw std::runtime_error(ss.str());
 	}
 	initializer<T>* init = static_cast<initializer<T>*>(this->init_);
-	(*init)(this->data_);
+	(*init)(*(this->data_));
 	this->is_init_ = true;
 	this->notify(UPDATE);
 	return *this->data_;
@@ -94,7 +94,7 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
-		this->assigner_(out_tens, in_tens);
+		this->assigner_(*out_tens, *in_tens);
 		if (notify)
 		{
 			this->notify(notification::UPDATE);
@@ -110,7 +110,7 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
-		this->assigner_(out_tens, in_tens,
+		this->assigner_(*out_tens, *in_tens,
 			[](const T& e1, const T& e2) { return e1 + e2; });
 		if (notify)
 		{
@@ -127,7 +127,7 @@ variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
-		this->assigner_(out_tens, in_tens,
+		this->assigner_(*out_tens, *in_tens,
 			[](const T& e1, const T& e2) { return e1 - e2; });
 		if (notify)
 		{

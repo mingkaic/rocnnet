@@ -19,6 +19,13 @@ namespace nnet
 
 iobserver::~iobserver (void)
 {
+	// kill all descendent dependents
+	std::unordered_set<subject*> deps = ondeath_deps_;
+	for (subject* dep : deps)
+	{
+		delete dep;
+	}
+
 	size_t ndeps = dependencies_.size();
 	for (size_t i = 0; i < ndeps; i++)
 	{

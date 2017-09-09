@@ -29,6 +29,4 @@ template class immutable<double>;
 
 template class immutable<unsigned>;
 
-template class merged_immutable<double>;
-
 }

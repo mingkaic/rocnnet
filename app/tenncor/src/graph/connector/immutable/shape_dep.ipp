@@ -90,7 +90,6 @@ shape_dep<T>::shape_dep (std::vector<inode<T>*> args,
 base_immutable<T>(args, label),
 shaper_(new shape_extracter<T>(forward))
 {
-	this->mergible_ = false;
 	this->data_ = new tensor<T>(shape);
 	this->jacobians_.clear();
 	this->update({});
@@ -131,7 +130,7 @@ void shape_dep<T>::forward_pass (void)
 	{
 		shapes.push_back(this->take_eval(static_cast<inode<T>*>(sub))->get_shape());
 	}
-	(*shaper_)(this->data_, shapes);
+	(*shaper_)(*this->data_, shapes);
 }
 
 template <typename T>

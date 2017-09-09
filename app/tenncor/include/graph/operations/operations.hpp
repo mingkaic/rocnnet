@@ -19,8 +19,15 @@
 
 #include "graph/connector/immutable/immutable.hpp"
 #include "graph/leaf/constant.hpp"
+#include "graph/operations/operation_utils.hpp"
 
 #pragma once
+
+template <typename T>
+using AGGREGATE = std::function<T(T, T)>;
+
+template <typename T>
+using REDUCE = std::function<T(std::vector<T>)>;
 
 namespace nnet
 {
@@ -201,7 +208,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 //! compresses data along dimensions specified by index
 //! unspecified index compresses all elements in the tensor (output is a scalar)
 template <typename T>
-varptr<T> compress (const varptr<T> a, ELEM_FUNC<T> collector,
+varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
 	optional<size_t> index, std::string name = "compress",
 	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop =
 	[](varptr<T> back, varptr<T>){ return back; });
@@ -227,7 +234,7 @@ varptr<T> reduce_mean (const varptr<T> a, optional<size_t> dimension = optional<
 //! unspecified dimension compresses all elements in the tensor (output is a scalar)
 //! takes left argument of compare if compare evaluates to true
 template <typename T>
-varptr<T> arg_compress (const varptr<T> a, ELEM_FUNC<T> compare,
+varptr<T> arg_compress (const varptr<T> a, REDUCE<T> search,
 	optional<size_t> dimension, std::string name = "argcompress");
 
 //! obtains the indices of the maximum value across specified dimension

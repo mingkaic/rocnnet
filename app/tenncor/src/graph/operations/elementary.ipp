@@ -11,7 +11,7 @@
 namespace nnet
 {
 
-inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
+static inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 {
 	tensorshape lastshape;
 	for (size_t i = 0, nshapes = shapes.size(); i < nshapes; ++i)
@@ -35,262 +35,7 @@ inline tensorshape elementary_shaper (std::vector<tensorshape> shapes)
 	return lastshape;
 }
 
-template <typename T>
-static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
-{
-	varptr<T> out = nullptr;
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (aconst && *aconst == (T) 0)
-	{
-		out = b;
-	}
-	else if (aconst && 1 == aconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(aconst);
-		out = outconst[0] + b;
-	}
-	else if (bconst && *bconst == (T) 0)
-	{
-		out = a;
-	}
-	else if (bconst && 1 == bconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(bconst);
-		out = a + outconst[0];
-	}
-	if (nullptr != out.get())
-	{
-		delete Nf;
-		return out;
-	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
-	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 &&
-				((args[0] == a.get() && args[1] == b.get()) ||
-				(args[1] == a.get() && args[0] == b.get())))
-			{
-				delete Nf;
-				return aud;
-			}
-		}
-	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
-}
-
-template <typename T>
-static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
-{
-	varptr<T> out = nullptr;
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (a.get() == b.get())
-	{
-		out = constant<T>::get(0);
-	}
-	else if (aconst && *aconst == (T) 0)
-	{
-		out = -b;
-	}
-	else if (aconst && 1 == aconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(aconst);
-		out = outconst[0] - b;
-	}
-	else if (bconst && *bconst == (T) 0)
-	{
-		out = a;
-	}
-	else if (bconst && 1 == bconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(bconst);
-		out = a - outconst[0];
-	}
-	if (nullptr != out.get())
-	{
-		delete Nf;
-		return out;
-	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
-	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
-			{
-				delete Nf;
-				return aud;
-			}
-		}
-	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
-}
-
-template <typename T>
-static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
-{
-	varptr<T> out = nullptr;
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (a.get() == b.get())
-	{
-		out = pow(a, 2);
-	}
-	else if (aconst && *aconst == (T) 0)
-	{
-		out = constant<T>::get(0);
-	}
-	else if (aconst && 1 == aconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(aconst);
-		out = outconst[0] * b;
-	}
-	else if (bconst && *bconst == (T) 0)
-	{
-		out = constant<T>::get(0);
-	}
-	else if (bconst && 1 == bconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(b);
-		out = a * outconst[0];
-	}
-	if (nullptr != out.get())
-	{
-		delete Nf;
-		return out;
-	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
-	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 &&
-				((args[0] == a.get() && args[1] == b.get()) ||
-				(args[1] == a.get() && args[0] == b.get())))
-			{
-				delete Nf;
-				return aud;
-			}
-		}
-	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
-}
-
-template <typename T>
-static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, transfer_func<T>* Nf, BACK_MAP<T> ginit)
-{
-	varptr<T> out = nullptr;
-	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
-	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
-	if (a.get() == b.get())
-	{
-		out = constant<T>::get(1);
-	}
-	else if (aconst && *aconst == (T)0)
-	{
-		out = constant<T>::get(0);
-	}
-	else if (aconst && 1 == aconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(aconst);
-		out = outconst[0] / b;
-	}
-	else if (bconst && *bconst == (T)0)
-	// don't allow infinity
-	{
-		delete Nf;
-		throw std::logic_error("divide by constant node of value zero");
-	}
-	else if (bconst && 1 == bconst->get_shape().n_elems())
-	{
-		std::vector<T> outconst = expose<T>(bconst);
-		out = a / outconst[0];
-	}
-	if (nullptr != out.get())
-	{
-		delete Nf;
-		return out;
-	}
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
-	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 && args[0] == a.get() && args[1] == b.get())
-			{
-				delete Nf;
-				return aud;
-			}
-		}
-	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, Nf, ginit, opname);
-}
-
-inline std::vector<size_t> unary_map (size_t i, tensorshape&, const tensorshape&)
-{
-	return {i};
-}
-
-inline std::vector<size_t> injective (size_t i, tensorshape& ashape, const tensorshape&)
-{
-	if (1 == ashape.n_elems()) return {0};
-	return {i};
-}
-
-template <typename T>
-inline transfer_func<T>* binary_elem_agg (ELEM_FUNC<T> aggregate)
-{
-	return new transfer_func<T>({ injective, injective }, aggregate);
-}
-
-inline OUT_MAPPER get_axis_mapper (size_t axis)
-{
-	return [axis](size_t i, tensorshape& inshape, const tensorshape& outshape) -> std::vector<size_t>
-	{
-		if (1 == inshape.n_elems()) return {0};
-		std::vector<size_t> olist = outshape.as_list();
-		std::vector<size_t> ilist = inshape.as_list();
-		std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-		if (axis == 0 && ilist[axis] != olist[axis])
-		{
-			if (ilist[axis] == olist[axis+1])
-				coord = std::vector<size_t>(coord.begin()+1, coord.end());
-			else
-			{
-				std::stringstream ss;
-				ss << "failed to map ";
-				print_shape(outshape, ss);
-				ss << " to ";
-				print_shape(inshape, ss);
-				ss << " along axis 0";
-				throw std::logic_error(ss.str());
-			}
-		}
-		else if (axis >= ilist.size() || (ilist[axis] == 1 && olist[axis] > 1))
-		{
-			coord[axis] = 0;
-		}
-		i = inshape.flat_idx(coord);
-		return { i };
-	};
-}
-
-inline SHAPER binary_axial_shape (size_t axis, bool left)
+static inline SHAPER binary_axial_shape (size_t axis, bool left)
 {
 	return
 	[axis, left](std::vector<tensorshape> shapes) -> tensorshape
@@ -305,7 +50,7 @@ inline SHAPER binary_axial_shape (size_t axis, bool left)
 		else
 		{
 			shape1 = shapes[1];
-			shape2 = shapes[2];
+			shape2 = shapes[0];
 		}
 
 		if (shape2.n_elems() == 1) return shape1;
@@ -341,15 +86,219 @@ inline SHAPER binary_axial_shape (size_t axis, bool left)
 }
 
 template <typename T>
-inline transfer_func<T>* binary_axial_left (ELEM_FUNC<T> aggregate, size_t axis)
+static TRANSFER_FUNC<T> binary_elem_agg (AGGREGATE<T> aggregate)
 {
-	return new transfer_func<T>({ get_axis_mapper(axis), injective }, aggregate);
+	return [aggregate](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		assert(2 == srcs.size());
+		size_t n_out = shapes.outs_.n_elems();
+		size_t n_left = shapes.ins_[0].n_elems();
+		size_t n_right = shapes.ins_[1].n_elems();
+		bool left_mul = n_left > 1;
+		bool right_mul = n_right > 1;
+		for (size_t i = 0; i < n_out; i++)
+		{
+			dest[i] = aggregate(srcs[0][i * left_mul], srcs[1][i * right_mul]);
+		}
+	};
 }
 
 template <typename T>
-inline transfer_func<T>* binary_axial_right (ELEM_FUNC<T> aggregate, size_t axis)
+static TRANSFER_FUNC<T> binary_axial (AGGREGATE<T> aggregate, size_t axis, bool left)
 {
-	return new transfer_func<T>({ injective, get_axis_mapper(axis) }, aggregate);
+	short idx = 0;
+	if (!left)
+	{
+		aggregate = [aggregate](T left_arg, T right_arg)
+		{
+			return aggregate(right_arg, left_arg);
+		};
+		idx = 1;
+	}
+	return [aggregate, axis, idx](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		assert(2 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		size_t n_axis = shapes.ins_[idx].n_elems();
+		std::vector<size_t> olist = shapes.outs_.as_list();
+		std::vector<size_t> ilist = shapes.ins_[idx].as_list();
+
+		std::vector<size_t> coords;
+		for (size_t i = 0; i < n_elems; i++)
+		{
+			size_t axis_idx;
+			if (1 < n_axis)
+			{
+				axis_idx = 0;
+			}
+			else
+			{
+				coords = shapes.outs_.coordinate_from_idx(i);
+				if (axis == 0 && ilist[axis] != olist[axis])
+				{
+					if (ilist[axis] == olist[axis+1])
+						coords = std::vector<size_t>(coords.begin()+1, coords.end());
+					else
+					{
+						std::stringstream ss;
+						ss << "failed to map ";
+						print_shape(shapes.outs_, ss);
+						ss << " to ";
+						print_shape(shapes.ins_[idx], ss);
+						ss << " along axis 0";
+						throw std::logic_error(ss.str());
+					}
+				}
+				else
+				{
+					coords[axis] = 0;
+				}
+				axis_idx = shapes.ins_[idx].flat_idx(coords);
+			}
+			dest[i] = aggregate(srcs[idx][axis_idx], srcs[(idx + 1) % 2][i]);
+		}
+	};
+}
+
+template <typename T>
+static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+{
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (aconst && *aconst == (T) 0)
+	{
+		return b;
+	}
+	else if (aconst && 1 == aconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(aconst);
+		return outconst[0] + b;
+	}
+	else if (bconst && *bconst == (T) 0)
+	{
+		return a;
+	}
+	else if (bconst && 1 == bconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(bconst);
+		return a + outconst[0];
+	}
+
+	if (inode<T>* parent = unordered_binary_parent_search(a.get(), b.get(), opname))
+	{
+		return parent;
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+}
+
+template <typename T>
+static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+{
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (a.get() == b.get())
+	{
+		return constant<T>::get(0);
+	}
+	else if (aconst && *aconst == (T) 0)
+	{
+		return -b;
+	}
+	else if (aconst && 1 == aconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(aconst);
+		return outconst[0] - b;
+	}
+	else if (bconst && *bconst == (T) 0)
+	{
+		return a;
+	}
+	else if (bconst && 1 == bconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(bconst);
+		return a - outconst[0];
+	}
+
+	if (inode<T>* parent = ordered_binary_parent_search(a.get(), b.get(), opname))
+	{
+		return parent;
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+}
+
+template <typename T>
+static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+{
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (a.get() == b.get())
+	{
+		return pow(a, 2);
+	}
+	else if (aconst && *aconst == (T) 0)
+	{
+		return constant<T>::get(0);
+	}
+	else if (aconst && 1 == aconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(aconst);
+		return outconst[0] * b;
+	}
+	else if (bconst && *bconst == (T) 0)
+	{
+		return constant<T>::get(0);
+	}
+	else if (bconst && 1 == bconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(b);
+		return a * outconst[0];
+	}
+
+	if (inode<T>* parent = unordered_binary_parent_search(a.get(), b.get(), opname))
+	{
+		return parent;
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+}
+
+template <typename T>
+static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+{
+	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
+	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
+	if (a.get() == b.get())
+	{
+		return constant<T>::get(1);
+	}
+	else if (aconst && *aconst == (T)0)
+	{
+		return constant<T>::get(0);
+	}
+	else if (aconst && 1 == aconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(aconst);
+		return outconst[0] / b;
+	}
+	else if (bconst && *bconst == (T)0)
+	// don't allow infinity
+	{
+		throw std::logic_error("divide by constant node of value zero");
+	}
+	else if (bconst && 1 == bconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(bconst);
+		return a / outconst[0];
+	}
+
+	if (inode<T>* parent = ordered_binary_parent_search(a.get(), b.get(), opname))
+	{
+		return parent;
+	}
+	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
 }
 
 template <typename T>
@@ -366,7 +315,8 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 				leef.push_back(var);
 			}
 		}
-		iconn->set_jacobian_front([axis](inode<T>* root, NODE_MAN<T>) -> inode<T>*
+		iconn->set_jacobian_front(
+		[axis](inode<T>* root, std::vector<inode<T>*>, std::vector<inode<T>*>) -> inode<T>*
 		{
 			return reduce_sum(varptr<T>(root), axis);
 		}, leef);
@@ -384,11 +334,11 @@ varptr<T> identity (varptr<T> x)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return *(group[0]);
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::memcpy(dest, src[0], sizeof(T) * n_elems);
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -413,17 +363,17 @@ varptr<T> operator + (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "abs";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return +(*group[0]);
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return +data; });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -457,17 +407,17 @@ varptr<T> operator - (const varptr<T> a)
 		}
 	}
 	std::string opname = "neg";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return -(*group[0]);
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return -data; });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -498,11 +448,12 @@ varptr<T> sin (const varptr<T> a)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::sin((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::sin(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -529,17 +480,17 @@ varptr<T> cos (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "cos";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::cos((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::cos(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -566,17 +517,17 @@ varptr<T> tan (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "tan";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::tan((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::tan(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -605,17 +556,17 @@ varptr<T> csc (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "csc";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return 1/std::sin((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return 1 / std::sin(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -643,17 +594,17 @@ varptr<T> sec (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "sec";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return 1/std::cos((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return 1 / std::cos(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -681,17 +632,17 @@ varptr<T> cot (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "cot";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::cos((*group[0])) / std::sin((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::cos(data) / std::sin(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -719,17 +670,17 @@ varptr<T> exp (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "exp";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::exp((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::exp(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -756,17 +707,17 @@ varptr<T> sqrt (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "sqrt";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::sqrt((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::sqrt(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -793,17 +744,17 @@ varptr<T> round (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "round";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::round((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::round(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -829,17 +780,17 @@ varptr<T> log (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "log";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[](const T** group, size_t n) -> T
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::log((*group[0]));
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[](const T data) { return std::log(data); });
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -873,17 +824,17 @@ varptr<T> pow (const varptr<T> a, double scalar)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << "pow_" << scalar;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[scalar](const T** group, size_t n) -> T
+	new transfer_func<T>([scalar](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		return std::pow((*group[0]), scalar);
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[scalar](const T data) { return std::pow(data, scalar); });
 	}),
 	[scalar](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -912,20 +863,22 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << "clip_val_" << min << "_" << max;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[min, max](const T** group, size_t n) -> T
+	new transfer_func<T>([min, max](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		assert(n == 1);
-		T v = *(group[0]);
-		if (min > v) v = min;
-		else if (max < v) v = max;
-		return v;
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		std::transform(src[0], src[0] + n_elems, dest,
+		[min, max](const T data)
+		{
+			if (min > data) return min;
+			else if (max < data) return max;
+			return data;
+		});
 	}),
 	[min, max](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -952,32 +905,22 @@ varptr<T> l2norm (const varptr<T> a)
 		return constant<T>::get(l2norm);
 	}
 	std::string opname = "l2norm";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	[](std::vector<tensorshape>) { return std::vector<size_t>{1}; },
-	new transfer_func<T>({
-		[](size_t, tensorshape& ashape, const tensorshape&)
-		{
-			std::vector<size_t> outidx;
-			for (size_t j = 0, n = ashape.n_elems(); j < n; j++)
-			{
-				outidx.push_back(j);
-			}
-			return outidx;
-		}
-	},
-	[](const T** group, size_t n)
+	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
 	{
-		T l2norm = 0;
-		for (size_t i = 0; i < n; i++)
+		assert(1 == src.size());
+		size_t n_elems = shape.outs_.n_elems();
+		// l2norm = sqrt(sum_i=0:n(sqr(xi)))
+		dest[0] = std::sqrt(std::accumulate(src[0], src[0] + n_elems, (T) 0,
+		[](const T left, const T right)
 		{
-			l2norm += *(group[i]) * *(group[i]);
-		}
-		return std::sqrt(l2norm);
+			return left + right * right;
+		}));
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1012,25 +955,24 @@ varptr<T> clip_norm (const varptr<T> a, T cap)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << "clip_l2norm_" << cap;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{l2norm(a), a},
 	elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>([cap](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[cap](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 2);
-		T l2norm = *(group[0]);
-		T elem = *(group[1]);
-		if (l2norm > cap)
+		assert(2 == srcs.size());
+		T l2norm = srcs[0][0];
+		size_t n_out = shapes.outs_.n_elems();
+		std::transform(srcs[1], srcs[1] + n_out, dest,
+		[cap, l2norm](const T data)
 		{
-			// normalize
-			elem = elem * cap / l2norm;
-		}
-		return elem;
-	})),
+			return data * cap / l2norm;
+		});
+	}),
 	[cap](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> a = args.front().first;
@@ -1062,11 +1004,15 @@ varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare,
 	}
 
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[compare, a](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[compare, a](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return (T)compare(a, *(group[0]));
+		size_t n_out = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_out, dest,
+		[compare, a](const T data)
+		{
+			return (T) compare(a, data);
+		});
 	}),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1092,18 +1038,21 @@ varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare,
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << "conditional_" << name << "_" << b;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[compare, b](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[compare, b](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return (T) compare(*(group[0]), b);
+		size_t n_out = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_out, dest,
+		[compare, b](const T data)
+		{
+			return (T) compare(data, b);
+		});
 	}),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1145,12 +1094,11 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 	}
 
 	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>(
-	[compare](const T** group, size_t n) -> T
+	new transfer_func<T>(binary_elem_agg(
+	AGGREGATE<T>([compare](T left, T right) -> T
 	{
-		assert(n == 2);
-		return (T)compare(*(group[0]), *(group[1]));
-	})),
+		return (T) compare(left, right);
+	}))),
 	[compare, name](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		assert(args.size() == 2);
@@ -1188,11 +1136,15 @@ varptr<T> operator + (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[a](const T** group, size_t n) -> T
-	 {
-	 	assert(n == 1);
-		return a + *(group[0]);
+	new transfer_func<T>(
+	[a](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		{
+			return a + data;
+		});
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1223,17 +1175,20 @@ varptr<T> operator + (const varptr<T> a, T b)
 	}
 	if (b == (T)0) return a;
 	std::string opname = nnutils::formatter() << "add_" << b;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[b](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[b](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return *(group[0]) + b;
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		{
+			return data + b;
+		});
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1263,11 +1218,10 @@ varptr<T> operator + (const varptr<T> a, const varptr<T> b)
 		return add_axial_a(a, b, *baxis);
 	}
 	return add_helper<T>(a, b, "add", elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_elem_agg(
+	AGGREGATE<T>([](const T left, const T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) + *(group[1]);
+		return left + right;
 	})),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1305,11 +1259,15 @@ varptr<T> operator - (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[a](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[a](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return a - *(group[0]);
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		{
+			return a - data;
+		});
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1340,17 +1298,20 @@ varptr<T> operator - (const varptr<T> a, T b)
 	}
 	if (b == (T)0) return a;
 	std::string opname = nnutils::formatter() << "sub_" << b;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[b](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[b](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return *(group[0]) - b;
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		{
+			return data - b;
+		});
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1380,11 +1341,10 @@ varptr<T> operator - (const varptr<T> a, const varptr<T> b)
 		return sub_axial_a(a, b, *baxis);
 	}
 	return sub_helper<T>(a, b, "sub", elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_elem_agg(
+	AGGREGATE<T>([](const T left, const T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) - *(group[1]);
+		return left - right;
 	})),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1430,11 +1390,15 @@ varptr<T> operator * (T a, const varptr<T> b)
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[a](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[a](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return a * *(group[0]);
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		{
+			return a * data;
+		});
 	}),
 	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1472,18 +1436,21 @@ varptr<T> operator * (const varptr<T> a, T b)
 	if ((T) 1 == b) return a;
 	if ((T) -1 == b) return -a;
 	std::string opname = nnutils::formatter() << "mul_" << b;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[b](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[b](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return *(group[0]) * b;
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		{
+			return data * b;
+		});
 	}),
 	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1513,11 +1480,10 @@ varptr<T> operator * (const varptr<T> a, const varptr<T> b)
 		return mul_axial_a(a, b, *baxis);
 	}
 	return mul_helper<T>(a, b, "mul", elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_elem_agg(
+	AGGREGATE<T>([](const T left, const T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) * *(group[1]);
+		return left * right;
 	})),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1566,11 +1532,15 @@ varptr<T> operator / (T a, const varptr<T> b)
 		return *audience.begin(); // share nodes when possible
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[a](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[a](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return a / *(group[0]);
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		{
+			return a / data;
+		});
 	}),
 	[a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1607,17 +1577,20 @@ varptr<T> operator / (const varptr<T> a, T b)
 	}
 	if (b == (T) 1) return a;
 	std::string opname = nnutils::formatter() << "div_" << b;
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>({ unary_map },
-	[b](const T** group, size_t n) -> T
+	new transfer_func<T>(
+	[b](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		assert(n == 1);
-		return *(group[0]) / b;
+		assert(1 == srcs.size());
+		size_t n_elems = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		{
+			return data / b;
+		});
 	}),
 	[b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1647,11 +1620,10 @@ varptr<T> operator / (const varptr<T> a, const varptr<T> b)
 		return div_axial_a(a, b, *baxis);
 	}
 	return div_helper<T>(a, b, "div", elementary_shaper,
-	binary_elem_agg(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_elem_agg(
+	AGGREGATE<T>([](const T left, const T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) / *(group[1]);
+		return left / right;
 	})),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
@@ -1669,13 +1641,11 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
-									 binary_axial_shape(axis_a, true),
-	binary_axial_left(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_axial_shape(axis_a, true),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) + *(group[1]);
-	}), axis_a),
+		return left + right;
+	}), axis_a, false),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1691,13 +1661,11 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
-									 binary_axial_shape(axis_b, false),
-	binary_axial_right(
-	ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_axial_shape(axis_b, false),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) + *(group[1]);
-	}), axis_b),
+		return left + right;
+	}), axis_b, true),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1713,13 +1681,11 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
-									 binary_axial_shape(axis_a, true),
-	binary_axial_left<T>(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_axial_shape(axis_a, true),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) - *(group[1]);
-	}), axis_a),
+		return left - right;
+	}), axis_a, false),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1735,13 +1701,11 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
-									 binary_axial_shape(axis_b, false),
-	binary_axial_right<T>(ELEM_FUNC<T>(
-	[](const T** group, size_t n) -> T
+	binary_axial_shape(axis_b, false),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) - *(group[1]);
-	}), axis_b),
+		return left - right;
+	}), axis_b, true),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		varptr<T> ag = args.at(0).second;
@@ -1757,12 +1721,11 @@ varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
-									 binary_axial_shape(axis_a, true),
-	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_axial_shape(axis_a, true),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) * *(group[1]);
-	}), axis_a),
+		return left * right;
+	}), axis_a, false),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
@@ -1781,12 +1744,11 @@ varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
-									 binary_axial_shape(axis_b, false),
-	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_axial_shape(axis_b, false),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) * *(group[1]);
-	}), axis_b),
+		return left * right;
+	}), axis_b, true),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = f'(x)*g(x) + f(x)*g'(x)
@@ -1805,12 +1767,11 @@ varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
-									 binary_axial_shape(axis_a, true),
-	binary_axial_left<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_axial_shape(axis_a, true),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) / *(group[1]);
-	}), axis_a),
+		return left / right;
+	}), axis_a, false),
 	[axis_a](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)
@@ -1829,12 +1790,11 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
 	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
-									 binary_axial_shape(axis_b, false),
-	binary_axial_right<T>(ELEM_FUNC<T>([](const T** group, size_t n) -> T
+	binary_axial_shape(axis_b, false),
+	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
-		assert(n == 2);
-		return *(group[0]) / *(group[1]);
-	}), axis_b),
+		return left / right;
+	}), axis_b, true),
 	[axis_b](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
 		// h'(f(x), g(x)) = (f'(x)*g(x) - f(x)*g'(x))/g^2(x)

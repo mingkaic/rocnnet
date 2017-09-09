@@ -65,7 +65,7 @@ template varptr<double> extend (const varptr<double> a, size_t index, size_t mul
 
 varptr<double> comp_identity (varptr<double> back, varptr<double>) { return back; }
 
-template varptr<double> compress (const varptr<double> a, ELEM_FUNC<double> collector,
+template varptr<double> compress (const varptr<double> a, AGGREGATE<double> collector,
 	optional<size_t> index, std::string name = "compress",
 	std::function<varptr<double>(varptr<double>,varptr<double>)> bprop = comp_identity);
 
@@ -75,7 +75,7 @@ template varptr<double> reduce_sum (const varptr<double> a, optional<size_t> dim
 
 template varptr<double> reduce_mean (const varptr<double> a, optional<size_t> dimension = optional<size_t>());
 
-template varptr<double> arg_compress (const varptr<double> a, ELEM_FUNC<double> compare,
+template varptr<double> arg_compress (const varptr<double> a, REDUCE<double> compare,
 	optional<size_t> dimension, std::string name = "argcompress");
 
 template varptr<double> arg_max (const varptr<double> a, optional<size_t> dimension = optional<size_t>());

@@ -22,6 +22,7 @@ interesting ideas:
 
 tests:
 - improve tests (test base_immutable and immutable separately)
+- test axial binary operations
 
 need testing:
 - copying and moving observers on multiple unmanaged constants

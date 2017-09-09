@@ -31,7 +31,7 @@ using NODE_MAN = std::function<inode<T>*(inode<T>*)>;
 
 //! jacobian transfer function
 template <typename T>
-using JTRANSFER = std::function<inode<T>*(inode<T>*,NODE_MAN<T>)>;
+using JTRANSFER = std::function<inode<T>*(inode<T>*,std::vector<inode<T>*>,std::vector<inode<T>*>)>;
 
 //! calculate output shape from argument shapes
 using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
@@ -44,15 +44,12 @@ public:
 	struct conn_summary
 	{
 		conn_summary (std::string id, SHAPER shaper,
-			std::shared_ptr<transfer_func<T> > forward, BACK_MAP<T> back) :
+			TRANSFER_FUNC<T> forward, BACK_MAP<T> back) :
 				id_(id), shaper_(shaper), Nf_(forward), ginit_(back) {}
 
 		std::string id_;
-
 		SHAPER shaper_;
-
-		std::shared_ptr<transfer_func<T> > Nf_;
-
+		TRANSFER_FUNC<T> Nf_;
 		BACK_MAP<T> ginit_;
 
 		std::vector<std::string> arg_ids_;
@@ -124,7 +121,7 @@ protected:
 		JList (void) : uid_(nnutils::uuid(this)) {}
 
 		std::string uid_;
-		std::list<JTRANSFER<T> > list_;
+		std::list<std::pair<JTRANSFER<T>, inode<T>*> > list_;
 	};
 
 	//! graph info shareable between connectors
@@ -144,12 +141,82 @@ protected:
 	//! Update g_man_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
 
+	varptr<T> jacobian_call (varptr<T> out, variable<T>* leaf) const
+	{
+		auto jpair = this->jacobians_.find(leaf);
+		if (this->jacobians_.end() != jpair)
+		{
+			auto& jlist = jpair->second.list_;
+			for (auto it = jlist.rbegin(), et = jlist.rend(); it != et; it++)
+			{
+				const JTRANSFER<T>& jt = it->first;
+				// get the node where jacobian originate from
+				const inode<T>* orig = it->second;
+				// get origin arguments and its gradients
+				std::vector<inode<T>*> args = orig->get_arguments();
+				std::vector<inode<T>*> grads(args.size(), nullptr);
+				std::transform(args.begin(), args.end(), grads.begin(),
+				[this, leaf](inode<T>* arg)
+				{
+					return this->take_gradient(arg, leaf);
+				});
+				// operate on out using args and grad
+				out = jt(out, args, grads);
+			}
+		}
+		return out;
+	}
+
 	//! specialized operator: jacobian operators for each variable,
 	//! executed in derive
 	std::unordered_map<variable<T>*,JList> jacobians_;
 
 	//! graph meta_data/manager
 	graph_manager* g_man_ = nullptr;
+
+private:
+	void copy_helper (const iconnector<T>& other)
+	{
+		jacobians_ = other.jacobians_;
+		jacobian_correction(&other);
+		// this copies other's dependencies so, this and other share a graph
+		if (g_man_) g_man_->suicide(this);
+		g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+	}
+
+	void move_helper (iconnector<T>&& other)
+	{
+		jacobians_ = std::move(other.jacobians_);
+		jacobian_correction(&other);
+		// this copies other's dependencies so, this and other share a graph
+		if (g_man_)
+		{
+			g_man_->suicide(this);
+		}
+		g_man_ = graph_manager::get(&other, this);
+		if (other.g_man_)
+		{
+			other.g_man_->suicide(&other);
+			other.g_man_ = nullptr;
+		}
+	}
+
+	void jacobian_correction (const inode<T>* other)
+	{
+		// todo: move this down to immutable,
+		// since if mutable, parent can have existing jacobian_ with references to other
+		// assert this node has no parent (true when copying immutables)
+
+		// check other's jacobians leafset for references to other and set to this
+		for (auto& jpair : jacobians_)
+		{
+			std::list<std::pair<JTRANSFER<T>,inode<T>*> >& js = jpair.second.list_;
+			if (js.back().second == other)
+			{
+				js.back().second = this;
+			}
+		}
+	}
 };
 
 }

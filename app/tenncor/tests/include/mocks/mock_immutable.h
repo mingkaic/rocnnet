@@ -19,10 +19,14 @@ SHAPER get_testshaper (void)
 	return [shape](std::vector<tensorshape>) { return shape; };
 }
 
-double testforward (const double** out, size_t n)
+
+void testtrans (double* dest, std::vector<const double*> src, nnet::shape_io shape)
 {
-	if (n == 0 || nullptr == out[0]) return 0;
-	return *out[0];
+	if (src.size())
+	{
+		size_t n_elems = std::min(shape.outs_.n_elems(), shape.ins_[0].n_elems());
+		std::memcpy(dest, src[0], n_elems * sizeof(double));
+	}
 }
 
 
@@ -32,30 +36,15 @@ inode<double>* testback (std::vector<std::pair<inode<double>*,inode<double>*> >)
 }
 
 
-inline std::vector<OUT_MAPPER> nconfirm (std::vector<OUT_MAPPER> inmap, size_t nargs)
-{
-	if (inmap.size() < nargs)
-	{
-		for (size_t i = 0; i < nargs; i++)
-		{
-			inmap.push_back([](size_t i,tensorshape&,const tensorshape&){ return std::vector<size_t>{i}; });
-		}
-	}
-	return inmap;
-}
-
-
 class mock_immutable : public immutable<double>
 {
 public:
 	mock_immutable (std::vector<inode<double>*> args, std::string label,
 		SHAPER shapes = get_testshaper(),
-		ELEM_FUNC<double> elem = testforward,
-		std::vector<OUT_MAPPER> omap = {},
+		TRANSFER_FUNC<double> tfunc = testtrans,
 		BACK_MAP<double> back = testback) :
 	immutable<double>(args, shapes,
-	new transfer_func<double>(nconfirm(omap, args.size()), elem),
-	back, label) {}
+	new transfer_func<double>(tfunc), back, label) {}
 
 	std::function<void(mock_immutable*)> triggerOnDeath;
 
