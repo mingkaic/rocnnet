@@ -74,10 +74,7 @@ protected:
 
 	// >>>> PROTECTED CLONER <<<<
 	//! create a deep copy of this with args
-	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const
-	{
-		return new immutable<T>(args, shaper_, Nf_, ginit_, this->get_label());
-	}
+	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const;
 
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_

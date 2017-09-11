@@ -12,7 +12,13 @@ namespace nnet
 {
 
 template <typename T>
-immutable<T>::~immutable (void) {}
+immutable<T>::~immutable (void)
+{
+	if (Nf_)
+	{
+		delete Nf_;
+	}
+}
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
@@ -119,11 +125,22 @@ inode<T>* immutable<T>::move_impl (void)
 }
 
 template <typename T>
+base_immutable<T>* immutable<T>::arg_clone (std::vector<inode<T>*> args) const
+{
+	if (nullptr == Nf_)
+	{
+		throw std::exception(); // todo: better exception
+	}
+	return new immutable<T>(args, shaper_, Nf_->clone(), ginit_, this->get_label());
+}
+
+template <typename T>
 void immutable<T>::forward_pass (void)
 {
 	// shape and tensor extraction
 	std::vector<tensorshape> ts;
 	std::vector<const tensor<T>*> tens;
+	// todo: determine whether or not to move this tensor extraction up to base_immutable::update
 	for (subject* sub : this->dependencies_)
 	{
 		const tensor<T>* arg = this->take_eval(static_cast<inode<T>*>(sub));
@@ -183,6 +200,8 @@ void immutable<T>::backward_pass (variable<T>* leaf)
 template <typename T>
 void immutable<T>::copy_helper (const immutable& other)
 {
+	if (Nf_) delete Nf_;
+
 	ginit_ = other.ginit_;
 	Nf_ = other.Nf_->clone();
 }
@@ -190,6 +209,8 @@ void immutable<T>::copy_helper (const immutable& other)
 template <typename T>
 void immutable<T>::move_helper (immutable&& other)
 {
+	if (Nf_) delete Nf_;
+
 	ginit_ = std::move(other.ginit_);
 	Nf_ = other.Nf_->move();
 }

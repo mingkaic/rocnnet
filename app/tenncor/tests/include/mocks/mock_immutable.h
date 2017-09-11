@@ -22,9 +22,14 @@ SHAPER get_testshaper (void)
 
 void testtrans (double* dest, std::vector<const double*> src, nnet::shape_io shape)
 {
+	size_t n_elems = shape.outs_.n_elems();
+	std::uniform_real_distribution<double> dist(0, 13);
+
+	auto gen = std::bind(dist, nnutils::get_generator());
+	std::generate(dest, dest + n_elems, gen); // initialize to avoid errors
 	if (src.size())
 	{
-		size_t n_elems = std::min(shape.outs_.n_elems(), shape.ins_[0].n_elems());
+		n_elems = std::min(n_elems, shape.ins_[0].n_elems());
 		std::memcpy(dest, src[0], n_elems * sizeof(double));
 	}
 }

@@ -64,23 +64,9 @@ protected:
 	//! smart destruction: call when any observer is broken
 	virtual void death_on_broken (void) = 0;
 
-	void add_ondeath_dependent (subject* dep)
-	{
-		if (dep && ondeath_deps_.end() != ondeath_deps_.find(dep))
-		{
-			ondeath_deps_.insert(dep);
-			dep->attach_killer(this);
-		}
-	}
+	void add_ondeath_dependent (subject* dep);
 
-	void remove_ondeath_dependent (subject* dep)
-	{
-		if (dep && ondeath_deps_.end() != ondeath_deps_.find(dep))
-		{
-			ondeath_deps_.erase(dep);
-			dep->detach_killer(this);
-		}
-	}
+	void remove_ondeath_dependent (subject* dep);
 
 	// >>>> DEPENDENCY MUTATORS <<<<
 	//! subscribe: add dependency

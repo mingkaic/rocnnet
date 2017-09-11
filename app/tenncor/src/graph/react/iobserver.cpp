@@ -19,17 +19,17 @@ namespace nnet
 
 iobserver::~iobserver (void)
 {
+	size_t ndeps = dependencies_.size();
+	for (size_t i = 0; i < ndeps; i++)
+	{
+		remove_dependency(i);
+	}
+
 	// kill all descendent dependents
 	std::unordered_set<subject*> deps = ondeath_deps_;
 	for (subject* dep : deps)
 	{
 		delete dep;
-	}
-
-	size_t ndeps = dependencies_.size();
-	for (size_t i = 0; i < ndeps; i++)
-	{
-		remove_dependency(i);
 	}
 
 #ifdef EDGE_RCD
@@ -82,6 +82,24 @@ iobserver::iobserver (const iobserver& other)
 iobserver::iobserver (iobserver&& other)
 {
 	move_helper(std::move(other));
+}
+
+void iobserver::add_ondeath_dependent (subject* dep)
+{
+	if (dep && ondeath_deps_.end() == ondeath_deps_.find(dep))
+	{
+		ondeath_deps_.insert(dep);
+		dep->attach_killer(this);
+	}
+}
+
+void iobserver::remove_ondeath_dependent (subject* dep)
+{
+	if (dep && ondeath_deps_.end() != ondeath_deps_.find(dep))
+	{
+		ondeath_deps_.erase(dep);
+		dep->detach_killer(this);
+	}
 }
 
 void iobserver::add_dependency (subject* dep)
