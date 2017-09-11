@@ -15,6 +15,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(TENNCOR_DIR ${PROJECT_SOURCE_DIR}/tenncor)
 set(ROCNNET_DIR ${PROJECT_SOURCE_DIR}/rocnnet)
+set(BOOSTPY_DIR ${PROJECT_SOURCE_DIR}/boostpy)
 
 set(IO_DIR ${PROJECT_SOURCE_DIR}/tenncor_io)
 
@@ -72,6 +73,19 @@ include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
 add_library(${ROCNNET_DLIB} SHARED ${ROCNNET_SRC})
 target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})
 
+#>>>>>>>>>>>>>>>>>>>> BUILD BOOST-PYTHON INTERFACE <<<<<<<<<<<<<<<<<<<<
+
+set(RBP_LIB rboostpy_lib)
+set(RBP_INCLUDE ${BOOSTPY_DIR}/include)
+add_subdirectory(${BOOSTPY_DIR})
+
+find_package(PythonLibs REQUIRED)
+
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost COMPONENTS python numpy)
+
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
 set(DEMODIR ${PROJECT_SOURCE_DIR}/demo)
 # DEMO 1: gradient descent network
@@ -94,9 +108,9 @@ target_link_libraries(dq_demo ${ROCNNET_SLIB})
 if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
-include_directories(${ROCNNET_INCLUDE})
+include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 add_executable(rbm_demo ${DEMODIR}/rbm_demo.cpp)
-target_link_libraries(rbm_demo ${ROCNNET_SLIB})
+target_link_libraries(rbm_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig

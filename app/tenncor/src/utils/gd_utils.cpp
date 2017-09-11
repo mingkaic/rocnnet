@@ -31,20 +31,6 @@ updates_t gd_updater::calculate (inode<double>* root, grad_process intermediate_
 		}
 	}
 
-	if (graph_optimize_)
-	{
-		std::transform(gress.begin(), gress.end(), gress.begin(),
-		[](std::pair<inode<double>*,variable<double>*>& gpair)
-		{
-			if (base_immutable<double>* imm = dynamic_cast<base_immutable<double>*>(gpair.first))
-			{
-				solo_audience_merge(imm);
-				gpair.first = imm;
-			}
-			return gpair;
-		});
-	}
-
 	for (auto& gpair : gress)
 	{
 		varptr<double> gres = gpair.first;
@@ -75,11 +61,6 @@ void gd_updater::set_learning_rate (double learning_rate)
 	learning_rate_ = learning_rate;
 }
 
-void gd_updater::set_grad_optimization (bool optimize)
-{
-	graph_optimize_ = optimize;
-}
-
 
 vgb_updater::vgb_updater (double learning_rate) : gd_updater(learning_rate) {}
 		
@@ -97,7 +78,7 @@ gd_updater* vgb_updater::move_impl (void)
 	return new vgb_updater(std::move(*this));
 }
 
-nnet::variable_updater<double> vgb_updater::process_update (varptr<double>& gres,
+variable_updater<double> vgb_updater::process_update (varptr<double>& gres,
 	variable<double>* leaf, grad_process intermediate_process)
 {
 	// leaf = leaf - learning_rate * gres

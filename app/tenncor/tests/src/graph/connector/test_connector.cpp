@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-03-14.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_CONNECTOR_MODULE_TESTS
 
 #include <algorithm>
 
@@ -344,4 +344,4 @@ TEST(CONNECTOR, Descendent_H003)
 #endif /* DISABLE_CONNECTOR_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_CONNECTOR_MODULE_TESTS */

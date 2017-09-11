@@ -17,6 +17,8 @@
 namespace rocnnet
 {
 
+using FC_PAIR = std::pair<fc_layer*, VAR_FUNC>;
+
 class mlp : public icompound
 {
 public:
@@ -65,7 +67,7 @@ private:
 
 	size_t n_output_;
 
-	std::vector<HID_PAIR> layers_;
+	std::vector<FC_PAIR> layers_;
 };
 
 }

@@ -13,7 +13,7 @@
 namespace nnet
 {
 
-inline size_t min_pad(size_t insize)
+static inline size_t min_pad (size_t insize)
 {
 	size_t counter = 0;
 	while (insize > STRASSEN_THRESHOLD)
@@ -26,7 +26,7 @@ inline size_t min_pad(size_t insize)
 }
 
 template <typename T>
-static void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, size_t dimZ, size_t coord_map[8])
+static void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, size_t dimZ, size_t coord_map[4])
 {
 	for (size_t y = 0; y < dimY; y++)
 	{
@@ -175,9 +175,44 @@ static void strassen (T* c, const T* a, const T* b, size_t dimPad)
 	}
 }
 
-static inline SHAPER get_matmul_shaper (bool transposeA, bool transposeB)
+template <typename T>
+varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool transposeB)
 {
-	return [transposeA, transposeB](std::vector<tensorshape> shapes) -> tensorshape
+	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
+
+	inode<T>* adata = a.get();
+	inode<T>* bdata = b.get();
+	if (transposeA)
+	{
+		if (inode<T>* parent = unary_parent_search(adata, "transpose_0_1"))
+		{
+			adata = parent;
+		}
+		else
+		{
+			adata = transpose(a, {0, 1});
+		}
+	}
+	if (transposeB)
+	{
+		if (inode<T>* parent = unary_parent_search(bdata, "transpose_0_1"))
+		{
+			bdata = parent;
+		}
+		else
+		{
+			bdata = transpose(b, {0, 1});
+		}
+	}
+
+	std::string opname = "matmul";
+	if (inode<T>* parent = ordered_binary_parent_search(adata, bdata, opname))
+	{
+		return parent;
+	}
+
+	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{adata, bdata},
+	[](std::vector<tensorshape> shapes) -> tensorshape
 	{
 		tensorshape& t1s = shapes[0];
 		tensorshape& t2s = shapes[1];
@@ -187,6 +222,7 @@ static inline SHAPER get_matmul_shaper (bool transposeA, bool transposeB)
 		size_t rank1 = t1s.rank();
 		size_t rank2 = t2s.rank();
 
+		// account for vectors
 		size_t ax = rank1 ? al[0] : 0;
 		size_t ay = rank1 > 1 ? al[1] : 1;
 		size_t bx = rank2 ? bl[0] : 0;
@@ -227,20 +263,9 @@ static inline SHAPER get_matmul_shaper (bool transposeA, bool transposeB)
 			}
 		}
 
+		// get resulting shape
 		std::vector<size_t> res_shape;
-		if (ay == bx && transposeA && transposeB)
-		{
-			res_shape = {by, ax};
-		}
-		else if (ay == by && transposeA)
-		{
-			res_shape = {bx, ax};
-		}
-		else if (ax == bx && transposeB)
-		{
-			res_shape = {by, ay};
-		}
-		else if (ax == by && !transposeA && !transposeB)
+		if (ax == by)
 		{
 			res_shape = {bx, ay};
 		}
@@ -249,81 +274,71 @@ static inline SHAPER get_matmul_shaper (bool transposeA, bool transposeB)
 			std::stringstream ss;
 			ss << "matmul shapes ";
 			print_shape(t1s, ss);
-			if (transposeA) ss << "transposed ";
 			ss << "and ";
 			print_shape(t2s, ss);
-			if (transposeB) ss << "transposed ";
 			ss << "do not match";
 			throw std::logic_error(ss.str());
 		}
 		res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
 		return res_shape;
-	};
-}
-
-// todo: reconsider strassen
-// maps (i, j) to (0:n, j) if col_travel otherwise (i, 0:m)
-// behaves like value mapping for the first matrix of a matrix multiplication
-static inline OUT_MAPPER get_matmul_mapper (bool transp, size_t primary_travel, size_t secondary_travel)
-{
-	return [transp, primary_travel, secondary_travel](size_t i, tensorshape& ashape,
-		const tensorshape& outshape) -> std::vector<size_t>
+	},
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
-		std::vector<size_t> coord = outshape.coordinate_from_idx(i);
-		if (coord.size() < 2)
-		{
-			coord.push_back(0);
-		}
-		std::vector<size_t> alist = ashape.as_list();
-		std::vector<size_t> indices;
-		size_t idx = primary_travel;
-		if (transp)
-		{
-			idx = secondary_travel;
-			std::swap(coord[0], coord[1]);
-		}
-		size_t ntravel = alist.size() > idx ? alist[idx] : 1; // traverse along first dimension
-		for (size_t j = 0; j < ntravel; j++)
-		{
-			coord[idx] = j;
-			indices.push_back(ashape.sequential_idx(coord));
-		}
-		return indices;
-	};
-}
+		assert(2 == srcs.size());
+		std::vector<size_t> alist = shapes.ins_[0].as_list();
+		std::vector<size_t> blist = shapes.ins_[1].as_list();
+		size_t dim_z = alist[0];
+		size_t dim_y = alist[1];
+		size_t dim_x = blist[0];
 
-template <typename T>
-varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool transposeB)
-{
-	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	std::unordered_set<inode<T>*> audience;
-	std::string opname = nnutils::formatter() << "matmul" << transposeA << transposeB;
-	if (a->find_audience(opname, audience))
-	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 && args[0] == a && args[1] == b)
-				return aud;
-		}
-	}
+		// assert that beyond2d is same for A, B, and output C
+		size_t beyond2d = shapes.ins_[0].n_elems() / (dim_z * dim_y);
+		size_t dim_pad = min_pad(std::max(std::max(dim_x, dim_y), dim_z));
+		size_t coord_map[4] = {dim_z, 1, 1, dim_x};
 
-	if (base_immutable<T>* imma = dynamic_cast<base_immutable<T>*>(a.get())) imma->mergible_ = false;
-	if (base_immutable<T>* immb = dynamic_cast<base_immutable<T>*>(b.get())) immb->mergible_ = false;
-
-	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{a, b},
-	new transfer_func<T>(get_matmul_shaper(transposeA, transposeB),
-	{ get_matmul_mapper(transposeA, 0, 1), get_matmul_mapper(transposeB, 1, 0) },
-	ELEM_FUNC<T>([](const T** group, size_t n) -> T
-	{
-		T accum = 0;
-		for (size_t i = 0; i < n; i += 2)
+		for (size_t i = 0; i < beyond2d; i++)
 		{
-			accum += *(group[i]) * *(group[i+1]);
+			const T* rawa = srcs[0] + i * (dim_z * dim_y);
+			const T* rawb = srcs[1] + i * (dim_x * dim_z);
+			T* rawc = dest + i * (dim_x * dim_y);
+
+			if (dim_pad > STRASSEN_THRESHOLD)
+			{
+				size_t nmat = dim_pad * dim_pad;
+				T out[nmat];
+				T a[nmat];
+				T b[nmat];
+				memset(a, 0, sizeof(T) * nmat);
+				memset(b, 0, sizeof(T) * nmat);
+				for (size_t y = 0; y < dim_y; y++)
+				{
+					for (size_t z = 0; z < dim_z; z++)
+					{
+						size_t aidx = coord_map[0] * y + coord_map[1] * z;
+						a[z + dim_pad * y] = rawa[aidx];
+					}
+				}
+				for (size_t z = 0; z < dim_z; z++)
+				{
+					for (size_t x = 0; x < dim_x; x++)
+					{
+						size_t bidx = coord_map[2] * x + coord_map[3] * z;
+						b[z + dim_pad * x] = rawb[bidx];
+					}
+				}
+				strassen(out, a, b, dim_pad);
+				for (size_t y = 0; y < dim_y; y++)
+				{
+					std::memcpy(rawc + y * dim_x, out + y * dim_pad, sizeof(T) * dim_x);
+				}
+			}
+			else
+			{
+				cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
+			}
 		}
-		return accum;
-	})),
+	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
 	{
 		return constant<T>::get_shared_one();
@@ -338,11 +353,14 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 			leef.push_back(var);
 		}
 	}
+
 	mmul->set_jacobian_back(
-	[a, b, transposeA, transposeB](inode<T>* root, NODE_MAN<T> grad_getter) -> inode<T>*
+	[transposeA, transposeB](inode<T>* root, std::vector<inode<T>*> args, std::vector<inode<T>*> grads) -> inode<T>*
 	{
-		varptr<T> grada = grad_getter(a);
-		varptr<T> gradb = grad_getter(b);
+		varptr<T> arga = args[0];
+		varptr<T> argb = args[1];
+		varptr<T> grada = grads[0];
+		varptr<T> gradb = grads[1];
 
 		constant<T>* aconst = dynamic_cast<constant<T>*>(grada.get());
 		constant<T>* bconst = dynamic_cast<constant<T>*>(gradb.get());
@@ -350,8 +368,8 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 		{
 			return root;
 		}
-		varptr<T> mA = matmul<T>(root, b, false, !transposeB);
-		varptr<T> mB = matmul<T>(a, root, !transposeA, false);
+		varptr<T> mA = matmul<T>(root, argb, false, true);
+		varptr<T> mB = matmul<T>(arga, root, true);
 		if (transposeA)
 		{
 			mA = transpose<T>(mA);

@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_OPERATION_MODULE_TESTS
 
 #include <algorithm>
 
@@ -174,8 +174,8 @@ TEST(MATMUL, Matmul_C001)
 	TWODV matrestA = create2D(expose<signed>(restA), restAshape);
 	TWODV matrestB = create2D(expose<signed>(restB), restBshape);
 	TWODV matresT = create2D(expose<signed>(resT), resTshape);
-	// Freivald's algorithm
 
+	// Freivald's algorithm
 	EXPECT_TRUE(freivald(matA, matB, matres));
 	EXPECT_TRUE(freivald(mattA, matB, matrestA));
 	EXPECT_TRUE(freivald(matA, mattB, matrestB));
@@ -258,7 +258,7 @@ TEST(MATMUL, Jacobian_C003)
 	inode<double>* dresTA = resT->derive(&tA);
 	inode<double>* dresTB = resT->derive(&tB);
 
-// requires on all elementary operations to be valid (not a great validation method...)
+	// requires on all elementary operations to be valid (not a great validation method...)
 	// res = 1/(1+e^-(A@B))
 	// dres = jacobian(sigmoid'(1))
 	// where jacobian = {
@@ -427,4 +427,4 @@ TEST(MATMUL, DISABLED_Strassen_C004)
 #endif /* DISABLE_MATMUL_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_OPERATION_MODULE_TESTS */

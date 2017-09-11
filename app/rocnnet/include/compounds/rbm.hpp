@@ -22,11 +22,12 @@ namespace rocnnet
 
 using generators_t = std::vector<nnet::generator<double>*>;
 
+// todo: toggle activation, sigmoid (current) and ReLU
 class rbm : public icompound
 {
 public:
 	// trust that passed in operations are unconnected
-	rbm (size_t n_input, IN_PAIR hidden_info,
+	rbm (size_t n_input, size_t n_hidden,
 		std::string scope = "RBM");
 
 	virtual ~rbm (void);
@@ -52,6 +53,8 @@ public:
 	nnet::updates_t train (generators_t& gens, nnet::inode<double>* input,
 		double learning_rate = 1e-3, size_t n_cont_div = 1);
 
+	double get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t bit_i_idx) const;
+
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
 	size_t get_ninput (void) const { return n_input_; }
@@ -72,11 +75,13 @@ private:
 
 	void clean_up (void);
 
+	nnet::varptr<double> free_energy (nnet::varptr<double> sample) const;
+
 	size_t n_input_;
 
-	HID_PAIR hidden_;
+	fc_layer* hidden_ = nullptr;
 
-	nnet::variable<double>* vbias_;
+	nnet::variable<double>* vbias_ = nullptr;
 };
 
 struct rbm_param

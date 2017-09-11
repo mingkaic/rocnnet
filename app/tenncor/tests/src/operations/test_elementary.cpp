@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_OPERATION_MODULE_TESTS
 
 #include <algorithm>
 
@@ -679,4 +679,4 @@ TEST(ELEMENTARY, Div_A000ToA002_A012_A007ToA008)
 #endif /* DISABLE_ELEMENTARY_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_OPERATION_MODULE_TESTS */

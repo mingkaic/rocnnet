@@ -18,4 +18,3 @@ services:
         TEST_ENV: 1
     volumes:
       - /usr/src/rocenv
-

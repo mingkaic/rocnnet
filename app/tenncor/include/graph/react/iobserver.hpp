@@ -64,6 +64,10 @@ protected:
 	//! smart destruction: call when any observer is broken
 	virtual void death_on_broken (void) = 0;
 
+	void add_ondeath_dependent (subject* dep);
+
+	void remove_ondeath_dependent (subject* dep);
+
 	// >>>> DEPENDENCY MUTATORS <<<<
 	//! subscribe: add dependency
 	void add_dependency (subject* dep);
@@ -88,6 +92,9 @@ private:
 
 	//! move helper function
 	void move_helper (iobserver&& other);
+
+	//! a series of dependent subjects that will die when this dies
+	std::unordered_set<subject*> ondeath_deps_;
 
 	friend class subject;
 };

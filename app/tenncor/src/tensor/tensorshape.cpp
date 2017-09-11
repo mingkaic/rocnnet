@@ -278,7 +278,7 @@ tensorshape tensorshape::with_rank_at_most (size_t rank) const
 	return ds;
 }
 
-size_t tensorshape::sequential_idx (std::vector<size_t> coord) const
+size_t tensorshape::flat_idx (std::vector<size_t> coord) const
 {
 	size_t n = std::min(dimensions_.size(), coord.size());
 	size_t index = 0;

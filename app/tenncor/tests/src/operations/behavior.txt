@@ -1,4 +1,3 @@
-
 // ELEMENTARY BEHAVIORS
 A000 - any operation accepting nullptr as any operand returns nullptr
 A001 - both unary and binary elementary operations output shape is the same as input shape

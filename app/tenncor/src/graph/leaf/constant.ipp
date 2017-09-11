@@ -68,7 +68,7 @@ constant<T>::constant (T scalar) :
 {
 	const_init<T> init(scalar);
 	this->data_->allocate();
-	init(this->data_);
+	init(*(this->data_));
 	this->is_init_ = true;
 }
 
@@ -99,7 +99,7 @@ constant<T>::constant (std::vector<T> raw, tensorshape shape) :
 		size_t deficiency = n - rawn;
 		raw.insert(raw.end(), deficiency, 0);
 	}
-	this->assigner_(this->data_, raw);
+	this->assigner_(*(this->data_), raw);
 	this->is_init_ = true;
 }
 
@@ -136,6 +136,19 @@ bool operator != (constant<T>& c, T scalar)
 {
 	std::vector<T> res = expose<T>(&c);
 	return 1 != res.size() || scalar != res[0];
+}
+
+template <typename T>
+constant<T>* const_axis (size_t dimension, size_t index, T scalar, tensorshape shape)
+{
+	std::vector<T> data(shape.n_elems(), 0);
+	shape.iterate([&data, dimension, index, scalar](std::vector<size_t> coord, size_t idx) {
+		if (coord[dimension] == index)
+		{
+			data[idx] = scalar;
+		}
+	});
+	return constant<T>::get(data, shape);
 }
 
 }

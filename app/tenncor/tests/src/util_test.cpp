@@ -199,4 +199,22 @@ tensorshape random_def_shape (int lowerrank, int upperrank, size_t minn, size_t 
 }
 
 
+void adder (double* dest, std::vector<const double*> src, nnet::shape_io shape)
+{
+	size_t n_elems = shape.outs_.n_elems();
+	for (size_t i = 0; i < src.size(); i++)
+	{
+		n_elems = std::min(n_elems, shape.ins_[i].n_elems());
+	}
+	for (size_t j = 0; j < n_elems; j++)
+	{
+		dest[j] = 0;
+		for (size_t i = 0; i < src.size(); i++)
+		{
+			dest[j] += src[i][j];
+		}
+	}
+}
+
+
 #endif

@@ -123,14 +123,14 @@ void generator<T>::update (std::unordered_set<size_t> argidx)
 	{
 		// init
 		data_ = new tensor<T>(depshape);
-		(*init_)(data_);
+		(*init_)(*data_);
 		this->notify(UPDATE);
 	}
 	else if (false == data_->get_shape().is_compatible_with(depshape))
 	{
 		// reshape
 		data_->set_shape(depshape);
-		(*init_)(data_);
+		(*init_)(*data_);
 		this->notify(UPDATE);
 	}
 }

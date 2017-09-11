@@ -13,12 +13,12 @@
 namespace rocnnet
 {
 
-rbm::rbm (size_t n_input, IN_PAIR hidden_info, std::string scope) :
+rbm::rbm (size_t n_input, size_t n_hidden, std::string scope) :
 	icompound(scope),
 	n_input_(n_input)
 {
 	nnet::const_init<double> zinit(0);
-	hidden_ = { new fc_layer({n_input}, hidden_info.first), hidden_info.second };
+	hidden_ = new fc_layer({n_input}, n_hidden);
 	vbias_ = new nnet::variable<double>(std::vector<size_t>{n_input},
 		zinit, nnutils::formatter() << scope << "_visible_bias");
 }
@@ -66,7 +66,7 @@ nnet::varptr<double> rbm::operator () (nnet::inode<double>* input)
 	// weight is <n_hidden, n_input>
 	// in is <n_input, ?>
 	// out = in @ weight, so out is <n_hidden, ?>
-	return (hidden_.second)((*hidden_.first)({input}));
+	return nnet::sigmoid<double>((*hidden_)({input}));
 }
 
 nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
@@ -74,10 +74,10 @@ nnet::varptr<double> rbm::back (nnet::inode<double>* hidden)
 	// weight is <n_hidden, n_input>
 	// in is <n_hidden, ?>
 	// out = in @ weight.T, so out is <n_input, ?>
-	nnet::varptr<double> weight = hidden_.first->get_variables()[0];
+	nnet::varptr<double> weight = hidden_->get_variables()[0];
 	nnet::varptr<double> weighed = nnet::matmul<double>(hidden, weight, false, true);
 	nnet::varptr<double> pre_nl = nnet::add_axial_b(weighed, nnet::varptr<double>(vbias_), 1);
-	return (hidden_.second)(pre_nl);
+	return nnet::sigmoid<double>(pre_nl);
 }
 
 nnet::updates_t rbm::train (generators_t& gens,
@@ -112,7 +112,7 @@ nnet::updates_t rbm::train (generators_t& gens,
 	nnet::varptr<double> dhb = h0 - hk;
 	nnet::varptr<double> dvb = v0 - vt;
 
-	std::vector<nnet::variable<double>*> vars = hidden_.first->get_variables();
+	std::vector<nnet::variable<double>*> vars = hidden_->get_variables();
 	nnet::variable<double>* weight = vars[0];
 	nnet::variable<double>* hbias = vars[1];
 
@@ -123,9 +123,30 @@ nnet::updates_t rbm::train (generators_t& gens,
 	return uvec;
 }
 
+// implementation taken from http://deeplearning.net/tutorial/rbm.html
+double rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t x_idx) const
+{
+	// zeros everywhere except for x-axis = x_idx (x is the first dimension)
+	nnet::varptr<double> one_i = nnet::const_axis<double>(0, x_idx, 1, input.get_shape());
+
+	nnet::varptr<double> xi = nnet::round(nnet::varptr<double>(&input)); // xi = [0|1...]
+	nnet::varptr<double> xi_flip = one_i - xi;
+
+	nnet::varptr<double> fe_xi = free_energy(xi);
+	nnet::varptr<double> fe_xi_flip = free_energy(xi_flip);
+
+	nnet::varptr<double> cost = nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
+	double cost_scalar = nnet::expose<double>(cost)[0];
+
+	delete one_i.get();
+	delete xi.get();
+
+	return cost_scalar;
+}
+
 std::vector<nnet::variable<double>*> rbm::get_variables (void) const
 {
-	std::vector<nnet::variable<double>*> vars = hidden_.first->get_variables();
+	std::vector<nnet::variable<double>*> vars = hidden_->get_variables();
 	vars.push_back(vbias_);
 	return vars;
 }
@@ -155,7 +176,7 @@ ilayer* rbm::move_impl (void)
 void rbm::copy_helper (const rbm& other)
 {
 	n_input_ = other.n_input_;
-	hidden_ = { other.hidden_.first->clone(), other.hidden_.second };
+	hidden_ = other.hidden_->clone();
 	vbias_ = other.vbias_->clone();
 }
 
@@ -168,11 +189,24 @@ void rbm::move_helper (rbm&& other)
 
 void rbm::clean_up (void)
 {
-	delete hidden_.first;
+	delete hidden_;
 	if (vbias_) delete vbias_;
 
-	hidden_.first = nullptr;
+	hidden_ = nullptr;
 	vbias_ = nullptr;
+}
+
+nnet::varptr<double> rbm::free_energy (nnet::varptr<double> sample) const
+{
+	std::vector<nnet::variable<double>*> vars = this->hidden_->get_variables();
+	nnet::varptr<double> weight = vars[0];
+	nnet::varptr<double> hbias = vars[1];
+
+	nnet::varptr<double> wx_b = nnet::matmul(sample, weight) + hbias;
+
+	nnet::varptr<double> vbias_term = nnet::matmul(sample, nnet::varptr<double>(vbias_), false, true);
+	nnet::varptr<double> hidden_term = nnet::reduce_sum<double>(nnet::log(1.0 + nnet::exp(wx_b)), 1);
+	return -(hidden_term + vbias_term);
 }
 
 void fit (rbm& model, std::vector<double> batch, rbm_param params)
@@ -197,6 +231,9 @@ void fit (rbm& model, std::vector<double> batch, rbm_param params)
 		{
 			trainer(true);
 		}
+
+		double cost = model.get_pseudo_likelihood_cost(in, i);
+		std::cout << "Training epoch " << i << ", cost is " << cost << std::endl;
 	}
 }
 

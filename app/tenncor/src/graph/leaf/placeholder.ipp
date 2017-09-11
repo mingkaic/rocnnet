@@ -73,7 +73,7 @@ placeholder<T>& placeholder<T>::operator = (std::vector<T> data)
 			throw std::logic_error("attempting to assign no data to an unallocated tensor");
 		}
 	}
-	this->assigner_(this->data_, data);
+	this->assigner_(*(this->data_), data);
 
 	this->is_init_ = true;
 	this->notify(UPDATE);

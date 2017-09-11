@@ -75,6 +75,13 @@ protected:
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 
+	// >>>> PROTECTED CLONER <<<<
+	//! create a deep copy of this with args
+	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const
+	{
+		return new shape_dep(args, shaper_->get_shaper(), this->get_shape(), this->get_label());
+	}
+
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
 	virtual void forward_pass (void);

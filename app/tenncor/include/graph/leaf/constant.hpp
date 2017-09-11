@@ -105,6 +105,12 @@ bool operator == (constant<T>& c, T scalar);
 template <typename T>
 bool operator != (constant<T>& c, T scalar);
 
+//! create a constant with zeros everywhere except for all elements with index
+//! at a specified dimension where these elements are filled with scalar
+//! const_axis(2, I, S, {...}) => constant[:, I, :, ...] = S
+template <typename T>
+constant<T>* const_axis (size_t dimension, size_t index, T scalar, tensorshape shape);
+
 }
 
 #include "../../../src/graph/leaf/constant.ipp"

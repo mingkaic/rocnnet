@@ -15,19 +15,17 @@ namespace rocnnet
 
 mlp::mlp (size_t n_input, std::vector<IN_PAIR> hiddens, std::string scope) :
 	icompound(scope),
-	n_input_(n_input),
-	n_output_(hiddens.back().first)
+	n_input_(n_input)
 {
 	size_t level = 0;
-	size_t n_output;
 	fc_layer* percept;
 	for (IN_PAIR ip : hiddens)
 	{
-		n_output = ip.first;
-		percept = new fc_layer({n_input}, n_output,
+		n_output_ = ip.first;
+		percept = new fc_layer({n_input}, n_output_,
 			nnutils::formatter() << scope_ << ":hidden_" << level++);
-		layers_.push_back(HID_PAIR(percept, ip.second));
-		n_input = n_output;
+		layers_.push_back(FC_PAIR(percept, ip.second));
+		n_input = n_output_;
 	}
 }
 
@@ -78,7 +76,7 @@ nnet::varptr<double> mlp::operator () (nnet::inode<double>* input)
 	// output of one fc_layer's dimensions is expected to be matched by
 	// the perceptron of the next fc_layer
 	nnet::inode<double>* output = input;
-	for (HID_PAIR hp : layers_)
+	for (FC_PAIR hp : layers_)
 	{
 		nnet::inode<double>* hypothesis = (*hp.first)({output});
 		output = (hp.second)(hypothesis);
@@ -89,7 +87,7 @@ nnet::varptr<double> mlp::operator () (nnet::inode<double>* input)
 std::vector<nnet::variable<double>*> mlp::get_variables (void) const
 {
 	std::vector<nnet::variable<double>*> vars;
-	for (HID_PAIR hp : layers_)
+	for (FC_PAIR hp : layers_)
 	{
 		std::vector<nnet::variable<double>*> temp = hp.first->get_variables();
 		vars.insert(vars.end(), temp.begin(), temp.end());
@@ -127,7 +125,7 @@ void mlp::copy_helper (const mlp& other)
 	{
 		fc_layer* percept = other.layers_[i].first->clone(
 			nnutils::formatter() << scope_ << ":hiddens" << i);
-		layers_.push_back(HID_PAIR(percept, other.layers_[i].second));
+		layers_.push_back(FC_PAIR(percept, other.layers_[i].second));
 	}
 }
 
@@ -140,7 +138,7 @@ void mlp::move_helper (mlp&& other)
 
 void mlp::clean_up (void)
 {
-	for (HID_PAIR hp : layers_)
+	for (FC_PAIR hp : layers_)
 	{
 		delete hp.first;
 	}

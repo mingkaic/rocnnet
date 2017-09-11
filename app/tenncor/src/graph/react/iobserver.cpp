@@ -25,6 +25,13 @@ iobserver::~iobserver (void)
 		remove_dependency(i);
 	}
 
+	// kill all descendent dependents
+	std::unordered_set<subject*> deps = ondeath_deps_;
+	for (subject* dep : deps)
+	{
+		delete dep;
+	}
+
 #ifdef EDGE_RCD
 
 // record subject-object edge
@@ -75,6 +82,24 @@ iobserver::iobserver (const iobserver& other)
 iobserver::iobserver (iobserver&& other)
 {
 	move_helper(std::move(other));
+}
+
+void iobserver::add_ondeath_dependent (subject* dep)
+{
+	if (dep && ondeath_deps_.end() == ondeath_deps_.find(dep))
+	{
+		ondeath_deps_.insert(dep);
+		dep->attach_killer(this);
+	}
+}
+
+void iobserver::remove_ondeath_dependent (subject* dep)
+{
+	if (dep && ondeath_deps_.end() != ondeath_deps_.find(dep))
+	{
+		ondeath_deps_.erase(dep);
+		dep->detach_killer(this);
+	}
 }
 
 void iobserver::add_dependency (subject* dep)

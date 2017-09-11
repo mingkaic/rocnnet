@@ -52,7 +52,7 @@ int main (int argc, char** argv)
 	bool seed = false;
 	bool save = false;
 
-#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms, todo: consider yml parsing
+#ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
 	while ((c = getopt (argc, argv, "o:r:t:s:w:")) != -1)
 	{
