@@ -182,8 +182,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier)
 
 template <typename T>
 varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
-	optional<size_t> index, std::string name,
-	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop)
+	optional<size_t> index, std::string name)
 {
 	if (nullptr == a.get()) return nullptr;
 	std::string imm_name = (bool) index ? nnutils::formatter() << name << "_" << *index : name;
@@ -212,7 +211,7 @@ varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
 				tv[0] = 1;
 			}
 			else if (0 == idx)
-				// pop front
+			// pop front
 			{
 				tv = std::vector<size_t>(tv.begin()+1, tv.end());
 			}
@@ -284,20 +283,18 @@ varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
 		});
 	}
 	return immutable<T>::get(std::vector<inode<T>*>{a}, shaper, forward,
-	[index, bprop](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	[index](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		varptr<T> fnode = args.front().first;
 		varptr<T> bnode = args.front().second;
-		varptr<T> barg = bprop(bnode, fnode);
 		if (index)
 		{
-			if (barg.get() == bnode.get())
+			if (bnode.get() == bnode.get())
 			{
-				barg = identity<T>(bnode);
+				bnode = identity<T>(bnode);
 			}
-			barg->set_metadata("grouping", *index);
+			bnode->set_metadata("grouping", *index);
 		}
-		return barg;
+		return bnode;
 	}, imm_name);
 }
 
@@ -319,17 +316,6 @@ varptr<T> reduce_sum (const varptr<T> a, optional<size_t> dimension)
 	{
 		return left + right;
 	}, dimension, "reduce_sum");
-}
-
-template <typename T>
-inline T mean (const T** data, size_t n)
-{
-	T accum = 0;
-	for (size_t i = 0; i < n; i++)
-	{
-		accum += *data[i];
-	}
-	return accum / n;
 }
 
 template <typename T>

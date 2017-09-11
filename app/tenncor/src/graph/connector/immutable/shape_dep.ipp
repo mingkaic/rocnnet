@@ -134,7 +134,10 @@ void shape_dep<T>::forward_pass (void)
 }
 
 template <typename T>
-void shape_dep<T>::backward_pass (variable<T>*) {}
+void shape_dep<T>::backward_pass (variable<T>* leaf)
+{
+	this->gcache_[leaf] = this;
+}
 
 }
 

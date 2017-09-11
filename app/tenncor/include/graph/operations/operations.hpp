@@ -209,9 +209,7 @@ varptr<T> extend (const varptr<T> a, size_t index, size_t multiplier);
 //! unspecified index compresses all elements in the tensor (output is a scalar)
 template <typename T>
 varptr<T> compress (const varptr<T> a, AGGREGATE<T> collector,
-	optional<size_t> index, std::string name = "compress",
-	std::function<varptr<T>(varptr<T>,varptr<T>)> bprop =
-	[](varptr<T> back, varptr<T>){ return back; });
+	optional<size_t> index, std::string name = "compress");
 
 // Dimensionality Reduction Functions (Wrappers for compress)
 //! compress tensor by taking maximum value across specified dimension

@@ -89,6 +89,7 @@ tensor<T>& variable<T>::initialize (tensorshape shape)
 template <typename T>
 variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
+	assert(input);
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
@@ -105,6 +106,7 @@ variable_updater<T> variable<T>::assign (inode<T>* input) const
 template <typename T>
 variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 {
+	assert(input);
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
@@ -122,6 +124,7 @@ variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 template <typename T>
 variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 {
+	assert(input);
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
