@@ -116,4 +116,6 @@ I010 - update explicitly runs its forward transfer function with current depdend
 I011 - immutable will throw error if existing output shape is incompatible with shaper result
 
 // GENERATOR BEHAVIORS
-todo: test
+J000 - cloning and moving generators copies and moves initialization and existing data
+J001 - generated shape has same shape as shape_dependent node
+J002 - temporary_eval always returns 1, and derive is treated as constant (0 if leaf not this, 1 otherwise)

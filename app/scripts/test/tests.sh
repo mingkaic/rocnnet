@@ -73,12 +73,11 @@ gcov --version
 lcov --base-directory . --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
 lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
 lcov --list coverage.info # debug < see coverage here
+
 if ! [ -z "$SHARED_DIR" ];
 then
     echo "copying over everything to shared"
-    # move coverage info to shared to send to cover-alls
-    cp -R app $SHARED_DIR/app
-    cp -R coverage.info $SHARED_DIR/coverage.info
+    cp -R app $SHARED_DIR
 fi
 
 echo "";

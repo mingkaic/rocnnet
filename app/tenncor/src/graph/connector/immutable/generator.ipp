@@ -63,7 +63,7 @@ generator<T>& generator<T>::operator = (generator<T>&& other)
 }
 
 template <typename T>
-void generator<T>::temporary_eval (const iconnector<T>* target, inode<T>*& out) const
+void generator<T>::temporary_eval (const iconnector<T>*, inode<T>*& out) const
 {
 	out = constant<T>::get(1);
 }
@@ -81,6 +81,10 @@ varptr<T> generator<T>::derive (inode<T>* wrt)
 template <typename T>
 tensorshape generator<T>::get_shape (void) const
 {
+	if (nullptr == data_)
+	{
+		return tensorshape{};
+	}
 	return data_->get_shape();
 }
 
@@ -100,7 +104,7 @@ template <typename T>
 bool generator<T>::read_proto (const tenncor::tensor_proto&) { return false; }
 
 template <typename T>
-void generator<T>::update (std::unordered_set<size_t> argidx)
+void generator<T>::update (std::unordered_set<size_t>)
 {
 	inode<T>* dep = dynamic_cast<inode<T>*>(this->dependencies_[0]);
 	if (nullptr == dep)
@@ -127,6 +131,10 @@ void generator<T>::update (std::unordered_set<size_t> argidx)
 		(*init_)(*data_);
 		this->notify(UPDATE);
 	}
+	else
+	{
+		// change shape
+	}
 }
 
 template <typename T>
@@ -134,6 +142,7 @@ generator<T>::generator (inode<T>* shape_dep, const initializer<T>& init, std::s
 	iconnector<T>({shape_dep}, name)
 {
 	this->init_ = init.clone();
+	this->update({});
 }
 
 template <typename T>
@@ -169,7 +178,7 @@ const tensor<T>* generator<T>::get_eval (void) const
 }
 
 template <typename T>
-inode<T>* generator<T>::get_gradient (variable<T>* leaf)
+inode<T>* generator<T>::get_gradient (variable<T>*)
 {
 	return constant<T>::get_shared_zero();
 }
@@ -189,15 +198,45 @@ void generator<T>::death_on_noparent (void)
 template <typename T>
 void generator<T>::copy_helper (const generator<T>& other)
 {
-	init_ = other.init_->clone();
-	data_ = other.data_->clone();
+	if (data_)
+	{
+		delete data_;
+	}
+	if (init_)
+	{
+		delete init_;
+	}
+
+	if (other.init_)
+	{
+		init_ = other.init_->clone();
+	}
+	if (other.data_)
+	{
+		data_ = other.data_->clone();
+	}
 }
 
 template <typename T>
 void generator<T>::move_helper (generator<T>&& other)
 {
-	init_ = other.init_->move();
-	data_ = other.data_->move();
+	if (data_)
+	{
+		delete data_;
+	}
+	if (init_)
+	{
+		delete init_;
+	}
+
+	if (other.init_)
+	{
+		init_ = other.init_->move();
+	}
+	if (other.data_)
+	{
+		data_ = other.data_->move();
+	}
 }
 
 template <typename T>
