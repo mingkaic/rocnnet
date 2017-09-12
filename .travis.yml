@@ -15,10 +15,10 @@ jobs:
         - docker-compose push
     - stage: test
       script:
-        - mkdir $TRAVIS_BUILD_DIR/shareds
+        - mkdir ${TRAVIS_BUILD_DIR}/shareds
         - docker run
-          -e SHARED_DIR=/host_shareds
-          -v ${TRAVIS_BUILD_DIR}/shareds:/host_shareds
+          -e SHARED_DIR=/shareds
+          -v ${TRAVIS_BUILD_DIR}/shareds:/shareds
           --rm ${DOCKER_USERNAME}/rocnnet-test
 
 after_success:

@@ -77,7 +77,8 @@ if ! [ -z "$SHARED_DIR" ];
 then
     echo "copying over everything to shared"
     # move coverage info to shared to send to cover-alls
-    cp -R ../app/ $SHARED_DIR/
+    cp -R app $SHARED_DIR/app
+    cp -R coverage.info $SHARED_DIR/coverage.info
 fi
 
 echo "";

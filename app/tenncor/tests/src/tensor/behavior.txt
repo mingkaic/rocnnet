@@ -71,13 +71,17 @@ B014 - reading a valid tensor_proto should allocate the tensor if not already.
 		both allowed and allocated shapes should be identical to the shape specified in protobuf
 
 // TENSOR_HANDLER
-C000 - transfer function takes output tensor and some argument tensors.
-C001 - constant initializer fills a tensor with a
+C000 - transfer function takes output tensor and some argument tensors
+        transfer performs operation on arguments and apply to output
+C001 - shape_extract takes output tensor and some argument shapes
+        shape performs operations on shapes and apply to output tensor
+C002 - constant initializer fills a tensor with a
 		particular scalar defined at the construction of initializer
-C002 - random initializer fills a tensor with values
+C003 - random uniform initializer fills a tensor with values
 		between low and high bounds specified at initializer construction
-C003 - copying and moving transfer, const_init,
-		rand_uniform creates/moves the shaper and forward functions
+		random normal initializes values with mean close to the specified mean
+C004 - copying and moving transfer, const_init, rand_uniform, rand_normal
+        creates/moves the shaper and forward functions
 		cloning from itensor_handler on any of the handlers instances
 		will return their respective instances
 todo: test rand_normal

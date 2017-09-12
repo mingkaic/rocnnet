@@ -73,9 +73,31 @@ TEST(HANDLER, Transfer_C000)
 }
 
 
+// cover shape_extracter
+// operator ()
+TEST(HANDLER, ShapeExtractor_C001)
+{
+	FUZZ::reset_logger();
+	tensorshape c1 = random_def_shape();
+	tensorshape resshape = std::vector<size_t>{ c1.rank() };
+	tensor<double> good(resshape);
+	std::vector<tensorshape> args = { c1 };
+
+	shape_extracter<double> se([](tensorshape& in) -> std::vector<size_t>
+	{
+		return in.as_list();
+	});
+	se(good, args);
+	std::vector<size_t> sexpect = c1.as_list();
+	std::vector<double> expect(sexpect.begin(), sexpect.end());
+	std::vector<double> res = good.expose();
+	EXPECT_TRUE(std::equal(expect.begin(), expect.end(), res.begin()));
+}
+
+
 // cover const_init
 // operator ()
-TEST(HANDLER, Constant_C001)
+TEST(HANDLER, Constant_C002)
 {
 	FUZZ::reset_logger();
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
@@ -93,24 +115,30 @@ TEST(HANDLER, Constant_C001)
 }
 
 
-// cover rand_uniform
+// cover rand_uniform, rand_normal
 // operator ()
-TEST(HANDLER, Random_C002)
+TEST(HANDLER, Random_C003)
 {
 	FUZZ::reset_logger();
 	double lo = FUZZ::getDouble(1, "lo", {127182, 12921231412323})[0];
 	double hi = lo+1;
 	double high = FUZZ::getDouble(1, "high", {lo*2, lo*3+50})[0];
+	double mean = FUZZ::getDouble(1, "mean", {-13, 23})[0];
+	double variance = FUZZ::getDouble(1, "variance", {1, 32})[0];
 	rand_uniform<double> ri1(lo, hi);
 	rand_uniform<double> ri2(lo, high);
+	rand_normal<double> rn(mean, variance);
 	tensorshape shape = random_def_shape();
 	tensor<double> block1(shape);
 	tensor<double> block2(shape);
+	tensor<double> block3(shape);
 	ri1(block1);
 	ri2(block2);
+	rn(block3);
 
 	std::vector<double> v1 = block1.expose();
 	std::vector<double> v2 = block2.expose();
+	std::vector<double> v3 = block3.expose();
 
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -122,38 +150,50 @@ TEST(HANDLER, Random_C002)
 		EXPECT_LE(lo, v2[i]);
 		EXPECT_GE(high, v2[i]);
 	}
+	// assert shape has n_elem of [17, 7341]
+	// the mean of vnorm is definitely within variance / 2 of the normal
+	double norm_mean = std::accumulate(v3.begin(), v3.end(), 0) / (double) v3.size();
+	EXPECT_GT(norm_mean, mean - (variance / 2));
+	EXPECT_LT(norm_mean, mean + (variance / 2));
 }
 
 
 // cover transfer_func, const_init, rand_uniform
 // copy constructor and assignment
-TEST(HANDLER, Copy_C003)
+TEST(HANDLER, Copy_C004)
 {
 	FUZZ::reset_logger();
 	SUPERMARK = 0;
 	transfer_func<double> tfassign(marked_forward);
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
+	rand_normal<double> niassign;
 
 	SUPERMARK = FUZZ::getDouble(1, "SUPERMARK", {15, 117})[0];
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
 	double low = FUZZ::getDouble(1, "low", {23, 127})[0];
 	double high = FUZZ::getDouble(1, "high", {low*2, low*3+50})[0];
+	double mean = FUZZ::getDouble(1, "mean", {-13, 23})[0];
+	double variance = FUZZ::getDouble(1, "variance", {1, 32})[0];
 	transfer_func<double> tf(marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
+	rand_normal<double> ni(mean, variance);
 
 	transfer_func<double>* tfcpy = tf.clone();
 	const_init<double>* cicpy = ci.clone();
 	rand_uniform<double>* ricpy = ri.clone();
+	rand_normal<double>* nicpy = ni.clone();
 
 	tfassign = tf;
 	ciassign = ci;
 	riassign = ri;
+	niassign = ni;
 
 	tensorshape shape = random_def_shape();
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
+	tensor<double> tblock_norm(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
 	std::vector<const tensor<double>*> empty_args;
 	(*tfcpy)(ttransf, empty_args);
@@ -172,8 +212,17 @@ TEST(HANDLER, Copy_C003)
 		EXPECT_GE(high, v[i]);
 	}
 
+	(*nicpy)(tblock_norm);
+	std::vector<double> vnorm = tblock_norm.expose();
+	// assert shape has n_elem of [17, 7341]
+	// the mean of vnorm is definitely within variance / 2 of the normal
+	double norm_mean = std::accumulate(vnorm.begin(), vnorm.end(), 0) / (double) vnorm.size();
+	EXPECT_GT(norm_mean, mean - (variance / 2));
+	EXPECT_LT(norm_mean, mean + (variance / 2));
+
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
+	tensor<double> tblock_norm2(shape);
 	tensor<double> ttransf2(std::vector<size_t>{(size_t) SUPERMARK});
 	tfassign(ttransf2, empty_args);
 	std::vector<double> transfv2 = ttransf2.expose();
@@ -190,6 +239,14 @@ TEST(HANDLER, Copy_C003)
 		EXPECT_LE(low, v2[i]);
 		EXPECT_GE(high, v2[i]);
 	}
+
+	niassign(tblock_norm2);
+	std::vector<double> vnorm2 = tblock_norm2.expose();
+	// assert shape has n_elem of [17, 7341]
+	// the mean of vnorm is definitely within variance / 2 of the normal
+	double norm_mean2 = std::accumulate(vnorm2.begin(), vnorm2.end(), 0) / (double) vnorm2.size();
+	EXPECT_GT(norm_mean2, mean - (variance / 2));
+	EXPECT_LT(norm_mean2, mean + (variance / 2));
 
 	itensor_handler<double>* interface_ptr = &tf;
 	itensor_handler<double>* resptr = interface_ptr->clone();
@@ -209,45 +266,52 @@ TEST(HANDLER, Copy_C003)
 	delete tfcpy;
 	delete cicpy;
 	delete ricpy;
+	delete nicpy;
 }
 
 
 // cover transfer_func, const_init, rand_uniform
 // move constructor and assignment
-TEST(HANDLER, Move_C003)
+TEST(HANDLER, Move_C004)
 {
 	FUZZ::reset_logger();
 	SUPERMARK = 0;
 	transfer_func<double> tfassign(marked_forward);
 	const_init<double> ciassign(0);
 	rand_uniform<double> riassign(0, 1);
+	rand_normal<double> niassign;
 
 	SUPERMARK = FUZZ::getDouble(1, "SUPERMARK", {119, 221})[0];
 	double scalar = FUZZ::getDouble(1, "scalar")[0];
 	double low = FUZZ::getDouble(1, "low", {23, 127})[0];
 	double high = FUZZ::getDouble(1, "high", {low*2, low*3+50})[0];
+	double mean = FUZZ::getDouble(1, "mean", {-13, 23})[0];
+	double variance = FUZZ::getDouble(1, "variance", {1, 32})[0];
 	transfer_func<double> tf(marked_forward);
 	const_init<double> ci(scalar);
 	rand_uniform<double> ri(low, high);
+	rand_normal<double> ni(mean, variance);
 
-	transfer_func<double> tfmv(std::move(tf));
-	const_init<double> cimv(std::move(ci));
-	rand_uniform<double> rimv(std::move(ri));
+	transfer_func<double>* tfmv = tf.move();
+	const_init<double>* cimv = ci.move();
+	rand_uniform<double>* rimv = ri.move();
+	rand_normal<double>* nimv = ni.move();
 
 	tensorshape shape = random_def_shape();
 	tensor<double> tscalar(0);
 	tensor<double> tblock(shape);
+	tensor<double> tblock_norm(shape);
 	tensor<double> ttransf(std::vector<size_t>{(size_t) SUPERMARK});
 	std::vector<const tensor<double>*> empty_args;
-	tfmv(ttransf, empty_args);
+	(*tfmv)(ttransf, empty_args);
 	std::vector<double> transfv = ttransf.expose();
 	EXPECT_EQ((size_t)SUPERMARK, transfv.size());
 	EXPECT_EQ(SUPERMARK, transfv[0]);
 
-	cimv(tscalar);
+	(*cimv)(tscalar);
 	EXPECT_EQ(scalar, tscalar.expose()[0]);
 
-	rimv(tblock);
+	(*rimv)(tblock);
 	std::vector<double> v = tblock.expose();
 	for (size_t i = 0, n = shape.n_elems(); i < n; i++)
 	{
@@ -255,12 +319,22 @@ TEST(HANDLER, Move_C003)
 		EXPECT_GE(high, v[i]);
 	}
 
-	tfassign = std::move(tfmv);
-	ciassign = std::move(cimv);
-	riassign = std::move(rimv);
+	(*nimv)(tblock_norm);
+	std::vector<double> vnorm = tblock_norm.expose();
+	// assert shape has n_elem of [17, 7341]
+	// the mean of vnorm is definitely within variance / 2 of the normal
+	double norm_mean = std::accumulate(vnorm.begin(), vnorm.end(), 0) / (double) vnorm.size();
+	EXPECT_GT(norm_mean, mean - (variance / 2));
+	EXPECT_LT(norm_mean, mean + (variance / 2));
+
+	tfassign = std::move(*tfmv);
+	ciassign = std::move(*cimv);
+	riassign = std::move(*rimv);
+	niassign = std::move(*nimv);
 
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
+	tensor<double> tblock_norm2(shape);
 	tensor<double> ttransf2(std::vector<size_t>{(size_t) SUPERMARK});
 	tfassign(ttransf2, empty_args);
 	std::vector<double> transfv2 = ttransf2.expose();
@@ -278,19 +352,18 @@ TEST(HANDLER, Move_C003)
 		EXPECT_GE(high, v2[i]);
 	}
 
-	// tf, ci, ri, tfmv, cimv, and rimv should be undefined
-//	tensor<double> tscalar3(0);
-//	tensor<double> tblock3(shape);
-//	tensor<double> ttransf3(std::vector<size_t>{(size_t) SUPERMARK});
+	niassign(tblock_norm2);
+	std::vector<double> vnorm2 = tblock_norm2.expose();
+	// assert shape has n_elem of [17, 7341]
+	// the mean of vnorm is definitely within variance / 2 of the normal
+	double norm_mean2 = std::accumulate(vnorm2.begin(), vnorm2.end(), 0) / (double) vnorm2.size();
+	EXPECT_GT(norm_mean2, mean - (variance / 2));
+	EXPECT_LT(norm_mean2, mean + (variance / 2));
 
-	// moving function and resulting in undefined is a standard-dependent behavior
-	// todo: decide on a more standard-independent way of testing moving function behavior
-//	EXPECT_DEATH(tf(ttransf3ptr, {}), ".*");
-// 	EXPECT_DEATH(ci(tscalar3ptr), ".*");
-// 	EXPECT_DEATH(ri(tblock3ptr), ".*");
-// 	EXPECT_DEATH(tfmv(ttransf3ptr, {}), ".*");
-// 	EXPECT_DEATH(cimv(tscalar3ptr), ".*");
-//	EXPECT_DEATH(rimv(tblock3ptr), ".*");
+	delete tfmv;
+	delete cimv;
+	delete rimv;
+	delete nimv;
 }
 
 
