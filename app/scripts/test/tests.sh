@@ -75,9 +75,9 @@ lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '
 lcov --list coverage.info # debug < see coverage here
 if ! [ -z "$SHARED_DIR" ];
 then
-    echo "copying over coveralls"
+    echo "copying over everything to shared"
     # move coverage info to shared to send to cover-alls
-    cp coverage.info $SHARED_DIR/coverage.info
+    cp -R ../app/ $SHARED_DIR/
 fi
 
 echo "";
