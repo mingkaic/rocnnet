@@ -119,8 +119,11 @@ int main (int argc, char** argv)
 	rocnnet::gd_net untrained_gdn(brain, bgd, "untrained_gd_net");
 	untrained_gdn.initialize();
 	rocnnet::gd_net trained_gdn(untrained_gdn, "trained_gd_net");
-	rocnnet::gd_net pretrained_gdn(untrained_gdn, "pretrained_gd_net");
-	pretrained_gdn.initialize(serialpath, "gd_demo");
+
+	// use this to satisfy moving test coverage for gd net
+	rocnnet::gd_net temporary_gdn(untrained_gdn, "temporary_gd_net");
+	temporary_gdn.initialize(serialpath, "gd_demo");
+	rocnnet::gd_net pretrained_gdn(std::move(temporary_gdn), "pretrained_gd_net");
 
 	// train mlp to output input
 	start = std::clock();

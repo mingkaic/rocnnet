@@ -12,6 +12,7 @@ jobs:
         - docker-compose push
     - stage: test
       script:
+        - echo $TRAVIS_BRANCH
         - docker run -e COVERALLS_TOKEN=$COVERALLS_TOKEN
           -e CI_NAME=rocnnet
           -e CI_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER

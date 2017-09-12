@@ -75,6 +75,7 @@ lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '
 lcov --list coverage.info # debug < see coverage here
 if ! [ -z "$COVERALLS_TOKEN" ];
 then
+    echo "sending $CI_NAME coverage of branch $CI_BRANCH of build number $CI_BUILD_NUMBER"
     coveralls-lcov --repo-token $COVERALLS_TOKEN coverage.info # uploads to coveralls
 fi
 
