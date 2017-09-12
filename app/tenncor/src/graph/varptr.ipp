@@ -38,6 +38,19 @@ inode<T>* varptr<T>::get (void) const
 }
 
 template <typename T>
+void varptr<T>::update (std::unordered_set<size_t>) {}
+
+template <typename T>
+void varptr<T>::clear (void) { this->remove_dependency(0); }
+
+template <typename T>
+void varptr<T>::death_on_broken (void)
+{
+	if (false == this->dependencies_.empty())
+		this->remove_dependency(0);
+}
+
+template <typename T>
 placeptr<T>::placeptr (placeholder<T>* ptr) : varptr<T>(ptr) {}
 
 template <typename T>

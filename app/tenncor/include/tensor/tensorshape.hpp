@@ -119,14 +119,7 @@ public:
 	std::vector<size_t> coordinate_from_idx (size_t idx) const;
 
 	//! iterate with cartesian and flat coordinates of every valid element in shape
-	void iterate (std::function<void(std::vector<size_t>, size_t)> coord_call) const
-	{
-		size_t n_elems = this->n_elems();
-		for (size_t i = 0; i < n_elems; i++)
-		{
-			coord_call(coordinate_from_idx(i), i);
-		}
-	}
+	void iterate (std::function<void(std::vector<size_t>, size_t)> coord_call) const;
 
 private:
 	//! zero values denotes unknown/undefined value

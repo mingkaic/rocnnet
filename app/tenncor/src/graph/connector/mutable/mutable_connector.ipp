@@ -47,9 +47,18 @@ mutable_connector<T>::mutable_connector (const mutable_connector<T>& other) :
 	arg_buffers_(other.arg_buffers_) {}
 
 template <typename T>
-mutable_connector<T>* mutable_connector<T>::build (MAKE_CONNECT<T> maker, size_t nargs)
+mutable_connector<T>* mutable_connector<T>::get (MAKE_CONNECT<T> maker, size_t nargs)
 {
 	return new mutable_connector<T>(maker, nargs);
+}
+
+template <typename T>
+mutable_connector<T>::~mutable_connector (void)
+{
+	if (nullptr != ic_)
+	{
+		delete ic_;
+	}
 }
 
 template <typename T>

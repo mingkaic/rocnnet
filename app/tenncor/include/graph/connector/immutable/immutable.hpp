@@ -48,10 +48,6 @@ public:
 	//! declare move assignment to move over transfer functions
 	virtual immutable<T>& operator = (immutable<T>&& other);
 
-	// >>>> GRAPH STATUS <<<<
-	//! summarize this immutable
-	virtual typename iconnector<T>::summary_series summarize (void) const;
-
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! immutable constructing an aggregate transfer function

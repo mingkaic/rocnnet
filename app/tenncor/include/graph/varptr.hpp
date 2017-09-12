@@ -51,17 +51,13 @@ public:
 
 	//! get inner pointer
 	inode<T>* get (void) const;
-	
-	virtual void update (std::unordered_set<size_t>) {}
 
-	void clear (void) { this->remove_dependency(0); }
+	virtual void update (std::unordered_set<size_t>);
+
+	void clear (void);
 	
 protected:
-	virtual void death_on_broken (void)
-	{
-		if (false == this->dependencies_.empty())
-			this->remove_dependency(0);
-	}
+	virtual void death_on_broken (void);
 };
 
 template <typename T>

@@ -77,25 +77,13 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 }
 
 template <typename T>
-typename iconnector<T>::summary_series immutable<T>::summarize (void) const
-{
-	typename iconnector<T>::conn_summary summ(this->get_name(), shaper_, Nf_->get_transfer(), ginit_);
-	for (subject* sb : this->dependencies_)
-	{
-		summ.arg_ids_.push_back(static_cast<inode<T>*>(sb)->get_summaryid());
-	}
-	return { summ };
-}
-
-template <typename T>
 immutable<T>::immutable (
 	std::vector<inode<T>*> args,
 	SHAPER shaper,
 	transfer_func<T>* Nf,
 	BACK_MAP<T> ginit, std::string label) :
 base_immutable<T>(args, label),
-shaper_(shaper),
-Nf_(Nf),
+shaper_(shaper), Nf_(Nf),
 ginit_(ginit) { this->update({}); }
 
 template <typename T>
@@ -204,6 +192,7 @@ void immutable<T>::copy_helper (const immutable& other)
 
 	ginit_ = other.ginit_;
 	Nf_ = other.Nf_->clone();
+	shaper_ = other.shaper_;
 }
 
 template <typename T>
@@ -213,6 +202,7 @@ void immutable<T>::move_helper (immutable&& other)
 
 	ginit_ = std::move(other.ginit_);
 	Nf_ = other.Nf_->move();
+	shaper_ = std::move(other.shaper_);
 }
 
 }

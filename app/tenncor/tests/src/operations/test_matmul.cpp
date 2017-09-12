@@ -346,7 +346,7 @@ TEST(MATMUL, Jacobian_C003)
 
 
 // tests large matrices sizes (100-112), 2D only
-TEST(MATMUL, DISABLED_Strassen_C004)
+TEST(MATMUL, Strassen_C004)
 {
 	FUZZ::reset_logger();
 	// we get at most 12996 elements per matrix

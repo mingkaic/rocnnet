@@ -13,10 +13,11 @@ jobs:
     - stage: test
       script:
         - docker run -e COVERALLS_TOKEN=$COVERALLS_TOKEN
-          -e TRAVIS=true
-          -e TRAVIS_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER
-          -e TRAVIS_BUILD_ID=$TRAVIS_BUILD_ID
-          -e TRAVIS_BRANCH=$TRAVIS_BRANCH --rm $DOCKER_USERNAME/rocnnet-test
+          -e CI_NAME=rocnnet
+          -e CI_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER
+          -e CI_BRANCH=$TRAVIS_BRANCH
+          -e CI_BUILD_URL=https://travis-ci.org/mingkaic/rocnnet/jobs/$TRAVIS_BUILD_ID
+          --rm $DOCKER_USERNAME/rocnnet-test
 
 # safelist
 branches:

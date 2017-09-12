@@ -305,17 +305,17 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 
 			if (dim_pad > STRASSEN_THRESHOLD)
 			{
-				size_t nmat = dim_pad * dim_pad;
-				T out[nmat];
-				T a[nmat];
-				T b[nmat];
-				memset(a, 0, sizeof(T) * nmat);
-				memset(b, 0, sizeof(T) * nmat);
+				size_t n_mat = dim_pad * dim_pad;
+				T out[n_mat];
+				T a[n_mat];
+				T b[n_mat];
+				memset(a, 0, sizeof(T) * n_mat);
+				memset(b, 0, sizeof(T) * n_mat);
 				for (size_t y = 0; y < dim_y; y++)
 				{
 					for (size_t z = 0; z < dim_z; z++)
 					{
-						size_t aidx = coord_map[0] * y + coord_map[1] * z;
+						size_t aidx = dim_z * y + z;
 						a[z + dim_pad * y] = rawa[aidx];
 					}
 				}
@@ -323,8 +323,8 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 				{
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						size_t bidx = coord_map[2] * x + coord_map[3] * z;
-						b[z + dim_pad * x] = rawb[bidx];
+						size_t bidx = x + dim_x * z;
+						b[x + dim_pad * z] = rawb[bidx];
 					}
 				}
 				strassen(out, a, b, dim_pad);

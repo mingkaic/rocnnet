@@ -35,7 +35,7 @@ static void generate_moreshapes (std::vector<size_t>& pcom, std::vector<size_t>&
 	pcom.insert(pcom.begin() + idx, 0);
 
 	// com is not similar to pcom
-	com = FUZZ::getInt(FUZZ::getInt(1, "com.size", {12, 31})[0], "com", {1, 2});
+	com = FUZZ::getInt(FUZZ::getInt(1, "com.size", {12, 31})[0], "com", {2, 3});
 }
 
 

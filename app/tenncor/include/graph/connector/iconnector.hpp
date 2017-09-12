@@ -91,9 +91,6 @@ public:
 	virtual const tensor<T>* eval (void);
 
 	// >>>> GRAPH STATUS <<<<
-	//! summarize this connector
-	virtual summary_series summarize (void) const = 0;
-
 	//! check if other connector is in the same graph as this
 	bool is_same_graph (const iconnector<T>* other) const;
 
@@ -141,31 +138,7 @@ protected:
 	//! Update g_man_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
 
-	varptr<T> jacobian_call (varptr<T> out, variable<T>* leaf) const
-	{
-		auto jpair = this->jacobians_.find(leaf);
-		if (this->jacobians_.end() != jpair)
-		{
-			auto& jlist = jpair->second.list_;
-			for (auto it = jlist.rbegin(), et = jlist.rend(); it != et; it++)
-			{
-				const JTRANSFER<T>& jt = it->first;
-				// get the node where jacobian originate from
-				const inode<T>* orig = it->second;
-				// get origin arguments and its gradients
-				std::vector<inode<T>*> args = orig->get_arguments();
-				std::vector<inode<T>*> grads(args.size(), nullptr);
-				std::transform(args.begin(), args.end(), grads.begin(),
-				[this, leaf](inode<T>* arg)
-				{
-					return this->take_gradient(arg, leaf);
-				});
-				// operate on out using args and grad
-				out = jt(out, args, grads);
-			}
-		}
-		return out;
-	}
+	varptr<T> jacobian_call (varptr<T> out, variable<T>* leaf) const;
 
 	//! specialized operator: jacobian operators for each variable,
 	//! executed in derive
@@ -175,48 +148,11 @@ protected:
 	graph_manager* g_man_ = nullptr;
 
 private:
-	void copy_helper (const iconnector<T>& other)
-	{
-		jacobians_ = other.jacobians_;
-		jacobian_correction(&other);
-		// this copies other's dependencies so, this and other share a graph
-		if (g_man_) g_man_->suicide(this);
-		g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
-	}
+	void copy_helper (const iconnector<T>& other);
 
-	void move_helper (iconnector<T>&& other)
-	{
-		jacobians_ = std::move(other.jacobians_);
-		jacobian_correction(&other);
-		// this copies other's dependencies so, this and other share a graph
-		if (g_man_)
-		{
-			g_man_->suicide(this);
-		}
-		g_man_ = graph_manager::get(&other, this);
-		if (other.g_man_)
-		{
-			other.g_man_->suicide(&other);
-			other.g_man_ = nullptr;
-		}
-	}
+	void move_helper (iconnector<T>&& other);
 
-	void jacobian_correction (const inode<T>* other)
-	{
-		// todo: move this down to immutable,
-		// since if mutable, parent can have existing jacobian_ with references to other
-		// assert this node has no parent (true when copying immutables)
-
-		// check other's jacobians leafset for references to other and set to this
-		for (auto& jpair : jacobians_)
-		{
-			std::list<std::pair<JTRANSFER<T>,inode<T>*> >& js = jpair.second.list_;
-			if (js.back().second == other)
-			{
-				js.back().second = this;
-			}
-		}
-	}
+	void jacobian_correction (const inode<T>* other);
 };
 
 }

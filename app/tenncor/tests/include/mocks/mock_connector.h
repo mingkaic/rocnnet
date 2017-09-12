@@ -73,8 +73,6 @@ protected:
 		return new mock_connector(std::move(*this));
 	}
 	virtual inode<double>* get_gradient (variable<double>*) { return nullptr; }
-
-	virtual std::vector<typename iconnector<double>::conn_summary> summarize (void) const { return {}; }
 };
 
 

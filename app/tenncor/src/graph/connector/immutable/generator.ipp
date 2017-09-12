@@ -91,12 +91,6 @@ std::unordered_set<ileaf<T>*> generator<T>::get_leaves (void) const
 }
 
 template <typename T>
-typename iconnector<T>::summary_series generator<T>::summarize (void) const
-{
-	return {};
-}
-
-template <typename T>
 bool generator<T>::good_status (void) const
 {
 	return nullptr != data_;

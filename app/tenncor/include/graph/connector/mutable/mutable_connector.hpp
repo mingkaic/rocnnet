@@ -43,14 +43,9 @@ class mutable_connector : public iconnector<T>
 		mutable_connector (const mutable_connector<T>& other);
 
 	public:
-		static mutable_connector<T>* build (MAKE_CONNECT<T> maker, size_t nargs);
-		virtual ~mutable_connector (void)
-		{
-			if (nullptr != ic_)
-			{
-				delete ic_;
-			}
-		}
+		static mutable_connector<T>* get (MAKE_CONNECT<T> maker, size_t nargs);
+
+		virtual ~mutable_connector (void);
 
 		// COPY
 		virtual mutable_connector<T>* clone (void);

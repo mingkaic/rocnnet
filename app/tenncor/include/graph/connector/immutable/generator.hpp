@@ -60,9 +60,6 @@ public:
 	//! get gradient leaves
 	virtual std::unordered_set<ileaf<T>*> get_leaves (void) const;
 
-	//! summarize this connector
-	virtual typename iconnector<T>::summary_series summarize (void) const;
-
 	// >>>> NODE STATUS <<<<
 	//! check if the arguments are good; data is available
 	virtual bool good_status (void) const;

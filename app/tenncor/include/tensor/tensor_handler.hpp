@@ -53,70 +53,35 @@ protected:
 	//! move implementation for moving from itensor_handler
 	virtual itensor_handler<T>* move_impl (void) = 0;
 
-	T* get_raw (tensor<T>& ten) const
-	{
-		assert(ten.is_alloc());
-		return ten.raw_data_;
-	}
+	T* get_raw (tensor<T>& ten) const;
 
-	const T* get_raw (const tensor<T>& ten) const
-	{
-		assert(ten.is_alloc());
-		return ten.raw_data_;
-	}
+	const T* get_raw (const tensor<T>& ten) const;
 };
 
 template <typename T>
 class shape_extracter : public itensor_handler<T>
 {
 public:
-	shape_extracter (SHAPE_EXTRACT extract) : shaper_(extract) {}
+	shape_extracter (SHAPE_EXTRACT extract);
 
 	// >>>> CLONE, MOVE && COPY ASSIGNMENT <<<<
 	//! clone function for copying from itensor_handler
-	shape_extracter<T>* clone (void) const
-	{
-		return static_cast<shape_extracter<T>*>(this->clone_impl());
-	}
+	shape_extracter<T>* clone (void) const;
 
 	//! clone function for copying from itensor_handler
-	shape_extracter<T>* move (void)
-	{
-		return static_cast<shape_extracter<T>*>(this->move_impl());
-	}
+	shape_extracter<T>* move (void);
 
 	//! extract tensor information and store in out
-	void operator () (tensor<T>& out, std::vector<tensorshape>& ts) const
-	{
-		T* raw = this->get_raw(out);
-		std::vector<size_t> shapes = out.get_shape().as_list();
-		size_t ncol = shapes[0];
-		size_t nrow = shapes.size() < 2 ? 1 : shapes[1];
-		std::fill(raw, raw + out.n_elems(), (T) 1);
-		for (size_t i = 0; i < nrow; i++)
-		{
-			std::vector<size_t> sv = shaper_(ts[i]);
-			for (size_t j = 0, n = sv.size(); j < n; j++)
-			{
-				raw[i * ncol + j] = sv[j];
-			}
-		}
-	}
+	void operator () (tensor<T>& out, std::vector<tensorshape>& ts) const;
 
-	SHAPE_EXTRACT get_shaper (void) const { return shaper_; }
+	SHAPE_EXTRACT get_shaper (void) const;
 
 protected:
 	//! clone implementation for copying from itensor_handler
-	virtual itensor_handler<T>* clone_impl (void) const
-	{
-		return new shape_extracter(*this);
-	}
+	virtual itensor_handler<T>* clone_impl (void) const;
 
 	//! move implementation for moving from itensor_handler
-	virtual itensor_handler<T>* move_impl (void)
-	{
-		return new shape_extracter(std::move(*this));
-	}
+	virtual itensor_handler<T>* move_impl (void);
 
 private:
 	//! extract shape dimensions to data_
@@ -273,41 +238,23 @@ class rand_normal : public initializer<T>
 {
 public:
 	//! initialize tensors with a random value between min and max
-	rand_normal (T mean = 0, T stdev = 1) :
-		distribution_(mean, stdev) {}
+	rand_normal (T mean = 0, T stdev = 1);
 
 	//! clone function for copying from parents
-	rand_normal<T>* clone (void) const
-	{
-		return static_cast<rand_normal<T>*>(clone_impl());
-	}
+	rand_normal<T>* clone (void) const;
 
 	//! clone function for copying from parents
-	rand_normal<T>* move (void)
-	{
-		return static_cast<rand_normal<T>*>(move_impl());
-	}
+	rand_normal<T>* move (void);
 
 protected:
 	//! clone implementation for copying from parents
-	virtual itensor_handler<T>* clone_impl (void) const
-	{
-		return new rand_normal(*this);
-	}
+	virtual itensor_handler<T>* clone_impl (void) const;
 
 	//! clone function for copying from parents
-	virtual itensor_handler<T>* move_impl (void)
-	{
-		return new rand_normal(std::move(*this));
-	}
+	virtual itensor_handler<T>* move_impl (void);
 
 	//! initialize data as constant
-	virtual void calc_data (T* dest, tensorshape outshape)
-	{
-		size_t len = outshape.n_elems();
-		auto gen = std::bind(distribution_, nnutils::get_generator());
-		std::generate(dest, dest+len, gen);
-	}
+	virtual void calc_data (T* dest, tensorshape outshape);
 
 private:
 	std::normal_distribution<T> distribution_;
