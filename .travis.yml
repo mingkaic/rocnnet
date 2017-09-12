@@ -4,9 +4,7 @@ dist: xenial
 
 install:
   - gem install coveralls-lcov
-  - wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz
-  - tar xf lcov_1.13.orig.tar.gz
-  - make -C lcov-1.13/ install
+  - sudo apt-get install lcov
 
 jobs:
   include:
