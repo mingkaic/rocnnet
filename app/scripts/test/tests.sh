@@ -73,10 +73,11 @@ gcov --version
 lcov --base-directory . --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
 lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
 lcov --list coverage.info # debug < see coverage here
-if ! [ -z "$COVERALLS_TOKEN" ];
+if ! [ -z "$SHARED_DIR" ];
 then
-    echo "sending $CI_NAME coverage of branch $CI_BRANCH of build number $CI_BUILD_NUMBER"
-    coveralls-lcov --repo-token $COVERALLS_TOKEN coverage.info # uploads to coveralls
+    echo "copying over coveralls"
+    # move coverage info to shared to send to cover-alls
+    cp coverage.info $SHARED_DIR/coverage.info
 fi
 
 echo "";
