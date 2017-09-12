@@ -153,8 +153,8 @@ TEST(HANDLER, Random_C003)
 	// assert shape has n_elem of [17, 7341]
 	// the mean of vnorm is definitely within variance / 2 of the normal
 	double norm_mean = std::accumulate(v3.begin(), v3.end(), 0) / (double) v3.size();
-	EXPECT_GT(norm_mean, mean - (variance / 2));
-	EXPECT_LT(norm_mean, mean + (variance / 2));
+	EXPECT_GT(norm_mean, mean - variance);
+	EXPECT_LT(norm_mean, mean + variance);
 }
 
 
@@ -217,8 +217,8 @@ TEST(HANDLER, Copy_C004)
 	// assert shape has n_elem of [17, 7341]
 	// the mean of vnorm is definitely within variance / 2 of the normal
 	double norm_mean = std::accumulate(vnorm.begin(), vnorm.end(), 0) / (double) vnorm.size();
-	EXPECT_GT(norm_mean, mean - (variance / 2));
-	EXPECT_LT(norm_mean, mean + (variance / 2));
+	EXPECT_GT(norm_mean, mean - variance);
+	EXPECT_LT(norm_mean, mean + variance);
 
 	tensor<double> tscalar2(0);
 	tensor<double> tblock2(shape);
@@ -245,8 +245,8 @@ TEST(HANDLER, Copy_C004)
 	// assert shape has n_elem of [17, 7341]
 	// the mean of vnorm is definitely within variance / 2 of the normal
 	double norm_mean2 = std::accumulate(vnorm2.begin(), vnorm2.end(), 0) / (double) vnorm2.size();
-	EXPECT_GT(norm_mean2, mean - (variance / 2));
-	EXPECT_LT(norm_mean2, mean + (variance / 2));
+	EXPECT_GT(norm_mean2, mean - variance);
+	EXPECT_LT(norm_mean2, mean + variance);
 
 	itensor_handler<double>* interface_ptr = &tf;
 	itensor_handler<double>* resptr = interface_ptr->clone();
@@ -324,8 +324,8 @@ TEST(HANDLER, Move_C004)
 	// assert shape has n_elem of [17, 7341]
 	// the mean of vnorm is definitely within variance / 2 of the normal
 	double norm_mean = std::accumulate(vnorm.begin(), vnorm.end(), 0) / (double) vnorm.size();
-	EXPECT_GT(norm_mean, mean - (variance / 2));
-	EXPECT_LT(norm_mean, mean + (variance / 2));
+	EXPECT_GT(norm_mean, mean - variance);
+	EXPECT_LT(norm_mean, mean + variance);
 
 	tfassign = std::move(*tfmv);
 	ciassign = std::move(*cimv);
@@ -355,10 +355,10 @@ TEST(HANDLER, Move_C004)
 	niassign(tblock_norm2);
 	std::vector<double> vnorm2 = tblock_norm2.expose();
 	// assert shape has n_elem of [17, 7341]
-	// the mean of vnorm is definitely within variance / 2 of the normal
+	// the mean of vnorm is definitely within variance of the normal
 	double norm_mean2 = std::accumulate(vnorm2.begin(), vnorm2.end(), 0) / (double) vnorm2.size();
-	EXPECT_GT(norm_mean2, mean - (variance / 2));
-	EXPECT_LT(norm_mean2, mean + (variance / 2));
+	EXPECT_GT(norm_mean2, mean - variance);
+	EXPECT_LT(norm_mean2, mean + variance);
 
 	delete tfmv;
 	delete cimv;
