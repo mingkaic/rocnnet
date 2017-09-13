@@ -68,18 +68,18 @@ echo "python dq_demo complete"
 #echo "rbm_demo complete"
 
 # ===== Coverage Analysis ======
-if ! [ -z "$SHARED_DIR" ];
-then
-    echo "copying over everything to shared"
-    cp -R . $SHARED_DIR
-fi
-
 lcov --version
 gcov --version
 lcov --base-directory . --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
 # filter out system and test code
 lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info
 lcov --list coverage.info # debug < see coverage here
+
+if ! [ -z "$COVERALLS_TOKEN" ];
+then
+    echo "branched from $TRAVIS_BRANCH"
+    coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
+fi
 
 echo "";
 echo "============ ROCNNET TEST SUCCESS============";

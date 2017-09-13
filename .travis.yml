@@ -18,19 +18,41 @@ jobs:
       script:
         - mkdir ${TRAVIS_BUILD_DIR}/shareds
         - docker run
-          -e SHARED_DIR=/shareds
-          -v ${TRAVIS_BUILD_DIR}/shareds:/shareds
+          -e COVERALLS_TOKEN=${COVERALLS_TOKEN}
+          -e CI=true
+          -e TRAVIS=true
+          -e CONTINUOUS_INTEGRATION=true
+          -e DEBIAN_FRONTEND=$DEBIAN_FRONTEND
+          -e HAS_JOSH_K_SEAL_OF_APPROVAL=$HAS_JOSH_K_SEAL_OF_APPROVAL
+          -e TRAVIS_BRANCH=${TRAVIS_BRANCH}
+          -e USER=$USER
+          -e HOME=$HOME
+          -e LANG=$LANG
+          -e LC_ALL=$LC_ALL
+          -e RAILS_ENV=$RAILS_ENV
+          -e MERB_ENV=$MERB_ENV
+          -e JRUBY_OPTS=$JRUBY_OPTS
+          -e JAVA_HOME=$JAVA_HOME
+          -e TRAVIS_BUILD_DIR=$TRAVIS_BUILD_DIR
+          -e TRAVIS_BUILD_ID=$TRAVIS_BUILD_ID
+          -e TRAVIS_BUILD_NUMBER=$TRAVIS_BUILD_NUMBER
+          -e TRAVIS_COMMIT=$TRAVIS_COMMIT
+          -e TRAVIS_COMMIT_MESSAGE=$TRAVIS_COMMIT_MESSAGE
+          -e TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+          -e TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE
+          -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID
+          -e TRAVIS_JOB_NUMBER=$TRAVIS_JOB_NUMBER
+          -e TRAVIS_OS_NAME=$TRAVIS_OS_NAME
+          -e TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
+          -e TRAVIS_PULL_REQUEST_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+          -e TRAVIS_PULL_REQUEST_SHA=$TRAVIS_PULL_REQUEST_SHA
+          -e TRAVIS_PULL_REQUEST_SLUG=$TRAVIS_PULL_REQUEST_SLUG
+          -e TRAVIS_REPO_SLUG=$TRAVIS_REPO_SLUG
+          -e TRAVIS_SECURE_ENV_VARS=$TRAVIS_SECURE_ENV_VARS
+          -e TRAVIS_SUDO=$TRAVIS_SUDO
+          -e TRAVIS_TEST_RESULT=$TRAVIS_TEST_RESULT
+          -e TRAVIS_TAG=$TRAVIS_TAG
           --rm ${DOCKER_USERNAME}/rocnnet-test
-
-after_success:
-  - pushd ${TRAVIS_BUILD_DIR}/shareds
-  - lcov --version
-  - gcov --version
-  - lcov --base-directory . --directory . --gcov-tool gcov --capture --output-file coverage.info # capture coverage info
-  - lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
-  - lcov --list coverage.info
-  - coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
-  - popd
 
 # safelist
 branches:
