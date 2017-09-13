@@ -77,7 +77,7 @@ lcov --list coverage.info # debug < see coverage here
 if ! [ -z "$SHARED_DIR" ];
 then
     echo "copying over everything to shared"
-    cp -R app $SHARED_DIR
+    cp -R . $SHARED_DIR
 fi
 
 echo "";
