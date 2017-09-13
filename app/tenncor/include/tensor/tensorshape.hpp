@@ -112,11 +112,14 @@ public:
 
 	// todo: test
 	// >>>> COORDINATES <<<<
-	//! obtains the index of data should they be flatten to a vector given dimensions_
-	size_t sequential_idx (std::vector<size_t> coord) const;
+	//! obtain the flat vector index from cartesian coordinates (e.g.: 2-D [x, y] has flat index = y * dimensions_[0] + x)
+	size_t flat_idx (std::vector<size_t> coord) const;
 
-	//! obtain the coordinates of the data in vector given a sequential index given dimensions_
+	//! obtain cartesian coordinates given a flat vector index
 	std::vector<size_t> coordinate_from_idx (size_t idx) const;
+
+	//! iterate with cartesian and flat coordinates of every valid element in shape
+	void iterate (std::function<void(std::vector<size_t>, size_t)> coord_call) const;
 
 private:
 	//! zero values denotes unknown/undefined value

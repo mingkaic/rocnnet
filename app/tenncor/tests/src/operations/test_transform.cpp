@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_OPERATION_MODULE_TESTS
 
 #include <algorithm>
 
@@ -22,7 +22,7 @@ using namespace nnet;
 
 
 using SHAPE_CHANGE = std::function<tensorshape(tensorshape)>;
-using DATA_CHANGE = std::function<std::vector<double>(std::vector<double>,tensorshape)>;
+using DATA_CHANGE = std::function<std::vector<double>(std::vector<double>,tensorshape,tensorshape)>;
 
 template <typename T>
 using PARAM_EVAL = std::function<T(tensorshape)>;
@@ -40,7 +40,7 @@ T no_param (tensorshape) { return (T)0; }
 tensorshape as_is (tensorshape in) { return in; }
 
 
-std::vector<double> onescalar (std::vector<double>, tensorshape)
+std::vector<double> onescalar (std::vector<double>, tensorshape, tensorshape)
 {
 	return std::vector<double>(1, 1);
 }
@@ -70,7 +70,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 
 	tensorshape expectoshape = expect_shape(shape);
 	std::vector<double> varout = expose(&var);
-	std::vector<double> expectout = expect_transfer(varout, shape);
+	std::vector<double> expectout = expect_transfer(varout, shape, expectoshape);
 	nnet::inode<double>* vgrad = var.derive(&var);
 	{
 		const nnet::tensor<double>* vgradtens = vgrad->eval();
@@ -92,7 +92,7 @@ static void unaryTransTest (std::pair<int,int> ranklimit, UNARY_VAR<T> func,
 	if ((bool) grad_transfer && (bool) grad_shape)
 	{
 		tensorshape gradoshape = (*grad_shape)(var.derive(&var)->get_shape());
-		std::vector<double> gradout = (*grad_transfer)(expose(vgrad), vgrad->get_shape());
+		std::vector<double> gradout = (*grad_transfer)(expose(vgrad), vgrad->get_shape(), gradoshape);
 		const tensor<double>* backt = res->derive(&var)->eval();
 		tensorshape outgshape = backt->get_shape();
 		std::vector<double> rgout = backt->expose();
@@ -117,19 +117,19 @@ TEST(TRANSFORM, Transpose_B001)
 {
 	FUZZ::reset_logger();
 	DATA_CHANGE transfer =
-	[](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	[](std::vector<double> in, tensorshape inshape,
+		tensorshape outshape) -> std::vector<double>
 	{
 		if (1 == inshape.rank())
 		{
 			return in;
 		}
 		std::vector<size_t> slist = inshape.as_list();
-		tensorshape outshape({slist[1], slist[0]});
 		std::vector<double> out(in.size(), 0);
 		for (size_t i = 0, n = in.size(); i < n; i++)
 		{
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
-			size_t j = outshape.sequential_idx({incoord[1], incoord[0]});
+			size_t j = outshape.flat_idx({incoord[1], incoord[0]});
 			out[j] = in[i];
 		}
 		return out;
@@ -164,11 +164,11 @@ TEST(TRANSFORM, Fit_B002)
 		return varptr<double>(&shapeholder);
 	};
 	DATA_CHANGE transfer =
-	[&realshape](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	[](std::vector<double> in, tensorshape inshape, tensorshape outshape) -> std::vector<double>
 	{
-		size_t n = realshape.n_elems();
+		size_t n = outshape.n_elems();
 		std::vector<double> out(n, 0);
-		std::vector<size_t> outlist = realshape.as_list();
+		std::vector<size_t> outlist = outshape.as_list();
 		for (size_t i = 0, m = in.size(); i < m; i++)
 		{
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
@@ -186,7 +186,7 @@ TEST(TRANSFORM, Fit_B002)
 			}
 			if (b)
 			{
-				size_t outidx = realshape.sequential_idx(incoord);
+				size_t outidx = outshape.flat_idx(incoord);
 				out[outidx] = in[i];
 			}
 		}
@@ -218,7 +218,7 @@ TEST(TRANSFORM, Extend_B003To004)
 		return {extend_index, multiplier};
 	};
 	DATA_CHANGE transfer =
-	[&extend_index, &multiplier](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	[&extend_index, &multiplier](std::vector<double> in, tensorshape inshape, tensorshape) -> std::vector<double>
 	{
 		std::vector<size_t> invec = inshape.as_list();
 		std::vector<double> out;
@@ -277,36 +277,42 @@ TEST(TRANSFORM, Compress_B005)
 {
 	FUZZ::reset_logger();
 	size_t compress_index;
-	ELEM_FUNC<double> compression =
-	[](const double** data, size_t n) -> double
+	AGGREGATE<double> compression =
+	[](double a, double b) -> double
 	{
-		assert(n > 0);
-		return *data[0];
+		return a + b;
 	};
 
 	PARAM_EVAL<size_t> compressparam =
-	[&compress_index, &compression](tensorshape shape) -> size_t
+	[&compress_index](tensorshape shape) -> size_t
 	{
 		size_t srank = shape.rank();
 		compress_index = FUZZ::getInt(1, "compress_index", {0, srank-1})[0];
 		return compress_index;
 	};
 	DATA_CHANGE transfer =
-	[&compress_index](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	[&compress_index](std::vector<double> in, tensorshape inshape, tensorshape outshape) -> std::vector<double>
 	{
-		std::vector<size_t> outlist = inshape.as_list();
-		if (compress_index >= outlist.size()) return in;
-		outlist[compress_index] = 1;
-		tensorshape outshape(outlist);
+		if (compress_index >= inshape.rank()) return in;
 		std::vector<double> out(outshape.n_elems(), 0);
 		for (size_t i = 0, m = in.size(); i < m; i++)
 		{
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
-			if (incoord[compress_index] == 0)
+			if (compress_index == 0)
 			{
-				size_t outidx = outshape.sequential_idx(incoord);
-				out[outidx] = in[i];
+				incoord = std::vector<size_t>(incoord.begin() + 1, incoord.end());
 			}
+			else if (compress_index == incoord.size() - 1)
+			{
+				incoord.pop_back();
+			}
+			else
+			{
+				incoord[compress_index] = 0;
+			}
+
+			size_t outidx = outshape.flat_idx(incoord);
+			out[outidx] += in[i];
 		}
 		return out;
 	};
@@ -347,55 +353,26 @@ TEST(TRANSFORM, CompressScalar_B006)
 	variable<double> var(shape, rinit, "unar_var");
 	var.initialize();
 
-	static std::vector<ELEM_FUNC<double> > comps = {
-		[](const double** a, size_t n)
+	std::vector<AGGREGATE<double> > comps = {
+		[](double a, double b)
 		{
-			double accum = 0;
-			for (size_t i = 0; i < n; i++)
-			{
-				accum += *(a[i]);
-			}
-			return accum;
+			return a + b;
 		},
-		[](const double** a, size_t n)
+		[](double a, double b)
 		{
-			double accum = 0;
-			for (size_t i = 0; i < n; i++)
-			{
-				accum += *(a[i]);
-			}
-			return accum / n;
+			return std::max(a, b);
 		},
-		[](const double** a, size_t n)
+		[](double a, double b)
 		{
-			double accum = 0;
-			for (size_t i = 0; i < n; i++)
-			{
-				accum = std::max(accum, *(a[i]));
-			}
-			return accum;
-		},
-		[](const double** a, size_t n)
-		{
-			double accum = 0;
-			for (size_t i = 0; i < n; i++)
-			{
-				accum = std::min(accum, *(a[i]));
-			}
-			return accum;
+			return std::min(a, b);
 		}
 	};
-	ELEM_FUNC<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
+	AGGREGATE<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
 
 	varptr<double> scal = compress(varptr<double>(&var), comp, optional<size_t>());
 
 	std::vector<double> raw = expose<double>(&var);
-	std::vector<const double*> ptrs;
-	for (double& e : raw)
-	{
-		ptrs.push_back(&e);
-	}
-	double real_val = comp(&(ptrs[0]), ptrs.size());
+	double real_val = std::accumulate(raw.begin() + 1, raw.end(), raw[0], comp);
 	EXPECT_EQ(real_val, expose<double>(scal)[0]);
 }
 
@@ -404,26 +381,10 @@ TEST(TRANSFORM, ArgCompress_B008To009)
 {
 	FUZZ::reset_logger();
 	size_t arg_index;
-	ELEM_FUNC<double> search =
-	[](const double** data, size_t n) -> double
+	REDUCE<double> search =
+	[](std::vector<double> data) -> double
 	{
-		double mean = 0;
-		for (size_t i = 0; i < n; i++)
-		{
-			mean += *(data[i]) / n;
-		}
-		double error = std::abs(*(data[0]) - mean);
-		size_t idx = 0;
-		for (size_t i = 1; i < n; i++)
-		{
-			double potent_error = std::abs(*(data[i]) - mean);
-			if (potent_error < error)
-			{
-				error = potent_error;
-				idx = i;
-			}
-		}
-		return idx;
+		return std::distance(data.begin(), std::max_element(data.begin(), data.end()));
 	};
 
 	PARAM_EVAL<size_t> argcompressparam =
@@ -434,30 +395,35 @@ TEST(TRANSFORM, ArgCompress_B008To009)
 		return arg_index;
 	};
 	DATA_CHANGE transfer =
-	[&arg_index, &search](std::vector<double> in, tensorshape inshape) -> std::vector<double>
+	[&arg_index, &search](std::vector<double> in, tensorshape inshape, tensorshape outshape) -> std::vector<double>
 	{
-		std::vector<size_t> outlist = inshape.as_list();
-		size_t n = outlist[arg_index];
-		assert(arg_index < outlist.size());
-		outlist[arg_index] = 1;
-		tensorshape outshape(outlist);
+		assert(arg_index < inshape.rank());
 		std::vector<double> out(outshape.n_elems(), 0);
+		std::vector<std::vector<double> > out_searches(outshape.n_elems(), std::vector<double>{});
 		for (size_t i = 0, m = in.size(); i < m; i++)
 		{
 			std::vector<size_t> incoord = inshape.coordinate_from_idx(i);
-			if (incoord[arg_index] == 0)
+			if (arg_index == 0)
 			{
-				std::vector<const double*> vecs;
-				size_t outidx = outshape.sequential_idx(incoord);
-				for (size_t i = 0; i < n; i++)
-				{
-					incoord[arg_index] = i;
-					size_t inidx = inshape.sequential_idx(incoord);
-					vecs.push_back(&in[inidx]);
-				}
-				out[outidx] = search(&vecs[0], vecs.size());
+				incoord = std::vector<size_t>(incoord.begin() + 1, incoord.end());
 			}
+			else if (arg_index == incoord.size() - 1)
+			{
+				incoord.pop_back();
+			}
+			else
+			{
+				incoord[arg_index] = 0;
+			}
+			std::vector<double> vecs;
+			size_t outidx = outshape.flat_idx(incoord);
+			out_searches[outidx].push_back(in[i]);
 		}
+		std::transform(out_searches.begin(), out_searches.end(), out.begin(),
+		[search](std::vector<double>& vec)
+		{
+			return search(vec);
+		});
 		return out;
 	};
 	SHAPE_CHANGE shape =
@@ -497,47 +463,42 @@ TEST(TRANSFORM, ArgCompressScalar_B010)
 	variable<double> var(shape, rinit, "unar_var");
 	var.initialize();
 
-	static std::vector<ELEM_FUNC<double> > comps = {
-		[](const double** a, size_t n)
+	std::vector<REDUCE<double> > comps = {
+		[](std::vector<double> data)
 		{
 			double accum = 0;
 			size_t idx = 0;
-			for (size_t i = 0; i < n; i++)
+			for (size_t i = 0, n = data.size(); i < n; i++)
 			{
-				if (accum < *(a[i]))
+				if (accum < data[i])
 				{
-					accum = *(a[i]);
+					accum = data[i];
 					idx = i;
 				}
 			}
 			return (double) idx;
 		},
-		[](const double** a, size_t n)
+		[](std::vector<double> data)
 		{
 			double accum = 0;
 			size_t idx = 0;
-			for (size_t i = 0; i < n; i++)
+			for (size_t i = 0, n = data.size(); i < n; i++)
 			{
-				if (accum > *(a[i]))
+				if (accum < data[i])
 				{
-					accum = *(a[i]);
+					accum = data[i];
 					idx = i;
 				}
 			}
 			return (double) idx;
 		}
 	};
-	ELEM_FUNC<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
+	REDUCE<double> comp = comps[FUZZ::getInt(1, "compIdx", {0, comps.size() - 1})[0]];
 
 	varptr<double> scal = arg_compress(varptr<double>(&var), comp, optional<size_t>());
 
 	std::vector<double> raw = expose<double>(&var);
-	std::vector<const double*> ptrs;
-	for (double& e : raw)
-	{
-		ptrs.push_back(&e);
-	}
-	double real_idx = comp(&(ptrs[0]), ptrs.size());
+	double real_idx = comp(raw);
 	EXPECT_EQ(real_idx, expose<double>(scal)[0]);
 }
 
@@ -572,7 +533,7 @@ TEST(ELEMENTARY, Flip_B012)
 		std::vector<size_t> coord = shape.coordinate_from_idx(i);
 		coord[flipdim] = shapelist[flipdim] - coord[flipdim] - 1;
 		double out = rawf[i];
-		double in = indata[shape.sequential_idx(coord)];
+		double in = indata[shape.flat_idx(coord)];
 		EXPECT_EQ(in, out);
 	}
 
@@ -583,4 +544,4 @@ TEST(ELEMENTARY, Flip_B012)
 #endif /* DISABLE_TRANSFORM_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_OPERATION_MODULE_TESTS */

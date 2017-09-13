@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2016-08-29.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_OPERATION_MODULE_TESTS
 
 #include <algorithm>
 
@@ -51,7 +51,7 @@ static void unaryElemTest (UNARY_VAR func,
 	var.initialize();
 	std::vector<double> indata = expose<double>(&var);
 
-	// compare data, shape must be equivalent, since we're testing elementary operations (Behavior A001)
+	// compare data, shape must be equivalent, since we're testing elementary operations (Behavior A002)
 	const tensor<double>* rawtens = res->eval();
 	std::vector<double> rawf = rawtens->expose();
 	ASSERT_TRUE(tensorshape_equal(shape, rawtens->get_shape()));
@@ -86,6 +86,22 @@ static void unaryElemTest (UNARY_VAR func,
 			double errb = std::abs(backd - rawdb);
 			EXPECT_GE(epi, errb);
 		}
+	}
+
+	// behavior A001
+	// avoid negatives to prevent bad ops
+	std::vector<double> constant_values = FUZZ::getDouble(shape.n_elems(), "constant_values", {0, 17});
+	nnet::constant<double>* c = nnet::constant<double>::get(constant_values, shape);
+	nnet::varptr<double> cres = func(c);
+	nnet::constant<double>* cres_c = dynamic_cast<nnet::constant<double>*>(cres.get());
+	ASSERT_NE(nullptr, cres_c);
+	EXPECT_TRUE(tensorshape_equal(shape, cres_c->get_shape()));
+	std::vector<double> result = nnet::expose(cres_c);
+	assert(result.size() == constant_values.size()); // logical assertion
+	for (size_t i = 0; i < constant_values.size(); i++)
+	{
+		double expectation = expect_forward(constant_values[i]);
+		EXPECT_EQ(expectation, result[i]);
 	}
 }
 
@@ -123,7 +139,7 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 	std::vector<double> indata = expose<double>(&var);
 	std::vector<double> indata2 = expose<double>(&var2);
 
-	// compare data, shape must be equivalent, since we're testing elementary operations (A001)
+	// compare data, shape must be equivalent, since we're testing elementary operations (A002)
 	const tensor<double>* tenn = res->eval();
 	const tensor<double>* tenn1 = res1->eval();
 	const tensor<double>* tenn2 = res2->eval();
@@ -200,7 +216,7 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 		EXPECT_GE(epi, errb);
 	}
 
-	// Behavior A002
+	// Behavior A003
 	varptr<double> bad1 = func(varptr<double>(&var), varptr<double>(&var3));
 	varptr<double> bad2 = func(varptr<double>(&var3), varptr<double>(&var2));
 
@@ -220,7 +236,7 @@ static void binaryElemTest (BINARY_VARS func, BINARY_VAR1 func1, BINARY_VAR2 fun
 }
 
 
-TEST(ELEMENTARY, Abs_A000ToA002)
+TEST(ELEMENTARY, Abs_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -230,7 +246,7 @@ TEST(ELEMENTARY, Abs_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Neg_A000ToA002)
+TEST(ELEMENTARY, Neg_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -240,7 +256,7 @@ TEST(ELEMENTARY, Neg_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Sin_A000ToA002)
+TEST(ELEMENTARY, Sin_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -250,7 +266,7 @@ TEST(ELEMENTARY, Sin_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Cos_A000ToA002)
+TEST(ELEMENTARY, Cos_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -261,7 +277,7 @@ TEST(ELEMENTARY, Cos_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Tan_A000ToA002)
+TEST(ELEMENTARY, Tan_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -275,7 +291,7 @@ TEST(ELEMENTARY, Tan_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Csc_A000ToA002)
+TEST(ELEMENTARY, Csc_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -288,7 +304,7 @@ TEST(ELEMENTARY, Csc_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Sec_A000ToA002)
+TEST(ELEMENTARY, Sec_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -298,7 +314,7 @@ TEST(ELEMENTARY, Sec_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Cot_A000ToA002)
+TEST(ELEMENTARY, Cot_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -312,7 +328,7 @@ TEST(ELEMENTARY, Cot_A000ToA002)
 }
 
 
-TEST(ELEMENTARY, Exp_A000ToA002)
+TEST(ELEMENTARY, Exp_A000ToA003)
 {
 	FUZZ::reset_logger();
 	unaryElemTest(
@@ -322,25 +338,48 @@ TEST(ELEMENTARY, Exp_A000ToA002)
 }
 
 
-// TEST(ELEMENTARY, Root_A000ToA002)
-// {
-//FUZZ::reset_logger();
-// 	unaryElemTest(
-// 	[](varptr<double> in) { return root(in); },
-// 	[](double var) { return exp(var); });
-// }
+TEST(ELEMENTARY, Root_A000ToA003)
+{
+	FUZZ::reset_logger();
+ 	unaryElemTest(
+ 	[](varptr<double> in) { return sqrt(in); },
+ 	[](double var) { return std::sqrt(var); },
+	[](double var, double gvar) { return gvar / (2.0 * std::sqrt(var)); });
+}
 
 
-// TEST(ELEMENTARY, Pow_A000ToA002)
-// {
-//	FUZZ::reset_logger();
-// 	unaryElemTest(
-// 	[](varptr<double> in) { return pow(in); },
-// 	[](double var) { return pow(var); });
-// }
+TEST(ELEMENTARY, Round_A000ToA003)
+{
+	FUZZ::reset_logger();
+	unaryElemTest(
+	[](varptr<double> in) { return round(in); },
+	[](double var) { return std::round(var); },
+	[](double, double gvar) { return std::round(gvar); });
+}
 
 
-TEST(ELEMENTARY, ClipVal_A000ToA002)
+TEST(ELEMENTARY, Log_A000ToA003)
+{
+	FUZZ::reset_logger();
+	unaryElemTest(
+	[](varptr<double> in) { return log(in); },
+	[](double var) { return std::log(var); },
+	[](double var, double) { return 1 / var; });
+}
+
+
+TEST(ELEMENTARY, Pow_A000ToA003)
+{
+	FUZZ::reset_logger();
+	double scalar = FUZZ::getDouble(1, "scalar", {-21, 13})[0];
+ 	unaryElemTest(
+ 	[scalar](varptr<double> in) { return pow(in, scalar); },
+ 	[scalar](double var) { return std::pow(var, scalar); },
+	[scalar](double var, double gvar) { return scalar * gvar * pow(var, scalar-1); });
+}
+
+
+TEST(ELEMENTARY, ClipVal_A000ToA003)
 {
 	FUZZ::reset_logger();
 	std::vector<double> limits = FUZZ::getDouble(2, "limits", {-100, 200});
@@ -363,25 +402,7 @@ TEST(ELEMENTARY, ClipVal_A000ToA002)
 }
 
 
-// TEST(ELEMENTARY, L2Norm_A000ToA002)
-// {
-//	FUZZ::reset_logger();
-// 	unaryElemTest(
-// 	[](varptr<double> in) { return l2norm(in); },
-// 	[](double var) { return l2norm(var); });
-// }
-
-
-// TEST(ELEMENTARY, ClipNorm_A000ToA002)
-// {
-//	FUZZ::reset_logger();
-// 	unaryElemTest(
-// 	[](varptr<double> in) { return clip_norm(in); },
-// 	[](double var) { return clip_norm(var); });
-// }
-
-
-TEST(ELEMENTARY, Condition_A000ToA002_A012)
+TEST(ELEMENTARY, Condition_A000ToA003_A012)
 {
 	FUZZ::reset_logger();
 	static std::vector<std::function<bool(double,double)> > conds = {
@@ -411,7 +432,7 @@ TEST(ELEMENTARY, Condition_A000ToA002_A012)
 }
 
 
-TEST(ELEMENTARY, Add_A000ToA003_A012)
+TEST(ELEMENTARY, Add_A000ToA004_A012)
 {
 	FUZZ::reset_logger();
 	binaryElemTest(
@@ -428,7 +449,7 @@ TEST(ELEMENTARY, Add_A000ToA003_A012)
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
-	// Behavior A003
+	// Behavior A004
 	varptr<double> samev1 = varptr<double>(&var) +  0.0;
 	varptr<double> samev2 = 0.0 + varptr<double>(&var2);
 	varptr<double> samev12 = varptr<double>(&var) + varptr<double>(zero);
@@ -463,7 +484,7 @@ TEST(ELEMENTARY, Add_A000ToA003_A012)
 }
 
 
-TEST(ELEMENTARY, Sub_A000ToA002_A012_A004)
+TEST(ELEMENTARY, Sub_A000ToA003_A012_A005)
 {
 	FUZZ::reset_logger();
 	binaryElemTest(
@@ -481,7 +502,7 @@ TEST(ELEMENTARY, Sub_A000ToA002_A012_A004)
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
-	// Behavior A004
+	// Behavior A005
 	varptr<double> samev1 = varptr<double>(&var) -  0.0;
 	varptr<double> samenv2 = 0.0 - varptr<double>(&var2);
 	varptr<double> samev12 = varptr<double>(&var) - varptr<double>(zero);
@@ -532,7 +553,7 @@ TEST(ELEMENTARY, Sub_A000ToA002_A012_A004)
 }
 
 
-TEST(ELEMENTARY, Mul_A000ToA002_A012_A005ToA006)
+TEST(ELEMENTARY, Mul_A000ToA003_A012_A006ToA007)
 {
 	FUZZ::reset_logger();
 	binaryElemTest(
@@ -550,7 +571,7 @@ TEST(ELEMENTARY, Mul_A000ToA002_A012_A005ToA006)
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
-	// Behavior A005
+	// Behavior A006
 	varptr<double> zaro = varptr<double>(&var) *  0.0;
 	varptr<double> zaro2 = 0.0 * varptr<double>(&var2);
 	varptr<double> zaro3 = varptr<double>(&var) * varptr<double>(zero);
@@ -568,7 +589,7 @@ TEST(ELEMENTARY, Mul_A000ToA002_A012_A005ToA006)
 	EXPECT_EQ(0, exp03.at(0));
 	EXPECT_EQ(0, exp04.at(0));
 
-	// Behavior A006
+	// Behavior A007
 	varptr<double> samev1 = varptr<double>(&var) * 1.0;
 	varptr<double> samev2 = 1.0 * varptr<double>(&var2);
 	varptr<double> samev12 = varptr<double>(&var) * varptr<double>(one);
@@ -612,7 +633,7 @@ TEST(ELEMENTARY, Mul_A000ToA002_A012_A005ToA006)
 }
 
 
-TEST(ELEMENTARY, Div_A000ToA002_A012_A007ToA008)
+TEST(ELEMENTARY, Div_A000ToA003_A012_A008ToA009)
 {
 	FUZZ::reset_logger();
 	binaryElemTest(
@@ -630,7 +651,7 @@ TEST(ELEMENTARY, Div_A000ToA002_A012_A007ToA008)
 	variable<double> var(shape, rinit, "var");
 	variable<double> var2(shape, rinit, "var2");
 
-	// Behavior A005
+	// Behavior A006
 	varptr<double> zaro = 0.0 / varptr<double>(&var2);
 	varptr<double> zaro2 = varptr<double>(zero) * varptr<double>(&var2);
 	EXPECT_THROW(varptr<double>(&var) /  0.0, std::logic_error);
@@ -644,7 +665,7 @@ TEST(ELEMENTARY, Div_A000ToA002_A012_A007ToA008)
 	EXPECT_EQ(0, exp01.at(0));
 	EXPECT_EQ(0, exp02.at(0));
 
-	// Behavior A006
+	// Behavior A007
 	varptr<double> samev1 = varptr<double>(&var) / 1.0;
 	varptr<double> samev12 = varptr<double>(&var) / varptr<double>(one);
 
@@ -679,4 +700,4 @@ TEST(ELEMENTARY, Div_A000ToA002_A012_A007ToA008)
 #endif /* DISABLE_ELEMENTARY_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_OPERATION_MODULE_TESTS */

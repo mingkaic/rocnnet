@@ -78,6 +78,10 @@ protected:
 	//! action: nothing, subjects do not die by default
 	virtual void death_on_noparent (void);
 
+	void attach_killer (iobserver* killer);
+
+	void detach_killer (iobserver* killer);
+
 	// >>>> OBSERVER MUTATORS SHARED WITH OBSERVERS <<<<
 	//! Add observer to audience
 	void attach (iobserver* viewer, size_t idx);
@@ -93,6 +97,10 @@ protected:
 	// >>>> OBSERVERS DATA SHARED WITH INHERITORS <<<
 	//! observers -> { subject index in observer referencing this }
 	std::unordered_map<iobserver*, std::unordered_set<size_t> > audience_;
+
+private:
+	//! observers that kills this on death
+	std::unordered_set<iobserver*> killers_;
 };
 
 }

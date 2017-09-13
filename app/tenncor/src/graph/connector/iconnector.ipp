@@ -52,10 +52,7 @@ iconnector<T>& iconnector<T>::operator = (const iconnector<T>& other)
 	{
 		iobserver::operator = (other);
 		inode<T>::operator = (other);
-		jacobians_ = other.jacobians_;
-		// this copies other's dependencies so, this and other share a graph
-		g_man_->suicide(this);
-		g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+		copy_helper(other);
 	}
 	return *this;
 }
@@ -67,12 +64,7 @@ iconnector<T>& iconnector<T>::operator = (iconnector<T>&& other)
 	{
 		iobserver::operator = (std::move(other));
 		inode<T>::operator = (std::move(other));
-		jacobians_ = std::move(other.jacobians_);
-		// this copies other's dependencies so, this and other share a graph
-		g_man_->suicide(this);
-		g_man_ = graph_manager::get(&other, this);
-		other.g_man_->suicide(&other);
-		other.g_man_ = nullptr;
+		move_helper(std::move(other));
 	}
 	return *this;
 }
@@ -154,7 +146,7 @@ void iconnector<T>::set_jacobian_front (JTRANSFER<T> jac, std::vector<variable<T
 {
 	for (variable<T>* l : leaves)
 	{
-		jacobians_[l].list_.push_front(jac);
+		jacobians_[l].list_.push_front({jac, this});
 	}
 }
 
@@ -163,7 +155,7 @@ void iconnector<T>::set_jacobian_back (JTRANSFER<T> jac, std::vector<variable<T>
 {
 	for (variable<T>* l : leaves)
 	{
-		jacobians_[l].list_.push_back(jac);
+		jacobians_[l].list_.push_back({jac, this});
 	}
 }
 
@@ -216,23 +208,17 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 template <typename T>
 iconnector<T>::iconnector (const iconnector<T>& other) :
 	inode<T>(other),
-	iobserver(other),
-	jacobians_(other.jacobians_)
+	iobserver(other)
 {
-	if (g_man_) g_man_->suicide(this);
-	g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+	copy_helper(other);
 }
 
 template <typename T>
 iconnector<T>::iconnector (iconnector<T>&& other) :
 	inode<T>(std::move(other)),
-	iobserver(std::move(other)),
-	jacobians_(std::move(other.jacobians_))
+	iobserver(std::move(other))
 {
-	if (g_man_) g_man_->suicide(this);
-	g_man_ = graph_manager::get(&other, this);
-	other.g_man_->suicide(&other);
-	other.g_man_ = nullptr;
+	move_helper(std::move(other));
 }
 
 template <typename T>
@@ -250,6 +236,79 @@ void iconnector<T>::update_graph (std::vector<iconnector<T>*> args)
 	for (size_t i = 1, n = args.size(); i < n; i++)
 	{
 		g_man_->consume(args[i]->g_man_);
+	}
+}
+
+template <typename T>
+varptr<T> iconnector<T>::jacobian_call (varptr<T> out, variable<T>* leaf) const
+{
+	auto jpair = this->jacobians_.find(leaf);
+	if (this->jacobians_.end() != jpair)
+	{
+		auto& jlist = jpair->second.list_;
+		for (auto it = jlist.rbegin(), et = jlist.rend(); it != et; it++)
+		{
+			const JTRANSFER<T>& jt = it->first;
+			// get the node where jacobian originate from
+			const inode<T>* orig = it->second;
+			// get origin arguments and its gradients
+			std::vector<inode<T>*> args = orig->get_arguments();
+			std::vector<inode<T>*> grads(args.size(), nullptr);
+			std::transform(args.begin(), args.end(), grads.begin(),
+						   [this, leaf](inode<T>* arg)
+						   {
+							   return this->take_gradient(arg, leaf);
+						   });
+			// operate on out using args and grad
+			out = jt(out, args, grads);
+		}
+	}
+	return out;
+}
+
+template <typename T>
+void iconnector<T>::copy_helper (const iconnector<T>& other)
+{
+	jacobians_ = other.jacobians_;
+	jacobian_correction(&other);
+	// this copies other's dependencies so, this and other share a graph
+	if (g_man_) g_man_->suicide(this);
+	g_man_ = graph_manager::get(const_cast<iconnector<T>*>(&other), this);
+}
+
+template <typename T>
+void iconnector<T>::move_helper (iconnector<T>&& other)
+{
+	jacobians_ = std::move(other.jacobians_);
+	jacobian_correction(&other);
+	// this copies other's dependencies so, this and other share a graph
+	if (g_man_)
+	{
+		g_man_->suicide(this);
+	}
+	g_man_ = graph_manager::get(&other, this);
+	if (other.g_man_)
+	{
+		other.g_man_->suicide(&other);
+		other.g_man_ = nullptr;
+	}
+}
+
+template <typename T>
+void iconnector<T>::jacobian_correction (const inode<T>* other)
+{
+	// todo: move this down to immutable,
+	// since if mutable, parent can have existing jacobian_ with references to other
+	// assert this node has no parent (true when copying immutables)
+
+	// check other's jacobians leafset for references to other and set to this
+	for (auto& jpair : jacobians_)
+	{
+		std::list<std::pair<JTRANSFER<T>,inode<T>*> >& js = jpair.second.list_;
+		if (js.back().second == other)
+		{
+			js.back().second = this;
+		}
 	}
 }
 

@@ -62,20 +62,23 @@ echo "running python dq_demo"
 assert_cmd "python $BASEDIR/pydemo/dq_demo.py"
 echo "python dq_demo complete"
 
-echo "running rbm_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo -e 1"
-assert_cmd "$BINDIR/rbm_demo"
-echo "rbm_demo complete"
+#echo "running rbm_demo"
+#assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo -e 1"
+#assert_cmd "$BINDIR/rbm_demo"
+#echo "rbm_demo complete"
 
 # ===== Coverage Analysis ======
 lcov --version
 gcov --version
 lcov --base-directory . --directory . --gcov-tool gcov-6 --capture --output-file coverage.info # capture coverage info
-lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info # filter out system and test code
+# filter out system and test code
+lcov --remove coverage.info '**/gtest*' '**/tests/*' '**/ipython/*' '**/bin/*' '**/build/*' '/usr/include/*' --output-file coverage.info
 lcov --list coverage.info # debug < see coverage here
+
 if ! [ -z "$COVERALLS_TOKEN" ];
 then
-    coveralls-lcov --repo-token $COVERALLS_TOKEN coverage.info # uploads to coveralls
+    echo "branched from $TRAVIS_BRANCH"
+    coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
 fi
 
 echo "";

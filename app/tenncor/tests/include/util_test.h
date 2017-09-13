@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "tensor/tensorshape.hpp"
+#include "tensor/tensor_handler.hpp"
 
 
 #ifndef UTIL_TEST_H
@@ -48,6 +49,9 @@ tensorshape random_shape (void);
 
 
 tensorshape random_def_shape (int lowerrank = 2, int upperrank = 11, size_t minn = 17, size_t maxn = 7341);
+
+
+void adder (double* dest, std::vector<const double*> src, nnet::shape_io shape);
 
 
 #endif /* UTIL_TEST_H */

@@ -19,6 +19,12 @@ namespace nnet
 
 subject::~subject (void)
 {
+	std::unordered_set<iobserver*> killers = killers_;
+	for (iobserver* killer : killers)
+	{
+		killer->remove_ondeath_dependent(this);
+	}
+
 	notify(UNSUBSCRIBE); // unsubscribe all audiences
 
 #ifdef EDGE_RCD
@@ -90,6 +96,24 @@ void subject::steal_observers (subject* other)
 subject::subject (void) {}
 
 void subject::death_on_noparent (void) {}
+
+void subject::attach_killer (iobserver* killer)
+{
+	if (killer && killers_.end() == killers_.find(killer))
+	{
+		killers_.insert(killer);
+		killer->add_ondeath_dependent(this);
+	}
+}
+
+void subject::detach_killer (iobserver* killer)
+{
+	if (killer && killers_.end() != killers_.find(killer))
+	{
+		killers_.erase(killer);
+		killer->remove_ondeath_dependent(this);
+	}
+}
 
 subject::subject (const subject&) {}
 

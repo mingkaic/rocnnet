@@ -12,16 +12,22 @@ namespace nnet
 {
 
 template <typename T>
-immutable<T>::~immutable (void) {}
+immutable<T>::~immutable (void)
+{
+	if (Nf_)
+	{
+		delete Nf_;
+	}
+}
 
 template <typename T>
 immutable<T>* immutable<T>::get (std::vector<inode<T>*> args,
-	transfer_func<T>* Nf,
-	BACK_MAP<T> ginit,
-	std::string name, inode<T>* ignore_jacobian)
+	SHAPER shaper, transfer_func<T>* Nf,
+	BACK_MAP<T> ginit, std::string name,
+	inode<T>* ignore_jacobian)
 {
 	assert(false == args.empty());
-	immutable<T>* imm = new immutable<T>(args, Nf, ginit, name);
+	immutable<T>* imm = new immutable<T>(args, shaper, Nf, ginit, name);
 	if (nullptr != ignore_jacobian)
 	{
 		std::unordered_set<ileaf<T>*> leaves = ignore_jacobian->get_leaves();
@@ -71,23 +77,13 @@ immutable<T>& immutable<T>::operator = (immutable<T>&& other)
 }
 
 template <typename T>
-typename iconnector<T>::summary_series immutable<T>::summarize (void) const
-{
-	typename iconnector<T>::conn_summary summ(this->get_name(), Nf_, ginit_);
-	for (subject* sb : this->dependencies_)
-	{
-		summ.arg_ids_.push_back(static_cast<inode<T>*>(sb)->get_summaryid());
-	}
-	return { summ };
-}
-
-template <typename T>
 immutable<T>::immutable (
 	std::vector<inode<T>*> args,
+	SHAPER shaper,
 	transfer_func<T>* Nf,
 	BACK_MAP<T> ginit, std::string label) :
 base_immutable<T>(args, label),
-Nf_(Nf),
+shaper_(shaper), Nf_(Nf),
 ginit_(ginit) { this->update({}); }
 
 template <typename T>
@@ -117,25 +113,35 @@ inode<T>* immutable<T>::move_impl (void)
 }
 
 template <typename T>
+base_immutable<T>* immutable<T>::arg_clone (std::vector<inode<T>*> args) const
+{
+	if (nullptr == Nf_)
+	{
+		throw std::exception(); // todo: better exception
+	}
+	return new immutable<T>(args, shaper_, Nf_->clone(), ginit_, this->get_label());
+}
+
+template <typename T>
 void immutable<T>::forward_pass (void)
 {
+	// shape and tensor extraction
 	std::vector<tensorshape> ts;
 	std::vector<const tensor<T>*> tens;
+	// todo: determine whether or not to move this tensor extraction up to base_immutable::update
 	for (subject* sub : this->dependencies_)
 	{
 		const tensor<T>* arg = this->take_eval(static_cast<inode<T>*>(sub));
-		if (arg)
+		if (nullptr == arg)
 		{
-			assert(arg->is_alloc());
-			ts.push_back(arg->get_shape());
+			throw std::exception(); // todo: better exception
 		}
-		else
-		{
-			ts.push_back(tensorshape());
-		}
+		assert(arg->is_alloc());
+		ts.push_back(arg->get_shape());
 		tens.push_back(arg);
 	}
-	tensorshape s = Nf_->calc_shape(ts);
+	// shape check and tensor initialization
+	tensorshape s = shaper_(ts);
 	if (nullptr == this->data_)
 	{
 		s.assert_is_fully_defined();
@@ -162,11 +168,8 @@ void immutable<T>::forward_pass (void)
 			this->data_->allocate(s);
 		}
 	}
-	if (temp_in_.empty())
-	{
-		temp_in_ = Nf_->prepare_args(s, tens);
-	}
-	(*Nf_)(this->data_, temp_in_);
+	// assert none of tens is null
+	(*Nf_)(*(this->data_), tens);
 }
 
 template <typename T>
@@ -185,19 +188,21 @@ void immutable<T>::backward_pass (variable<T>* leaf)
 template <typename T>
 void immutable<T>::copy_helper (const immutable& other)
 {
+	if (Nf_) delete Nf_;
+
 	ginit_ = other.ginit_;
-	Nf_ = std::shared_ptr<transfer_func<T> >(other.Nf_->clone());
-	temp_in_.clear();
+	Nf_ = other.Nf_->clone();
+	shaper_ = other.shaper_;
 }
 
 template <typename T>
 void immutable<T>::move_helper (immutable&& other)
 {
+	if (Nf_) delete Nf_;
+
 	ginit_ = std::move(other.ginit_);
-	Nf_ = std::move(other.Nf_);
-	other.Nf_ = nullptr;
-	temp_in_.clear();
-	other.temp_in_.clear();
+	Nf_ = other.Nf_->move();
+	shaper_ = std::move(other.shaper_);
 }
 
 }

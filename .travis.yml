@@ -2,6 +2,10 @@ language: generic
 sudo: required
 dist: xenial
 
+install:
+  - gem install coveralls-lcov
+  - sudo apt-get install lcov
+
 jobs:
   include:
     - stage: build docker image
@@ -12,7 +16,14 @@ jobs:
         - docker-compose push
     - stage: test
       script:
-        - docker run --env COVERALLS_TOKEN=$COVERALLS_TOKEN --rm $DOCKER_USERNAME/rocnnet-test
+        - mkdir ${TRAVIS_BUILD_DIR}/shareds
+        - docker run
+          -e COVERALLS_TOKEN=${COVERALLS_TOKEN}
+          -e CI=true
+          -e TRAVIS=true
+          -e CONTINUOUS_INTEGRATION=true
+          -e TRAVIS_BRANCH=${TRAVIS_BRANCH}
+          --rm ${DOCKER_USERNAME}/rocnnet-test
 
 # safelist
 branches:

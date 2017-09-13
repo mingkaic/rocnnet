@@ -26,6 +26,68 @@ itensor_handler<T>* itensor_handler<T>::move (void)
 }
 
 template <typename T>
+T* itensor_handler<T>::get_raw (tensor<T>& ten) const
+{
+	assert(ten.is_alloc());
+	return ten.raw_data_;
+}
+
+template <typename T>
+const T* itensor_handler<T>::get_raw (const tensor<T>& ten) const
+{
+	assert(ten.is_alloc());
+	return ten.raw_data_;
+}
+
+template <typename T>
+shape_extracter<T>::shape_extracter (SHAPE_EXTRACT extract) : shaper_(extract) {}
+
+template <typename T>
+shape_extracter<T>* shape_extracter<T>::clone (void) const
+{
+	return static_cast<shape_extracter<T>*>(this->clone_impl());
+}
+
+template <typename T>
+shape_extracter<T>* shape_extracter<T>::move (void)
+{
+	return static_cast<shape_extracter<T>*>(this->move_impl());
+}
+
+template <typename T>
+void shape_extracter<T>::operator () (tensor<T>& out, std::vector<tensorshape>& ts) const
+{
+	T* raw = this->get_raw(out);
+	std::vector<size_t> shapes = out.get_shape().as_list();
+	size_t ncol = shapes[0];
+	size_t nrow = shapes.size() < 2 ? 1 : shapes[1];
+	std::fill(raw, raw + out.n_elems(), (T) 1);
+	for (size_t i = 0; i < nrow; i++)
+	{
+		std::vector<size_t> sv = shaper_(ts[i]);
+		for (size_t j = 0, n = sv.size(); j < n; j++)
+		{
+			raw[i * ncol + j] = sv[j];
+		}
+	}
+}
+
+template <typename T>
+SHAPE_EXTRACT shape_extracter<T>::get_shaper (void) const { return shaper_; }
+
+template <typename T>
+itensor_handler<T>* shape_extracter<T>::clone_impl (void) const
+{
+	return new shape_extracter(*this);
+}
+
+template <typename T>
+itensor_handler<T>* shape_extracter<T>::move_impl (void)
+{
+	return new shape_extracter(std::move(*this));
+}
+
+template <typename T>
 assign_func<T>* assign_func<T>::clone (void) const
 {
 	return static_cast<assign_func<T>*>(clone_impl());
@@ -38,11 +100,11 @@ assign_func<T>* assign_func<T>::move (void)
 }
 
 template <typename T>
-void assign_func<T>::operator () (tensor<T>* out, const tensor<T>* arg,
+void assign_func<T>::operator () (tensor<T>& out, const tensor<T>& arg,
 	std::function<T(const T&,const T&)> f) const
 {
-	tensorshape outshape = out->get_shape();
-	size_t n = arg->n_elems();
+	tensorshape outshape = out.get_shape();
+	size_t n = arg.n_elems();
 	assert(n == outshape.n_elems());
 	T* dest = this->get_raw(out);
 	const T* src = this->get_raw(arg);
@@ -53,10 +115,10 @@ void assign_func<T>::operator () (tensor<T>* out, const tensor<T>* arg,
 }
 
 template <typename T>
-void assign_func<T>::operator () (tensor<T>* out, std::vector<T> indata,
+void assign_func<T>::operator () (tensor<T>& out, std::vector<T> indata,
 	std::function<T(const T&,const T&)> f) const
 {
-	tensorshape outshape = out->get_shape();
+	tensorshape outshape = out.get_shape();
 	size_t n = outshape.n_elems();
 	assert(n <= indata.size());
 	T* dest = this->get_raw(out);
@@ -79,18 +141,7 @@ itensor_handler<T>* assign_func<T>::move_impl (void)
 }
 
 template <typename T>
-transfer_func<T>::transfer_func (SHAPER shaper,
-	std::vector<OUT_MAPPER> outidxer,
-	ELEM_FUNC<T> aggregate) :
-shaper_(shaper),
-aggregate_(aggregate),
-outidxer_(outidxer) {}
-
-template <typename T>
-tensorshape transfer_func<T>::calc_shape (std::vector<tensorshape> shapes) const
-{
-	return shaper_(shapes);
-}
+transfer_func<T>::transfer_func (TRANSFER_FUNC<T> transfer) : transfer_(transfer) {}
 
 template <typename T>
 transfer_func<T>* transfer_func<T>::clone (void) const
@@ -105,115 +156,20 @@ transfer_func<T>* transfer_func<T>::move (void)
 }
 
 template <typename T>
-void transfer_func<T>::operator () (tensor<T>* out, std::vector<const T*>& args)
+void transfer_func<T>::operator () (tensor<T>& out, std::vector<const tensor<T>*>& args)
 {
-	size_t n_out = out->n_elems();
-	size_t ptr_block_size = args.size() / n_out;
+	size_t n_arg = args.size();
 	T* dest = this->get_raw(out);
-	for (size_t i = 0; i < n_out; i++)
-	{
-		dest[i] = aggregate_(&args[i * ptr_block_size], ptr_block_size);
-	}
-}
+	std::vector<const T*> sources(n_arg, nullptr);
+	shape_io sio{out.get_shape(), {}};
 
-template <typename T>
-void transfer_func<T>::operator () (std::vector<T>& out, std::vector<const T*>& args)
-{
-	size_t n_out = out.size();
-	size_t ptr_block_size = args.size() / n_out;
-	for (size_t i = 0; i < n_out; i++)
+	std::transform(args.begin(), args.end(), sources.begin(),
+	[this, &sio](const tensor<T>* arg) -> const T*
 	{
-		out[i] = aggregate_(&args[i * ptr_block_size], ptr_block_size);
-	}
-}
-
-template <typename T>
-std::vector<const T*> transfer_func<T>::prepare_args (tensorshape outshape,
-	std::vector<const tensor<T>*> args) const
-{
-	size_t n_args = args.size();
-	if (n_args == 0) return {};
-	assert(n_args == outidxer_.size());
-	size_t n_out = outshape.n_elems();
-	// rank 0: group
-	// rank 1: elements
-	// rank 2: arguments
-	size_t max_blocksize = 0;
-	std::vector<std::vector<size_t> > arg_indices(n_args);
-	for (size_t i = 0; i < n_args; i++)
-	{
-		if (args[i])
-		{
-			tensorshape ashape = args[i]->get_shape();
-			std::vector<size_t> arg_index;
-			for (size_t j = 0; j < n_out; j++)
-			{
-				std::vector<size_t> elem_idx = outidxer_[i](j, ashape, outshape);
-				arg_index.insert(arg_index.end(), elem_idx.begin(), elem_idx.end());
-			}
-			arg_indices[i] = arg_index;
-			max_blocksize = std::max(max_blocksize, arg_index.size());
-		}
-	}
-	std::vector<const T*> arg(n_args * max_blocksize, nullptr);
-	for (size_t i = 0; i < n_args; i++)
-	{
-		if (args[i])
-		{
-			size_t n = args[i]->n_elems();
-			const T* src = this->get_raw(args[i]);
-			for (size_t j = 0; j < arg_indices[i].size(); j++)
-			{
-				if (arg_indices[i][j] < n) arg[i + j * n_args] = src + arg_indices[i][j];
-			}
-		}
-	}
-	return arg;
-}
-
-template <typename T>
-std::vector<const T*> transfer_func<T>::prepare_args (tensorshape outshape,
-	std::vector<std::pair<T*,tensorshape> > args) const
-{
-	size_t n_args = args.size();
-	if (n_args == 0) return {};
-	assert(n_args == outidxer_.size());
-	size_t n_out = outshape.n_elems();
-	// rank 0: group
-	// rank 1: elements
-	// rank 2: arguments
-	size_t max_blocksize = 0;
-	std::vector<std::vector<size_t> > arg_indices(n_args);
-	for (size_t i = 0; i < n_args; i++)
-	{
-		if (args[i].first)
-		{
-			tensorshape ashape = args[i].second;
-			std::vector<size_t> arg_index;
-			for (size_t j = 0; j < n_out; j++)
-			{
-				std::vector<size_t> elem_idx = outidxer_[i](j, ashape, outshape);
-				arg_index.insert(arg_index.end(), elem_idx.begin(), elem_idx.end());
-			}
-			arg_indices[i] = arg_index;
-			max_blocksize = std::max(max_blocksize, arg_index.size());
-		}
-	}
-	std::vector<const T*> arg(n_args * max_blocksize, nullptr);
-	for (size_t i = 0; i < n_args; i++)
-	{
-		if (args[i].first)
-		{
-			const T* src = args[i].first;
-			size_t n = args[i].second.n_elems();
-			for (size_t j = 0; j < arg_indices[i].size(); j++)
-			{
-				if (arg_indices[i][j] < n)
-					arg[i + j * n_args] = src + arg_indices[i][j];
-			}
-		}
-	}
-	return arg;
+		sio.ins_.push_back(arg->get_shape());
+		return this->get_raw(*arg);
+	});
+	this->transfer_(dest, sources, sio);
 }
 
 template <typename T>
@@ -241,9 +197,9 @@ initializer<T>* initializer<T>::move (void)
 }
 
 template <typename T>
-void initializer<T>::operator () (tensor<T>* out)
+void initializer<T>::operator () (tensor<T>& out)
 {
-	this->calc_data(this->get_raw(out), out->get_shape());
+	this->calc_data(this->get_raw(out), out.get_shape());
 }
 
 template <typename T>
@@ -310,6 +266,42 @@ itensor_handler<T>* rand_uniform<T>::move_impl (void)
 
 template <typename T>
 void rand_uniform<T>::calc_data (T* dest, tensorshape outshape)
+{
+	size_t len = outshape.n_elems();
+	auto gen = std::bind(distribution_, nnutils::get_generator());
+	std::generate(dest, dest+len, gen);
+}
+
+template <typename T>
+rand_normal<T>::rand_normal (T mean, T stdev) :
+	distribution_(mean, stdev) {}
+
+template <typename T>
+rand_normal<T>* rand_normal<T>::clone (void) const
+{
+	return static_cast<rand_normal<T>*>(clone_impl());
+}
+
+template <typename T>
+rand_normal<T>* rand_normal<T>::move (void)
+{
+	return static_cast<rand_normal<T>*>(move_impl());
+}
+
+template <typename T>
+itensor_handler<T>* rand_normal<T>::clone_impl (void) const
+{
+	return new rand_normal(*this);
+}
+
+template <typename T>
+itensor_handler<T>* rand_normal<T>::move_impl (void)
+{
+	return new rand_normal(std::move(*this));
+}
+
+template <typename T>
+void rand_normal<T>::calc_data (T* dest, tensorshape outshape)
 {
 	size_t len = outshape.n_elems();
 	auto gen = std::bind(distribution_, nnutils::get_generator());

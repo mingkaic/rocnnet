@@ -46,8 +46,8 @@ TEST(IVARIABLE, Copy_E000)
 	initializer<double>* ai = assign2.get_initializer();
 	tensor<double>* ctptr = &ct;
 	tensor<double>* ct2ptr = &ct2;
-	(*ci)(ctptr);
-	(*ai)(ct2ptr);
+	(*ci)(*ctptr);
+	(*ai)(*ct2ptr);
 	EXPECT_EQ(c, ct.expose()[0]);
 	EXPECT_EQ(c, ct2.expose()[0]);
 
@@ -82,7 +82,7 @@ TEST(IVARIABLE, Move_E000)
 	tensor<double> ct({1});
 	initializer<double>* mi = mv2->get_initializer();
 	tensor<double>* ctptr = &ct;
-	(*mi)(ctptr);
+	(*mi)(*ctptr);
 	EXPECT_EQ(c, ct.expose()[0]);
 	EXPECT_EQ(ii, mi);
 	EXPECT_EQ(nullptr, inited.get_initializer());
@@ -95,7 +95,7 @@ TEST(IVARIABLE, Move_E000)
 	tensor<double> ct2({1});
 	initializer<double>* ai = assign2.get_initializer();
 	tensor<double>* ct2ptr = &ct2;
-	(*ai)(ct2ptr);
+	(*ai)(*ct2ptr);
 	EXPECT_EQ(c, ct2.expose()[0]);
 	EXPECT_EQ(ii, ai);
 	EXPECT_EQ(nullptr, mv2->get_initializer());

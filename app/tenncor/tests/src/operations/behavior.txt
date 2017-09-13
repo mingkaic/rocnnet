@@ -1,24 +1,23 @@
-
 // ELEMENTARY BEHAVIORS
 A000 - any operation accepting nullptr as any operand returns nullptr
-A001 - both unary and binary elementary operations output shape is the same as input shape
-A002 - binary elementary operations with 2 nodal input having different shapes throw error during evaluation
-A003 - addition accepting 0 as a scalar or node constant returns the non-zero node,
+A001 - any operation on constants applies operation at build-time and return the resulting constant
+A002 - both unary and binary elementary operations output shape is the same as input shape
+A003 - binary elementary operations with 2 nodal input having different shapes throw error during evaluation
+A004 - addition accepting 0 as a scalar or node constant returns the non-zero node,
         adding constants with a scalar returns a constant sum of constants and scalar
-A004 - subtraction accepting 0 as a scalar or node constant
+A005 - subtraction accepting 0 as a scalar or node constant
 		returns first node if 0 is subtrahend (operand 2)
 		return negative of first node if 0 is minuend (operand 1)
         subtracting constants with a scalar returns a constant difference between constants and scalar
-A005 - multiplication accepting 0 as scalar or node constant returns 0 constant
-A006 - multiplication accepting 1 as scalar or node constant return non-one node
+A006 - multiplication accepting 0 as scalar or node constant returns 0 constant
+A007 - multiplication accepting 1 as scalar or node constant return non-one node
         multiplying constants with a scalar returns a constant product of constants and scalar
-A007 - division accepting 0 as s scalar or node constant
+A008 - division accepting 0 as s scalar or node constant
 		returns 0 constant if 0 is dividend (operand 1)
 		throws error if 0 is divisor (operand 2)
-A008 - division accepting 1 as a scalar or node constant returns non-one, if 1 is divisor (operand 2)
+A009 - division accepting 1 as a scalar or node constant returns non-one, if 1 is divisor (operand 2)
         dividing constants with a scalar returns a constant quotient of constants and scalar
-(UNTESTED) A009 - powers of accepting 0 as the scalar exponent returns a 1 constant
-(UNTESTED) A010 - powers of accepting 1 as the input node
+(UNTESTED) A010 - powers of accepting 0 as the scalar exponent returns a 1 constant, powers of accepting 1 as the input node
 A011 - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
 		and its value is equivalent to the primitive value
 		same applies for not equal (!=),

@@ -52,10 +52,6 @@ public:
 	//! declare move assignment to move over transfer functions
 	virtual shape_dep<T>& operator = (shape_dep<T>&& other);
 
-	// >>>> GRAPH STATUS <<<<
-	//! summarize this immutable (this can't be summarized; this can't be merged, todo)
-	virtual typename iconnector<T>::summary_series summarize (void) const;
-
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! immutable constructing an aggregate transfer function
@@ -75,6 +71,10 @@ protected:
 	//! move implementation
 	virtual inode<T>* move_impl (void);
 
+	// >>>> PROTECTED CLONER <<<<
+	//! create a deep copy of this with args
+	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const;
+
 	// >>>> FORWARD & BACKWARD <<<<
 	//! forward pass step: populate data_
 	virtual void forward_pass (void);
@@ -84,7 +84,9 @@ protected:
 
 private:
 	//! extract shape dimensions to data_
-	shape_extracter<T>* shaper_ = nullptr;
+	shape_extracter<T>* shape_info = nullptr;
+
+	tensorshape shape_;
 };
 
 }

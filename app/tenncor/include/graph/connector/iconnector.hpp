@@ -31,7 +31,10 @@ using NODE_MAN = std::function<inode<T>*(inode<T>*)>;
 
 //! jacobian transfer function
 template <typename T>
-using JTRANSFER = std::function<inode<T>*(inode<T>*,NODE_MAN<T>)>;
+using JTRANSFER = std::function<inode<T>*(inode<T>*,std::vector<inode<T>*>,std::vector<inode<T>*>)>;
+
+//! calculate output shape from argument shapes
+using SHAPER = std::function<tensorshape(std::vector<tensorshape>)>;
 
 template <typename T>
 class iconnector : public inode<T>, public iobserver
@@ -40,13 +43,13 @@ public:
 	//! iconnector summary
 	struct conn_summary
 	{
-		conn_summary (std::string id, std::shared_ptr<transfer_func<T> > forward, BACK_MAP<T> back) :
-				id_(id), Nf_(forward), ginit_(back) {}
+		conn_summary (std::string id, SHAPER shaper,
+			TRANSFER_FUNC<T> forward, BACK_MAP<T> back) :
+				id_(id), shaper_(shaper), Nf_(forward), ginit_(back) {}
 
 		std::string id_;
-
-		std::shared_ptr<transfer_func<T> > Nf_;
-
+		SHAPER shaper_;
+		TRANSFER_FUNC<T> Nf_;
 		BACK_MAP<T> ginit_;
 
 		std::vector<std::string> arg_ids_;
@@ -88,9 +91,6 @@ public:
 	virtual const tensor<T>* eval (void);
 
 	// >>>> GRAPH STATUS <<<<
-	//! summarize this connector
-	virtual summary_series summarize (void) const = 0;
-
 	//! check if other connector is in the same graph as this
 	bool is_same_graph (const iconnector<T>* other) const;
 
@@ -118,7 +118,7 @@ protected:
 		JList (void) : uid_(nnutils::uuid(this)) {}
 
 		std::string uid_;
-		std::list<JTRANSFER<T> > list_;
+		std::list<std::pair<JTRANSFER<T>, inode<T>*> > list_;
 	};
 
 	//! graph info shareable between connectors
@@ -138,12 +138,21 @@ protected:
 	//! Update g_man_ by updating all argument variables
 	virtual void update_graph (std::vector<iconnector<T>*> args);
 
+	varptr<T> jacobian_call (varptr<T> out, variable<T>* leaf) const;
+
 	//! specialized operator: jacobian operators for each variable,
 	//! executed in derive
 	std::unordered_map<variable<T>*,JList> jacobians_;
 
 	//! graph meta_data/manager
 	graph_manager* g_man_ = nullptr;
+
+private:
+	void copy_helper (const iconnector<T>& other);
+
+	void move_helper (iconnector<T>&& other);
+
+	void jacobian_correction (const inode<T>* other);
 };
 
 }

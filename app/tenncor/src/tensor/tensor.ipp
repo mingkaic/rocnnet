@@ -55,7 +55,7 @@ void fit_toshape (T* dest, const tensorshape& outshape, const T* src, const tens
 		}
 		else
 		{
-			size_t destidx = outshape.sequential_idx(srccoord);
+			size_t destidx = outshape.flat_idx(srccoord);
 			memcpy(dest + destidx, src + srcidx, sizeof(T) * basewidth);
 			srcidx += inlist[0];
 		}
@@ -341,7 +341,7 @@ size_t tensor<T>::total_bytes (void) const
 template <typename T>
 T tensor<T>::get (std::vector<size_t> coord) const
 {
-	size_t raw_idx = alloc_shape_.sequential_idx(coord);
+	size_t raw_idx = alloc_shape_.flat_idx(coord);
 	if (raw_idx >= alloc_shape_.n_elems())
 	{
 		throw std::out_of_range(nnutils::formatter() <<

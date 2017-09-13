@@ -278,7 +278,7 @@ tensorshape tensorshape::with_rank_at_most (size_t rank) const
 	return ds;
 }
 
-size_t tensorshape::sequential_idx (std::vector<size_t> coord) const
+size_t tensorshape::flat_idx (std::vector<size_t> coord) const
 {
 	size_t n = std::min(dimensions_.size(), coord.size());
 	size_t index = 0;
@@ -301,6 +301,15 @@ std::vector<size_t> tensorshape::coordinate_from_idx (size_t idx) const
 		i = (i - xd) / d;
 	}
 	return coord;
+}
+
+void tensorshape::iterate (std::function<void(std::vector<size_t>, size_t)> coord_call) const
+{
+	size_t n_elems = this->n_elems();
+	for (size_t i = 0; i < n_elems; i++)
+	{
+		coord_call(coordinate_from_idx(i), i);
+	}
 }
 
 void print_shape (tensorshape ts, std::ostream& os)

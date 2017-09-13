@@ -71,15 +71,10 @@ public:
 	//! Inherited from inode: data_ takes data from proto
 	virtual bool read_proto (const tenncor::tensor_proto&);
 
-	//! public flag notifying whether this node can be merged
-	bool mergible_ = true;
-
 	// >>>> CALLED BY OBSERVER TO UPDATE <<<<
 	//! Inherited from iobserver: update data
 	//! Updates gcache_ and data_
 	virtual void update (std::unordered_set<size_t> argidx);
-
-	// >>>> TODO: HIDE THIS <<<<
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
@@ -92,6 +87,10 @@ protected:
 
 	//! declare move constructor to move over transfer functions
 	base_immutable (base_immutable<T>&& other);
+
+	// >>>> PROTECTED CLONER <<<<
+	//! create a deep copy of this with args
+	virtual base_immutable<T>* arg_clone (std::vector<inode<T>*> args) const = 0;
 
 	// >>>> KILL CONDITION <<<<
 	//! suicides when all observers die
@@ -129,99 +128,8 @@ private:
 	//! move helper
 	void move_helper (base_immutable&& other);
 
-	//! backward_evaluation helper
-	void eval_helper (const iconnector<T>* target, inode<T>*& out) const;
-};
-
-//! for every node M in root's subgraph, merge M with subjects whose sole audience is M
-//! M and merged subjects are deleted
-//! (note: varptr counts as an observer, so any subject referenced by varptr by the user will never merge.
-//! this is to prevent dangling pointers, since solo_audience_merge is destructive.
-//! user's responsible for minimizing the use of varptr)
-template <typename T>
-void solo_audience_merge (base_immutable<T>*& root);
-
-template <typename T>
-class merged_immutable : public base_immutable<T>
-{
-public:
-	// >>>> BUILDER TO FORCE HEAP ALLOCATION <<<<
-	//! build a merged_immutable that combines conn and its arguments
-	//! ignores arguments indexed by ignore_indices
-	static merged_immutable<T>* get (base_immutable<T>* conn,
-		std::unordered_set<size_t> ignore_indices = {},
-		bool disabled_update = false);
-
-	//! build a merged_immutable that combines conn and specified arguments
-	//! ignores arguments indexed by ignore_indices
-	static merged_immutable<T>* get (base_immutable<T>* conn,
-		std::vector<subject*> args,
-		std::unordered_set<size_t> ignore_indices = {},
-		bool disabled_update = false);
-
-	// >>>> CLONER & MOVER <<<<
-	//! clone function
-	merged_immutable<T>* clone (void) const;
-
-	//! move function
-	merged_immutable<T>* move (void);
-
-	// >>>> IDENTIFICATION <<<<
-	//! get name described in summary, defaults to name, may differ for special nodes
-	virtual std::string get_summaryid (void) const;
-
-	// >>>> GRAPH STATUS <<<<
-	//! summarize this connector
-	virtual typename iconnector<T>::summary_series summarize (void) const;
-
-protected:
-	// >>>> CONSTRUCTORS <<<<
-	//! merge conn and its arguments while avoiding arguments specified by indices
-	merged_immutable (base_immutable<T>* conn,
-		std::unordered_set<size_t> ignore_indices, bool disabled_update);
-
-	//! merge conn and specified arguments while avoiding arguments specified by indices
-	merged_immutable (base_immutable<T>* conn, std::vector<subject*> args,
-		std::unordered_set<size_t> ignore_indices, bool disabled_update);
-
-	// >>>> POLYMORPHIC CLONERS <<<<
-	//! implement clone function
-	virtual inode<T>* clone_impl (void) const;
-
-	//! move implementation
-	virtual inode<T>* move_impl (void);
-
-	// >>>> FORWARD & BACKWARD <<<<
-	//! forward pass step: populate data_ (overridden by merged_immutable)
-	virtual void forward_pass (void);
-
-	//! backward pass step: populate gcache_[leaf] (overridden by merged_immutable)
-	virtual void backward_pass (variable<T>* leaf);
-
-private:
-	struct temp_immutable;
-
-	//! constructor helper
-	void init_helper (typename iconnector<T>::summary_series top_summary,
-		std::vector<subject*> args, std::unordered_set<size_t> ignore_indices);
-
-	//! forward and backward helper
-	//! op determines how U data is evaluated
-	template <typename U>
-	U summary_traversal (std::unordered_map<std::string,U> arg_map,
-		std::function<U(std::vector<U>,typename iconnector<T>::conn_summary&)> op);
-
-	//! summary.id_ -> tensor::raw_data_ equivalent vector
-	std::unordered_map<std::string,std::vector<T> > raw_intermediates_;
-
-	//! an array of pointers to raw data either in raw_intermediates_ vector or from argument tensors
-	//! intentionally kept ambiguous to avoid computation overhead during forward_pass
-	//! populated once
-	std::unordered_map<std::string,std::vector<const T*> > arg_ptrs_;
-
-	//! vector of summaries (of previously merged nodes)
-	//! describing how to forward eval and build backward node (derive)
-	typename iconnector<T>::summary_series summaries_;
+	//! temporary_eval helper
+	inode<T>* temp_eval_helper (const iconnector<T>* target, constant<T>*& out) const;
 };
 
 }

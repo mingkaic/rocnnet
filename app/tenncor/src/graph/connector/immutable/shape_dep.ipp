@@ -10,7 +10,7 @@ namespace nnet
 template <typename T>
 shape_dep<T>::~shape_dep (void)
 {
-	delete shaper_;
+	delete shape_info;
 }
 
 template <typename T>
@@ -61,7 +61,8 @@ shape_dep<T>& shape_dep<T>::operator = (const shape_dep<T>& other)
 	if (this != &other)
 	{
 		base_immutable<T>::operator = (other);
-		shaper_ = other.shaper_->clone();
+		shape_ = other.shape_;
+		shape_info = other.shape_info->clone();
 	}
 	return *this;
 }
@@ -72,26 +73,21 @@ shape_dep<T>& shape_dep<T>::operator = (shape_dep<T>&& other)
 	if (this != &other)
 	{
 		base_immutable<T>::operator = (std::move(other));
-		shaper_ = other.shaper_->move();
-		other.shaper_ = nullptr;
+		shape_ = std::move(other.shape_);
+		shape_info = other.shape_info->move();
+		other.shape_info = nullptr;
 	}
 	return *this;
-}
-
-template <typename T>
-typename iconnector<T>::summary_series shape_dep<T>::summarize (void) const
-{
-	return {};
 }
 
 template <typename T>
 shape_dep<T>::shape_dep (std::vector<inode<T>*> args,
 	SHAPE_EXTRACT forward, tensorshape shape, std::string label) :
 base_immutable<T>(args, label),
-shaper_(new shape_extracter<T>(forward))
+shape_info(new shape_extracter<T>(forward)),
+shape_(shape)
 {
-	this->mergible_ = false;
-	this->data_ = new tensor<T>(shape);
+	shape_.assert_is_fully_defined();
 	this->jacobians_.clear();
 	this->update({});
 }
@@ -100,15 +96,17 @@ template <typename T>
 shape_dep<T>::shape_dep (const shape_dep<T>& other) :
 	base_immutable<T>(other)
 {
-	shaper_ = other.shaper_->clone();
+	shape_ = other.shape_;
+	shape_info = other.shape_info->clone();
 }
 
 template <typename T>
 shape_dep<T>::shape_dep (shape_dep<T>&& other) :
 	base_immutable<T>(std::move(other))
 {
-	shaper_ = other.shaper_->move();
-	other.shaper_ = nullptr;
+	shape_ = std::move(other.shape_);
+	shape_info = other.shape_info->move();
+	other.shape_info = nullptr;
 }
 
 template <typename T>
@@ -124,6 +122,12 @@ inode<T>* shape_dep<T>::move_impl (void)
 }
 
 template <typename T>
+base_immutable<T>* shape_dep<T>::arg_clone (std::vector<inode<T>*> args) const
+{
+	return new shape_dep(args, shape_info->get_shaper(), shape_, this->get_label());
+}
+
+template <typename T>
 void shape_dep<T>::forward_pass (void)
 {
 	std::vector<tensorshape> shapes;
@@ -131,11 +135,18 @@ void shape_dep<T>::forward_pass (void)
 	{
 		shapes.push_back(this->take_eval(static_cast<inode<T>*>(sub))->get_shape());
 	}
-	(*shaper_)(this->data_, shapes);
+	if (nullptr == this->data_)
+	{
+		this->data_ = new tensor<T>(shape_);
+	}
+	(*shape_info)(*this->data_, shapes);
 }
 
 template <typename T>
-void shape_dep<T>::backward_pass (variable<T>*) {}
+void shape_dep<T>::backward_pass (variable<T>* leaf)
+{
+	this->gcache_[leaf] = this;
+}
 
 }
 

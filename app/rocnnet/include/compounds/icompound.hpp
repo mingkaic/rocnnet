@@ -20,7 +20,6 @@ namespace rocnnet
 
 using VAR_FUNC = std::function<nnet::varptr<double>(nnet::inode<double>*)>;
 using IN_PAIR = std::pair<size_t, VAR_FUNC>;
-using HID_PAIR = std::pair<fc_layer*, VAR_FUNC>;
 
 class icompound : public ilayer
 {

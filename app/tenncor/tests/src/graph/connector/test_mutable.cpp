@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2016-12-27.
 //
 
-#ifndef DISABLE_GRAPH_MODULE_TESTS
+#ifndef DISABLE_CONNECTOR_MODULE_TESTS
 
 #include <algorithm>
 
@@ -70,4 +70,4 @@ TEST(MUTABLE, deletion)
 #endif /* DISABLE_MUTABLE_TEST */
 
 
-#endif /* DISABLE_GRAPH_MODULE_TESTS */
+#endif /* DISABLE_CONNECTOR_MODULE_TESTS */

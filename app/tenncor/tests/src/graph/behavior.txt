@@ -115,19 +115,7 @@ I009 - derive calculates gradient node from any node and applies jacobian transf
 I010 - update explicitly runs its forward transfer function with current depdendency states as its argument
 I011 - immutable will throw error if existing output shape is incompatible with shaper result
 
-// MERGE_IMM BEHAVIORS
-J000 - constructed merged immutable is operationally identical to the original connector:
-		it has the same forward value,
-		it has the same backward node value
-		deleting the original graph (except the leaves) does not damage the merged node
-		note: merge_immutable automatically breaks and deletes the input connector
-(UNTESTED)
-J001 - cloning or moving merge_immutable copies or moves over the original operations
-J002 - solo_audience_merge is operationally identical to the original graph
-		any node with multiple audiences is not merged
-		any node whose jacobian different from its parent is unmergible
-J003 - all_merge has same behavior as solo_audience_merge, except nodes with multiple audiences are split and merged
-		e.g.: A is consumed by B and C, merge on C splits A to A1 and A2, B consumes A1, C consumes A2
-
 // GENERATOR BEHAVIORS
-todo: test
+J000 - cloning and moving generators copies and moves initialization and existing data
+J001 - generated shape has same shape as shape_dependent node
+J002 - temporary_eval always returns 1, and derive is treated as constant (0 if leaf not this, 1 otherwise)
