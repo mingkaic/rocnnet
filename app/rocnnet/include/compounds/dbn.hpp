@@ -10,11 +10,18 @@
 namespace rocnnet
 {
 
+struct dbn_param
+{
+	size_t n_epoch_ = 10;
+	size_t n_cont_div_ = 1;
+	double learning_rate_ = 1e-3;
+};
+
 class dbn : public icompound
 {
 public:
 	dbn (size_t n_input, std::vector<size_t> hiddens,
-		rbm_param train_param,
+		dbn_param train_param,
 		std::string scope = "DBN");
 
 	virtual ~dbn (void);

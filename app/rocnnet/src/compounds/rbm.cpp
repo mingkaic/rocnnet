@@ -124,10 +124,10 @@ nnet::updates_t rbm::train (generators_t& gens,
 }
 
 // implementation taken from http://deeplearning.net/tutorial/rbm.html
-double rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t x_idx) const
+nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input) const
 {
 	// zeros everywhere except for x-axis = x_idx (x is the first dimension)
-	nnet::varptr<double> one_i = nnet::const_axis<double>(0, x_idx, 1, input.get_shape());
+	nnet::varptr<double> one_i = nnet::const_axis<double>(0, 0, 1, input.get_shape());
 
 	nnet::varptr<double> xi = nnet::round(nnet::varptr<double>(&input)); // xi = [0|1...]
 	nnet::varptr<double> xi_flip = one_i - xi;
@@ -135,13 +135,7 @@ double rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t
 	nnet::varptr<double> fe_xi = free_energy(xi);
 	nnet::varptr<double> fe_xi_flip = free_energy(xi_flip);
 
-	nnet::varptr<double> cost = nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
-	double cost_scalar = nnet::expose<double>(cost)[0];
-
-	delete one_i.get();
-	delete xi.get();
-
-	return cost_scalar;
+	return nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
 }
 
 std::vector<nnet::variable<double>*> rbm::get_variables (void) const
@@ -202,39 +196,12 @@ nnet::varptr<double> rbm::free_energy (nnet::varptr<double> sample) const
 	nnet::varptr<double> weight = vars[0];
 	nnet::varptr<double> hbias = vars[1];
 
-	nnet::varptr<double> wx_b = nnet::matmul(sample, weight) + hbias;
+	// <x, y> @ <z, x> + z
+	nnet::varptr<double> wx_b = add_axial_b(nnet::matmul(sample, weight), hbias, 1);
 
 	nnet::varptr<double> vbias_term = nnet::matmul(sample, nnet::varptr<double>(vbias_), false, true);
-	nnet::varptr<double> hidden_term = nnet::reduce_sum<double>(nnet::log(1.0 + nnet::exp(wx_b)), 1);
+	nnet::varptr<double> hidden_term = nnet::reduce_sum<double>(nnet::log(1.0 + nnet::exp(wx_b)), 0);
 	return -(hidden_term + vbias_term);
-}
-
-void fit (rbm& model, std::vector<double> batch, rbm_param params)
-{
-	size_t n_input = model.get_ninput();
-	assert(0 == batch.size() % n_input);
-	size_t n_batch = batch.size() / n_input;
-	nnet::placeholder<double> in(std::vector<size_t>{n_input, n_batch}, "rbm_train_in");
-	rocnnet::generators_t gens;
-	nnet::updates_t trainers = model.train(gens, &in, params.learning_rate_, params.n_cont_div_);
-	trainers.push_back([gens](bool)
-	{
-		for (nnet::generator<double>* gen : gens)
-		{
-			gen->update({}); // re-randomize
-		}
-	});
-	in = batch;
-	for (size_t i = 0; i < params.n_epoch_; i++)
-	{
-		for (nnet::variable_updater<double>& trainer : trainers)
-		{
-			trainer(true);
-		}
-
-		double cost = model.get_pseudo_likelihood_cost(in, i);
-		std::cout << "Training epoch " << i << ", cost is " << cost << std::endl;
-	}
 }
 
 }

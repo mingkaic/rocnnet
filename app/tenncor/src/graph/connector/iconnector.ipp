@@ -255,10 +255,10 @@ varptr<T> iconnector<T>::jacobian_call (varptr<T> out, variable<T>* leaf) const
 			std::vector<inode<T>*> args = orig->get_arguments();
 			std::vector<inode<T>*> grads(args.size(), nullptr);
 			std::transform(args.begin(), args.end(), grads.begin(),
-						   [this, leaf](inode<T>* arg)
-						   {
-							   return this->take_gradient(arg, leaf);
-						   });
+			[this, leaf](inode<T>* arg)
+			{
+				return this->take_gradient(arg, leaf);
+			});
 			// operate on out using args and grad
 			out = jt(out, args, grads);
 		}

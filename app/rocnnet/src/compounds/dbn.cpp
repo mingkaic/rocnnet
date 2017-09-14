@@ -10,7 +10,7 @@ namespace rocnnet
 {
 
 dbn::dbn (size_t n_input, std::vector<size_t> hiddens,
-	rbm_param train_param, std::string scope) :
+	dbn_param train_param, std::string scope) :
 icompound(scope),
 n_input_(n_input)
 {

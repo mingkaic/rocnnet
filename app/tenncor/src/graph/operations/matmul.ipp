@@ -10,6 +10,8 @@
 
 #define STRASSEN_THRESHOLD 256
 
+#define PROBLEM_LIMIT 16384
+
 namespace nnet
 {
 
@@ -297,7 +299,7 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 			const T* rawb = srcs[1] + i * (dim_x * dim_z);
 			T* rawc = dest + i * (dim_x * dim_y);
 
-			if (dim_pad > STRASSEN_THRESHOLD)
+			if (dim_pad > STRASSEN_THRESHOLD && dim_pad < PROBLEM_LIMIT)
 			{
 				size_t n_mat = dim_pad * dim_pad;
 				T* out = new T[n_mat];

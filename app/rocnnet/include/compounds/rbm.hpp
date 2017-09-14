@@ -53,7 +53,7 @@ public:
 	nnet::updates_t train (generators_t& gens, nnet::inode<double>* input,
 		double learning_rate = 1e-3, size_t n_cont_div = 1);
 
-	double get_pseudo_likelihood_cost (nnet::placeholder<double>& input, size_t bit_i_idx) const;
+	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::placeholder<double>& input) const;
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
@@ -83,15 +83,6 @@ private:
 
 	nnet::variable<double>* vbias_ = nullptr;
 };
-
-struct rbm_param
-{
-	size_t n_epoch_ = 10;
-	size_t n_cont_div_ = 1;
-	double learning_rate_ = 1e-3;
-};
-
-void fit (rbm& model, std::vector<double> batch, rbm_param params);
 
 }
 
