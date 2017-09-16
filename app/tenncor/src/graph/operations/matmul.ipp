@@ -10,8 +10,6 @@
 
 #define STRASSEN_THRESHOLD 256
 
-#define PROBLEM_LIMIT 16384
-
 namespace nnet
 {
 
@@ -290,17 +288,17 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 
 		// assert that beyond2d is same for A, B, and output C
 		size_t beyond2d = shapes.ins_[0].n_elems() / (dim_z * dim_y);
+
+#ifdef ENABLE_STRASSEN // strassen is very cumbersome in a lot of cases
 		size_t dim_pad = min_pad(std::max(std::max(dim_x, dim_y), dim_z));
-		size_t coord_map[4] = {dim_z, 1, 1, dim_x};
-
-		for (size_t i = 0; i < beyond2d; i++)
+		if (dim_pad > STRASSEN_THRESHOLD)
 		{
-			const T* rawa = srcs[0] + i * (dim_z * dim_y);
-			const T* rawb = srcs[1] + i * (dim_x * dim_z);
-			T* rawc = dest + i * (dim_x * dim_y);
-
-			if (dim_pad > STRASSEN_THRESHOLD && dim_pad < PROBLEM_LIMIT)
+			for (size_t i = 0; i < beyond2d; i++)
 			{
+				const T* rawa = srcs[0] + i * (dim_z * dim_y);
+				const T* rawb = srcs[1] + i * (dim_x * dim_z);
+				T* rawc = dest + i * (dim_x * dim_y);
+
 				size_t n_mat = dim_pad * dim_pad;
 				T* out = new T[n_mat];
 				T* a = new T[n_mat];
@@ -333,10 +331,17 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 				delete a;
 				delete b;
 			}
-			else
-			{
-				cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
-			}
+			return;
+		}
+#endif /* ENABLE_STRASSEN */
+		for (size_t i = 0; i < beyond2d; i++)
+		{
+			const T* rawa = srcs[0] + i * (dim_z * dim_y);
+			const T* rawb = srcs[1] + i * (dim_x * dim_z);
+			T* rawc = dest + i * (dim_x * dim_y);
+
+			size_t coord_map[4] = {dim_z, 1, 1, dim_x};
+			cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
 		}
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
