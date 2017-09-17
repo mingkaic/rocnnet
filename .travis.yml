@@ -23,7 +23,12 @@ jobs:
           -e TRAVIS=true
           -e CONTINUOUS_INTEGRATION=true
           -e TRAVIS_BRANCH=${TRAVIS_BRANCH}
+          -e TRAVIS_PULL_REQUEST=${TRAVIS_PULL_REQUEST}
+          -e TRAVIS_PULL_REQUEST_BRANCH=${TRAVIS_PULL_REQUEST_BRANCH}
+          -e TRAVIS_PULL_REQUEST_SHA=${TRAVIS_PULL_REQUEST_SHA}
+          -e TRAVIS_PULL_REQUEST_SLUG=${TRAVIS_PULL_REQUEST_SLUG}
           --rm ${DOCKER_USERNAME}/rocnnet-test
+        - echo "curiosity $HEAD"
 
 # safelist
 branches:

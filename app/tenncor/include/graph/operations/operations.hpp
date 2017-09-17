@@ -109,6 +109,17 @@ varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare,
 template <typename T>
 varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name);
 
+//! sample using binominal distribution given tensors (or scalars) n and p
+// todo: after implementing type, restrict n to integers
+template <typename T>
+varptr<T> binomial_sample (T n, const varptr<T> p);
+
+template <typename T>
+varptr<T> binomial_sample (const varptr<T> n, T p);
+
+template <typename T>
+varptr<T> binomial_sample (const varptr<T> n, const varptr<T> p);
+
 //! add scalar a and b
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b);

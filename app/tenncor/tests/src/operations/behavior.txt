@@ -30,6 +30,7 @@ A012 - binary elementary operations on varptrs of n_elem=1 the output shape is t
 (UNTESTED) A014 - F_axial_J fails for shapes that do not match while accommodating for the missing shape.
         For example: A<3, 4, 5, 6> fails with B<2, 4, 5> since shapes don't match
         even if B has dimension 4 of 6
+(UNTESTED) binomial_sample...
 
 // TRANSFORM BEHAVIORS
 B000 - any operation accepting nullptr as any operand returns nullptr

@@ -330,10 +330,9 @@ varptr<T> identity (varptr<T> x)
 {
 	if (nullptr == x.get()) return nullptr;
 	std::string opname = "identity";
-	std::unordered_set<inode<T>*> audience;
-	if (x->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(x.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x}, elementary_shaper,
 	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
@@ -444,10 +443,9 @@ varptr<T> sin (const varptr<T> a)
 		return constant<T>::get(acvec, aconst->get_shape());
 	}
 	std::string opname = "sin";
-	std::unordered_set<inode<T>*> audience;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
@@ -999,10 +997,9 @@ varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare,
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << "conditional_" << name << "_" << a;
-	std::unordered_set<inode<T>*> audience;
-	if (b->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(b.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
@@ -1070,17 +1067,10 @@ template <typename T>
 varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	std::unordered_set<inode<T>*> audience;
 	std::string opname = "conditional_" + name;
-	if (a->find_audience(opname, audience))
+	if (inode<T>* parent = ordered_binary_parent_search(a.get(), b.get(), opname))
 	{
-		// share nodes when possible
-		for (inode<T>* aud : audience)
-		{
-			std::vector<inode<T>*> args = aud->get_arguments();
-			if (args.size() == 2 && args[0] == a && args[1] == b)
-				return aud;
-		}
+		return parent;
 	}
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -1111,6 +1101,89 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 	}, opname);
 }
 
+template <typename T>
+varptr<T> binomial_sample (T n, const varptr<T> p)
+{
+	if (nullptr == p.get()) return nullptr;
+	std::string opname = nnutils::formatter() << "binomial_sample_n" << n;
+	if (inode<T>* parent = unary_parent_search(p.get(), opname))
+	{
+		return parent;
+	}
+
+	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
+	new transfer_func<T>([n](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		size_t n_out = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_out, dest,
+		[n](const T p)
+		{
+			std::binomial_distribution<int> dist(n, p);
+			return dist(nnutils::get_generator());
+		});
+	}),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		throw std::bad_function_call();
+		return nullptr;
+	}, opname);
+}
+
+template <typename T>
+varptr<T> binomial_sample (const varptr<T> n, T p)
+{
+	if (nullptr == n.get()) return nullptr;
+	std::string opname = nnutils::formatter() << "binomial_sample_p" << p;
+	if (inode<T>* parent = unary_parent_search(n.get(), opname))
+	{
+		return parent;
+	}
+
+	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
+	new transfer_func<T>([p](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		size_t n_out = shapes.outs_.n_elems();
+		std::transform(srcs[0], srcs[0] + n_out, dest,
+		[p](const T n)
+		{
+		   std::binomial_distribution<int> dist(n, p);
+		   return dist(nnutils::get_generator());
+		});
+	}),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		throw std::bad_function_call();
+		return nullptr;
+	}, opname);
+}
+
+template <typename T>
+varptr<T> binomial_sample (const varptr<T> n, const varptr<T> p)
+{
+	if (nullptr == n.get() || nullptr == p.get()) return nullptr;
+	std::string opname = nnutils::formatter() << "binomial_sample";
+	if (inode<T>* parent = ordered_binary_parent_search(n.get(), p.get(), opname))
+	{
+		return parent;
+	}
+
+	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
+	new transfer_func<T>([](T* dest, std::vector<const T*> srcs, shape_io shapes)
+	{
+		size_t n_out = shapes.outs_.n_elems();
+		for (size_t i = 0; i < n_out; i++)
+		{
+			std::binomial_distribution<int> dist(srcs[0][i], srcs[1][i]);
+			dest[i] = dist(nnutils::get_generator());
+		}
+	}),
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
+	{
+		throw std::bad_function_call();
+		return nullptr;
+	}, opname);
+}
+
 template<typename T>
 varptr<T> operator + (T a, const varptr<T> b)
 {
@@ -1132,10 +1205,9 @@ varptr<T> operator + (T a, const varptr<T> b)
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << a << "_add";
-	std::unordered_set<inode<T>*> audience;
-	if (b->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(b.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	new transfer_func<T>(
@@ -1255,10 +1327,9 @@ varptr<T> operator - (T a, const varptr<T> b)
 		return constant<T>::get(bcvec, bconst->get_shape());
 	}
 	std::string opname = nnutils::formatter() << a << "_sub";
-	std::unordered_set<inode<T>*> audience;
-	if (b->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(b.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	new transfer_func<T>(
@@ -1385,10 +1456,9 @@ varptr<T> operator * (T a, const varptr<T> b)
 	if ((T) 1 == a) return b;
 	if ((T) -1 == a) return -b;
 	std::string opname = nnutils::formatter() << a << "_mul";
-	std::unordered_set<inode<T>*> audience;
-	if (b->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(b.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b},
 	elementary_shaper,
@@ -1528,10 +1598,9 @@ varptr<T> operator / (T a, const varptr<T> b)
 		return constant<T>::get(0);
 	}
 	std::string opname = nnutils::formatter() << a << "_div";
-	std::unordered_set<inode<T>*> audience;
-	if (b->find_audience(opname, audience))
+	if (inode<T>* parent = unary_parent_search(b.get(), opname))
 	{
-		return *audience.begin(); // share nodes when possible
+		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	new transfer_func<T>(

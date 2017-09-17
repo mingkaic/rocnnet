@@ -16,6 +16,7 @@ struct test_params
 	size_t n_hidden_ = 50;
 	size_t n_batch_ = 20;
 	size_t n_test_chain_ = 20;
+	size_t n_samples_ = 10;
 	double learning_rate_ = 0.1;
 	std::string outdir_ = ".";
 	bool train_ = true;
@@ -82,31 +83,35 @@ void mnist_test (xy_data* train, xy_data* test, test_params params)
 		model.initialize(serialpath, "rbm_demo");
 	}
 
-	const size_t plot_every = 1000;
+//	const size_t plot_every = 1000;
+	const size_t plot_every = 1;
 	size_t n_test_input = test->shape_.first;
 	size_t n_test_sample = test->shape_.second;
 	std::uniform_int_distribution<int> dist(0, n_test_sample - params.n_test_chain_);
-	size_t idx = dist(nnutils::get_generator());
-	auto testbegin = test->data_x_.begin() + idx * n_test_input;
-	std::vector<double> test_sample(testbegin, testbegin + params.n_test_chain_  * n_test_input);
 
 	model.save(serialpath, "rbm_demo");
 
 	nnet::placeholder<double> test_in(std::vector<size_t>{n_test_input, params.n_test_chain_});
-	nnet::varptr<double> test_outsample = nnet::round(model(&test_in));
+	nnet::varptr<double> test_outsample = nnet::binomial_sample(1.0, model(&test_in));
 	nnet::varptr<double> test_generated_in = model.back(test_outsample); // < what we're interested in
-	test_in = test_sample;
 
-	std::vector<double> generation = nnet::expose<double>(test_generated_in);
-	nnet::tensorshape generated_shape = test_generated_in->get_shape();
-
-	for (double e : generation)
+	std::vector<std::vector<double> > outputchains;
+	for (size_t i = 0; i < params.n_samples_; i++)
 	{
-		std::cout << e << ", ";
+		std::cout << "... plotting sample " << i << std::endl;
+		size_t idx = dist(nnutils::get_generator());
+		auto testbegin = test->data_x_.begin() + idx * n_test_input;
+		std::vector<double> test_sample(testbegin, testbegin + params.n_test_chain_  * n_test_input);
+		for (size_t j = 0; j < plot_every; j++)
+		{
+			test_in = test_sample;
+			test_sample = nnet::expose<double>(test_generated_in);
+		}
+
+		outputchains.push_back(test_sample);
 	}
-	std::cout << std::endl;
-	nnet::print_shape(generated_shape);
-	std::cout << std::endl;
+
+	mnist_imageout(outputchains, test_in.get_shape().as_list(), params.n_test_chain_, params.n_samples_);
 }
 
 void small_test (test_params params)
