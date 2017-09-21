@@ -6,6 +6,8 @@
 //  Copyright © 2016 Mingkai Chen. All rights reserved.
 //
 
+#include "graph/connector/immutable/const_immutable.hpp"
+
 #ifdef TENNCOR_ELEMENTARY_HPP
 
 namespace nnet
@@ -53,6 +55,7 @@ static inline SHAPER binary_axial_shape (size_t axis, bool left)
 			shape2 = shapes[0];
 		}
 
+		if (shape1.n_elems() == 1) return shape2;
 		if (shape2.n_elems() == 1) return shape1;
 
 		std::vector<size_t> s2list = shape2.as_list();
@@ -164,7 +167,8 @@ static TRANSFER_FUNC<T> binary_axial (AGGREGATE<T> aggregate, size_t axis, bool 
 
 template <typename T>
 static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit,
+	optional<std::pair<bool, size_t> > left_axis = optional<std::pair<bool, size_t> >())
 {
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -191,12 +195,26 @@ static varptr<T> add_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		return parent;
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	if (left_axis)
+	{
+		size_t axis = left_axis->second;
+		if (left_axis->first)
+		{
+			axial_set_jacobian(out, a, axis);
+		}
+		else
+		{
+			axial_set_jacobian(out, b, axis);
+		}
+	}
+	return out;
 }
 
 template <typename T>
 static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit,
+	optional<std::pair<bool, size_t> > left_axis = optional<std::pair<bool, size_t> >())
 {
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -227,12 +245,26 @@ static varptr<T> sub_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		return parent;
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	if (left_axis)
+	{
+		size_t axis = left_axis->second;
+		if (left_axis->first)
+		{
+			axial_set_jacobian(out, a, axis);
+		}
+		else
+		{
+			axial_set_jacobian(out, b, axis);
+		}
+	}
+	return out;
 }
 
 template <typename T>
 static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit,
+	optional<std::pair<bool, size_t> > left_axis = optional<std::pair<bool, size_t> >())
 {
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -263,12 +295,26 @@ static varptr<T> mul_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		return parent;
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	if (left_axis)
+	{
+		size_t axis = left_axis->second;
+		if (left_axis->first)
+		{
+			axial_set_jacobian(out, a, axis);
+		}
+		else
+		{
+			axial_set_jacobian(out, b, axis);
+		}
+	}
+	return out;
 }
 
 template <typename T>
 static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
-	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit)
+	std::string opname, SHAPER shaper, TRANSFER_FUNC<T> Nf, BACK_MAP<T> ginit,
+	optional<std::pair<bool, size_t> > left_axis = optional<std::pair<bool, size_t> >())
 {
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
@@ -300,11 +346,24 @@ static varptr<T> div_helper (const varptr<T>& a, const varptr<T>& b,
 	{
 		return parent;
 	}
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a, b}, shaper, new transfer_func<T>(Nf), ginit, opname);
+	if (left_axis)
+	{
+		size_t axis = left_axis->second;
+		if (left_axis->first)
+		{
+			axial_set_jacobian(out, a, axis);
+		}
+		else
+		{
+			axial_set_jacobian(out, b, axis);
+		}
+	}
+	return out;
 }
 
 template <typename T>
-inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t axis)
+static void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t axis)
 {
 	if (iconnector<T>* iconn = dynamic_cast<iconnector<T>*>(root.get()))
 	{
@@ -325,6 +384,18 @@ inline void axial_set_jacobian (varptr<T>& root, const varptr<T>& branch, size_t
 	}
 }
 
+
+// samples cannot be backpropogated, so we need a special handler
+template <typename T>
+static varptr<T> sample_back_prop (std::vector<std::pair<inode<T>*,inode<T>*> >)
+{
+//	throw std::bad_function_call();
+	// todo: problem: we're evaluating the gradient of something that might not be used
+	// solution 1: force a lazy evaluation of grad nodes (hard)
+	// solution 2: return a node that errors upon usage (not memory efficient)
+	return nullptr;
+}
+
 template <typename T>
 varptr<T> identity (varptr<T> x)
 {
@@ -335,7 +406,8 @@ varptr<T> identity (varptr<T> x)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{x}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -346,6 +418,20 @@ varptr<T> identity (varptr<T> x)
 		varptr<T> grad = args.front().second;
 		return grad;
 	}, opname);
+	out->extract_metadata(x.get());
+	return out;
+}
+
+template <typename T>
+varptr<T> as_constant (varptr<T> x)
+{
+	if (nullptr == x.get()) return nullptr;
+	std::string opname = "constant_immutable";
+	if (inode<T>* parent = unary_parent_search(x.get(), opname))
+	{
+		return parent;
+	}
+	varptr<T> out = const_immutable<T>::get(x);
 	out->extract_metadata(x.get());
 	return out;
 }
@@ -369,7 +455,8 @@ varptr<T> operator + (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -400,11 +487,11 @@ varptr<T> operator - (const varptr<T> a)
 	}
 	else if (iconnector<T>* aconn = dynamic_cast<iconnector<T>*>(a.get()))
 	{
+		// avoids double negatives
 		std::vector<inode<T>*> childargs = aconn->get_arguments();
 		if (0 == a->get_label().compare("neg") && 1 == childargs.size())
 		{
-			// avoids double negatives by calling child directly
-			return static_cast<inode<T>*>(childargs[0]);
+			return childargs[0];
 		}
 	}
 	std::string opname = "neg";
@@ -413,7 +500,8 @@ varptr<T> operator - (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -448,7 +536,8 @@ varptr<T> sin (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -485,7 +574,8 @@ varptr<T> cos (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -522,7 +612,8 @@ varptr<T> tan (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -561,7 +652,8 @@ varptr<T> csc (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -599,7 +691,8 @@ varptr<T> sec (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -637,7 +730,8 @@ varptr<T> cot (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -675,7 +769,8 @@ varptr<T> exp (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -712,7 +807,8 @@ varptr<T> sqrt (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -749,7 +845,8 @@ varptr<T> round (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -785,7 +882,8 @@ varptr<T> log (const varptr<T> a)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -794,9 +892,10 @@ varptr<T> log (const varptr<T> a)
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		// log'(f(x)) = 1 / f(x)
+		// log'(f(x)) = f'(x) / f(x)
 		varptr<T> a = args.front().first;
-		return (T) 1 / a;
+		varptr<T> grad = args.front().second;
+		return grad / a;
 	}, opname);
 	out->extract_metadata(a.get());
 	return out;
@@ -829,7 +928,8 @@ varptr<T> pow (const varptr<T> a, double scalar)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([scalar](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[scalar](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -850,8 +950,11 @@ varptr<T> pow (const varptr<T> a, double scalar)
 template <typename T>
 varptr<T> clip_val (const varptr<T> a, T min, T max)
 {
-	assert(min < max); // todo: maybe throw to indicate usage error
 	if (nullptr == a.get()) return nullptr;
+	if (min > max)
+	{
+		std::swap(min, max);
+	}
 	if (constant<T>* aconst = dynamic_cast<constant<T>*>(a.get()))
 	{
 		std::vector<T> acvec = expose<T>(aconst);
@@ -868,7 +971,8 @@ varptr<T> clip_val (const varptr<T> a, T min, T max)
 		return parent;
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
-	new transfer_func<T>([min, max](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[min, max](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -911,7 +1015,8 @@ varptr<T> l2norm (const varptr<T> a)
 	}
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a},
 	[](std::vector<tensorshape>) { return std::vector<size_t>{1}; },
-	new transfer_func<T>([](T* dest, std::vector<const T*> src, shape_io shape)
+	new transfer_func<T>(
+	[](T* dest, std::vector<const T*> src, shape_io shape)
 	{
 		assert(1 == src.size());
 		size_t n_elems = shape.outs_.n_elems();
@@ -1001,7 +1106,6 @@ varptr<T> conditional (T a, const varptr<T> b, std::function<bool(T,T)> compare,
 	{
 		return parent;
 	}
-
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{b}, elementary_shaper,
 	new transfer_func<T>(
 	[compare, a](T* dest, std::vector<const T*> srcs, shape_io shapes)
@@ -1041,7 +1145,6 @@ varptr<T> conditional (const varptr<T> a, T b, std::function<bool(T,T)> compare,
 	{
 		return parent;
 	}
-
 	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a}, elementary_shaper,
 	new transfer_func<T>(
 	[compare, b](T* dest, std::vector<const T*> srcs, shape_io shapes)
@@ -1067,11 +1170,6 @@ template <typename T>
 varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(T,T)> compare, std::string name)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	std::string opname = "conditional_" + name;
-	if (inode<T>* parent = ordered_binary_parent_search(a.get(), b.get(), opname))
-	{
-		return parent;
-	}
 	constant<T>* aconst = dynamic_cast<constant<T>*>(a.get());
 	constant<T>* bconst = dynamic_cast<constant<T>*>(b.get());
 	if (aconst && 1 == aconst->get_shape().n_elems())
@@ -1084,8 +1182,12 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 		std::vector<T> outconst = expose<T>(bconst);
 		return conditional(a, outconst[0], compare, name);
 	}
-
-	return immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
+	std::string opname = "conditional_" + name;
+	if (inode<T>* parent = ordered_binary_parent_search(a.get(), b.get(), opname))
+	{
+		return parent;
+	}
+	varptr<T> out = immutable<T>::get(std::vector<inode<T>*>{a, b}, elementary_shaper,
 	new transfer_func<T>(binary_elem(
 	AGGREGATE<T>([compare](T left, T right) -> T
 	{
@@ -1099,89 +1201,119 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 		// todo: consider correctness
 		return conditional<T>(grada, gradb, compare, name);
 	}, opname);
+	out->extract_metadata(a.get());
+	return out;
 }
 
 template <typename T>
 varptr<T> binomial_sample (T n, const varptr<T> p)
 {
 	if (nullptr == p.get()) return nullptr;
+	if (constant<T>* pconst = dynamic_cast<constant<T>*>(p.get()))
+	{
+		std::default_random_engine& gen = nnutils::get_generator();
+		std::vector<T> pcvec = expose<T>(pconst);
+		std::vector<T> pvec((T) 0, pcvec.size());
+		std::transform(pcvec.begin(), pcvec.end(), pvec.begin(),
+		[&gen, n](T pcv)
+		{
+			std::binomial_distribution<int> dist(n, pcv);
+			return dist(gen);
+		});
+		return constant<T>::get(pvec, pconst->get_shape());
+	}
 	std::string opname = nnutils::formatter() << "binomial_sample_n" << n;
 	if (inode<T>* parent = unary_parent_search(p.get(), opname))
 	{
 		return parent;
 	}
-
 	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
 	new transfer_func<T>([n](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
 		size_t n_out = shapes.outs_.n_elems();
+		std::default_random_engine& gen = nnutils::get_generator();
 		std::transform(srcs[0], srcs[0] + n_out, dest,
-		[n](const T p)
+		[&gen, n](const T p)
 		{
+			assert(p >= 0 && p <= 1);
 			std::binomial_distribution<int> dist(n, p);
-			return dist(nnutils::get_generator());
+			return dist(gen);
 		});
-	}),
-	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
-	{
-		throw std::bad_function_call();
-		return nullptr;
-	}, opname);
+	}), sample_back_prop<T>, opname);
 }
 
 template <typename T>
 varptr<T> binomial_sample (const varptr<T> n, T p)
 {
 	if (nullptr == n.get()) return nullptr;
+	assert(p >= 0 && p <= 1);
+	if (constant<T>* nconst = dynamic_cast<constant<T>*>(n.get()))
+	{
+		std::default_random_engine& gen = nnutils::get_generator();
+		std::vector<T> ncvec = expose<T>(nconst);
+		std::vector<T> nvec((T) 0, ncvec.size());
+		std::transform(ncvec.begin(), ncvec.end(), nvec.begin(),
+		[&gen, p](T ncv)
+		{
+			std::binomial_distribution<int> dist(ncv, p);
+			return dist(gen);
+		});
+		return constant<T>::get(nvec, nconst->get_shape());
+	}
 	std::string opname = nnutils::formatter() << "binomial_sample_p" << p;
 	if (inode<T>* parent = unary_parent_search(n.get(), opname))
 	{
 		return parent;
 	}
-
 	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
 	new transfer_func<T>([p](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
 		size_t n_out = shapes.outs_.n_elems();
+		std::default_random_engine& gen = nnutils::get_generator();
 		std::transform(srcs[0], srcs[0] + n_out, dest,
-		[p](const T n)
+		[&gen, p](const T n)
 		{
 		   std::binomial_distribution<int> dist(n, p);
-		   return dist(nnutils::get_generator());
+		   return dist(gen);
 		});
-	}),
-	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
-	{
-		throw std::bad_function_call();
-		return nullptr;
-	}, opname);
+	}), sample_back_prop<T>, opname);
 }
 
 template <typename T>
 varptr<T> binomial_sample (const varptr<T> n, const varptr<T> p)
 {
 	if (nullptr == n.get() || nullptr == p.get()) return nullptr;
+	constant<T>* nconst = dynamic_cast<constant<T>*>(n.get());
+	constant<T>* pconst = dynamic_cast<constant<T>*>(p.get());
+	if (nconst && 1 == nconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(nconst);
+		return binomial_sample(outconst[0], p);
+	}
+	else if (pconst && 1 == pconst->get_shape().n_elems())
+	{
+		std::vector<T> outconst = expose<T>(pconst);
+		return binomial_sample(n, outconst[0]);
+	}
 	std::string opname = nnutils::formatter() << "binomial_sample";
 	if (inode<T>* parent = ordered_binary_parent_search(n.get(), p.get(), opname))
 	{
 		return parent;
 	}
-
 	return immutable<T>::get(std::vector<inode<T>*>{p}, elementary_shaper,
 	new transfer_func<T>([](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
 		size_t n_out = shapes.outs_.n_elems();
+		std::default_random_engine& gen = nnutils::get_generator();
 		for (size_t i = 0; i < n_out; i++)
 		{
-			std::binomial_distribution<int> dist(srcs[0][i], srcs[1][i]);
-			dest[i] = dist(nnutils::get_generator());
+			size_t n = srcs[0][i];
+			T p = srcs[1][i];
+			assert(p >= 0 && p <= 1);
+			std::binomial_distribution<int> dist(n, p);
+			dest[i] = dist(gen);
 		}
-	}),
-	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
-	{
-		throw std::bad_function_call();
-		return nullptr;
-	}, opname);
+	}), sample_back_prop<T>, opname);
 }
 
 template<typename T>
@@ -1215,7 +1347,8 @@ varptr<T> operator + (T a, const varptr<T> b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[a](const T data)
 		{
 			return a + data;
 		});
@@ -1259,7 +1392,8 @@ varptr<T> operator + (const varptr<T> a, T b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[b](const T data)
 		{
 			return data + b;
 		});
@@ -1337,7 +1471,8 @@ varptr<T> operator - (T a, const varptr<T> b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[a](const T data)
 		{
 			return a - data;
 		});
@@ -1381,7 +1516,8 @@ varptr<T> operator - (const varptr<T> a, T b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[b](const T data)
 		{
 			return data - b;
 		});
@@ -1467,7 +1603,8 @@ varptr<T> operator * (T a, const varptr<T> b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[a](const T data)
 		{
 			return a * data;
 		});
@@ -1519,7 +1656,8 @@ varptr<T> operator * (const varptr<T> a, T b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[b](const T data)
 		{
 			return data * b;
 		});
@@ -1608,7 +1746,8 @@ varptr<T> operator / (T a, const varptr<T> b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [a](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[a](const T data)
 		{
 			return a / data;
 		});
@@ -1658,7 +1797,8 @@ varptr<T> operator / (const varptr<T> a, T b)
 	{
 		assert(1 == srcs.size());
 		size_t n_elems = shapes.outs_.n_elems();
-		std::transform(srcs[0], srcs[0] + n_elems, dest, [b](const T data)
+		std::transform(srcs[0], srcs[0] + n_elems, dest,
+		[b](const T data)
 		{
 			return data / b;
 		});
@@ -1711,7 +1851,7 @@ template <typename T>
 varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
+	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_a_" << axis_a,
 	binary_axial_shape(axis_a, true),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1722,16 +1862,14 @@ varptr<T> add_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return add_axial_a(ag, bg, axis_a);
-	});
-	axial_set_jacobian(addout, a, axis_a);
-	return addout;
+	}, std::pair<bool, size_t>{ true, axis_a });
 }
 
 template <typename T>
 varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> addout = add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
+	return add_helper<T>(a, b, nnutils::formatter() << "add_axis_b_" << axis_b,
 	binary_axial_shape(axis_b, false),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1742,16 +1880,14 @@ varptr<T> add_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return add_axial_b(ag, bg, axis_b);
-	});
-	axial_set_jacobian(addout, b, axis_b);
-	return addout;
+	}, std::pair<bool, size_t>{ false, axis_b });
 }
 
 template <typename T>
 varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
+	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_a_" << axis_a,
 	binary_axial_shape(axis_a, true),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1762,16 +1898,14 @@ varptr<T> sub_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return sub_axial_a(ag, bg, axis_a);
-	});
-	axial_set_jacobian(subout, a, axis_a);
-	return subout;
+	}, std::pair<bool, size_t>{ true, axis_a });
 }
 
 template <typename T>
 varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> subout = sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
+	return sub_helper<T>(a, b, nnutils::formatter() << "sub_axis_b_" << axis_b,
 	binary_axial_shape(axis_b, false),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1782,16 +1916,14 @@ varptr<T> sub_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return sub_axial_b(ag, bg, axis_b);
-	});
-	axial_set_jacobian(subout, b, axis_b);
-	return subout;
+	}, std::pair<bool, size_t>{ false, axis_b });
 }
 
 template <typename T>
 varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
+	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_a_" << axis_a,
 	binary_axial_shape(axis_a, true),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1805,16 +1937,14 @@ varptr<T> mul_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return mul_axial_a(ag, b, axis_a) + mul_axial_a(a, bg, axis_a);
-	});
-	axial_set_jacobian(mulout, a, axis_a);
-	return mulout;
+	}, std::pair<bool, size_t>{ true, axis_a });
 }
 
 template <typename T>
 varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> mulout = mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
+	return mul_helper<T>(a, b, nnutils::formatter() << "mul_axis_b_" << axis_b,
 	binary_axial_shape(axis_b, false),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1828,16 +1958,14 @@ varptr<T> mul_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return mul_axial_b(ag, b, axis_b) + mul_axial_b(a, bg, axis_b);
-	});
-	axial_set_jacobian(mulout, b, axis_b);
-	return mulout;
+	}, std::pair<bool, size_t>{ false, axis_b });
 }
 
 template <typename T>
 varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
+	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_a_" << axis_a,
 	binary_axial_shape(axis_a, true),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1851,16 +1979,14 @@ varptr<T> div_axial_a (const varptr<T> a, const varptr<T> b, size_t axis_a)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return (mul_axial_a(ag, b, axis_a) - mul_axial_b(bg, a, axis_a)) / pow(b, 2);
-	});
-	axial_set_jacobian(divout, a, axis_a);
-	return divout;
+	}, std::pair<bool, size_t>{ true, axis_a });
 }
 
 template <typename T>
 varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 {
 	if (nullptr == a.get() || nullptr == b.get()) return nullptr;
-	varptr<T> divout = div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
+	return div_helper<T>(a, b, nnutils::formatter() << "div_axis_b_" << axis_b,
 	binary_axial_shape(axis_b, false),
 	binary_axial(AGGREGATE<T>([](T left, T right) -> T
 	{
@@ -1874,9 +2000,7 @@ varptr<T> div_axial_b (const varptr<T> a, const varptr<T> b, size_t axis_b)
 		varptr<T> ag = args.at(0).second;
 		varptr<T> bg = args.at(1).second;
 		return (mul_axial_b(ag, b, axis_b) - mul_axial_a(bg, a, axis_b)) / pow(b, 2);
-	});
-	axial_set_jacobian(divout, b, axis_b);
-	return divout;
+	}, std::pair<bool, size_t>{ false, axis_b });
 }
 
 }

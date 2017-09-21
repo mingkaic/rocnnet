@@ -71,7 +71,7 @@ nnet::varptr<double> dbn::operator () (nnet::inode<double>* input)
 	nnet::inode<double>* output = input;
 	for (rbm* h : layers_)
 	{
-		output = (*h)(output);
+		output = h->prop_up(output);
 	}
 	return output;
 }

@@ -39,6 +39,9 @@ namespace nnet
 template <typename T>
 varptr<T> identity (varptr<T> x);
 
+template <typename T>
+varptr<T> as_constant (varptr<T> x);
+
 //! absolute value of a
 template<typename T>
 varptr<T> operator + (const varptr<T> a);

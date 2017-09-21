@@ -317,7 +317,7 @@ void print_shape (tensorshape ts, std::ostream& os)
 	std::vector<size_t> shape = ts.as_list();
 	if (shape.empty())
 	{
-		os << "undefined";
+		os << "undefined ";
 	}
 	else
 	{

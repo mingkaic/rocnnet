@@ -4,6 +4,7 @@
 
 #include "compounds/rbm.hpp"
 #include "mnist_data.hpp"
+#include "edgeinfo/comm_record.hpp"
 
 #ifdef __GNUC__
 #include <unistd.h>
@@ -11,7 +12,7 @@
 
 struct test_params
 {
-	size_t n_cont_div_ = 1;
+	size_t n_cont_div_ = 15;
 	size_t n_epoch_ = 10;
 	size_t n_hidden_ = 50;
 	size_t n_batch_ = 20;
@@ -29,17 +30,16 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 	size_t n_data = data.size() / n_input;
 	size_t n_training_batches = n_data / params.n_batch_;
 
+	nnet::const_init<double> zinit(0);
+	nnet::variable<double> persistent(std::vector<size_t>{params.n_hidden_, params.n_batch_}, zinit, "persistent");
+	persistent.initialize();
+
 	nnet::placeholder<double> in(std::vector<size_t>{n_input, params.n_batch_}, "rbm_train_in");
-	rocnnet::generators_t gens;
-	nnet::updates_t trainers = model.train(gens, &in, params.learning_rate_ , params.n_cont_div_);
-	trainers.push_back([gens](bool)
-	{
-		for (nnet::generator<double>* gen : gens)
-		{
-			gen->update({}); // re-randomize
-		}
-	});
-	nnet::varptr<double> cost = model.get_pseudo_likelihood_cost(in);
+	std::pair<nnet::variable_updater<double>, nnet::varptr<double> > training_res =
+		model.train(in, &persistent, params.learning_rate_ , params.n_cont_div_);
+
+	nnet::variable_updater<double> trainer = training_res.first;
+	nnet::varptr<double> cost = training_res.second;
 	auto it = data.begin();
 	double inbatch = params.n_batch_ * n_input;
 
@@ -50,15 +50,19 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 		{
 			std::vector<double> batch(it + j * inbatch, it + (j + 1) * inbatch);
 			in = batch;
-			for (nnet::variable_updater<double>& trainer : trainers)
-			{
-				trainer(true);
-			}
+			trainer(true); // train
 
 			mean_cost += nnet::expose<double>(cost)[0] / n_training_batches;
 		}
 		std::cout << "Training epoch " << i << ", cost is " << mean_cost << std::endl;
 	}
+
+#ifdef EDGE_RCD
+	if (rocnnet_record::erec::rec_good)
+	{
+		rocnnet_record::erec::rec.to_csv<double>();
+	}
+#endif /* EDGE_RCD */
 }
 
 void mnist_test (xy_data* train, xy_data* test, test_params params)
@@ -77,23 +81,22 @@ void mnist_test (xy_data* train, xy_data* test, test_params params)
 	{
 		model.initialize();
 		fit(model, training_data, params);
+
+		model.save(serialpath, "rbm_demo");
 	}
 	else
 	{
 		model.initialize(serialpath, "rbm_demo");
 	}
 
-//	const size_t plot_every = 1000;
-	const size_t plot_every = 1;
+	const size_t plot_every = 1000;
 	size_t n_test_input = test->shape_.first;
 	size_t n_test_sample = test->shape_.second;
 	std::uniform_int_distribution<int> dist(0, n_test_sample - params.n_test_chain_);
 
-	model.save(serialpath, "rbm_demo");
-
 	nnet::placeholder<double> test_in(std::vector<size_t>{n_test_input, params.n_test_chain_});
-	nnet::varptr<double> test_outsample = nnet::binomial_sample(1.0, model(&test_in));
-	nnet::varptr<double> test_generated_in = model.back(test_outsample); // < what we're interested in
+	nnet::varptr<double> test_generated_in = model.reconstruct_visible(&test_in);
+	nnet::varptr<double> test_generated_sample = nnet::binomial_sample(1.0, test_generated_in);
 
 	std::vector<std::vector<double> > outputchains;
 	for (size_t i = 0; i < params.n_samples_; i++)
@@ -137,7 +140,7 @@ void small_test (test_params params)
 	fit(model, training_data, params);
 
 	nnet::placeholder<double> test_in(std::vector<size_t>{n_input});
-	nnet::varptr<double> test_out = model(&test_in);
+	nnet::varptr<double> test_out = model.reconstruct_visible(&test_in);
 
 	test_in = test_data;
 	std::vector<double> out = nnet::expose<double>(test_out);
@@ -221,6 +224,8 @@ int main (int argc, char** argv)
 	{
 		small_test(params);
 	}
+
+	google::protobuf::ShutdownProtobufLibrary();
 
 	return 0;
 }

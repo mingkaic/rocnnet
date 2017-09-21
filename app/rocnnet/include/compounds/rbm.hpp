@@ -43,17 +43,24 @@ public:
 	// PLACEHOLDER CONNECTION
 	// accept input of shape <n_input, n_batch>
 	// output of shape <n_hidden, n_batch>
-	nnet::varptr<double> operator () (nnet::inode<double>* input);
+	nnet::varptr<double> prop_up (nnet::inode<double>* input);
 
 	// accept input of shape <n_hidden, n_batch>
 	// output shape of <n_input, n_batch>
-	nnet::varptr<double> back (nnet::inode<double>* hidden);
+	nnet::varptr<double> prop_down (nnet::inode<double>* hidden);
+
+	// recreate input using hidden distribution,
+	// output shape of input.get_shape()
+	nnet::varptr<double> reconstruct_visible (nnet::inode<double>* input);
+
+	nnet::varptr<double> reconstruct_hidden (nnet::inode<double>* hidden);
 
 	// input a 2-D vector of shape <n_input, n_batch>
-	nnet::updates_t train (generators_t& gens, nnet::inode<double>* input,
-		double learning_rate = 1e-3, size_t n_cont_div = 1);
-
-	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::placeholder<double>& input) const;
+	std::pair<nnet::variable_updater<double>, nnet::varptr<double> > train (
+		nnet::placeholder<double>& input,
+		nnet::variable<double>* persistent = nullptr,
+		double learning_rate = 1e-3,
+		size_t n_cont_div = 1);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
@@ -75,11 +82,18 @@ private:
 
 	void clean_up (void);
 
-	nnet::varptr<double> free_energy (nnet::varptr<double> sample) const;
+	nnet::varptr<double> free_energy (nnet::varptr<double> sample);
+
+	// COST CALCULATIONS
+	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::placeholder<double>& input);
+
+	nnet::varptr<double> get_reconstruction_cost (nnet::varptr<double>& pre_sig_back);
 
 	size_t n_input_;
 
-	fc_layer* hidden_ = nullptr;
+	nnet::variable<double>* weight_ = nullptr;
+
+	nnet::variable<double>* hbias_ = nullptr;
 
 	nnet::variable<double>* vbias_ = nullptr;
 };

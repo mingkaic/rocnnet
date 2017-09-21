@@ -169,6 +169,77 @@ static void strassen (T* c, T* a, T* b, size_t dimPad)
 	delete temp3;
 }
 
+static inline tensorshape matmul_shaper (std::vector<tensorshape> shapes)
+{
+	tensorshape& t1s = shapes[0];
+	tensorshape& t2s = shapes[1];
+
+	std::vector<size_t> al = t1s.as_list();
+	std::vector<size_t> bl = t2s.as_list();
+	size_t rank1 = t1s.rank();
+	size_t rank2 = t2s.rank();
+
+	// account for vectors
+	size_t ax = rank1 ? al[0] : 0;
+	size_t ay = rank1 > 1 ? al[1] : 1;
+	size_t bx = rank2 ? bl[0] : 0;
+	size_t by = rank2 > 1 ? bl[1] : 1;
+
+	// ensure the dimensions beyond 2d are equal
+	size_t minend = std::min(rank1, rank2);
+	std::vector<size_t> beyond2d;
+	if (minend > 2)
+	{
+		auto ait = al.begin()+2;
+		auto aet = al.begin()+minend;
+		if (std::equal(ait, aet, bl.begin()+2))
+		{
+			beyond2d.insert(beyond2d.end(), ait, aet);
+		}
+		else
+		{
+			std::stringstream ss;
+			ss << "attempting to matrix multiple shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
+		}
+		// check that remaining shape values are ones,
+		// otherwise one shape is larger than the other
+		auto it = rank1 > rank2 ? al.begin() : bl.begin();
+		auto et = rank1 > rank2 ? al.end() : bl.end();
+		if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
+		{
+			std::stringstream ss;
+			ss << "attempting to matrix multiple different sized shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
+		}
+	}
+
+	// get resulting shape
+	std::vector<size_t> res_shape;
+	if (ax == by)
+	{
+		res_shape = {bx, ay};
+	}
+	else
+	{
+		std::stringstream ss;
+		ss << "matmul shapes ";
+		print_shape(t1s, ss);
+		ss << "and ";
+		print_shape(t2s, ss);
+		ss << "do not match";
+		throw std::logic_error(ss.str());
+	}
+	res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
+	return res_shape;
+}
+
 template <typename T>
 varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool transposeB)
 {
@@ -206,76 +277,7 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 	}
 
 	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{adata, bdata},
-	[](std::vector<tensorshape> shapes) -> tensorshape
-	{
-		tensorshape& t1s = shapes[0];
-		tensorshape& t2s = shapes[1];
-
-		std::vector<size_t> al = t1s.as_list();
-		std::vector<size_t> bl = t2s.as_list();
-		size_t rank1 = t1s.rank();
-		size_t rank2 = t2s.rank();
-
-		// account for vectors
-		size_t ax = rank1 ? al[0] : 0;
-		size_t ay = rank1 > 1 ? al[1] : 1;
-		size_t bx = rank2 ? bl[0] : 0;
-		size_t by = rank2 > 1 ? bl[1] : 1;
-
-		// ensure the dimensions beyond 2d are equal
-		size_t minend = std::min(rank1, rank2);
-		std::vector<size_t> beyond2d;
-		if (minend > 2)
-		{
-			auto ait = al.begin()+2;
-			auto aet = al.begin()+minend;
-			if (std::equal(ait, aet, bl.begin()+2))
-			{
-				beyond2d.insert(beyond2d.end(), ait, aet);
-			}
-			else
-			{
-				std::stringstream ss;
-				ss << "attempting to matrix multiple shapes ";
-				print_shape(t1s, ss);
-				ss << " and ";
-				print_shape(t2s, ss);
-				throw std::logic_error(ss.str());
-			}
-			// check that remaining shape values are ones,
-			// otherwise one shape is larger than the other
-			auto it = rank1 > rank2 ? al.begin() : bl.begin();
-			auto et = rank1 > rank2 ? al.end() : bl.end();
-			if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
-			{
-				std::stringstream ss;
-				ss << "attempting to matrix multiple different sized shapes ";
-				print_shape(t1s, ss);
-				ss << " and ";
-				print_shape(t2s, ss);
-				throw std::logic_error(ss.str());
-			}
-		}
-
-		// get resulting shape
-		std::vector<size_t> res_shape;
-		if (ax == by)
-		{
-			res_shape = {bx, ay};
-		}
-		else
-		{
-			std::stringstream ss;
-			ss << "matmul shapes ";
-			print_shape(t1s, ss);
-			ss << "and ";
-			print_shape(t2s, ss);
-			ss << "do not match";
-			throw std::logic_error(ss.str());
-		}
-		res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
-		return res_shape;
-	},
+	matmul_shaper,
 	new transfer_func<T>(
 	[](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
@@ -283,7 +285,15 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 		std::vector<size_t> alist = shapes.ins_[0].as_list();
 		std::vector<size_t> blist = shapes.ins_[1].as_list();
 		size_t dim_z = alist[0];
-		size_t dim_y = alist[1];
+		size_t dim_y;
+		if (alist.size() < 2)
+		{
+			dim_y = 1;
+		}
+		else
+		{
+			dim_y = alist[1];
+		}
 		size_t dim_x = blist[0];
 
 		// assert that beyond2d is same for A, B, and output C
@@ -344,8 +354,16 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 			cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
 		}
 	}),
-	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
+		tensorshape as = args[0].first->get_shape();
+		tensorshape bs = args[1].first->get_shape();
+		if (as.is_fully_defined() && bs.is_fully_defined())
+		{
+			tensorshape res_shape = matmul_shaper({as, bs});
+			std::vector<T> ones(res_shape.n_elems(), 1);
+			return constant<T>::get(ones, res_shape);
+		}
 		return constant<T>::get_shared_one();
 	}, opname);
 
