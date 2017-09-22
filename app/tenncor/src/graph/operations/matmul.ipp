@@ -164,9 +164,9 @@ static void strassen (T* c, T* a, T* b, size_t dimPad)
 			c[idx22] = temp2[quadidx] - b[quadidx] + b[quadSize + quadidx] + temp3[quadidx];
 		}
 	}
-	delete temp;
-	delete temp2;
-	delete temp3;
+	delete [] temp;
+	delete [] temp2;
+	delete [] temp3;
 }
 
 static inline tensorshape matmul_shaper (std::vector<tensorshape> shapes)

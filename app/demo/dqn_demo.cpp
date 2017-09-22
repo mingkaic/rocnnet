@@ -1,4 +1,4 @@
-// test dq_demo on c++ side
+// test dqn_demo on c++ side
 
 #include "models/dq_net.hpp"
 #include "edgeinfo/comm_record.hpp"
@@ -131,7 +131,7 @@ int main (int argc, char** argv)
 
 	// use this to satisfy moving test coverage for dqn
 	rocnnet::dq_net temporary_dqn(untrained_dqn, "temp_dqn");
-	temporary_dqn.initialize(serialpath, "dq_demo");
+	temporary_dqn.initialize(serialpath, "dqn_demo");
 	rocnnet::dq_net pretrained_dqn(std::move(temporary_dqn), "pretrained_dqn");
 
 	int exit_status = 0;
@@ -246,7 +246,7 @@ int main (int argc, char** argv)
 
 	if (exit_status == 0 && save)
 	{
-		trained_dqn.save(serialpath, "dq_demo");
+		trained_dqn.save(serialpath, "dqn_demo");
 	}
 
 #ifdef EDGE_RCD

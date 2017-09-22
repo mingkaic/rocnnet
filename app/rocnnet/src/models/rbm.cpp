@@ -6,7 +6,7 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "compounds/rbm.hpp"
+#include "models/rbm.hpp"
 
 #ifdef ROCNNET_RBM_HPP
 
