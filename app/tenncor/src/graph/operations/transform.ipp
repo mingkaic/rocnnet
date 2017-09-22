@@ -23,6 +23,15 @@ varptr<T> transpose (const varptr<T> a, std::pair<size_t,size_t> axis_swap)
 		std::swap(axis_swap.first, axis_swap.second);
 	}
 	std::string opname = nnutils::formatter() << "transpose_" << axis_swap.first << "_" << axis_swap.second;
+	// avoid double consecutive transposes (along the same axis)
+	if (iconnector<T>* aconn = dynamic_cast<iconnector<T>*>(a.get()))
+	{
+		std::vector<inode<T>*> childargs = aconn->get_arguments();
+		if (0 == a->get_label().compare(opname) && 1 == childargs.size())
+		{
+			return childargs[0];
+		}
+	}
 	if (inode<T>* parent = unary_parent_search(a.get(), opname))
 	{
 		return parent;

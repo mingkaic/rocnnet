@@ -44,7 +44,8 @@ static void cubic_mul (T* c, const T* a, const T* b, size_t dimX, size_t dimY, s
 }
 
 template <typename T>
-static void strassen (T* c, const T* a, const T* b, size_t dimPad)
+// strassen coordinates follow matrix convention (row, col)
+static void strassen (T* c, T* a, T* b, size_t dimPad)
 {
 	if (dimPad <= STRASSEN_THRESHOLD)
 	{
@@ -53,126 +54,190 @@ static void strassen (T* c, const T* a, const T* b, size_t dimPad)
 	}
 	size_t quadRC = dimPad/2;
 	size_t quadSize = quadRC*quadRC;
-	// first 14 represent M1L to M7R
-	// quadrant index 14 to 20 are represent M1 to M7
-	T temp[quadSize * 21];
-	memset(temp, 0, quadSize * 21 * sizeof(T));
-	// M1L = A11 + A22	(0)
-	// M1R = B11 + B22	(1)
-	// M2L = A21 + A22	(2)
-	// M2R = B11		(3)
-	// M3L = A11		(4)
-	// M3R = B12 - B22	(5)
-	// M4L = A22		(6)
-	// M4R = B21 - B11	(7)
-	// M5L = A11 + A12	(8)
-	// M5R = B22		(9)
-	// M6L = A21 - A11	(10)
-	// M6R = B11 + B12	(11)
-	// M7L = A12 - A22	(12)
-	// M7R = B21 + B22	(13)
+
+	// we are given 12 quadrants + 3 for 15 quadrant (14 required + 1 for recursion)
+	T* temp = new T[quadSize];
+	T* temp2 = new T[quadSize];
+	// third buffer for recursive strassen call
+	T* temp3 = new T[quadSize];
+
+	// processed during first iteration
+	// M3L = A11		(c0)
+	// M2L = A21 + A22	(c1)
+	// M4L = A22		(c2)
+	// M5L = A11 + A12	(c3)
+	// M6L = A21 - A11	(temp)
+	// M7L = A12 - A22	(temp2)
+	// processed during second iteration
+	// M2R = B11		(a0)
+	// M3R = B12 - B22	(a1) upon third iteration. during second it only B12
+	// M4R = B21 - B11	(a2) upon third iteration. during second it only B21
+	// M5R = B22		(a3)
+	// processed during third iteration
+	// M1L = A11 + A22	(b0) = c0 + c2
+	// M1R = B11 + B22	(b1) = a0 + a3
+	// M6R = B11 + B12	(b2) = a0 + a1 before M3R op
+	// M7R = B21 + B22	(b3) = a2 + a3 before M4R op
+
+	// SPACE SAVING METHOD
+	// iteration 1: partition a to c such that
+	// every element in quadrant (1, 1) ends up in first 1/4th of c, (1, 2) -> second 1/4, etc.
 	for (size_t x = 0; x < quadRC; x++)
 	{
 		for (size_t y = 0; y < quadRC; y++)
 		{
 			size_t quadidx = x + quadRC * y;
-
-			// 11
 			size_t idx11 = x + dimPad * y;
-
-			// A11 used in M1L, M3L, M5L, M6L
-			temp[quadidx] += a[idx11];
-			temp[4 * quadSize + quadidx] += a[idx11];
-			temp[8 * quadSize + quadidx] += a[idx11];
-			temp[10 * quadSize + quadidx] -= a[idx11];
-
-			// B11 used in M1R, M2R, M4R, M6R
-			temp[quadSize + quadidx] += b[idx11];
-			temp[3 * quadSize + quadidx] += b[idx11];
-			temp[7 * quadSize + quadidx] -= b[idx11];
-			temp[11 * quadSize + quadidx] += b[idx11];
-
-			// 12
 			size_t idx12 = x + quadRC + dimPad * y;
-
-			// A12 used in M5L, M7L
-			temp[8 * quadSize + quadidx] += a[idx12];
-			temp[12 * quadSize + quadidx] += a[idx12];
-
-			// B12 used in M3R, M6R
-			temp[5 * quadSize + quadidx] += b[idx12];
-			temp[11 * quadSize + quadidx] += b[idx12];
-
-			// 21
 			size_t idx21 = x + dimPad * (y + quadRC);
-
-			// A21 used in M2L, M6L
-			temp[2 * quadSize + quadidx] += a[idx21];
-			temp[10 * quadSize + quadidx] += a[idx21];
-
-			// B21 used in M4R, M7R
-			temp[7 * quadSize + quadidx] += b[idx21];
-			temp[13 * quadSize + quadidx] += b[idx21];
-
-			// 22
 			size_t idx22 = x + quadRC + dimPad * (y + quadRC);
 
-			// A22 used in M1L, M2L, M4L, M7L
-			temp[quadidx] += a[idx22];
-			temp[2 * quadSize + quadidx] += a[idx22];
-			temp[6 * quadSize + quadidx] += a[idx22];
-			temp[12 * quadSize + quadidx] -= a[idx22];
-
-			// B22 used in M1R, M3R, M5R, M7R
-			temp[quadSize + quadidx] += b[idx22];
-			temp[5 * quadSize + quadidx] -= b[idx22];
-			temp[9 * quadSize + quadidx] += b[idx22];
-			temp[13 * quadSize + quadidx] += b[idx22];
+			c[quadidx] = a[idx11]; 								// M3L
+			c[quadSize + quadidx] = a[idx21] + a[idx22]; 		// M2L
+			c[2 * quadSize + quadidx] = a[idx22]; 				// M4L
+			c[3 * quadSize + quadidx] = a[idx11] + a[idx12]; 	// M5L
+			temp[quadidx] = a[idx21] - a[idx11];				// M6L
+			temp2[quadidx] = a[idx12] - a[idx22]; 				// M7L
 		}
 	}
-
-	// M1 = (A11 + A22) @ (B11 + B22) = M1L @ M1R	(14)
-	// M2 = (A21 + A22) @ B11 = M2L @ B11			(15)
-	// M3 = A11 @ (B12 - B22) = A11 @ M3R			(16)
-	// M4 = A22 @ (B21 - B11) = A22 @ M4R			(17)
-	// M5 = (A11 + A12) @ B22 = M5L @ B22			(18)
-	// M6 = (A21 - A11) @ (B11 + B12) = M6L @ M6R	(19)
-	// M7 = (A12 - A22) @ (B21 + B22) = M7L @ M7R	(20)
-	strassen<T>(14 * quadSize + temp, temp, quadSize + temp, quadRC);
-	strassen<T>(15 * quadSize + temp, 2 * quadSize + temp, 3 * quadSize + temp, quadRC);
-	strassen<T>(16 * quadSize + temp, 4 * quadSize + temp, 5 * quadSize + temp, quadRC);
-	strassen<T>(17 * quadSize + temp, 6 * quadSize + temp, 7 * quadSize + temp, quadRC);
-	strassen<T>(18 * quadSize + temp, 8 * quadSize + temp, 9 * quadSize + temp, quadRC);
-	strassen<T>(19 * quadSize + temp, 10 * quadSize + temp, 11 * quadSize + temp, quadRC);
-	strassen<T>(20 * quadSize + temp, 12 * quadSize + temp, 13 * quadSize + temp, quadRC);
-
-	// C11 = M1 + M4 - M5 + M7
-	// C12 = M3 + M5
-	// C21 = M2 + M4
-	// C22 = M1 - M2 + M3 + M6
+	// iteration 2: partition b to a (same rule as iteration 1)
 	for (size_t x = 0; x < quadRC; x++)
 	{
 		for (size_t y = 0; y < quadRC; y++)
 		{
 			size_t quadidx = x + quadRC * y;
-
-			// C11
 			size_t idx11 = x + dimPad * y;
-			c[idx11] = temp[14 * quadSize + quadidx] + temp[17 * quadSize + quadidx] - temp[18 * quadSize + quadidx] + temp[20 * quadSize + quadidx];
-
-			// C12
 			size_t idx12 = x + quadRC + dimPad * y;
-			c[idx12] = temp[16 * quadSize + quadidx] + temp[18 * quadSize + quadidx];
-
-			// C21
 			size_t idx21 = x + dimPad * (y + quadRC);
-			c[idx21] = temp[15 * quadSize + quadidx] + temp[17 * quadSize + quadidx];
-
-			// C22
 			size_t idx22 = x + quadRC + dimPad * (y + quadRC);
-			c[idx22] = temp[14 * quadSize + quadidx] - temp[15 * quadSize + quadidx] + temp[16 * quadSize + quadidx] + temp[19 * quadSize + quadidx];
+
+			a[quadidx] = b[idx11]; 					// M2R
+			a[quadSize + quadidx] = b[idx12]; 		// M3R (preliminary)
+			a[2 * quadSize + quadidx] = b[idx21]; 	// M4R (preliminary)
+			a[3 * quadSize + quadidx] = b[idx22]; 	// M5R
 		}
 	}
+	// iteration 3: finalize calculations
+	for (size_t quadidx = 0; quadidx < quadSize; quadidx++)
+	{
+		b[quadidx] = c[quadidx] + c[2 * quadSize + quadidx]; 								// M1L
+		b[quadSize + quadidx] = a[quadidx] + a[3 * quadSize + quadidx]; 					// M1R
+		b[2 * quadSize + quadidx] = a[quadidx] + a[quadSize + quadidx]; 					// M6R
+		b[3 * quadSize + quadidx] = a[2 * quadSize + quadidx] + a[3 * quadSize + quadidx]; 	// M7R
+		a[quadSize + quadidx] -= a[3 * quadSize + quadidx];									// M3R
+		a[2 * quadSize + quadidx] -= a[quadidx];											// M4R
+	}
+
+	// goal: clear up c for additions in next stage
+	// M6 = (A21 - A11) @ (B11 + B12) = M6L @ M6R	(temp3) = (temp) @ (b2)
+	// M7 = (A12 - A22) @ (B21 + B22) = M7L @ M7R	(temp) = (temp2) @ (b3)
+	// M1 = (A11 + A22) @ (B11 + B22) = M1L @ M1R	(temp2) = (b0) @ (b1)
+	// M2 = (A21 + A22) @ B11 = M2L @ M2R			(b0) = (c1) @ (a0)
+	// M3 = A11 @ (B12 - B22) = M3L @ M3R			(b1) = (c0) @ (a1)
+	// M4 = A22 @ (B21 - B11) = M4L @ M4R			(b2) = (c2) @ (a2)
+	// M5 = (A11 + A12) @ B22 = M5L @ M5R			(b3) = (c3) @ (a3)
+	strassen<T>(temp3, temp, b + 2 * quadSize, quadRC);
+	strassen<T>(temp, temp2, b + 3 * quadSize, quadRC);
+	strassen<T>(temp2, b, b + quadSize, quadRC);
+	strassen<T>(b, c + quadSize, a, quadRC);
+	strassen<T>(b + quadSize, c, a + quadSize, quadRC);
+	strassen<T>(b + 2 * quadSize, c + 2 * quadSize, a + 2 * quadSize, quadRC);
+	strassen<T>(b + 3 * quadSize, c + 3 * quadSize, a + 3 * quadSize, quadRC);
+
+	// C11 = M1 + M4 - M5 + M7	(temp2) + (b2) - (b3) + (temp)
+	// C12 = M3 + M5			(b1) + (b3)
+	// C21 = M2 + M4			(b0) + (b2)
+	// C22 = M1 - M2 + M3 + M6	(temp2) - (b0) + (b1) + (temp3)
+	for (size_t x = 0; x < quadRC; x++)
+	{
+		for (size_t y = 0; y < quadRC; y++)
+		{
+			size_t quadidx = x + quadRC * y;
+			size_t idx11 = x + dimPad * y; // C11
+			size_t idx12 = x + quadRC + dimPad * y; // C12
+			size_t idx21 = x + dimPad * (y + quadRC); // C21
+			size_t idx22 = x + quadRC + dimPad * (y + quadRC); // C22
+
+			c[idx11] = temp2[quadidx] + b[2 * quadSize + quadidx] - b[3 * quadSize + quadidx] + temp[quadidx];
+			c[idx12] = b[quadSize + quadidx] + b[3 * quadSize + quadidx];
+			c[idx21] = b[quadidx] + b[2 * quadSize + quadidx];
+			c[idx22] = temp2[quadidx] - b[quadidx] + b[quadSize + quadidx] + temp3[quadidx];
+		}
+	}
+	delete [] temp;
+	delete [] temp2;
+	delete [] temp3;
+}
+
+static inline tensorshape matmul_shaper (std::vector<tensorshape> shapes)
+{
+	tensorshape& t1s = shapes[0];
+	tensorshape& t2s = shapes[1];
+
+	std::vector<size_t> al = t1s.as_list();
+	std::vector<size_t> bl = t2s.as_list();
+	size_t rank1 = t1s.rank();
+	size_t rank2 = t2s.rank();
+
+	// account for vectors
+	size_t ax = rank1 ? al[0] : 0;
+	size_t ay = rank1 > 1 ? al[1] : 1;
+	size_t bx = rank2 ? bl[0] : 0;
+	size_t by = rank2 > 1 ? bl[1] : 1;
+
+	// ensure the dimensions beyond 2d are equal
+	size_t minend = std::min(rank1, rank2);
+	std::vector<size_t> beyond2d;
+	if (minend > 2)
+	{
+		auto ait = al.begin()+2;
+		auto aet = al.begin()+minend;
+		if (std::equal(ait, aet, bl.begin()+2))
+		{
+			beyond2d.insert(beyond2d.end(), ait, aet);
+		}
+		else
+		{
+			std::stringstream ss;
+			ss << "attempting to matrix multiple shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
+		}
+		// check that remaining shape values are ones,
+		// otherwise one shape is larger than the other
+		auto it = rank1 > rank2 ? al.begin() : bl.begin();
+		auto et = rank1 > rank2 ? al.end() : bl.end();
+		if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
+		{
+			std::stringstream ss;
+			ss << "attempting to matrix multiple different sized shapes ";
+			print_shape(t1s, ss);
+			ss << " and ";
+			print_shape(t2s, ss);
+			throw std::logic_error(ss.str());
+		}
+	}
+
+	// get resulting shape
+	std::vector<size_t> res_shape;
+	if (ax == by)
+	{
+		res_shape = {bx, ay};
+	}
+	else
+	{
+		std::stringstream ss;
+		ss << "matmul shapes ";
+		print_shape(t1s, ss);
+		ss << "and ";
+		print_shape(t2s, ss);
+		ss << "do not match";
+		throw std::logic_error(ss.str());
+	}
+	res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
+	return res_shape;
 }
 
 template <typename T>
@@ -212,76 +277,7 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 	}
 
 	immutable<T>* mmul = immutable<T>::get(std::vector<inode<T>*>{adata, bdata},
-	[](std::vector<tensorshape> shapes) -> tensorshape
-	{
-		tensorshape& t1s = shapes[0];
-		tensorshape& t2s = shapes[1];
-
-		std::vector<size_t> al = t1s.as_list();
-		std::vector<size_t> bl = t2s.as_list();
-		size_t rank1 = t1s.rank();
-		size_t rank2 = t2s.rank();
-
-		// account for vectors
-		size_t ax = rank1 ? al[0] : 0;
-		size_t ay = rank1 > 1 ? al[1] : 1;
-		size_t bx = rank2 ? bl[0] : 0;
-		size_t by = rank2 > 1 ? bl[1] : 1;
-
-		// ensure the dimensions beyond 2d are equal
-		size_t minend = std::min(rank1, rank2);
-		std::vector<size_t> beyond2d;
-		if (minend > 2)
-		{
-			auto ait = al.begin()+2;
-			auto aet = al.begin()+minend;
-			if (std::equal(ait, aet, bl.begin()+2))
-			{
-				beyond2d.insert(beyond2d.end(), ait, aet);
-			}
-			else
-			{
-				std::stringstream ss;
-				ss << "attempting to matrix multiple shapes ";
-				print_shape(t1s, ss);
-				ss << " and ";
-				print_shape(t2s, ss);
-				throw std::logic_error(ss.str());
-			}
-			// check that remaining shape values are ones,
-			// otherwise one shape is larger than the other
-			auto it = rank1 > rank2 ? al.begin() : bl.begin();
-			auto et = rank1 > rank2 ? al.end() : bl.end();
-			if (!std::all_of(it + minend, et, [](size_t e) { return e == 1; }))
-			{
-				std::stringstream ss;
-				ss << "attempting to matrix multiple different sized shapes ";
-				print_shape(t1s, ss);
-				ss << " and ";
-				print_shape(t2s, ss);
-				throw std::logic_error(ss.str());
-			}
-		}
-
-		// get resulting shape
-		std::vector<size_t> res_shape;
-		if (ax == by)
-		{
-			res_shape = {bx, ay};
-		}
-		else
-		{
-			std::stringstream ss;
-			ss << "matmul shapes ";
-			print_shape(t1s, ss);
-			ss << "and ";
-			print_shape(t2s, ss);
-			ss << "do not match";
-			throw std::logic_error(ss.str());
-		}
-		res_shape.insert(res_shape.end(), beyond2d.begin(), beyond2d.end());
-		return res_shape;
-	},
+	matmul_shaper,
 	new transfer_func<T>(
 	[](T* dest, std::vector<const T*> srcs, shape_io shapes)
 	{
@@ -289,28 +285,36 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 		std::vector<size_t> alist = shapes.ins_[0].as_list();
 		std::vector<size_t> blist = shapes.ins_[1].as_list();
 		size_t dim_z = alist[0];
-		size_t dim_y = alist[1];
+		size_t dim_y;
+		if (alist.size() < 2)
+		{
+			dim_y = 1;
+		}
+		else
+		{
+			dim_y = alist[1];
+		}
 		size_t dim_x = blist[0];
 
 		// assert that beyond2d is same for A, B, and output C
 		size_t beyond2d = shapes.ins_[0].n_elems() / (dim_z * dim_y);
+
+#ifdef ENABLE_STRASSEN // strassen is very cumbersome in a lot of cases
 		size_t dim_pad = min_pad(std::max(std::max(dim_x, dim_y), dim_z));
-		size_t coord_map[4] = {dim_z, 1, 1, dim_x};
-
-		for (size_t i = 0; i < beyond2d; i++)
+		if (dim_pad > STRASSEN_THRESHOLD)
 		{
-			const T* rawa = srcs[0] + i * (dim_z * dim_y);
-			const T* rawb = srcs[1] + i * (dim_x * dim_z);
-			T* rawc = dest + i * (dim_x * dim_y);
-
-			if (dim_pad > STRASSEN_THRESHOLD)
+			for (size_t i = 0; i < beyond2d; i++)
 			{
+				const T* rawa = srcs[0] + i * (dim_z * dim_y);
+				const T* rawb = srcs[1] + i * (dim_x * dim_z);
+				T* rawc = dest + i * (dim_x * dim_y);
+
 				size_t n_mat = dim_pad * dim_pad;
-				T out[n_mat];
-				T a[n_mat];
-				T b[n_mat];
-				memset(a, 0, sizeof(T) * n_mat);
-				memset(b, 0, sizeof(T) * n_mat);
+				T* out = new T[n_mat];
+				T* a = new T[n_mat];
+				T* b = new T[n_mat];
+				std::memset(a, 0, n_mat * sizeof(T));
+				std::memset(b, 0, n_mat * sizeof(T));
 				for (size_t y = 0; y < dim_y; y++)
 				{
 					for (size_t z = 0; z < dim_z; z++)
@@ -332,15 +336,34 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 				{
 					std::memcpy(rawc + y * dim_x, out + y * dim_pad, sizeof(T) * dim_x);
 				}
+
+				delete [] out;
+				delete [] a;
+				delete [] b;
 			}
-			else
-			{
-				cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
-			}
+			return;
+		}
+#endif /* ENABLE_STRASSEN */
+		for (size_t i = 0; i < beyond2d; i++)
+		{
+			const T* rawa = srcs[0] + i * (dim_z * dim_y);
+			const T* rawb = srcs[1] + i * (dim_x * dim_z);
+			T* rawc = dest + i * (dim_x * dim_y);
+
+			size_t coord_map[4] = {dim_z, 1, 1, dim_x};
+			cubic_mul<T>(rawc, rawa, rawb, dim_x, dim_y, dim_z, coord_map);
 		}
 	}),
-	[](std::vector<std::pair<inode<T>*,inode<T>*> >)
+	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
+		tensorshape as = args[0].first->get_shape();
+		tensorshape bs = args[1].first->get_shape();
+		if (as.is_fully_defined() && bs.is_fully_defined())
+		{
+			tensorshape res_shape = matmul_shaper({as, bs});
+			std::vector<T> ones(res_shape.n_elems(), 1);
+			return constant<T>::get(ones, res_shape);
+		}
 		return constant<T>::get_shared_one();
 	}, opname);
 

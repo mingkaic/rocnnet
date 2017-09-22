@@ -1,7 +1,4 @@
 tenncor:
-- complete rbm
-- test speed against direct read from raw_data_, instead of the current implementation, "ptr cache"
-- implement dbn
 - comb through asserts and either convert to static_assert or throw
 - implement convolution operator; backprop
 - shape and preparation functors should ideally use C++17 variant

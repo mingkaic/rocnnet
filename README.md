@@ -1,9 +1,10 @@
 [![Build Status](https://travis-ci.org/mingkaic/rocnnet.svg?branch=master)](https://travis-ci.org/mingkaic/rocnnet)
 [![Coverage Status](https://coveralls.io/repos/github/mingkaic/rocnnet/badge.svg?branch=master)](https://coveralls.io/github/mingkaic/rocnnet?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/mingkaic/rocnnet/badge.svg?branch=HEAD)](https://coveralls.io/github/mingkaic/rocnnet?branch=HEAD)
 
 ## Synopsis
 
-ROCNNet is a neural net library implemented in C++ using [Tenncor](https://github.com/mingkaic/rocnnet/blob/master/tenncor/README.md) for automatic differentiation.
+ROCNNet is a neural net library implemented in C++ using [Tenncor](https://github.com/mingkaic/rocnnet/blob/master/app/tenncor/README.md) for automatic differentiation.
 
 ## Build
 
