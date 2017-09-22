@@ -51,6 +51,7 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 			std::vector<double> batch(it + j * inbatch, it + (j + 1) * inbatch);
 			in = batch;
 			trainer(true); // train
+			std::cout << "completed batch " << j << std::endl;
 
 			mean_cost += nnet::expose<double>(cost)[0] / n_training_batches;
 		}

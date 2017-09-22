@@ -135,43 +135,21 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 
 		chain_it = nnet::binomial_sample(1.0, hidden_dist);
 	}
-//	nnet::varptr<double> final_visible_sample = nnet::binomial_sample(1.0, final_visible_dist);
-//	// chain_end is treated like a constant
-//	nnet::varptr<double> chain_end = nnet::as_constant(final_visible_sample);
+	nnet::varptr<double> final_visible_sample = nnet::binomial_sample(1.0, final_visible_dist);
+	// chain_end is treated like a constant
+	nnet::varptr<double> chain_end = nnet::as_constant(final_visible_sample);
 
-//	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(&input)) - nnet::reduce_mean(this->free_energy(chain_end));
-	nnet::iconnector<double>* cost_icon = nullptr;//static_cast<nnet::iconnector<double>*>(cost.get());
+	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(&input)) - nnet::reduce_mean(this->free_energy(chain_end));
+	nnet::iconnector<double>* cost_icon = static_cast<nnet::iconnector<double>*>(cost.get());
 
-	// implementation taken from https://github.com/echen/restricted-boltzmann-machines/blob/master/rbm.py
-	// todo: reformat to fit PCD and n-cont-div > 1 model
-	// START TEMPORARY SOLUTION
-	nnet::varptr<double> pos_hidden_activation = nnet::matmul<double>(nnet::varptr<double>(&input), nnet::varptr<double>(this->weight_));
-	nnet::varptr<double> pos_hidden_probs = 1.0 / (1.0 + nnet::exp(-pos_hidden_activation));
-	nnet::varptr<double> pos_hidden_states = nnet::binomial_sample(1.0, pos_hidden_probs);
-
-	nnet::varptr<double> neg_visible_activations = nnet::matmul(pos_hidden_states, nnet::varptr<double>(this->weight_), false, true);
-	nnet::varptr<double> neg_visible_probs = 1.0 / (1.0 + nnet::exp(-neg_visible_activations));
-	nnet::varptr<double> neg_hidden_activations = nnet::matmul(neg_visible_probs, nnet::varptr<double>(this->weight_));
-	nnet::varptr<double> neg_hidden_probs = 1.0 / (1.0 + nnet::exp(-neg_hidden_activations));
-
-	nnet::varptr<double> positive_association = nnet::matmul(nnet::varptr<double>(&input), pos_hidden_probs, true);
-	nnet::varptr<double> negative_association = nnet::matmul(neg_visible_probs, neg_hidden_probs, true);
-	nnet::varptr<double> denom = nnet::shape_dep<double>::get({ &input },
-	[](nnet::tensorshape& s) -> std::vector<size_t>
-	{
-		return { s.as_list()[1] };
-	}, std::vector<size_t>{1}, "n_axis_0");
-	nnet::varptr<double> dW = negative_association - positive_association / denom;
-	// END TEMPORARY SOLUTION
-
-//	nnet::varptr<double> dW = cost->derive(weight_);
-//	nnet::varptr<double> dhb = cost->derive(hbias_);
-//	nnet::varptr<double> dvb = cost->derive(vbias_);
+	nnet::varptr<double> dW = cost->derive(weight_);
+	nnet::varptr<double> dhb = cost->derive(hbias_);
+	nnet::varptr<double> dvb = cost->derive(vbias_);
 
 	nnet::updates_t uvec;
 	uvec.push_back(weight_->assign_sub(learning_rate * dW));
-//	uvec.push_back(hbias_->assign_sub(learning_rate * dhb));
-//	uvec.push_back(vbias_->assign_sub(learning_rate * dvb));
+	uvec.push_back(hbias_->assign_sub(learning_rate * dhb));
+	uvec.push_back(vbias_->assign_sub(learning_rate * dvb));
 
 	nnet::varptr<double> monitoring_cost;
 	if (nullptr == persistent)
@@ -188,12 +166,12 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 
 	return { [uvec, cost_icon](bool)
 	{
-//		cost_icon->freeze_status(true); // freeze
+		cost_icon->freeze_status(true); // freeze
 		for (nnet::variable_updater<double> trainer : uvec)
 		{
 			trainer(true);
 		}
-//		cost_icon->freeze_status(false); // update again
+		cost_icon->freeze_status(false); // update again
 	}, monitoring_cost };
 }
 
