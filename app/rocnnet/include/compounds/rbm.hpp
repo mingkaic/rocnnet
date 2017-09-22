@@ -3,6 +3,7 @@
 //  cnnet
 //
 //	Implements Restricted Boltzmann Machine
+//	Setup cost and training follows implemented from http://deeplearning.net/tutorial/code/rbm.py
 //
 //  Created by Mingkai Chen on 2017-07-17.
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
@@ -87,7 +88,7 @@ private:
 	// COST CALCULATIONS
 	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::placeholder<double>& input);
 
-	nnet::varptr<double> get_reconstruction_cost (nnet::varptr<double>& pre_sig_back);
+	nnet::varptr<double> get_reconstruction_cost (nnet::placeholder<double>& input, nnet::varptr<double>& visible_dist);
 
 	size_t n_input_;
 

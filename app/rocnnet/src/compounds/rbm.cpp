@@ -121,8 +121,6 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 		chain_it = persistent;
 	}
 
-	// this series of chaining is implemented from http://deeplearning.net/tutorial/code/rbm.py
-	nnet::varptr<double> final_presig_vis;
 	nnet::varptr<double> final_visible_dist;
 	for (size_t i = 0; i < n_cont_div; i++)
 	{
@@ -130,8 +128,8 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 
 		// use operational optimization to recover presig and vis nodes
 		nnet::varptr<double> weighed = nnet::matmul<double>(chain_it, weight_, false, true);
-		final_presig_vis =  nnet::add_axial_b(weighed, nnet::varptr<double>(vbias_), 1);
-		final_visible_dist = nnet::sigmoid<double>(final_presig_vis);
+		nnet::varptr<double> presig_vis =  nnet::add_axial_b(weighed, nnet::varptr<double>(vbias_), 1);
+		final_visible_dist = nnet::sigmoid<double>(presig_vis);
 
 		chain_it = nnet::binomial_sample(1.0, hidden_dist);
 	}
@@ -139,7 +137,8 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 	// chain_end is treated like a constant
 	nnet::varptr<double> chain_end = nnet::as_constant(final_visible_sample);
 
-	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(&input)) - nnet::reduce_mean(this->free_energy(chain_end));
+	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(&input)) -
+								nnet::reduce_mean(this->free_energy(chain_end));
 	nnet::iconnector<double>* cost_icon = static_cast<nnet::iconnector<double>*>(cost.get());
 
 	nnet::varptr<double> dW = cost->derive(weight_);
@@ -155,7 +154,7 @@ std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
 	if (nullptr == persistent)
 	{
 		// reconstruction cost
-		monitoring_cost = this->get_reconstruction_cost(final_presig_vis);
+		monitoring_cost = this->get_reconstruction_cost(input, final_visible_dist);
 	}
 	else
 	{
@@ -243,7 +242,6 @@ nnet::varptr<double> rbm::free_energy (nnet::varptr<double> sample)
 	return -(hidden_term + vbias_term);
 }
 
-// implementation taken from http://deeplearning.net/tutorial/rbm.html
 nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input)
 {
 	// zeros everywhere except for x-axis = x_idx (x is the first dimension)
@@ -258,9 +256,11 @@ nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>&
 	return nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
 }
 
-nnet::varptr<double> rbm::get_reconstruction_cost (nnet::varptr<double>& pre_sig_back)
+nnet::varptr<double> rbm::get_reconstruction_cost (nnet::placeholder<double>& input, nnet::varptr<double>& visible_dist)
 {
-	return nullptr;
+	nnet::varptr<double> p_success = nnet::varptr<double>(&input) * nnet::log<double>(visible_dist);
+	nnet::varptr<double> p_not = (1.0 - nnet::varptr<double>(&input)) * nnet::log<double>(1.0 - visible_dist);
+	return nnet::reduce_mean(nnet::reduce_sum(p_success + p_not, 1));
 }
 
 }
