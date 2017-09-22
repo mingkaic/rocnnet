@@ -337,9 +337,9 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 					std::memcpy(rawc + y * dim_x, out + y * dim_pad, sizeof(T) * dim_x);
 				}
 
-				delete out;
-				delete a;
-				delete b;
+				delete [] out;
+				delete [] a;
+				delete [] b;
 			}
 			return;
 		}

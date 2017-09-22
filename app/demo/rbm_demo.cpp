@@ -2,7 +2,7 @@
 // Created by Mingkai Chen on 2017-07-19.
 //
 
-#include "compounds/rbm.hpp"
+#include "models/rbm.hpp"
 #include "mnist_data.hpp"
 #include "edgeinfo/comm_record.hpp"
 

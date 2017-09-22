@@ -53,14 +53,14 @@ assert_cmd "valgrind --tool=memcheck $BINDIR/gd_demo -o $BASEDIR/prebuilt_models
 assert_cmd "$BINDIR/gd_demo -o $BASEDIR/prebuilt_models"
 echo "gd_demo complete"
 
-echo "running C++ dq_demo"
-assert_cmd "valgrind --tool=memcheck $BINDIR/dq_demo -o $BASEDIR/prebuilt_models -e 1 -m 5"
-assert_cmd "$BINDIR/dq_demo -o $BASEDIR/prebuilt_models"
-echo "C++ dq_demo complete"
+echo "running C++ dqn_demo"
+assert_cmd "valgrind --tool=memcheck $BINDIR/dqn_demo -o $BASEDIR/prebuilt_models -e 1 -m 5"
+assert_cmd "$BINDIR/dqn_demo -o $BASEDIR/prebuilt_models"
+echo "C++ dqn_demo complete"
 
-echo "running python dq_demo"
-assert_cmd "python $BASEDIR/pydemo/dq_demo.py"
-echo "python dq_demo complete"
+echo "running python dqn_demo"
+assert_cmd "python $BASEDIR/pydemo/dqn_demo.py"
+echo "python dqn_demo complete"
 
 echo "running rbm_demo"
 assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo"

@@ -101,8 +101,8 @@ if (LCOVERAGE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
-add_executable(dq_demo ${DEMODIR}/dq_demo.cpp)
-target_link_libraries(dq_demo ${ROCNNET_SLIB})
+add_executable(dqn_demo ${DEMODIR}/dqn_demo.cpp)
+target_link_libraries(dqn_demo ${ROCNNET_SLIB})
 
 # DEMO 3: rbm
 if (LCOVERAGE)
