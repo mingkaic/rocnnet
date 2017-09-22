@@ -62,6 +62,7 @@ if (TENNCOR_TEST)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
 	endif(LCOVERAGE)
 	set(TENNCOR_LIB_TEST tenncor-inst)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_STRASSEN")
 	add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC} ${DB_DECLARE})
 	target_link_libraries(${TENNCOR_LIB_TEST} proto ${PROTOBUF_LIBRARY})
 

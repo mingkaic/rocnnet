@@ -95,10 +95,23 @@ public:
 					}
 					if (display_shape_)
 					{
+						nnet::tensorshape oshape;
+						nnet::tensorshape sshape;
+						// shapes can throw exceptions
+						try
+						{
+							oshape = ob->get_shape();
+							sshape = sb->get_shape();
+						}
+						catch(std::exception& e)
+						{
+							break;
+						}
+
 						obstrm << "(";
 						sbstrm << "(";
-						print_shape(ob->get_shape(), obstrm);
-						print_shape(sb->get_shape(), sbstrm);
+						print_shape(oshape, obstrm);
+						print_shape(sshape, sbstrm);
 						obstrm << ")";
 						sbstrm << ")";
 					}
