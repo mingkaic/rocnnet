@@ -1,5 +1,5 @@
 //
-//  dqn.hpp
+//  dq_net.hpp
 //  cnnet
 //
 //  Created by Mingkai Chen on 2016-08-29.

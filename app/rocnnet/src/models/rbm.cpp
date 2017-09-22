@@ -102,7 +102,7 @@ nnet::varptr<double> rbm::reconstruct_hidden (nnet::inode<double>* hidden)
 	return this->prop_up(visible_sample);
 }
 
-std::pair<nnet::variable_updater<double>, nnet::varptr<double> > rbm::train (
+update_cost_t rbm::train (
 	nnet::placeholder<double>& input,
 	nnet::variable<double>* persistent,
 	double learning_rate,

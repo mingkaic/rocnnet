@@ -17,19 +17,13 @@
 namespace rocnnet
 {
 
-struct dbn_param
-{
-	size_t n_epoch_ = 10;
-	size_t n_cont_div_ = 1;
-	double learning_rate_ = 1e-3;
-};
+using pretrain_t = std::vector<std::pair<nnet::variable_updater<double>, nnet::varptr<double> > >;
 
 class db_net : public icompound
 {
 public:
 	db_net (size_t n_input, std::vector<size_t> hiddens,
-		 dbn_param train_param,
-		 std::string scope = "DBN");
+		std::string scope = "DBN");
 
 	virtual ~db_net (void);
 
@@ -41,10 +35,17 @@ public:
 
 	db_net& operator = (db_net&& other);
 
-	// PLACEHOLDER CONNECTION
-	// input are expected to have shape n_input by batch_size
-	// outputs are expected to have shape output by batch_size
-	nnet::varptr<double> operator () (nnet::inode<double>* input);
+	nnet::varptr<double> operator () (nnet::placeholder<double>& input);
+
+	pretrain_t pretraining_functions (
+		nnet::placeholder<double>& input,
+		double learning_rate = 1e-3,
+		size_t n_cont_div = 10);
+
+	update_cost_t build_finetune_functions (
+		nnet::placeholder<double>& train_in,
+		nnet::placeholder<double>& train_out,
+		double learning_rate = 1e-3);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
@@ -73,6 +74,8 @@ private:
 	size_t n_output_;
 
 	std::vector<rbm*> layers_;
+
+	fc_layer* log_layer_ = nullptr;
 };
 
 }

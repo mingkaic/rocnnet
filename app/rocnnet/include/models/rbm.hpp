@@ -22,6 +22,7 @@ namespace rocnnet
 {
 
 using generators_t = std::vector<nnet::generator<double>*>;
+using update_cost_t = std::pair<nnet::variable_updater<double>, nnet::varptr<double> >;
 
 // todo: toggle activation, sigmoid (current) and ReLU
 class rbm : public icompound
@@ -57,7 +58,7 @@ public:
 	nnet::varptr<double> reconstruct_hidden (nnet::inode<double>* hidden);
 
 	// input a 2-D vector of shape <n_input, n_batch>
-	std::pair<nnet::variable_updater<double>, nnet::varptr<double> > train (
+	update_cost_t train (
 		nnet::placeholder<double>& input,
 		nnet::variable<double>* persistent = nullptr,
 		double learning_rate = 1e-3,
