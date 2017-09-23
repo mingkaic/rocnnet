@@ -208,7 +208,7 @@ int main (int argc, char** argv)
 	std::experimental::optional<size_t> seed;
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
-	while ((c = getopt (argc, argv, "s:o:p:E:e:t:")) != -1)
+	while ((c = getopt (argc, argv, "s:o:p:E:e:k:t:")) != -1)
 	{
 		switch(c)
 		{
@@ -227,6 +227,9 @@ int main (int argc, char** argv)
 			case 'e': // epoch training iteration
 				params.training_epochs_ = atoi(optarg);
 				break;
+			case 'k': // k-CD or k-PCD
+				params.n_cont_div_ = atoi(optarg);
+				break;
 			case 't':
 				params.train_ = false;
 				break;
@@ -239,7 +242,7 @@ int main (int argc, char** argv)
 	}
 	if (argc > 2)
 	{
-		params.n_epoch_ = atoi(argv[2]);
+		params.training_epochs_ = atoi(argv[2]);
 	}
 #endif
 	if (seed)

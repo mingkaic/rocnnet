@@ -113,13 +113,7 @@ protected:
 	//! list of jacobian transfer function
 	//! to be executed on resulting root node
 	//! execution order: top-down
-	struct JList
-	{
-		JList (void) : uid_(nnutils::uuid(this)) {}
-
-		std::string uid_;
-		std::list<std::pair<JTRANSFER<T>, inode<T>*> > list_;
-	};
+	struct JList;
 
 	//! graph info shareable between connectors
 	struct graph_manager;

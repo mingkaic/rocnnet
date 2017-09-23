@@ -39,7 +39,7 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 	persistent.initialize();
 
 	nnet::placeholder<double> in(std::vector<size_t>{n_input, params.n_batch_}, "rbm_train_in");
-	rocnnet::update_cost_t training_res = model.train(in, &persistent, params.learning_rate_ , params.n_cont_div_);
+	rocnnet::update_cost_t training_res = model.train(&in, &persistent, params.learning_rate_ , params.n_cont_div_);
 
 	nnet::variable_updater<double> trainer = training_res.first;
 	nnet::varptr<double> cost = training_res.second;
@@ -179,6 +179,9 @@ int main (int argc, char** argv)
 				break;
 			case 'm':
 				mnist = true;
+				break;
+			case 'k': // k-CD or k-PCD
+				params.n_cont_div_ = atoi(optarg);
 				break;
 			case 't':
 				params.train_ = false;

@@ -103,7 +103,7 @@ nnet::varptr<double> rbm::reconstruct_hidden (nnet::inode<double>* hidden)
 }
 
 update_cost_t rbm::train (
-	nnet::placeholder<double>& input,
+	nnet::inode<double>* input,
 	nnet::variable<double>* persistent,
 	double learning_rate,
 	size_t n_cont_div)
@@ -112,7 +112,7 @@ update_cost_t rbm::train (
 	// if persistent not available use Contrastive Divergence (CD)
 	if (nullptr == persistent)
 	{
-		nnet::varptr<double> hidden_dist = this->prop_up(&input);
+		nnet::varptr<double> hidden_dist = this->prop_up(input);
 		chain_it = nnet::binomial_sample(1.0, hidden_dist);
 	}
 	// otherwise use Persistent CD (initialize from the old state of the chain)
@@ -137,7 +137,7 @@ update_cost_t rbm::train (
 	// chain_end is treated like a constant
 	nnet::varptr<double> chain_end = nnet::as_constant(final_visible_sample);
 
-	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(&input)) -
+	nnet::varptr<double> cost = nnet::reduce_mean(this->free_energy(input)) -
 								nnet::reduce_mean(this->free_energy(chain_end));
 	nnet::iconnector<double>* cost_icon = static_cast<nnet::iconnector<double>*>(cost.get());
 
@@ -242,12 +242,12 @@ nnet::varptr<double> rbm::free_energy (nnet::varptr<double> sample)
 	return -(hidden_term + vbias_term);
 }
 
-nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>& input)
+nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::inode<double>* input)
 {
 	// zeros everywhere except for x-axis = x_idx (x is the first dimension)
-	nnet::varptr<double> one_i = nnet::const_axis<double>(0, 0, 1, input.get_shape());
+	nnet::varptr<double> one_i = nnet::const_axis<double>(0, 0, 1, input->get_shape());
 
-	nnet::varptr<double> xi = nnet::round(nnet::varptr<double>(&input)); // xi = [0|1...]
+	nnet::varptr<double> xi = nnet::round(nnet::varptr<double>(input)); // xi = [0|1...]
 	nnet::varptr<double> xi_flip = one_i - xi;
 
 	nnet::varptr<double> fe_xi = free_energy(xi);
@@ -256,10 +256,10 @@ nnet::varptr<double> rbm::get_pseudo_likelihood_cost (nnet::placeholder<double>&
 	return nnet::reduce_mean((double) n_input_ * nnet::log(nnet::sigmoid(fe_xi_flip - fe_xi)));
 }
 
-nnet::varptr<double> rbm::get_reconstruction_cost (nnet::placeholder<double>& input, nnet::varptr<double>& visible_dist)
+nnet::varptr<double> rbm::get_reconstruction_cost (nnet::inode<double>* input, nnet::varptr<double>& visible_dist)
 {
-	nnet::varptr<double> p_success = nnet::varptr<double>(&input) * nnet::log<double>(visible_dist);
-	nnet::varptr<double> p_not = (1.0 - nnet::varptr<double>(&input)) * nnet::log<double>(1.0 - visible_dist);
+	nnet::varptr<double> p_success = nnet::varptr<double>(input) * nnet::log<double>(visible_dist);
+	nnet::varptr<double> p_not = (1.0 - nnet::varptr<double>(input)) * nnet::log<double>(1.0 - visible_dist);
 	return nnet::reduce_mean(nnet::reduce_sum(p_success + p_not, 1));
 }
 
