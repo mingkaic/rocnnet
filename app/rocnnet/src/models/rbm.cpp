@@ -260,7 +260,7 @@ nnet::varptr<double> rbm::get_reconstruction_cost (nnet::inode<double>* input, n
 {
 	nnet::varptr<double> p_success = nnet::varptr<double>(input) * nnet::log<double>(visible_dist);
 	nnet::varptr<double> p_not = (1.0 - nnet::varptr<double>(input)) * nnet::log<double>(1.0 - visible_dist);
-	return nnet::reduce_mean(nnet::reduce_sum(p_success + p_not, 1));
+	return nnet::reduce_mean(nnet::reduce_sum(p_success + p_not, 0));
 }
 
 }

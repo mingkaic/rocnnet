@@ -59,6 +59,8 @@ void pretrain (rocnnet::db_net& model, size_t n_input,
 				std::vector<double> batch(it + i * inbatch, it + (i + 1) * inbatch);
 				pretrain_in = batch;
 				trainer(true);
+				std::cout << "layer " << pidx << " epoch " << e << " completed batch " << i << std::endl;
+
 				mean_cost += nnet::expose<double>(cost)[0] / n_train_batches;
 			}
 			std::cout << "pre-trained layer " << pidx << " epoch "
@@ -90,7 +92,8 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 	size_t n_train_batches = train->shape_.first;
 	size_t n_input = 28 * 28;
 	size_t n_output = 10;
-	std::vector<size_t> hiddens = { 1000, 1000, 1000, n_output };
+	std::vector<size_t> hiddens = { 1000, 1000, 1000 };
+	hiddens.push_back(n_output);
 
 	rocnnet::db_net model(n_input, hiddens, "dbn_mnist_learner");
 

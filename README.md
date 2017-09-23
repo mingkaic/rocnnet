@@ -44,14 +44,25 @@ DQN Demos taken from https://github.com/siemanko/tensorflow-deepq
 
 To demonstrate correctness, I have setup two examples:
 
-- a multilayer perceptron (mlp) using vanilla gradient descent learner learning to average second number.
+- multilayer perceptron (mlp) using vanilla gradient descent learner learning to average second number.
 it has the following graph:
 
 ![alt tag](https://github.com/mingkaic/rocnnet/blob/master/imgs/gd_graph.png)
 
-- a deep q-network using rmsprop learner learning with the same test as mlp except it takes the maximum average and takes the distance 
+- deep q-network (dqn) using rmsprop learner learning with the same test as mlp except it takes the maximum average and takes the distance 
 from taken average and expected average as the error. reward is given inversely proportional to the error (lower the error, 
 higher the reward with the error clipped between -1 and 1)
 it has the following graph:
 
 ![alt tag](https://github.com/mingkaic/rocnnet/blob/master/imgs/dqn_graph.png)
+
+- restricted boltzmann machine using K-Contrastive Divergence (CD) or K-Persistent CD (PCD) to speedup gibb sampling. 
+Gibbb sampling in RBM forces hidden states towards something most representative of the observed probability distribution.
+Since CD can recurse K times, the graph is too large to show.
+Instead here is the reconstructed input on the popular [mnist dataset](http://www-labs.iro.umontreal.ca/~lisa/deep/data/mnist/):
+
+![alt tag](https://github.com/mingkaic/rocnnet/blob/master/imgs/rbm_epoch-1.png)
+after 1 epoch of sampling, k=15
+
+![alt tag](https://github.com/mingkaic/rocnnet/blob/master/imgs/rbm_random.png)
+reconstruction from random instantiation

@@ -85,12 +85,12 @@ pretrain_t db_net::pretraining_functions (
 	nnet::placeholder<double>& input,
 	double learning_rate, size_t n_cont_div)
 {
-	pretrain_t pt_updates;
 	nnet::inode<double>* input_node = &input;
-	for (rbm* rlayer : layers_)
+	pretrain_t pt_updates;
+	for (rbm* h : layers_)
 	{
-		pt_updates.push_back(rlayer->train(input_node, nullptr, learning_rate, n_cont_div));
-		input_node = rlayer->prop_up(input_node);
+		pt_updates.push_back(h->train(input_node, nullptr, learning_rate, n_cont_div));
+		input_node = h->prop_up(input_node);
 	}
 	return pt_updates;
 }

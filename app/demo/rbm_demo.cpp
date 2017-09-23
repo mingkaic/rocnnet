@@ -164,7 +164,7 @@ int main (int argc, char** argv)
 	std::experimental::optional<size_t> seed;
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
-	while ((c = getopt (argc, argv, "s:o:e:m:t:")) != -1)
+	while ((c = getopt (argc, argv, "s:o:e:m:k:t:")) != -1)
 	{
 		switch(c)
 		{
