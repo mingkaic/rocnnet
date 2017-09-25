@@ -179,7 +179,15 @@ void immutable<T>::backward_pass (variable<T>* leaf)
 	for (subject* s : this->dependencies_)
 	{
 		inode<T>* fn = static_cast<inode<T>*>(s);
-		inode<T>* bn = this->take_gradient(fn, leaf);
+		inode<T>* bn;
+		if (this->jacobians_[leaf].terminal_)
+		{
+			bn = fn->derive(leaf); // take jacobian
+		}
+		else
+		{
+			bn = this->take_gradient(fn, leaf);
+		}
 		deps.push_back({fn, bn});
 	}
 	this->gcache_[leaf] = ginit_(deps);

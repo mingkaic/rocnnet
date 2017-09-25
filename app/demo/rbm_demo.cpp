@@ -23,8 +23,12 @@ struct test_params
 	bool train_ = true;
 };
 
+std::string serialname = "rbm_test.pbx";
+
 void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 {
+	std::string serialpath = params.outdir_ + "/" + serialname;
+
 	size_t n_input = model.get_ninput();
 	assert(0 == data.size() % n_input);
 	size_t n_data = data.size() / n_input;
@@ -35,8 +39,7 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 	persistent.initialize();
 
 	nnet::placeholder<double> in(std::vector<size_t>{n_input, params.n_batch_}, "rbm_train_in");
-	std::pair<nnet::variable_updater<double>, nnet::varptr<double> > training_res =
-		model.train(in, &persistent, params.learning_rate_ , params.n_cont_div_);
+	rocnnet::update_cost_t training_res = model.train(&in, &persistent, params.learning_rate_ , params.n_cont_div_);
 
 	nnet::variable_updater<double> trainer = training_res.first;
 	nnet::varptr<double> cost = training_res.second;
@@ -56,6 +59,8 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 			mean_cost += nnet::expose<double>(cost)[0] / n_training_batches;
 		}
 		std::cout << "Training epoch " << i << ", cost is " << mean_cost << std::endl;
+
+		model.save(serialpath, "rbm_demo"); // save in case of problems
 	}
 
 #ifdef EDGE_RCD
@@ -68,7 +73,6 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 
 void mnist_test (xy_data* train, xy_data* test, test_params params)
 {
-	std::string serialname = "rbm_test.pbx";
 	std::string serialpath = params.outdir_ + "/" + serialname;
 
 	std::vector<double> training_data(train->data_x_.begin(), train->data_x_.end());
@@ -160,7 +164,7 @@ int main (int argc, char** argv)
 	std::experimental::optional<size_t> seed;
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
-	while ((c = getopt (argc, argv, "s:o:e:m:t:")) != -1)
+	while ((c = getopt (argc, argv, "s:o:e:m:k:t:")) != -1)
 	{
 		switch(c)
 		{
@@ -175,6 +179,9 @@ int main (int argc, char** argv)
 				break;
 			case 'm':
 				mnist = true;
+				break;
+			case 'k': // k-CD or k-PCD
+				params.n_cont_div_ = atoi(optarg);
 				break;
 			case 't':
 				params.train_ = false;

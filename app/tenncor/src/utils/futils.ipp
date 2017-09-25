@@ -20,6 +20,13 @@ varptr<T> tanh (varptr<T> x)
 	return (etx - (T) 1) / (etx + (T) 1);
 }
 
+template <typename T>
+varptr<T> softmax (varptr<T> x)
+{
+	varptr<T> e = exp(x);
+	return e / reduce_sum(e);
+}
+
 }
 
 #endif

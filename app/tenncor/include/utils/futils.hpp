@@ -29,6 +29,10 @@ varptr<T> sigmoid (varptr<T> x);
 template <typename T>
 varptr<T> tanh (varptr<T> x);
 
+//! softmax function: f(x) = e^x / sum(e^x)
+template <typename T>
+varptr<T> softmax (varptr<T> x);
+
 }
 
 #include "../../src/utils/futils.ipp"
