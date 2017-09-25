@@ -356,15 +356,12 @@ varptr<T> matmul (const varptr<T> a, const varptr<T> b, bool transposeA, bool tr
 	}),
 	[](std::vector<std::pair<inode<T>*,inode<T>*> > args)
 	{
-		tensorshape as = args[0].first->get_shape();
-		tensorshape bs = args[1].first->get_shape();
-		if (as.is_fully_defined() && bs.is_fully_defined())
-		{
-			tensorshape res_shape = matmul_shaper({as, bs});
-			std::vector<T> ones(res_shape.n_elems(), 1);
-			return constant<T>::get(ones, res_shape);
-		}
-		return constant<T>::get_shared_one();
+		// todo: create alternative operation to eq (since eq prevents higher order derivatives)
+		// desired behavior, create a matrix of 1 output in the same shape as the tforward operation
+		// tforward shape may not be defined at this point,
+		// so the shape instantiation must be performed during base_immutable<T>::update
+		nnet::varptr<T> tforward = nnet::matmul<T>(args[0].first, args[1].first);
+		return nnet::eq(tforward, tforward);
 	}, opname);
 
 	std::unordered_set<ileaf<T>*> temp = mmul->get_leaves();

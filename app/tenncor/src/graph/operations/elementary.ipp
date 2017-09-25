@@ -1206,6 +1206,18 @@ varptr<T> conditional (const varptr<T> a, const varptr<T> b, std::function<bool(
 }
 
 template <typename T>
+varptr<T> eq (const varptr<T> a, const varptr<T> b)
+{
+	return conditional<T>(a, b, [](T left, T right) { return left == right; }, "eq");
+}
+
+template <typename T>
+varptr<T> neq (const varptr<T> a, const varptr<T> b)
+{
+	return conditional<T>(a, b, [](T left, T right) { return left != right; }, "neq");
+}
+
+template <typename T>
 varptr<T> binomial_sample (T n, const varptr<T> p)
 {
 	if (nullptr == p.get()) return nullptr;

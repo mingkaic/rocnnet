@@ -112,6 +112,14 @@ include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYT
 add_executable(rbm_demo ${DEMODIR}/rbm_demo.cpp)
 target_link_libraries(rbm_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 
+# DEMO 4: dqn
+if (LCOVERAGE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage") # enabling coverage
+endif(LCOVERAGE)
+include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
+add_executable(dbn_demo ${DEMODIR}/dbn_demo.cpp)
+target_link_libraries(dbn_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig
 	add_subdirectory(${ROCNNET_DIR}/ipython)

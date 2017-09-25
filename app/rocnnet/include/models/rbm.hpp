@@ -22,6 +22,7 @@ namespace rocnnet
 {
 
 using generators_t = std::vector<nnet::generator<double>*>;
+using update_cost_t = std::pair<nnet::variable_updater<double>, nnet::varptr<double> >;
 
 // todo: toggle activation, sigmoid (current) and ReLU
 class rbm : public icompound
@@ -57,8 +58,8 @@ public:
 	nnet::varptr<double> reconstruct_hidden (nnet::inode<double>* hidden);
 
 	// input a 2-D vector of shape <n_input, n_batch>
-	std::pair<nnet::variable_updater<double>, nnet::varptr<double> > train (
-		nnet::placeholder<double>& input,
+	update_cost_t train (
+		nnet::inode<double>* input,
 		nnet::variable<double>* persistent = nullptr,
 		double learning_rate = 1e-3,
 		size_t n_cont_div = 1);
@@ -86,9 +87,9 @@ private:
 	nnet::varptr<double> free_energy (nnet::varptr<double> sample);
 
 	// COST CALCULATIONS
-	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::placeholder<double>& input);
+	nnet::varptr<double> get_pseudo_likelihood_cost (nnet::inode<double>* input);
 
-	nnet::varptr<double> get_reconstruction_cost (nnet::placeholder<double>& input, nnet::varptr<double>& visible_dist);
+	nnet::varptr<double> get_reconstruction_cost (nnet::inode<double>* input, nnet::varptr<double>& visible_dist);
 
 	size_t n_input_;
 

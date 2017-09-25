@@ -189,13 +189,20 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 				for (auto jpair : imm->jacobians_)
 				{
 					variable<T>* leaf = jpair.first;
-					auto jit = this->jacobians_.find(leaf);
-					// different jacobians originating from the same leaf cannot overlap
-					auto& j = jpair.second;
-					if (false == j.list_.empty() && // prevent duplicate jacobians
-						(this->jacobians_.end() == jit || jit->second.uid_ == j.uid_))
+					auto j = jpair.second;
+					if (false == j.list_.empty())
 					{
-						this->jacobians_[leaf] = j;
+						auto jit = this->jacobians_.find(leaf);
+						if (this->jacobians_.end() == jit)
+						{
+							this->jacobians_[leaf] = j;
+							this->jacobians_[leaf].terminal_ = false;
+						}
+						else if (j.uid_ != jit->second.uid_)
+						{
+							this->jacobians_[leaf].terminal_ = true; // terminate
+							this->jacobians_[leaf].list_.clear();
+						}
 					}
 				}
 			}
@@ -311,6 +318,16 @@ void iconnector<T>::jacobian_correction (const inode<T>* other)
 		}
 	}
 }
+
+template <typename T>
+struct iconnector<T>::JList
+{
+	JList (void) : uid_(nnutils::uuid(this)) {}
+
+	std::string uid_;
+	std::list<std::pair<JTRANSFER<T>, inode<T>*> > list_;
+	bool terminal_ = false;
+};
 
 template <typename T>
 struct small_leafset
