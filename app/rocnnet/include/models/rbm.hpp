@@ -45,7 +45,7 @@ public:
 	// PLACEHOLDER CONNECTION
 	// accept input of shape <n_input, n_batch>
 	// output of shape <n_hidden, n_batch>
-	nnet::varptr<double> prop_up (nnet::inode<double>* input);
+	virtual nnet::varptr<double> prop_up (nnet::inode<double>* input);
 
 	// accept input of shape <n_hidden, n_batch>
 	// output shape of <n_input, n_batch>
@@ -66,7 +66,9 @@ public:
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
-	size_t get_ninput (void) const { return n_input_; }
+	virtual size_t get_ninput (void) const { return n_input_; }
+
+	virtual size_t get_noutput (void) const { return n_hidden_; }
 
 protected:
 	rbm (const rbm& other, std::string& scope);
@@ -92,6 +94,8 @@ private:
 	nnet::varptr<double> get_reconstruction_cost (nnet::inode<double>* input, nnet::varptr<double>& visible_dist);
 
 	size_t n_input_;
+
+	size_t n_hidden_;
 
 	nnet::variable<double>* weight_ = nullptr;
 

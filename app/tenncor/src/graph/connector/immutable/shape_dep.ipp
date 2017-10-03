@@ -89,7 +89,7 @@ shape_(shape)
 {
 	shape_.assert_is_fully_defined();
 	this->jacobians_.clear();
-	this->update({});
+	this->update(std::unordered_set<size_t>{});
 }
 
 template <typename T>

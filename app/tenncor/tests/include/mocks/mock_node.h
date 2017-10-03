@@ -41,12 +41,12 @@ public:
 
 	tensor<double>* data_ = nullptr;
 
-	virtual std::vector<inode<double>*> get_arguments (void) const { return {}; }
+	virtual std::vector<inode<double>*> get_arguments (void) const { return std::vector<inode<double>*>{}; }
 	virtual size_t n_arguments (void) const { return 0; }
 	virtual const tensor<double>* eval (void) { return data_; }
 	virtual tensorshape get_shape (void) const { return data_->get_shape(); }
 	virtual bool good_status (void) const { return nullptr != data_; }
-	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const { return {}; }
+	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const { return std::unordered_set<ileaf<double>*>{}; }
 	virtual varptr<double> derive (inode<double>* wrt) { return wrt == this ? varptr<double>(this) : varptr<double>(); }
 	virtual bool read_proto (const tenncor::tensor_proto&) { return false; }
 

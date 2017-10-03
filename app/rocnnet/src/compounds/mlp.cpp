@@ -68,7 +68,7 @@ mlp& mlp::operator = (mlp&& other)
 
 // input are expected to have shape n_input by batch_size
 // outputs are expected to have shape output by batch_size
-nnet::varptr<double> mlp::operator () (nnet::inode<double>* input)
+nnet::varptr<double> mlp::prop_up (nnet::inode<double>* input)
 {
 	// sanity check
 	nnet::tensorshape in_shape = input->get_shape();

@@ -33,9 +33,15 @@ public:
 
 	icompound* move (void);
 
+	virtual nnet::varptr<double> prop_up (nnet::inode<double>* input) = 0;
+
 	void initialize (std::string serialname = "", std::string readscope = "");
 
 	bool save (std::string fname, std::string writescope = "") const;
+
+	virtual size_t get_ninput (void) const = 0;
+
+	virtual size_t get_noutput (void) const = 0;
 
 protected:
 	icompound (const icompound& other, std::string& scope) : ilayer(other, scope) {}

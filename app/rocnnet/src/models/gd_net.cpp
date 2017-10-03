@@ -15,7 +15,7 @@ using namespace nnet;
 namespace rocnnet
 {
 
-gd_net::gd_net (mlp* brain, nnet::gd_updater& updater, std::string scope) :
+gd_net::gd_net (icompound* brain, nnet::gd_updater& updater, std::string scope) :
 	brain_(brain),
 	updater_(updater.clone()),
 	scope_(scope)
@@ -101,8 +101,8 @@ bool gd_net::save (std::string fname, std::string writescope) const
 
 void gd_net::setup (void)
 {
-	test_out_ = (*brain_)(test_in_);
-	nnet::varptr<double> output = (*brain_)(train_in_);
+	test_out_ = brain_->prop_up(test_in_);
+	nnet::varptr<double> output = brain_->prop_up(train_in_);
 	nnet::varptr<double> diff = nnet::varptr<double>(expected_out_) - output;
 	nnet::varptr<double> error = diff * diff;
 	error_ = static_cast<nnet::iconnector<double>*>(error.get());

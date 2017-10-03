@@ -91,7 +91,7 @@ tensorshape generator<T>::get_shape (void) const
 template <typename T>
 std::unordered_set<ileaf<T>*> generator<T>::get_leaves (void) const
 {
-	return {};
+	return std::unordered_set<ileaf<T>*>{};
 }
 
 template <typename T>
@@ -142,7 +142,7 @@ generator<T>::generator (inode<T>* shape_dep, const initializer<T>& init, std::s
 	iconnector<T>({shape_dep}, name)
 {
 	this->init_ = init.clone();
-	this->update({});
+	this->update(std::unordered_set<size_t>{});
 }
 
 template <typename T>

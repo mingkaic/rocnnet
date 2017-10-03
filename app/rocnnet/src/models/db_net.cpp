@@ -68,12 +68,12 @@ db_net& db_net::operator = (db_net&& other)
 	return *this;
 }
 
-nnet::varptr<double> db_net::operator () (nnet::placeholder<double>& input)
+nnet::varptr<double> db_net::prop_up (nnet::inode<double>* input)
 {
 	// sanity check
-	nnet::tensorshape in_shape = input.get_shape();
+	nnet::tensorshape in_shape = input->get_shape();
 	assert(in_shape.is_compatible_with(std::vector<size_t>{n_input_, 0}));
-	nnet::inode<double>* output = &input;
+	nnet::inode<double>* output = input;
 	for (rbm* h : layers_)
 	{
 		output = h->prop_up(output);
@@ -100,7 +100,7 @@ update_cost_t db_net::build_finetune_functions (
 	nnet::placeholder<double>& train_out,
 	double learning_rate)
 {
-	nnet::varptr<double> out_dist = (*this)(train_in);
+	nnet::varptr<double> out_dist = prop_up(&train_in);
 	nnet::varptr<double> finetune_cost = - nnet::reduce_mean(nnet::log(out_dist));
 	nnet::iconnector<double>* ft_cost_icon = static_cast<nnet::iconnector<double>*>(finetune_cost.get());
 

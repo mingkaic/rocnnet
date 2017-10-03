@@ -14,19 +14,14 @@ struct test_params
 {
 	size_t pretrain_epochs_ = 100;
 	double pretrain_lr_ = 0.01;
-
 	size_t training_epochs_ = 1000;
 	double training_lr_ = 0.1;
-
-	bool pretrain_ = true;
-
 	size_t n_cont_div_ = 15;
-	size_t n_hidden_ = 50;
 	size_t n_batch_ = 20;
-	size_t n_test_chain_ = 20;
-	size_t n_samples_ = 10;
-	std::string outdir_ = ".";
+	std::vector<size_t> hiddens_ = { 1000, 1000, 1000 };
+	bool pretrain_ = true;
 	bool train_ = true;
+	std::string outdir_ = ".";
 };
 
 std::string serialname = "dbn_test.pbx";
@@ -78,36 +73,14 @@ void pretrain (rocnnet::db_net& model, size_t n_input,
 #endif /* EDGE_RCD */
 }
 
-void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params params)
+void finetune (rocnnet::db_net& model, xy_data* train,
+	xy_data* valid, xy_data* test, size_t n_input,
+	size_t n_output, test_params params)
 {
-	std::string serialpath = params.outdir_ + "/" + serialname;
+	size_t n_train_batches = train->shape_.first;
 
 	std::vector<double> training_data_x(train->data_x_.begin(), train->data_x_.end());
 	std::vector<double> training_data_y(train->data_y_.begin(), train->data_y_.end());
-	std::vector<double> valid_data_x(valid->data_x_.begin(), valid->data_x_.end());
-	std::vector<double> valid_data_y(valid->data_y_.begin(), valid->data_y_.end());
-	std::vector<double> test_data_x(test->data_x_.begin(), test->data_x_.end());
-	std::vector<double> test_data_y(test->data_y_.begin(), test->data_y_.end());
-
-	size_t n_train_batches = train->shape_.first;
-	size_t n_input = 28 * 28;
-	size_t n_output = 10;
-	std::vector<size_t> hiddens = { 1000, 1000, 1000 };
-	hiddens.push_back(n_output);
-
-	rocnnet::db_net model(n_input, hiddens, "dbn_mnist_learner");
-
-	if (params.pretrain_)
-	{
-		model.initialize();
-		pretrain(model, n_input, training_data_x, params);
-
-		model.save(serialpath, "dbn_demo_prerain");
-	}
-	else
-	{
-		model.initialize(serialpath, "dbn_demo_prerain");
-	}
 
 	std::cout << "... getting the finetuning functions" << std::endl;
 	nnet::placeholder<double> finetune_in(std::vector<size_t>{n_input, params.n_batch_}, "finetune_in");
@@ -130,10 +103,16 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 	double inbatch = params.n_batch_ * n_input;
 	auto xit = training_data_x.begin();
 	auto yit = training_data_y.begin();
+
+	std::vector<double> valid_data_x(valid->data_x_.begin(), valid->data_x_.end());
+	std::vector<double> valid_data_y(valid->data_y_.begin(), valid->data_y_.end());
+	std::vector<double> test_data_x(test->data_x_.begin(), test->data_x_.end());
+	std::vector<double> test_data_y(test->data_y_.begin(), test->data_y_.end());
 	auto valid_xit = valid_data_x.begin();
 	auto valid_yit = valid_data_y.begin();
 	auto test_xit = test_data_x.begin();
 	auto test_yit = test_data_y.begin();
+
 	for (size_t epoch = 0; epoch < params.training_epochs_ && keep_looping; epoch++)
 	{
 		for (size_t mb_idx = 0; mb_idx < n_train_batches; mb_idx++)
@@ -193,6 +172,38 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 		<< best_validation_loss * 100.0 << ", obtained at iteration "
 		<< best_iter + 1 << ", with test performance "
 		<< test_score * 100.0 << std::endl;
+}
+
+void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params params)
+{
+	std::string serialpath = params.outdir_ + "/" + serialname;
+
+	std::vector<double> training_data_x(train->data_x_.begin(), train->data_x_.end());
+	std::vector<double> training_data_y(train->data_y_.begin(), train->data_y_.end());
+	std::vector<double> valid_data_x(valid->data_x_.begin(), valid->data_x_.end());
+	std::vector<double> valid_data_y(valid->data_y_.begin(), valid->data_y_.end());
+	std::vector<double> test_data_x(test->data_x_.begin(), test->data_x_.end());
+	std::vector<double> test_data_y(test->data_y_.begin(), test->data_y_.end());
+
+	size_t n_input = train->shape_.first;
+	size_t n_output = 10;
+	params.hiddens_.push_back(n_output);
+
+	rocnnet::db_net model(n_input, params.hiddens_, "dbn_mnist_learner");
+
+	if (params.pretrain_)
+	{
+		model.initialize();
+		pretrain(model, n_input, training_data_x, params);
+
+		model.save(serialpath, "dbn_demo_prerain");
+	}
+	else
+	{
+		model.initialize(serialpath, "dbn_demo_prerain");
+	}
+
+	finetune(model, train, valid, test, n_input, n_output, params);
 
 	model.save(serialpath, "dbn_demo");
 

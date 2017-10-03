@@ -276,15 +276,15 @@ void dq_net::variable_setup (void)
 	output_mask_ = new nnet::placeholder<double>(std::vector<size_t>{source_qnet_->get_noutput(), 0}, "action_mask");
 
 	// forward action score computation
-	output_ = nnet::identity((*source_qnet_)(input_));
+	output_ = nnet::identity(source_qnet_->prop_up(input_));
 	output_->set_label("action_scores");
 	best_output_ = nnet::arg_max(output_, 0);
 
-	train_output_ = nnet::identity((*source_qnet_)(train_input_));
+	train_output_ = nnet::identity(source_qnet_->prop_up(train_input_));
 	train_output_->set_label("train_action_scores");
 
 	// predicting target future rewards
-	next_output_ = nnet::identity((*target_qnet_)(next_input_));
+	next_output_ = nnet::identity(target_qnet_->prop_up(next_input_));
 	next_output_->set_label("next_action_scores");
 
 	nnet::varptr<double> target_values =

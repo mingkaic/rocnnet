@@ -90,7 +90,7 @@ void base_immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& 
 	out = temp_eval_helper(target, base);
 	if (iconnector<T>* outcon = dynamic_cast<iconnector<T>*>(out))
 	{
-		outcon->update({});
+		outcon->update(std::unordered_set<size_t>{});
 	}
 }
 

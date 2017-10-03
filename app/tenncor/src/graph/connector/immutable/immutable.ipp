@@ -84,7 +84,7 @@ immutable<T>::immutable (
 	BACK_MAP<T> ginit, std::string label) :
 base_immutable<T>(args, label),
 shaper_(shaper), Nf_(Nf),
-ginit_(ginit) { this->update({}); }
+ginit_(ginit) { this->update(std::unordered_set<size_t>{}); }
 
 template <typename T>
 immutable<T>::immutable (const immutable<T>& other) :
