@@ -32,8 +32,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 include(FindProtobuf)
 add_subdirectory(proto)
 
-FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
-FILE(GLOB_RECURSE DB_DECLARE declare/*.cpp)
+file(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
+file(GLOB_RECURSE DB_DECLARE declare/*.cpp)
 
 #>>>>>>>>>>>>>>>>>>>> MAKE TENNCOR LIB <<<<<<<<<<<<<<<<<<<<
 if (VIS_EDGE)

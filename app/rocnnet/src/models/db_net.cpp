@@ -102,11 +102,11 @@ update_cost_t db_net::build_finetune_functions (
 {
 	nnet::varptr<double> out_dist = prop_up(&train_in);
 	nnet::varptr<double> finetune_cost = - nnet::reduce_mean(nnet::log(out_dist));
+	finetune_cost->set_label("finetune_cost(" + finetune_cost->get_label() + ")");
 	nnet::iconnector<double>* ft_cost_icon = static_cast<nnet::iconnector<double>*>(finetune_cost.get());
 
-	nnet::varptr<double> prediction = nnet::arg_max(out_dist, 1);
-
-	nnet::varptr<double> error = nnet::reduce_mean(nnet::neq(prediction, nnet::varptr<double>(&train_out)));
+	nnet::varptr<double> temp_diff = out_dist - nnet::varptr<double>(&train_out);
+	nnet::varptr<double> error = nnet::reduce_mean(nnet::pow(temp_diff, 2));
 
 	std::vector<nnet::variable<double>*> gparams = this->get_variables();
 	std::vector<nnet::variable_updater<double> > uvec;
@@ -115,15 +115,15 @@ update_cost_t db_net::build_finetune_functions (
 		uvec.push_back(gp->assign_sub(learning_rate * finetune_cost->derive(gp)));
 	}
 
-	return { [uvec, ft_cost_icon](bool)
+	return {[uvec, ft_cost_icon](bool)
 	{
 		ft_cost_icon->freeze_status(true); // freeze
 		for (nnet::variable_updater<double> trainer : uvec)
 		{
-		 trainer(true);
+			trainer(true);
 		}
 		ft_cost_icon->freeze_status(false); // update again
-	}, error };
+	}, error};
 }
 
 std::vector<nnet::variable<double>*> db_net::get_variables (void) const
@@ -134,6 +134,8 @@ std::vector<nnet::variable<double>*> db_net::get_variables (void) const
 		std::vector<nnet::variable<double>*> temp = h->get_variables();
 		vars.insert(vars.end(), temp.begin(), temp.end());
 	}
+	std::vector<nnet::variable<double>*> temp = log_layer_->get_variables();
+	vars.insert(vars.end(), temp.begin(), temp.end());
 	return vars;
 }
 

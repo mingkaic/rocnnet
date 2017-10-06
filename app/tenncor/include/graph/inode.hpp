@@ -67,6 +67,9 @@ public:
 	//! modify label to better describe node purpose
 	void set_label (std::string label);
 
+	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
+	virtual size_t get_depth (void) const = 0;
+
 	//>>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables
 	virtual std::vector<inode<T>*> get_arguments (void) const = 0;

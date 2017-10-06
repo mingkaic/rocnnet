@@ -55,6 +55,11 @@ public:
 		return this->take_gradient(source, leaf);
 	}
 
+	virtual size_t get_depth (void) const
+	{
+		return 0;
+	}
+
 protected:
 	virtual inode<double>* clone_impl (void) const { return new mock_node(*this); }
 	virtual inode<double>* move_impl (void) { return new mock_node(std::move(*this)); }

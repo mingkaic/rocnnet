@@ -40,6 +40,13 @@ public:
 	//! declare move assignment to move over data
 	virtual ileaf<T>& operator = (ileaf<T>&& other);
 
+	// >>>> IDENTIFICATION <<<<
+	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
+	virtual size_t get_depth (void) const
+	{
+		return 0; // leaves are 0 distance from the furthest dependent leaf
+	}
+
 	//>>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables: no observables
 	virtual std::vector<inode<T>*> get_arguments (void) const;

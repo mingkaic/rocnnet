@@ -2,13 +2,17 @@
 // Created by Mingkai Chen on 2017-09-21.
 //
 
-#include "models/db_net.hpp"
-#include "mnist_data.hpp"
-#include "edgeinfo/comm_record.hpp"
+#include <random>
 
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+
+#include "models/db_net.hpp"
+#include "mnist_data.hpp"
+#include "edgeinfo/comm_record.hpp"
+
+static std::default_random_engine rnd_device(std::time(NULL));
 
 struct test_params
 {
@@ -23,6 +27,20 @@ struct test_params
 	bool train_ = true;
 	std::string outdir_ = ".";
 };
+
+static std::vector<double> batch_generate (size_t n, size_t batchsize)
+{
+	size_t total = n * batchsize;
+
+	// Specify the engine and distribution.
+	std::mt19937 mersenne_engine(rnd_device());
+	std::uniform_real_distribution<double> dist(0, 1);
+
+	auto gen = std::bind(dist, mersenne_engine);
+	std::vector<double> vec(total);
+	std::generate(std::begin(vec), std::end(vec), gen);
+	return vec;
+}
 
 std::string serialname = "dbn_test.pbx";
 
@@ -100,7 +118,8 @@ void finetune (rocnnet::db_net& model, xy_data* train,
 	bool keep_looping = true;
 	size_t best_iter = 0;
 
-	double inbatch = params.n_batch_ * n_input;
+	size_t inbatch = params.n_batch_ * n_input;
+	size_t outbatch = params.n_batch_ * n_output;
 	auto xit = training_data_x.begin();
 	auto yit = training_data_y.begin();
 
@@ -118,7 +137,7 @@ void finetune (rocnnet::db_net& model, xy_data* train,
 		for (size_t mb_idx = 0; mb_idx < n_train_batches; mb_idx++)
 		{
 			std::vector<double> xbatch(xit + mb_idx * inbatch, xit + (mb_idx + 1) * inbatch);
-			std::vector<double> ybatch(yit + mb_idx * inbatch, yit + (mb_idx + 1) * inbatch);
+			std::vector<double> ybatch(yit + mb_idx * outbatch, yit + (mb_idx + 1) * outbatch);
 			finetune_in = xbatch;
 			finetune_out = ybatch;
 			train_update(true);
@@ -128,7 +147,7 @@ void finetune (rocnnet::db_net& model, xy_data* train,
 			if (((iter + 1) % validation_frequency) == 0)
 			{
 				std::vector<double> xbatch_valid(valid_xit + mb_idx * inbatch, valid_xit + (mb_idx + 1) * inbatch);
-				std::vector<double> ybatch_valid(valid_yit + mb_idx * inbatch, valid_yit + (mb_idx + 1) * inbatch);
+				std::vector<double> ybatch_valid(valid_yit + mb_idx * outbatch, valid_yit + (mb_idx + 1) * outbatch);
 				finetune_in = xbatch_valid;
 				finetune_out = ybatch_valid;
 
@@ -149,7 +168,7 @@ void finetune (rocnnet::db_net& model, xy_data* train,
 					best_iter = iter;
 
 					std::vector<double> xbatch_test(test_xit + mb_idx * inbatch, test_xit + (mb_idx + 1) * inbatch);
-					std::vector<double> ybatch_test(test_yit + mb_idx * inbatch, test_yit + (mb_idx + 1) * inbatch);
+					std::vector<double> ybatch_test(test_yit + mb_idx * outbatch, test_yit + (mb_idx + 1) * outbatch);
 					finetune_in = xbatch_test;
 					finetune_out = ybatch_test;
 
@@ -215,6 +234,93 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 #endif /* EDGE_RCD */
 }
 
+std::vector<double> simple_op (std::vector<double> input)
+{
+	std::vector<double> output;
+	for (size_t i = 0, n = input.size() / 2; i < n; ++i) {
+		output.push_back((input[i] + input[n + i]) / 2);
+	}
+	return output;
+}
+
+void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, test_params params)
+{
+	std::string serialpath = params.outdir_ + "/" + serialname;
+	params.hiddens_.push_back(n_in / 2);
+	rocnnet::db_net model(n_in, params.hiddens_, "dbn_simple_learner");
+
+	// generate test sample
+	std::vector<double> train_samples = batch_generate(n_train_sample, n_in);
+	std::vector<double> test_samples = batch_generate(n_test_sample, n_in);
+	std::vector<double> train_out = simple_op(train_samples);
+	std::vector<double> test_out = simple_op(test_samples);
+
+	// pretrain
+	if (params.pretrain_)
+	{
+		model.initialize();
+		pretrain(model, n_in, train_samples, params);
+
+		model.save(serialpath, "dbn_demo_prerain");
+	}
+	else
+	{
+		model.initialize(serialpath, "dbn_demo_prerain");
+	}
+
+	// finetune
+	nnet::placeholder<double> finetune_in(std::vector<size_t>{n_in, params.n_batch_}, "finetune_in");
+	nnet::placeholder<double> finetune_out(std::vector<size_t>{n_in / 2, params.n_batch_}, "finetune_out");
+	rocnnet::update_cost_t tuner = model.build_finetune_functions(finetune_in, finetune_out, params.training_lr_);
+	nnet::variable_updater<double> train_update = tuner.first;
+
+	double inbatch = params.n_batch_ * n_in;
+	double outbatch = inbatch / 2;
+	auto xit = train_samples.begin();
+	auto yit = train_out.begin();
+
+	for (size_t epoch = 0; epoch < params.training_epochs_; epoch++)
+	{
+		for (size_t mb_idx = 0; mb_idx < n_train_sample; mb_idx++)
+		{
+			std::vector<double> xbatch(xit + mb_idx * inbatch, xit + (mb_idx + 1) * inbatch);
+			std::vector<double> ybatch(yit + mb_idx * outbatch, yit + (mb_idx + 1) * outbatch);
+			finetune_in = xbatch;
+			finetune_out = ybatch;
+			train_update(true);
+		}
+	}
+
+	// test
+	nnet::placeholder<double> test_in(std::vector<size_t>{n_in}, "test_in");
+	nnet::placeholder<double> expect_out(std::vector<size_t>{n_in / 2}, "expect_out");
+	nnet::varptr<double> test_res = model.prop_up(nnet::varptr<double>(&test_in));
+	nnet::varptr<double> test_error = nnet::reduce_mean(
+		nnet::sqrt<double>(nnet::varptr<double>(&expect_out) - test_res));
+	xit = test_samples.begin();
+	yit = test_out.begin();
+	double total_err;
+	for (size_t i = 0; i < n_test_sample; ++i)
+	{
+		std::vector<double> xbatch(xit + i * inbatch, xit + (i + 1) * inbatch);
+		std::vector<double> ybatch(yit + i * inbatch, yit + (i + 1) * inbatch);
+		test_in = xbatch;
+		expect_out = ybatch;
+
+		double test_err = nnet::expose<double>(test_error)[0];
+		total_err += test_err;
+		std::cout << "test error at " << i << ": " << test_err << std::endl;
+	}
+	std::cout << "total error " << total_err << std::endl;
+
+#ifdef EDGE_RCD
+	if (rocnnet_record::erec::rec_good)
+	{
+		rocnnet_record::erec::rec.to_csv<double>();
+	}
+#endif /* EDGE_RCD */
+}
+
 int main (int argc, char** argv)
 {
 	// todo: replace with boost flags
@@ -222,7 +328,9 @@ int main (int argc, char** argv)
 	std::experimental::optional<size_t> seed;
 #ifdef __GNUC__ // use this gnu parser, since boost is too big for free-tier platforms
 	int c;
-	while ((c = getopt (argc, argv, "s:o:p:E:e:k:t:")) != -1)
+	bool test_mnist = false;
+	size_t n_simple_samples = 300;
+	while ((c = getopt (argc, argv, "s:o:p:E:e:k:t:m:n:")) != -1)
 	{
 		switch(c)
 		{
@@ -247,6 +355,12 @@ int main (int argc, char** argv)
 			case 't':
 				params.train_ = false;
 				break;
+			case 'm':
+				test_mnist = true;
+				break;
+			case 'n':
+				n_simple_samples = std::min(6, atoi(optarg));
+				break;
 		}
 	}
 #else
@@ -261,31 +375,40 @@ int main (int argc, char** argv)
 #endif
 	if (seed)
 	{
+		rnd_device.seed(*seed);
 		nnutils::seed_generator(*seed);
 	}
 
-	try
+	if (test_mnist)
 	{
-		Py_Initialize();
-		np::initialize();
-		std::vector<xy_data*> datasets = get_mnist_data();
-
-		xy_data* training_set = datasets[0];
-		xy_data* valid_set = datasets[1];
-		xy_data* testing_set = datasets[2];
-
-		mnist_test(training_set, valid_set, testing_set, params);
-
-		for (xy_data* dataset : datasets)
+		try
 		{
-			delete dataset;
+			Py_Initialize();
+			np::initialize();
+			std::vector<xy_data*> datasets = get_mnist_data();
+
+			xy_data* training_set = datasets[0];
+			xy_data* valid_set = datasets[1];
+			xy_data* testing_set = datasets[2];
+
+			mnist_test(training_set, valid_set, testing_set, params);
+
+			for (xy_data* dataset : datasets)
+			{
+				delete dataset;
+			}
+		}
+		catch(const bp::error_already_set&)
+		{
+			std::cerr << ">>> Error! Uncaught exception:\n";
+			PyErr_Print();
+			return 1;
 		}
 	}
-	catch(const bp::error_already_set&)
+	else
 	{
-		std::cerr << ">>> Error! Uncaught exception:\n";
-		PyErr_Print();
-		return 1;
+		params.pretrain_epochs_ = 1;
+		simpler_test(n_simple_samples, n_simple_samples / 6, 10, params);
 	}
 
 	google::protobuf::ShutdownProtobufLibrary();

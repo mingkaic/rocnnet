@@ -106,7 +106,7 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t n_in = 10;
-	size_t n_out = 5;
+	size_t n_out = n_in / 2;
 	size_t n_batch = 3;
 	size_t show_every_n = 500;
 	std::vector<rocnnet::IN_PAIR> hiddens = {

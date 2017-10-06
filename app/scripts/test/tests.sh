@@ -67,6 +67,11 @@ assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo"
 assert_cmd "$BINDIR/rbm_demo"
 echo "rbm_demo complete"
 
+echo "running dbn_demo"
+assert_cmd "valgrind --tool=memcheck $BINDIR/dbn_demo -k 1 -n 30"
+assert_cmd "$BINDIR/dbn_demo -k 1"
+echo "dbn_demo complete"
+
 # ===== Coverage Analysis ======
 lcov --version
 gcov --version
