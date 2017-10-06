@@ -288,6 +288,7 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 			finetune_in = xbatch;
 			finetune_out = ybatch;
 			train_update(true);
+			std::cout << "epoch " << epoch << " fine tuning index " << mb_idx << std::endl;
 		}
 	}
 
