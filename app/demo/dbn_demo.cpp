@@ -45,7 +45,7 @@ static std::vector<double> batch_generate (size_t n, size_t batchsize)
 std::string serialname = "dbn_test.pbx";
 
 void pretrain (rocnnet::db_net& model, size_t n_input,
-	std::vector<double> data, test_params params)
+	std::vector<double> data, test_params params, std::string test_name)
 {
 	std::string serialpath = params.outdir_ + "/" + serialname;
 	size_t n_data = data.size() / n_input;
@@ -79,7 +79,7 @@ void pretrain (rocnnet::db_net& model, size_t n_input,
 			std::cout << "pre-trained layer " << pidx << " epoch "
 				<< e << " has mean cost " << mean_cost << std::endl;
 
-			model.save(serialpath, "dbn_demo_prerain"); // save in case of problems
+			model.save(serialpath, "dbn_" + test_name + "_pretrain"); // save in case of problems
 		}
 	}
 
@@ -213,18 +213,18 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 	if (params.pretrain_)
 	{
 		model.initialize();
-		pretrain(model, n_input, training_data_x, params);
+		pretrain(model, n_input, training_data_x, params, "mnist");
 
-		model.save(serialpath, "dbn_demo_prerain");
+		model.save(serialpath, "dbn_mnist_pretrain");
 	}
 	else
 	{
-		model.initialize(serialpath, "dbn_demo_prerain");
+		model.initialize(serialpath, "dbn_mnist_pretrain");
 	}
 
 	finetune(model, train, valid, test, n_input, n_output, params);
 
-	model.save(serialpath, "dbn_demo");
+	model.save(serialpath, "dbn_mnist");
 
 #ifdef EDGE_RCD
 	if (rocnnet_record::erec::rec_good)
@@ -255,41 +255,50 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 	std::vector<double> train_out = simple_op(train_samples);
 	std::vector<double> test_out = simple_op(test_samples);
 
-	// pretrain
-	if (params.pretrain_)
+	if (params.train_)
 	{
-		model.initialize();
-		pretrain(model, n_in, train_samples, params);
+		// pretrain
+		if (params.pretrain_)
+		{
+			model.initialize();
+			pretrain(model, n_in, train_samples, params, "demo");
 
-		model.save(serialpath, "dbn_demo_prerain");
+			model.save(serialpath, "dbn_demo_pretrain");
+		}
+		else
+		{
+			model.initialize(serialpath, "dbn_demo_pretrain");
+		}
+
+		// finetune
+		double inbatch = params.n_batch_ * n_in;
+		double outbatch = inbatch / 2;
+		nnet::placeholder<double> finetune_in(std::vector<size_t>{n_in, params.n_batch_}, "finetune_in");
+		nnet::placeholder<double> finetune_out(std::vector<size_t>{n_in / 2, params.n_batch_}, "finetune_out");
+		rocnnet::update_cost_t tuner = model.build_finetune_functions(finetune_in, finetune_out, params.training_lr_);
+		nnet::variable_updater<double> train_update = tuner.first;
+
+		auto xit = train_samples.begin();
+		auto yit = train_out.begin();
+
+		for (size_t epoch = 0; epoch < params.training_epochs_; epoch++)
+		{
+			for (size_t mb_idx = 0; mb_idx < n_train_sample; mb_idx++)
+			{
+				std::vector<double> xbatch(xit + mb_idx * inbatch, xit + (mb_idx + 1) * inbatch);
+				std::vector<double> ybatch(yit + mb_idx * outbatch, yit + (mb_idx + 1) * outbatch);
+				finetune_in = xbatch;
+				finetune_out = ybatch;
+				train_update(true);
+				std::cout << "epoch " << epoch << " fine tuning index " << mb_idx << std::endl;
+			}
+		}
+
+		model.save(serialpath, "dbn_demo");
 	}
 	else
 	{
-		model.initialize(serialpath, "dbn_demo_prerain");
-	}
-
-	// finetune
-	nnet::placeholder<double> finetune_in(std::vector<size_t>{n_in, params.n_batch_}, "finetune_in");
-	nnet::placeholder<double> finetune_out(std::vector<size_t>{n_in / 2, params.n_batch_}, "finetune_out");
-	rocnnet::update_cost_t tuner = model.build_finetune_functions(finetune_in, finetune_out, params.training_lr_);
-	nnet::variable_updater<double> train_update = tuner.first;
-
-	double inbatch = params.n_batch_ * n_in;
-	double outbatch = inbatch / 2;
-	auto xit = train_samples.begin();
-	auto yit = train_out.begin();
-
-	for (size_t epoch = 0; epoch < params.training_epochs_; epoch++)
-	{
-		for (size_t mb_idx = 0; mb_idx < n_train_sample; mb_idx++)
-		{
-			std::vector<double> xbatch(xit + mb_idx * inbatch, xit + (mb_idx + 1) * inbatch);
-			std::vector<double> ybatch(yit + mb_idx * outbatch, yit + (mb_idx + 1) * outbatch);
-			finetune_in = xbatch;
-			finetune_out = ybatch;
-			train_update(true);
-			std::cout << "epoch " << epoch << " fine tuning index " << mb_idx << std::endl;
-		}
+		model.initialize(serialpath, "dbn_demo");
 	}
 
 	// test
@@ -298,13 +307,13 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 	nnet::varptr<double> test_res = model.prop_up(nnet::varptr<double>(&test_in));
 	nnet::varptr<double> test_error = nnet::reduce_mean(
 		nnet::sqrt<double>(nnet::varptr<double>(&expect_out) - test_res));
-	xit = test_samples.begin();
-	yit = test_out.begin();
+	auto xit = test_samples.begin();
+	auto yit = test_out.begin();
 	double total_err;
 	for (size_t i = 0; i < n_test_sample; ++i)
 	{
-		std::vector<double> xbatch(xit + i * inbatch, xit + (i + 1) * inbatch);
-		std::vector<double> ybatch(yit + i * inbatch, yit + (i + 1) * inbatch);
+		std::vector<double> xbatch(xit + i * n_in, xit + (i + 1) * n_in);
+		std::vector<double> ybatch(yit + i * n_in / 2, yit + (i + 1) * n_in / 2);
 		test_in = xbatch;
 		expect_out = ybatch;
 
@@ -409,6 +418,7 @@ int main (int argc, char** argv)
 	else
 	{
 		params.pretrain_epochs_ = 1;
+		params.training_epochs_ = 1;
 		simpler_test(n_simple_samples, n_simple_samples / 6, 10, params);
 	}
 

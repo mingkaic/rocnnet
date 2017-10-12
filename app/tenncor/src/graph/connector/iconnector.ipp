@@ -411,10 +411,10 @@ struct iconnector<T>::graph_manager
 			iconnector<T>* iconn = updates_.top();
 			auto updater = update_map_[iconn];
 			updates_.pop();
-			update_map_.erase(iconn);
 			updater();
 			iconn->notify(UPDATE);
 		}
+		update_map_.clear();
 	}
 
 	bool freeze_ = false;
