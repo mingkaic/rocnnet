@@ -245,6 +245,7 @@ std::vector<double> simple_op (std::vector<double> input)
 
 void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, test_params params)
 {
+	params.n_batch_ = std::min(params.n_batch_, n_train_sample);
 	std::string serialpath = params.outdir_ + "/" + serialname;
 	params.hiddens_.push_back(n_in / 2);
 	rocnnet::db_net model(n_in, params.hiddens_, "dbn_simple_learner");
@@ -277,13 +278,14 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 		nnet::placeholder<double> finetune_out(std::vector<size_t>{n_in / 2, params.n_batch_}, "finetune_out");
 		rocnnet::update_cost_t tuner = model.build_finetune_functions(finetune_in, finetune_out, params.training_lr_);
 		nnet::variable_updater<double> train_update = tuner.first;
+		size_t n_train_batches = n_train_sample / params.n_batch_;
 
 		auto xit = train_samples.begin();
 		auto yit = train_out.begin();
 
 		for (size_t epoch = 0; epoch < params.training_epochs_; epoch++)
 		{
-			for (size_t mb_idx = 0; mb_idx < n_train_sample; mb_idx++)
+			for (size_t mb_idx = 0; mb_idx < n_train_batches; mb_idx++)
 			{
 				std::vector<double> xbatch(xit + mb_idx * inbatch, xit + (mb_idx + 1) * inbatch);
 				std::vector<double> ybatch(yit + mb_idx * outbatch, yit + (mb_idx + 1) * outbatch);
@@ -295,6 +297,13 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 		}
 
 		model.save(serialpath, "dbn_demo");
+
+#ifdef EDGE_RCD
+		if (rocnnet_record::erec::rec_good)
+		{
+			rocnnet_record::erec::rec.to_csv<double>();
+		}
+#endif /* EDGE_RCD */
 	}
 	else
 	{
@@ -309,7 +318,7 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 		nnet::sqrt<double>(nnet::varptr<double>(&expect_out) - test_res));
 	auto xit = test_samples.begin();
 	auto yit = test_out.begin();
-	double total_err;
+	double total_err = 0;
 	for (size_t i = 0; i < n_test_sample; ++i)
 	{
 		std::vector<double> xbatch(xit + i * n_in, xit + (i + 1) * n_in);
@@ -322,13 +331,6 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 		std::cout << "test error at " << i << ": " << test_err << std::endl;
 	}
 	std::cout << "total error " << total_err << std::endl;
-
-#ifdef EDGE_RCD
-	if (rocnnet_record::erec::rec_good)
-	{
-		rocnnet_record::erec::rec.to_csv<double>();
-	}
-#endif /* EDGE_RCD */
 }
 
 int main (int argc, char** argv)

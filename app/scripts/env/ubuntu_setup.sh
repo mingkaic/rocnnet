@@ -21,9 +21,6 @@ CUR_CMAKE_VER="$( cmake --version )";
 
 set -e
 
-PB_TAR=protobuf-cpp-3.2.0.tar.gz;
-PB_DIR=protobuf-3.2.0;
-
 # ===== Apt-gettable Dependencies =====
 
 apt-get update;
@@ -60,12 +57,9 @@ easy_install pip;
 
 # ===== Other Dependencies =====
 
-# install protobuf3
-wget https://github.com/google/protobuf/releases/download/v3.2.0/$PB_TAR;
-tar xvf $PB_TAR && pushd $PB_DIR && ./configure --prefix=/usr && make && make install && ldconfig && popd;
-# clean up
-rm -rf $PB_DIR
-rm -rf $PB_TAR
+# use local setup script for protobuf and boost
+bash $THIS_DIR/protobuf_setup.sh 3.2.0;
+bash $THIS_DIR/boost_setup.sh
 
 # install pip requirements
 pip install -r requirements.txt;
