@@ -247,7 +247,7 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 {
 	params.n_batch_ = std::min(params.n_batch_, n_train_sample);
 	std::string serialpath = params.outdir_ + "/" + serialname;
-	params.hiddens_.push_back(n_in / 2);
+	params.hiddens_ = { n_in, n_in, n_in / 2 };
 	rocnnet::db_net model(n_in, params.hiddens_, "dbn_simple_learner");
 
 	// generate test sample

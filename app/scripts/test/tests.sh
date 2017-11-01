@@ -8,7 +8,7 @@
 # ===== Define Installation Variables =====
 
 FUZZLOG=fuzz.out
-TIMEOUT=600
+TIMEOUT=720 # 12 minute limit
 
 BASEDIR=$1
 BINDIR=$BASEDIR/bin/bin
