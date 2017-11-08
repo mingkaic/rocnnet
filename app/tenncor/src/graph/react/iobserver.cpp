@@ -163,6 +163,11 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 	}
 }
 
+bool iobserver::is_recordable (void) const
+{
+	return recordable_;
+}
+
 void iobserver::copy_helper (const iobserver& other)
 {
 	recordable_ = other.recordable_;

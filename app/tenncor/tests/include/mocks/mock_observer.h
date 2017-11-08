@@ -18,7 +18,7 @@ class dummy_observer : public iobserver, public mocker
 {
 public:
 	dummy_observer (void) : iobserver() {}
-	dummy_observer (subject* arg) : iobserver({arg})  {}
+	dummy_observer (subject* arg) : iobserver(std::vector<subject*>{arg})  {}
 	dummy_observer (subject* a, subject* b) : iobserver({a, b})  {}
 	dummy_observer (std::vector<subject*> args) : iobserver(args)  {}
 	~dummy_observer (void) {}

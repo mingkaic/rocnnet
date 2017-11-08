@@ -46,10 +46,7 @@ public:
 	//! publicly available to allow explicit updates
 	virtual void update (std::unordered_set<size_t> argidx) = 0;
 
-	bool is_recordable (void)
-	{
-		return recordable_;
-	}
+	bool is_recordable (void) const;
 
 protected:
 	// >>>> CONSTRUCTORS <<<<
