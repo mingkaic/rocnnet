@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # purpose:
 # this script installs all the dependencies necessary to run the project on ubuntu

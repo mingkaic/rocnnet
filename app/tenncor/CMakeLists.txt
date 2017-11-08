@@ -39,7 +39,8 @@ file(GLOB_RECURSE DB_DECLARE declare/*.cpp)
 if (VIS_EDGE)
 	# visualize tenncor edges
 	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
-	add_definitions(-DEDGE_RCD="op-profile.csv")
+	add_definitions(-DCSV_RCD="op-profile.csv")
+	add_definitions(-DVIS_RCD="on")
 endif()
 
 # static version

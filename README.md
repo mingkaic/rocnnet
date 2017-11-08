@@ -30,13 +30,13 @@ Flags include the following:
 
 ## Visualization
 
-During executation, call `rocnnet_record::erec::rec.to_csv<double>()` to print all nodes out to a csv file, `op-profile.csv`,
+During executation, call `static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>()` to print all nodes out to a csv file, `op-profile.csv`,
 recording all nodes and connections.
 
 To visualize the graph, install [graphviz (and its dependencies)](https://pygraphviz.github.io/documentation/pygraphviz-1.3rc1/install.html),
 then run 
 
-	pushd scripts && bash imgify.sh
+	bash /path/to/script/dir/imgify.sh
 	
 ## Demos
 

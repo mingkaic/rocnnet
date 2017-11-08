@@ -1,7 +1,7 @@
 // test dqn_demo on c++ side
 
 #include "models/dq_net.hpp"
-#include "edgeinfo/comm_record.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 #ifdef __GNUC__
 #include <unistd.h>
@@ -238,7 +238,7 @@ int main (int argc, char** argv)
 
 	// fails if cumulative steps is over threshold=250, 
 	// and trained is inferior to untrained
-	if (episode_count * max_steps > 250 && 
+	if (episode_count * max_steps > 250 &&
 		total_untrained_err < total_trained_err)
 	{
 		exit_status = 2;
@@ -249,10 +249,12 @@ int main (int argc, char** argv)
 		trained_dqn.save(serialpath, "dqn_demo");
 	}
 
-#ifdef EDGE_RCD
-if (rocnnet_record::erec::rec_good)
-	rocnnet_record::erec::rec.to_csv<double>(trained_dqn.get_error());
-#endif /* EDGE_RCD */
+#ifdef CSV_RCD
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>(trained_dqn.get_error());
+}
+#endif /* CSV_RCD */
 
 	google::protobuf::ShutdownProtobufLibrary();
 

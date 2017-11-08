@@ -61,6 +61,8 @@ shareds/
 **/*.csv
 **/*.pbx
 
+opgraph*
+
 # whitelist
 !.gitignore
 !.travis.yml

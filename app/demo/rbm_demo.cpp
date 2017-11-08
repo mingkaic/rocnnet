@@ -4,7 +4,7 @@
 
 #include "models/rbm.hpp"
 #include "mnist_data.hpp"
-#include "edgeinfo/comm_record.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 #ifdef __GNUC__
 #include <unistd.h>
@@ -63,12 +63,12 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 		model.save(serialpath, "rbm_demo"); // save in case of problems
 	}
 
-#ifdef EDGE_RCD
-	if (rocnnet_record::erec::rec_good)
+#ifdef CSV_RCD
+	if (rocnnet_record::record_status::rec_good)
 	{
-		rocnnet_record::erec::rec.to_csv<double>();
+		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
 	}
-#endif /* EDGE_RCD */
+#endif /* CSV_RCD */
 }
 
 void mnist_test (xy_data* train, xy_data* test, test_params params)

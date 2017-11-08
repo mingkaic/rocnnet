@@ -57,7 +57,8 @@ add_subdirectory(${TENNCOR_DIR})
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
 if (VIS_EDGE)
 	# visualize tenncor edges
-	add_definitions(-DEDGE_RCD="op-profile.csv")
+	add_definitions(-DCSV_RCD="op-profile.csv")
+	add_definitions(-DVIS_RCD="on")
 endif(VIS_EDGE)
 
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)

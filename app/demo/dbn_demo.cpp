@@ -10,7 +10,7 @@
 
 #include "models/db_net.hpp"
 #include "mnist_data.hpp"
-#include "edgeinfo/comm_record.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 static std::default_random_engine rnd_device(std::time(NULL));
 
@@ -83,12 +83,12 @@ void pretrain (rocnnet::db_net& model, size_t n_input,
 		}
 	}
 
-#ifdef EDGE_RCD
-	if (rocnnet_record::erec::rec_good)
+#ifdef CSV_RCD
+	if (rocnnet_record::record_status::rec_good)
 	{
-		rocnnet_record::erec::rec.to_csv<double>();
+		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
 	}
-#endif /* EDGE_RCD */
+#endif /* CSV_RCD */
 }
 
 void finetune (rocnnet::db_net& model, xy_data* train,
@@ -226,12 +226,12 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 
 	model.save(serialpath, "dbn_mnist");
 
-#ifdef EDGE_RCD
-	if (rocnnet_record::erec::rec_good)
+#ifdef CSV_RCD
+	if (rocnnet_record::record_status::rec_good)
 	{
-		rocnnet_record::erec::rec.to_csv<double>();
+		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
 	}
-#endif /* EDGE_RCD */
+#endif /* CSV_RCD */
 }
 
 std::vector<double> simple_op (std::vector<double> input)
@@ -298,12 +298,12 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 
 		model.save(serialpath, "dbn_demo");
 
-#ifdef EDGE_RCD
-		if (rocnnet_record::erec::rec_good)
+#ifdef CSV_RCD
+		if (rocnnet_record::record_status::rec_good)
 		{
-			rocnnet_record::erec::rec.to_csv<double>();
+			static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
 		}
-#endif /* EDGE_RCD */
+#endif /* CSV_RCD */
 	}
 	else
 	{
