@@ -96,6 +96,12 @@ std::string iconnector<T>::get_name (void) const
 }
 
 template <typename T>
+size_t iconnector<T>::get_depth (void) const
+{
+	return depth_;
+}
+
+template <typename T>
 std::vector<inode<T>*> iconnector<T>::get_arguments (void) const
 {
 	std::vector<inode<T>*> node_args(this->dependencies_.size());

@@ -11,7 +11,13 @@
 namespace nnet {
 
 template <typename T>
-varptr<T>::varptr (inode<T>* ptr) : iobserver({ptr}) {}
+varptr<T>::varptr (void) : iobserver(false) {}
+
+template <typename T>
+varptr<T>::varptr (inode<T>* ptr) : iobserver({ptr}, false) {}
+
+template <typename T>
+varptr<T>::~varptr (void) {}
 
 template <typename T>
 varptr<T>& varptr<T>::operator = (inode<T>* other)

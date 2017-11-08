@@ -11,6 +11,9 @@ tar xvf protobuf-cpp-$VERSION.tar.gz
 
 pushd protobuf-$VERSION
 ./configure && make && make install
+set +e
+ldconfig
+set -e
 popd
 
 popd

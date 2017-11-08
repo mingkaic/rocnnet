@@ -6,36 +6,35 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "graph/react/subject.hpp"
-#include "graph/inode.hpp"
+#include "edgeinfo/igraph_record.hpp"
 #include "graph/connector/iconnector.hpp"
 
 #pragma once
 #ifdef EDGE_RCD
 
-#ifndef comm_record_hpp
-#define comm_record_hpp
-
 #include <unordered_set>
 #include <fstream>
+
+#ifndef comm_record_hpp
+#define comm_record_hpp
 
 namespace rocnnet_record
 {
 
-class edge_record
+class edge_record : public igraph_record
 {
 public:
-	edge_record (std::string fname) : outname_(fname) {}
+	edge_record (std::string fname);
 
 	~edge_record (void);
 
-	void edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
+	virtual void node_capture (nnet::subject* sub);
 
-	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
+	virtual void node_release (nnet::subject* sub);
 
-	void node_release (nnet::subject* sub);
+	virtual void edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
-	void node_release (nnet::iobserver* obs);
+	virtual void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx);
 
 	template <typename T>
 	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr)

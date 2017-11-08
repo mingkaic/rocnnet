@@ -30,12 +30,12 @@ public:
 	void* operator new (size_t) = delete;
 
 	//! nullptr construction
-	varptr (void) {}
+	varptr (void);
 
 	//! wrap ptr construction
 	varptr (inode<T>* ptr);
 
-	virtual ~varptr (void) {}
+	virtual ~varptr (void);
 
 	//! assign ptr
 	varptr<T>& operator = (inode<T>* other);

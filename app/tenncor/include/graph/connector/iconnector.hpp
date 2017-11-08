@@ -77,10 +77,7 @@ public:
 	virtual std::string get_name (void) const;
 
 	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
-	virtual size_t get_depth (void) const
-	{
-		return depth_;
-	}
+	virtual size_t get_depth (void) const;
 
 	// >>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables

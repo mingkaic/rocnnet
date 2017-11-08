@@ -14,34 +14,15 @@ edge_record erec::rec(EDGE_RCD);
 bool erec::rec_good = true;
 #endif
 
+edge_record::edge_record (std::string fname) : outname_(fname) {}
+
 edge_record::~edge_record (void)
 {
 	erec::rec_good = false;
 }
 
-void edge_record::edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
+void edge_record::node_capture (nnet::subject* sub)
 {
-	std::vector<nnet::subject*>& subs = edges_[obs];
-	if (subs.size() <= idx)
-	{
-		subs.insert(subs.end(), idx-subs.size()+1, nullptr);
-	}
-	subs[idx] = sub;
-	subset_[sub].emplace(obs);
-}
-
-void edge_record::edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
-{
-	auto it = edges_.find(obs);
-	if (edges_.end() != it)
-	{
-		std::vector<nnet::subject*>& subs = it->second;
-		if (subs.size() <= idx)
-		{
-			throw std::exception();
-		}
-		if (sub == subs[idx]) subs[idx] = nullptr;
-	}
 }
 
 void edge_record::node_release (nnet::subject* sub)
@@ -63,9 +44,30 @@ void edge_record::node_release (nnet::subject* sub)
 	subset_.erase(sub);
 }
 
-void edge_record::node_release (nnet::iobserver* obs)
+void edge_record::edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
 {
-	edges_.erase(obs);
+	if (!obs->is_recordable()) return;
+	std::vector<nnet::subject*>& subs = edges_[obs];
+	if (subs.size() <= idx)
+	{
+		subs.insert(subs.end(), idx-subs.size()+1, nullptr);
+	}
+	subs[idx] = sub;
+	subset_[sub].emplace(obs);
+}
+
+void edge_record::edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t idx)
+{
+	auto it = edges_.find(obs);
+	if (edges_.end() != it)
+	{
+		std::vector<nnet::subject*>& subs = it->second;
+		if (subs.size() <= idx)
+		{
+			throw std::exception();
+		}
+		if (sub == subs[idx]) subs[idx] = nullptr;
+	}
 }
 
 }
