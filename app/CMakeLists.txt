@@ -102,7 +102,9 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
 add_executable(gd_demo ${DEMODIR}/gd_demo.cpp)
-target_link_libraries(gd_demo ${ROCNNET_SLIB})
+target_link_libraries(gd_demo
+	${ROCNNET_SLIB}
+	proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
 
 # DEMO 2: c++ deep q network rudimentary test
 if (LCOVERAGE)
@@ -110,7 +112,9 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE})
 add_executable(dqn_demo ${DEMODIR}/dqn_demo.cpp)
-target_link_libraries(dqn_demo ${ROCNNET_SLIB})
+target_link_libraries(dqn_demo
+	${ROCNNET_SLIB}
+	proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
 
 # DEMO 3: rbm
 if (LCOVERAGE)
@@ -118,7 +122,10 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 add_executable(rbm_demo ${DEMODIR}/rbm_demo.cpp)
-target_link_libraries(rbm_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(rbm_demo
+	${ROCNNET_SLIB}
+	${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
+	proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
 
 # DEMO 4: dqn
 if (LCOVERAGE)
@@ -126,7 +133,10 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 add_executable(dbn_demo ${DEMODIR}/dbn_demo.cpp)
-target_link_libraries(dbn_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(dbn_demo
+	${ROCNNET_SLIB}
+	${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
+	proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
 
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig
