@@ -10,7 +10,7 @@
 #include "utils/utils.hpp"
 
 #pragma once
-#if defined(CSV_RCD) || defined(VIS_RCD)
+#ifdef EDGE_RCD
 
 #ifndef igraph_record_hpp
 #define igraph_record_hpp
@@ -21,38 +21,18 @@ namespace rocnnet_record
 class igraph_record
 {
 public:
-	struct obs_info
-	{
-		nnet::iobserver* obs_;
-		size_t idx_;
-
-		obs_info (nnet::iobserver* obs, size_t idx) :
-				obs_(obs), idx_(idx) {}
-	};
-
-	struct obs_info_hash {
-		size_t operator () (const obs_info& info) const
-		{
-			std::hash<std::string> strhash;
-			return strhash(nnutils::formatter() << info.idx_ << info.obs_);
-		}
-	};
-
 	virtual ~igraph_record (void);
 
-	void node_capture (nnet::subject* sub); // all nodes are subjects
+	virtual void node_capture (const nnet::subject* sub) = 0; // all nodes are subjects
 
-	void node_release (nnet::subject* sub);
+	virtual void node_release (const nnet::subject* sub) = 0;
 
-	void edge_capture (nnet::iobserver* obs, nnet::subject* sub, size_t obs_idx);
+	virtual void edge_capture (const nnet::iobserver* obs,
+		const nnet::subject* sub, size_t obs_idx) = 0;
 
-	void edge_release (nnet::iobserver* obs, nnet::subject* sub, size_t obs_idx);
-
-protected:
-	std::unordered_map<nnet::subject*, std::unordered_set<obs_info, obs_info_hash> > subj_nodes;
+	virtual void edge_release (const nnet::iobserver* obs,
+		const nnet::subject* sub, size_t obs_idx) = 0;
 };
-
-bool operator == (const igraph_record::obs_info& lhs, const igraph_record::obs_info& rhs);
 
 struct record_status
 {
@@ -64,4 +44,4 @@ struct record_status
 
 #endif /* igraph_record_hpp */
 
-#endif /* CSV_RCD || VIS_RCD */
+#endif /* EDGE_RCD */

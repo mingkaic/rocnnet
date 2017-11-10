@@ -62,6 +62,13 @@ public:
 	//! replace other with this instance for all parents of other
 	void steal_observers (subject* other);
 
+	// >>>> IDENTIFICATION <<<<
+	//! get the unique hash value
+	virtual std::string get_uid (void) const = 0;
+
+	//! get the non-unique label set by user, denoting node purpose
+	virtual std::string get_label (void) const = 0;
+
 protected:
 	//! explicit default constructor to allow copy and move constructors
 	subject (void);

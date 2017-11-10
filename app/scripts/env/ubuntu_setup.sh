@@ -4,7 +4,7 @@
 # this script installs all the dependencies necessary to run the project on ubuntu
 #
 
-THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 source $THIS_DIR/utils.sh
 
 # ===== Define Installation Variables =====
@@ -58,8 +58,9 @@ easy_install pip;
 # ===== Other Dependencies =====
 
 # use local setup script for protobuf and boost
-bash $THIS_DIR/protobuf_setup.sh 3.2.0;
-bash $THIS_DIR/boost_setup.sh
+bash $THIS_DIR/protobuf_setup.sh 3.4.0;
+bash $THIS_DIR/grpc_setup.sh 1.7.1;
+bash $THIS_DIR/boost_setup.sh;
 
 # install pip requirements
 pip install -r $THIS_DIR/../../requirements.txt;

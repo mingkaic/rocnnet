@@ -49,18 +49,25 @@ if(BUILD_DOC)
 	endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
+#>>>>>>>>>>>>>>>>>>>> VISUALIZATION OPTIONS <<<<<<<<<<<<<<<<<<<<
+if (CSV_RCD OR RPC_RCD)
+	# visualize tenncor edges
+	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
+	add_definitions(-DEDGE_RCD)
+endif(CSV_RCD OR RPC_RCD)
+if (CSV_RCD)
+	add_definitions(-DCSV_RCD)
+endif(CSV_RCD)
+if (RPC_RCD)
+	add_definitions(-DRPC_RCD)
+endif(RPC_RCD)
+
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
 set(TENNCOR_LIB tenncor)
 set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
-if (VIS_EDGE)
-	# visualize tenncor edges
-	add_definitions(-DCSV_RCD="op-profile.csv")
-	add_definitions(-DVIS_RCD="on")
-endif(VIS_EDGE)
-
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)
 file(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
 

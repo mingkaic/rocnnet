@@ -6,11 +6,11 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "edgeinfo/igraph_record.hpp"
+#include "edgeinfo/adjlist_record.hpp"
 #include "graph/connector/iconnector.hpp"
 
 #pragma once
-#ifdef CSV_RCD
+#ifdef EDGE_RCD
 
 #include <unordered_set>
 #include <fstream>
@@ -21,24 +21,24 @@
 namespace rocnnet_record
 {
 
-class csv_record final : public igraph_record
+class csv_record final : public adjlist_record
 {
 public:
 	csv_record (std::string fname) : outname_(fname) {}
 
 	template <typename T>
-	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr)
+	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr) const
 	{
 		std::ofstream ofile;
 		ofile.open(outname_);
 		size_t num_des = 0;
-		std::unordered_map<nnet::inode<T>*, size_t> num_corres;
+		std::unordered_map<const nnet::inode<T>*, size_t> num_corres;
 		if (ofile.is_open())
 		{
-			for (auto sub2obs : subj_nodes)
+			for (auto sub2obs : this->subj_nodes)
 			{
-				nnet::subject* sbs = sub2obs.first;
-				nnet::inode<T>* sub = dynamic_cast<nnet::inode<T>*>(sbs);
+				const nnet::subject* sbs = sub2obs.first;
+				const nnet::inode<T>* sub = dynamic_cast<const nnet::inode<T>*>(sbs);
 				if (nullptr == sub)
 				{
 					continue; // skip if not inode of type T
@@ -46,7 +46,7 @@ public:
 				auto& obs_infos = sub2obs.second;
 				for (auto info : obs_infos)
 				{
-					nnet::iconnector<T>* obs = static_cast<nnet::iconnector<T>*>(info.obs_);
+					const nnet::iconnector<T>* obs = static_cast<const nnet::iconnector<T>*>(info.obs_);
 					if (consider_graph && !obs->is_same_graph(consider_graph))
 					{
 						continue;
@@ -104,10 +104,15 @@ public:
 		ofile.close();
 	}
 
-	bool verbose_ = false;
-	bool display_shape_ = true;
+    void setVerbose (bool verbosity);
+
+    void setDisplayShape (bool display);
 
 private:
+	bool verbose_ = false;
+
+	bool display_shape_ = true;
+
 	std::string outname_;
 };
 
@@ -115,4 +120,4 @@ private:
 
 #endif /* csv_record_hpp */
 
-#endif /* CSV_RCD */
+#endif /* EDGE_RCD */

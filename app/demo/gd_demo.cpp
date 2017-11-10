@@ -186,7 +186,10 @@ int main (int argc, char** argv)
 
 #ifdef CSV_RCD
 if (rocnnet_record::record_status::rec_good)
-	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>(trained_gdn.get_error());
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->
+		to_csv<double>(trained_gdn.get_error());
+}
 #endif /* CSV_RCD */
 
 	google::protobuf::ShutdownProtobufLibrary();

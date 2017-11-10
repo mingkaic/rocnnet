@@ -84,10 +84,10 @@ void pretrain (rocnnet::db_net& model, size_t n_input,
 	}
 
 #ifdef CSV_RCD
-	if (rocnnet_record::record_status::rec_good)
-	{
-		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
-	}
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
+}
 #endif /* CSV_RCD */
 }
 
@@ -227,10 +227,10 @@ void mnist_test (xy_data* train, xy_data* valid, xy_data* test, test_params para
 	model.save(serialpath, "dbn_mnist");
 
 #ifdef CSV_RCD
-	if (rocnnet_record::record_status::rec_good)
-	{
-		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
-	}
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
+}
 #endif /* CSV_RCD */
 }
 
@@ -299,10 +299,10 @@ void simpler_test (size_t n_train_sample, size_t n_test_sample, size_t n_in, tes
 		model.save(serialpath, "dbn_demo");
 
 #ifdef CSV_RCD
-		if (rocnnet_record::record_status::rec_good)
-		{
-			static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
-		}
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
+}
 #endif /* CSV_RCD */
 	}
 	else

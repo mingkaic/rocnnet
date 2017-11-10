@@ -42,10 +42,7 @@ public:
 
 	// >>>> IDENTIFICATION <<<<
 	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
-	virtual size_t get_depth (void) const
-	{
-		return 0; // leaves are 0 distance from the furthest dependent leaf
-	}
+	virtual size_t get_depth (void) const;
 
 	//>>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables: no observables

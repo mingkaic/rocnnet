@@ -1,11 +1,14 @@
 // test dqn_demo on c++ side
-
-#include "models/dq_net.hpp"
-#include "edgeinfo/csv_record.hpp"
+//
+// Created by Mingkai Chen on 2017-04-20.
+//
 
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+
+#include "models/dq_net.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 static std::default_random_engine rnd_device(std::time(NULL));
 
@@ -252,7 +255,8 @@ int main (int argc, char** argv)
 #ifdef CSV_RCD
 if (rocnnet_record::record_status::rec_good)
 {
-	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>(trained_dqn.get_error());
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->
+		to_csv<double>(trained_dqn.get_error());
 }
 #endif /* CSV_RCD */
 

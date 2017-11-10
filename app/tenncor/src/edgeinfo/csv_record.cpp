@@ -11,10 +11,21 @@ namespace rocnnet_record
 
 #ifdef CSV_RCD
 
-std::unique_ptr<igraph_record> record_status::rec = std::make_unique<csv_record>(CSV_RCD);
+std::unique_ptr<igraph_record> record_status::rec =
+	std::make_unique<csv_record>("op-profile.csv");
 bool record_status::rec_good = true;
 
-#endif
+#endif /* CSV_RCD */
+
+void csv_record::setVerbose (bool verbosity)
+{
+	verbose_ = verbosity;
+}
+
+void csv_record::setDisplayShape (bool display)
+{
+	display_shape_ = display;
+}
 
 }
 

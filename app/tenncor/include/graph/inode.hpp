@@ -53,10 +53,10 @@ public:
 
 	// >>>> IDENTIFICATION <<<<
 	//! get the unique hash value
-	std::string get_uid (void) const;
+	virtual std::string get_uid (void) const;
 
 	//! get the non-unique label set by user, denoting node purpose
-	std::string get_label (void) const;
+	virtual std::string get_label (void) const;
 
 	//! get beautified summary of name and uid, structure varies for inheritors
 	virtual std::string get_name (void) const;

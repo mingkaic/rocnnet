@@ -2,13 +2,13 @@
 // Created by Mingkai Chen on 2017-07-19.
 //
 
-#include "models/rbm.hpp"
-#include "mnist_data.hpp"
-#include "edgeinfo/csv_record.hpp"
-
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
+
+#include "models/rbm.hpp"
+#include "mnist_data.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 struct test_params
 {
@@ -64,10 +64,10 @@ void fit (rocnnet::rbm& model, std::vector<double> data, test_params params)
 	}
 
 #ifdef CSV_RCD
-	if (rocnnet_record::record_status::rec_good)
-	{
-		static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
-	}
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>();
+}
 #endif /* CSV_RCD */
 }
 

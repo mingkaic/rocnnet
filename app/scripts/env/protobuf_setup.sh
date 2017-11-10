@@ -2,17 +2,17 @@
 
 set -e
 
-VERSION=${1:-3.4.0}
+VERSION=${1:-3.4.0};
 
 pushd /tmp
 
-wget https://github.com/google/protobuf/releases/download/v$VERSION/protobuf-cpp-$VERSION.tar.gz
-tar xvf protobuf-cpp-$VERSION.tar.gz
+wget https://github.com/google/protobuf/releases/download/v$VERSION/protobuf-cpp-$VERSION.tar.gz;
+tar xvf protobuf-cpp-$VERSION.tar.gz;
 
 pushd protobuf-$VERSION
-./configure && make && make install
+./configure && make && make install;
 set +e
-ldconfig
+ldconfig;
 set -e
 popd
 
