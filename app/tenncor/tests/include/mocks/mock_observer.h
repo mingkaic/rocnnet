@@ -50,6 +50,11 @@ public:
 		label_incr("death_on_broken");
 	}
 
+	virtual std::string get_label (void) const
+	{
+		return "mock_title";
+	}
+
 protected:
 	dummy_observer (const dummy_observer& other) : iobserver(other) {}
 };

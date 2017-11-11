@@ -49,12 +49,6 @@ inode<T>& inode<T>::operator = (inode<T>&& other)
 }
 
 template <typename T>
-std::string inode<T>::get_uid (void) const
-{
-	return id_;
-}
-
-template <typename T>
 std::string inode<T>::get_label (void) const
 {
 	return label_;
@@ -63,7 +57,7 @@ std::string inode<T>::get_label (void) const
 template <typename T>
 std::string inode<T>::get_name (void) const
 {
-	return "<"+label_+":"+id_+">";
+	return "<" + label_ + ":" + this->get_uid() + ">";
 }
 
 template <typename T>

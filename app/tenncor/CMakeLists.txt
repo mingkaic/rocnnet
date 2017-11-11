@@ -30,17 +30,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 #>>>>>>>>>>>>>>>>>>>> VISUALIZATION OPTIONS <<<<<<<<<<<<<<<<<<<<
-if (CSV_RCD OR RPC_RCD)
+if (${CSV_RCD} OR ${RPC_RCD})
 	# visualize tenncor edges
 	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
 	add_definitions(-DEDGE_RCD)
-endif(CSV_RCD OR RPC_RCD)
-if (CSV_RCD)
+endif()
+if (${CSV_RCD})
 	add_definitions(-DCSV_RCD)
-endif(CSV_RCD)
-if (RPC_RCD)
+elseif (${RPC_RCD})
 	add_definitions(-DRPC_RCD)
-endif(RPC_RCD)
+endif()
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
 add_subdirectory(proto)
@@ -52,7 +51,7 @@ file(GLOB_RECURSE DB_DECLARE declare/*.cpp)
 # static version
 include_directories(${TENNCOR_INCLUDE})
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
-target_link_libraries(${TENNCOR_LIB} proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
+target_link_libraries(${TENNCOR_LIB} proto_grpc)
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (TENNCOR_TEST)
@@ -71,7 +70,7 @@ if (TENNCOR_TEST)
 	set(TENNCOR_LIB_TEST tenncor-inst)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_STRASSEN")
 	add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC} ${DB_DECLARE})
-	target_link_libraries(${TENNCOR_LIB_TEST} proto grpc ${PROTOBUF_LIBRARY} ${GRPC_LIBRARY})
+	target_link_libraries(${TENNCOR_LIB_TEST} proto_grpc)
 
 	add_subdirectory(ext/gtest)
 	add_subdirectory(tests)

@@ -23,8 +23,7 @@ class igraph_record
 public:
 	virtual ~igraph_record (void);
 
-	virtual void node_capture (const nnet::subject* sub) = 0; // all nodes are subjects
-
+	// all nodes are subjects
 	virtual void node_release (const nnet::subject* sub) = 0;
 
 	virtual void edge_capture (const nnet::iobserver* obs,

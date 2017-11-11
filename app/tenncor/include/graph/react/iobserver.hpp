@@ -12,7 +12,7 @@
  *
  */
 
-#include "subject.hpp"
+#include "graph/react/subject.hpp"
 
 #pragma once
 #ifndef TENNCOR_IOBSERVER_HPP
@@ -25,7 +25,7 @@
 namespace nnet
 {
 
-class iobserver
+class iobserver : public virtual identifiable
 {
 public:
 	virtual ~iobserver (void);

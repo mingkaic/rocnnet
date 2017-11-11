@@ -11,11 +11,6 @@ namespace rocnnet_record
 
 adjlist_record::~adjlist_record (void) {}
 
-void adjlist_record::node_capture (const nnet::subject* sub)
-{
-	subj_nodes.insert({ sub, std::unordered_set<obs_info, obs_info_hash>() });
-}
-
 void adjlist_record::node_release (const nnet::subject* sub)
 {
 	subj_nodes.erase(sub);

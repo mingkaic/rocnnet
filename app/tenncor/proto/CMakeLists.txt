@@ -10,8 +10,12 @@ set(PROTO_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
 file(MAKE_DIRECTORY ${PROTO_OUT_DIR})
 include_directories(${PROTOBUF_INCLUDE_DIR} ${PROTO_OUT_DIR})
 
-protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ${PROTO_OUT_DIR} ${PROTO_FILES})
-grpc_generate_cpp(GRPC_SRC GRPC_HEADER ${PROTO_OUT_DIR} ${GRPC_FILES})
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_OUT_DIR} ${PROTO_FILES})
+grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_OUT_DIR} ${GRPC_FILES})
 
-add_library(proto ${PROTO_HEADER} ${PROTO_SRC})
-add_library(grpc ${GRPC_HEADER} ${GRPC_SRC})
+add_library(proto_grpc
+	${PROTO_SRCS} ${GRPC_SRCS}
+	${PROTO_HDRS} ${GRPC_HDRS})
+target_link_libraries(proto_grpc
+	gRPC::grpc++_reflection
+	protobuf::libprotobuf)

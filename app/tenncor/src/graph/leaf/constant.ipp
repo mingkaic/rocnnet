@@ -12,14 +12,10 @@ namespace nnet
 {
 
 template <typename T>
-constant<T> constant<T>::shared_zero(0);
-
-template <typename T>
-constant<T> constant<T>::shared_one(1);
-
-template <typename T>
 constant<T>* constant<T>::get_shared_zero (void)
 {
+	// shared between ALL instances
+	static constant<T> shared_zero(0);
 	shared_zero.is_managed_ = true;
 	return &shared_zero;
 }
@@ -27,6 +23,8 @@ constant<T>* constant<T>::get_shared_zero (void)
 template <typename T>
 constant<T>* constant<T>::get_shared_one (void)
 {
+	// shared between ALL instances
+	static constant<T> shared_one(1);
 	shared_one.is_managed_ = true;
 	return &shared_one;
 }

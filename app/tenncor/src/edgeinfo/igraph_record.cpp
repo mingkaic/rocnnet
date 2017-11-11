@@ -9,6 +9,12 @@
 namespace rocnnet_record
 {
 
+#if defined(CSV_RCD) && defined(RPC_RCD)
+
+static_assert(false);
+
+#endif
+
 igraph_record::~igraph_record (void)
 {
 	record_status::rec_good = false;

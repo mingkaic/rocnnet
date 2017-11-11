@@ -39,8 +39,7 @@ public:
 
 	virtual ~adjlist_record (void);
 
-	virtual void node_capture (const nnet::subject* sub); // all nodes are subjects
-
+	// all nodes are subjects
 	virtual void node_release (const nnet::subject* sub);
 
 	virtual void edge_capture (const nnet::iobserver* obs,

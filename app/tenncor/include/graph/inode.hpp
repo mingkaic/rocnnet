@@ -52,9 +52,6 @@ public:
 	virtual inode<T>& operator = (inode<T>&& other);
 
 	// >>>> IDENTIFICATION <<<<
-	//! get the unique hash value
-	virtual std::string get_uid (void) const;
-
 	//! get the non-unique label set by user, denoting node purpose
 	virtual std::string get_label (void) const;
 
@@ -138,15 +135,13 @@ protected:
 	//! adds to internal caches if need be
 	virtual inode<T>* get_gradient (variable<T>* leaf) = 0;
 
+	//! obtain tensor data from source
 	const tensor<T>* take_eval (inode<T>* source) const;
 
 	//! allow inheritants to access source's get_gradient with parameter leaf
 	inode<T>* take_gradient (inode<T>* source, variable<T>* leaf) const;
 
 private:
-	//! uniquely identifier for this node
-	const std::string id_ = nnutils::uuid(this);
-
 	//! describes this node's purpose
 	std::string label_;
 

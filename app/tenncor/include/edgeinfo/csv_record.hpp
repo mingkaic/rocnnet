@@ -24,7 +24,7 @@ namespace rocnnet_record
 class csv_record final : public adjlist_record
 {
 public:
-	csv_record (std::string fname) : outname_(fname) {}
+	csv_record (std::string fname);
 
 	template <typename T>
 	void to_csv (const nnet::iconnector<T>* consider_graph = nullptr) const

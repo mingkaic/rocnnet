@@ -4,11 +4,6 @@ package visor;
 
 message Empty {}
 
-message NodeAdd {
-    string nodeId = 1;
-    string nodeLabel = 2;
-}
-
 message NodeRemove {
     string nodeId = 1;
 }
@@ -25,8 +20,6 @@ message EdgeMessage {
 }
 
 service GUINotifier {
-    rpc AddNode (NodeAdd) returns (Empty);
-
     rpc RmNode (NodeRemove) returns (Empty);
 
     rpc UpdateNode (NodeUpdate) returns (Empty);

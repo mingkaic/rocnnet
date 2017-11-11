@@ -36,44 +36,23 @@ public:
 	}
 
 	// return true if message is ok
-	bool send_message (rpc_call call)
+	void send_message (rpc_call call)
 	{
 		grpc::ClientContext context;
 		grpc::CompletionQueue cq;
 		grpc::Status status;
-
 		visor::Empty reply;
 
 		std::unique_ptr<common_res> rpc(call(&context, &cq));
 		rpc->StartCall();
 		rpc->Finish(&reply, &status, (void*)1);
-
-		void* got_tag;
-		bool ok = false;
-		GPR_ASSERT(cq.Next(&got_tag, &ok));
-		GPR_ASSERT(got_tag == (void*)1);
-		GPR_ASSERT(ok);
-
-		return status.ok();
-	}
-
-	virtual void node_capture (const nnet::subject* sub)
-	{
-		visor::NodeAdd req;
-		req.set_nodeid(sub->get_uid());
-		req.set_nodelabel(sub->get_label());
-		bool ok = send_message(
-		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
-		{
-			return this->stub_->PrepareAsyncAddNode(ctx, req, cq);
-		});
 	}
 
 	virtual void node_release (const nnet::subject* sub)
 	{
 		visor::NodeRemove req;
 		req.set_nodeid(sub->get_uid());
-		bool ok = send_message(
+		send_message(
 		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
 		{
 			return this->stub_->PrepareAsyncRmNode(ctx, req, cq);
@@ -94,7 +73,7 @@ public:
 		{
 			req.add_data(d);
 		}
-		bool ok = send_message(
+		send_message(
 		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
 		{
 			return this->stub_->PrepareAsyncUpdateNode(ctx, req, cq);
@@ -104,13 +83,15 @@ public:
 	virtual void edge_capture (const nnet::iobserver* obs,
 		const nnet::subject* sub, size_t obs_idx)
 	{
+		if (!obs->is_recordable())
+		{
+			return;
+		}
 		visor::EdgeMessage req;
-		const nnet::subject* ofroms = dynamic_cast<const nnet::subject*>(obs);
-		assert(ofroms);
-		req.set_obsid(ofroms->get_uid());
+		req.set_obsid(obs->get_uid());
 		req.set_subid(sub->get_uid());
 		req.set_idx(obs_idx);
-		bool ok = send_message(
+		send_message(
 		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
 		{
 			return this->stub_->PrepareAsyncAddEdge(ctx, req, cq);
@@ -120,13 +101,15 @@ public:
 	virtual void edge_release (const nnet::iobserver* obs,
 		const nnet::subject* sub, size_t obs_idx)
 	{
+		if (!obs->is_recordable())
+		{
+			return;
+		}
 		visor::EdgeMessage req;
-		const nnet::subject* ofroms = dynamic_cast<const nnet::subject*>(obs);
-		assert(ofroms);
-		req.set_obsid(ofroms->get_uid());
+		req.set_obsid(obs->get_uid());
 		req.set_subid(sub->get_uid());
 		req.set_idx(obs_idx);
-		bool ok = send_message(
+		send_message(
 		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
 		{
 			return this->stub_->PrepareAsyncRmEdge(ctx, req, cq);

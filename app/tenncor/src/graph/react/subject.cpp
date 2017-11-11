@@ -8,11 +8,13 @@
 
 #include "graph/react/iobserver.hpp"
 
-#ifdef EDGE_RCD
-#include "edgeinfo/grpc_vis_record.hpp"
-#endif /* EDGE_RCD */
-
 #ifdef TENNCOR_SUBJECT_HPP
+
+#ifdef EDGE_RCD
+
+#include "edgeinfo/grpc_vis_record.hpp"
+
+#endif /* EDGE_RCD */
 
 namespace nnet
 {
@@ -26,16 +28,6 @@ subject::~subject (void)
 	}
 
 	notify(UNSUBSCRIBE); // unsubscribe all audiences
-
-#ifdef EDGE_RCD
-
-// record subject-object edge
-if (rocnnet_record::record_status::rec_good)
-{
-	rocnnet_record::record_status::rec->node_release(this);
-}
-
-#endif /* EDGE_RCD */
 }
 
 subject& subject::operator = (const subject&) { return *this; }

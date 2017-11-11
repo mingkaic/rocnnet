@@ -55,6 +55,11 @@ public:
 	virtual void update (std::unordered_set<size_t>);
 
 	void clear (void);
+
+	virtual std::string get_label (void) const
+	{
+		return get()->get_label();
+	}
 	
 protected:
 	virtual void death_on_broken (void);

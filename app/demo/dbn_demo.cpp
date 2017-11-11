@@ -237,7 +237,8 @@ if (rocnnet_record::record_status::rec_good)
 std::vector<double> simple_op (std::vector<double> input)
 {
 	std::vector<double> output;
-	for (size_t i = 0, n = input.size() / 2; i < n; ++i) {
+	for (size_t i = 0, n = input.size() / 2; i < n; ++i)
+	{
 		output.push_back((input[i] + input[n + i]) / 2);
 	}
 	return output;

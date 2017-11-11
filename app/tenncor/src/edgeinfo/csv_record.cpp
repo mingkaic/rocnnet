@@ -17,6 +17,9 @@ bool record_status::rec_good = true;
 
 #endif /* CSV_RCD */
 
+csv_record::csv_record (std::string fname) :
+	outname_(fname) {}
+
 void csv_record::setVerbose (bool verbosity)
 {
 	verbose_ = verbosity;

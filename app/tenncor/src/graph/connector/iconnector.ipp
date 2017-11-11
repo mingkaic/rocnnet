@@ -87,7 +87,8 @@ std::string iconnector<T>::get_name (void) const
 	}
 	while (it != et)
 	{
-		if (nullptr != (arg = dynamic_cast<const inode<T>*>(*it))) {
+		if (nullptr != (arg = dynamic_cast<const inode<T>*>(*it)))
+		{
 			args += "," + arg->get_label();
 		}
 		it++;
@@ -185,7 +186,8 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 	iobserver(std::vector<subject*>(dependencies.begin(), dependencies.end()))
 {
 	size_t n = dependencies.size();
-	if (n > 0) {
+	if (n > 0)
+	{
 		std::vector<size_t> depths(n, 0);
 		std::transform(dependencies.begin(), dependencies.end(), depths.begin(),
 		[](inode<T>* n)
