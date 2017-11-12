@@ -16,11 +16,7 @@ public:
 	// server) and the completion queue "cq" used for asynchronous communication
 	// with the gRPC runtime.
 	CallHandler (void) :
-		responder_(&ctx_), status_(CREATE)
-	{
-		// Invoke the serving logic right away.
-		run();
-	}
+		responder_(&ctx_), status_(CREATE) {}
 
 	virtual ~CallHandler (void) {}
 
@@ -86,7 +82,11 @@ class graph_gui::NodeHandler : public graph_gui::CallHandler
 {
 public:
 	NodeHandler (visor::GUINotifier::AsyncService* service, grpc::ServerCompletionQueue* cq) :
-		CallHandler(), service_(service), cq_(cq) {}
+		CallHandler(), service_(service), cq_(cq)
+	{
+		// Invoke the serving logic right away.
+		this->run();
+	}
 
 protected:
 	virtual void setup (void)
@@ -99,7 +99,7 @@ protected:
 	{
 		new NodeHandler(this->service_, this->cq_);
 
-		std::cout << "doing something with " << request_.id() << std::endl;
+		std::cout << "NODE UPDATE " << request_.id() << std::endl;
 	}
 
 private:
@@ -118,7 +118,11 @@ class graph_gui::EdgeHandler : public graph_gui::CallHandler
 {
 public:
 	EdgeHandler (visor::GUINotifier::AsyncService* service, grpc::ServerCompletionQueue* cq) :
-		CallHandler(), service_(service), cq_(cq) {}
+		CallHandler(), service_(service), cq_(cq)
+	{
+		// Invoke the serving logic right away.
+		this->run();
+	}
 
 protected:
 	virtual void setup (void)
@@ -131,7 +135,7 @@ protected:
 	{
 		new EdgeHandler(this->service_, this->cq_);
 
-		std::cout << "doing something with " << request_.obsid() << " and " << request_.subid() << std::endl;
+		std::cout << "EDGE UPDATE " << request_.obsid() << " + " << request_.subid() << std::endl;
 	}
 
 private:

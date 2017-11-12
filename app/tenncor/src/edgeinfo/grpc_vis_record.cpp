@@ -6,8 +6,6 @@
 
 #ifdef grpc_vis_record_hpp
 
-#include "proto/grpc_cli.pb.h"
-
 namespace rocnnet_record
 {
 
@@ -91,6 +89,11 @@ void rpc_record::edge_release (const nnet::iobserver* obs,
 	{
 		return this->stub_->PrepareAsyncEdgeChange(ctx, req, cq);
 	});
+}
+
+void rpc_record::add_notifiable (const nnet::subject* sub)
+{
+	notifiable_.emplace(sub);
 }
 
 void rpc_record::send_message (rpc_call call)

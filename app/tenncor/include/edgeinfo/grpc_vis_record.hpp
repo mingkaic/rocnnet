@@ -40,6 +40,8 @@ public:
 	virtual void edge_release (const nnet::iobserver* obs,
 		const nnet::subject* sub, size_t obs_idx);
 
+	void add_notifiable (const nnet::subject* sub);
+
 private:
 	void send_message (rpc_call call);
 
