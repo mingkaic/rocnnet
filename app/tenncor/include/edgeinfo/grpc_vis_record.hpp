@@ -13,7 +13,7 @@
 
 #include <grpc++/grpc++.h>
 #include <grpc/support/log.h>
-#include "proto/grpc_vis.grpc.pb.h"
+#include "proto/grpc_cli.grpc.pb.h"
 
 #ifndef grpc_vis_record_hpp
 #define grpc_vis_record_hpp
@@ -28,95 +28,23 @@ using rpc_call = std::function<std::unique_ptr<common_res>(
 class rpc_record final : public igraph_record
 {
 public:
-	rpc_record (std::string host, size_t port)
-	{
-		stub_ = visor::GUINotifier::NewStub(grpc::CreateChannel(
-			nnutils::formatter() << host << ":" << port,
-			grpc::InsecureChannelCredentials()));
-	}
+	rpc_record (std::string host, size_t port);
 
-	// return true if message is ok
-	void send_message (rpc_call call)
-	{
-		grpc::ClientContext context;
-		grpc::CompletionQueue cq;
-		grpc::Status status;
-		visor::Empty reply;
+	virtual void node_release (const nnet::subject* sub);
 
-		std::unique_ptr<common_res> rpc(call(&context, &cq));
-		rpc->StartCall();
-		rpc->Finish(&reply, &status, (void*)1);
-	}
-
-	virtual void node_release (const nnet::subject* sub)
-	{
-		visor::NodeRemove req;
-		req.set_nodeid(sub->get_uid());
-		send_message(
-		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
-		{
-			return this->stub_->PrepareAsyncRmNode(ctx, req, cq);
-		});
-	}
-
-	void data_update (const nnet::subject* sub)
-	{
-		std::vector<double> data = { 0 };
-		if (nnet::inode<double>* dnode = const_cast<nnet::inode<double>*>(
-			dynamic_cast<const nnet::inode<double>*>(sub)))
-		{
-			data = nnet::expose(dnode);
-		}
-		visor::NodeUpdate req;
-		req.set_nodeid(sub->get_uid());
-		for (double d : data)
-		{
-			req.add_data(d);
-		}
-		send_message(
-		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
-		{
-			return this->stub_->PrepareAsyncUpdateNode(ctx, req, cq);
-		});
-	}
+	void data_update (const nnet::subject* sub);
 
 	virtual void edge_capture (const nnet::iobserver* obs,
-		const nnet::subject* sub, size_t obs_idx)
-	{
-		if (!obs->is_recordable())
-		{
-			return;
-		}
-		visor::EdgeMessage req;
-		req.set_obsid(obs->get_uid());
-		req.set_subid(sub->get_uid());
-		req.set_idx(obs_idx);
-		send_message(
-		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
-		{
-			return this->stub_->PrepareAsyncAddEdge(ctx, req, cq);
-		});
-	}
+		const nnet::subject* sub, size_t obs_idx);
 
 	virtual void edge_release (const nnet::iobserver* obs,
-		const nnet::subject* sub, size_t obs_idx)
-	{
-		if (!obs->is_recordable())
-		{
-			return;
-		}
-		visor::EdgeMessage req;
-		req.set_obsid(obs->get_uid());
-		req.set_subid(sub->get_uid());
-		req.set_idx(obs_idx);
-		send_message(
-		[this, &req](grpc::ClientContext* ctx, grpc::CompletionQueue* cq)
-		{
-			return this->stub_->PrepareAsyncRmEdge(ctx, req, cq);
-		});
-	}
+		const nnet::subject* sub, size_t obs_idx);
 
 private:
+	void send_message (rpc_call call);
+
+	std::unordered_set<std::string> notifiable_;
+
 	std::unique_ptr<visor::GUINotifier::Stub> stub_;
 };
 

@@ -4,7 +4,7 @@ find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
 file(GLOB_RECURSE GRPC_FILES grpc/*.proto)
-file(GLOB_RECURSE PROTO_FILES **/*.proto)
+file(GLOB_RECURSE PROTO_FILES *.proto)
 
 set(PROTO_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
 file(MAKE_DIRECTORY ${PROTO_OUT_DIR})

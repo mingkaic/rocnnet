@@ -39,6 +39,12 @@ if (${CSV_RCD})
 	add_definitions(-DCSV_RCD)
 elseif (${RPC_RCD})
 	add_definitions(-DRPC_RCD)
+
+	# BUILD GUI APPLICATION
+	file(GLOB_RECURSE GUI_FILES graph_gui/*.cpp)
+	include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+	add_executable(graph_gui ${GUI_FILES})
+	target_link_libraries(graph_gui proto_grpc)
 endif()
 
 #>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
