@@ -4,7 +4,7 @@
 
 #include "edgeinfo/csv_record.hpp"
 
-#ifdef csv_record_hpp
+#ifdef CSV_RECORD_HPP
 
 namespace rocnnet_record
 {

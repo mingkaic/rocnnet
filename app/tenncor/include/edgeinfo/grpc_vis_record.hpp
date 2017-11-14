@@ -6,24 +6,23 @@
 //  Copyright © 2017 Mingkai Chen. All rights reserved.
 //
 
-#include "edgeinfo/igraph_record.hpp"
-
 #pragma once
 #ifdef EDGE_RCD
 
+#include <thread>
+
 #include <grpc++/grpc++.h>
 #include <grpc/support/log.h>
-#include "proto/grpc_cli.grpc.pb.h"
+#include "proto/grpc_gui.grpc.pb.h"
 
-#ifndef grpc_vis_record_hpp
-#define grpc_vis_record_hpp
+#include "edgeinfo/igraph_record.hpp"
+#include "edgeinfo/grpc_vis/gui_notifier.hpp"
+
+#ifndef GRPC_VIS_RECORD_HPP
+#define GRPC_VIS_RECORD_HPP
 
 namespace rocnnet_record
 {
-
-using common_res = grpc::ClientAsyncResponseReader<visor::Empty>;
-using rpc_call = std::function<std::unique_ptr<common_res>(
-	grpc::ClientContext*, grpc::CompletionQueue*)>;
 
 class rpc_record final : public igraph_record
 {
@@ -40,18 +39,16 @@ public:
 	virtual void edge_release (const nnet::iobserver* obs,
 		const nnet::subject* sub, size_t obs_idx);
 
-	void add_notifiable (const nnet::subject* sub);
-
 private:
-	void send_message (rpc_call call);
+	nnet::shareable_cache<std::string, visor::NodeMessage> node_cache_;
 
-	std::unordered_set<std::string> notifiable_;
+	nnet::shareable_cache<std::string, visor::EdgeMessage> edge_cache_;
 
-	std::unique_ptr<visor::GUINotifier::Stub> stub_;
+	std::thread server_;
 };
 
 }
 
-#endif /* grpc_vis_record_hpp */
+#endif /* GRPC_VIS_RECORD_HPP */
 
 #endif /* EDGE_RCD */

@@ -5,13 +5,15 @@
 # through gtest and demos
 #
 
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
 # ===== Define Installation Variables =====
 
-FUZZLOG=fuzz.out
-TIMEOUT=720 # 12 minute limit
+FUZZLOG=fuzz.out;
+TIMEOUT=720; # 12 minute limit
 
-BASEDIR=$1
-BINDIR=$BASEDIR/bin/bin
+BASEDIR=$THIS_DIR/../..;
+BINDIR=$BASEDIR/bin/bin;
 
 # ===== Define Functions =====
 

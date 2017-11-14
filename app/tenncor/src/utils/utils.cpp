@@ -1,5 +1,6 @@
-#include "utils/utils.hpp"
 #include <iostream>
+
+#include "utils/utils.hpp"
 
 #ifdef TENNCOR_UTILS_HPP
 

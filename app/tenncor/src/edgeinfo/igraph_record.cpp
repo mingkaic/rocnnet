@@ -4,7 +4,7 @@
 
 #include "edgeinfo/igraph_record.hpp"
 
-#ifdef igraph_record_hpp
+#ifdef IGRAPH_RECORD_HPP
 
 namespace rocnnet_record
 {

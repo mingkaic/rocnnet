@@ -15,8 +15,8 @@
 #include <unordered_set>
 #include <fstream>
 
-#ifndef csv_record_hpp
-#define csv_record_hpp
+#ifndef CSV_RECORD_HPP
+#define CSV_RECORD_HPP
 
 namespace rocnnet_record
 {
@@ -118,6 +118,6 @@ private:
 
 }
 
-#endif /* csv_record_hpp */
+#endif /* CSV_RECORD_HPP */
 
 #endif /* EDGE_RCD */

@@ -12,8 +12,8 @@
 #pragma once
 #ifdef EDGE_RCD
 
-#ifndef igraph_record_hpp
-#define igraph_record_hpp
+#ifndef IGRAPH_RECORD_HPP
+#define IGRAPH_RECORD_HPP
 
 namespace rocnnet_record
 {
@@ -41,6 +41,6 @@ struct record_status
 
 }
 
-#endif /* igraph_record_hpp */
+#endif /* IGRAPH_RECORD_HPP */
 
 #endif /* EDGE_RCD */

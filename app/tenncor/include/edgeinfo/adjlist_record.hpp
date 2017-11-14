@@ -11,8 +11,8 @@
 #pragma once
 #ifdef EDGE_RCD
 
-#ifndef adjlist_record_hpp
-#define adjlist_record_hpp
+#ifndef ADJLIST_RECORD_HPP
+#define ADJLIST_RECORD_HPP
 
 namespace rocnnet_record
 {
@@ -56,6 +56,6 @@ bool operator == (const adjlist_record::obs_info& lhs, const adjlist_record::obs
 
 }
 
-#endif /* adjlist_record_hpp */
+#endif /* ADJLIST_RECORD_HPP */
 
 #endif /* EDGE_RCD */

@@ -4,7 +4,7 @@
 
 #include "edgeinfo/adjlist_record.hpp"
 
-#ifdef adjlist_record_hpp
+#ifdef ADJLIST_RECORD_HPP
 
 namespace rocnnet_record
 {

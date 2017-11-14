@@ -1,4 +1,4 @@
-// grpc_cli.proto
+// grpc_gui.proto
 // rocnnet
 //
 // purpose:
@@ -9,6 +9,10 @@ syntax = "proto3";
 package visor;
 
 message Empty {}
+
+message ClientId {
+    string id = 1;
+}
 
 message NodeMessage {
     enum NodeStatus {
@@ -33,7 +37,9 @@ message EdgeMessage {
 }
 
 service GUINotifier {
-    rpc NodeChange (NodeMessage) returns (Empty);
+    rpc SubscribeNode (ClientId) returns (stream NodeMessage);
 
-    rpc EdgeChange (EdgeMessage) returns (Empty);
+    rpc SubscribeEdge (ClientId) returns (stream EdgeMessage);
+
+    rpc EndSubscription (ClientId) returns (Empty);
 }
