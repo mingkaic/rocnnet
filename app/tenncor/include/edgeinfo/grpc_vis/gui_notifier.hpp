@@ -26,12 +26,14 @@ using namespace std::experimental;
 namespace rocnnet_record
 {
 
+using nodecache_t = nnet::shareable_cache<std::string,visor::NodeMessage>;
+
+using edgecache_t = nnet::shareable_cache<std::string,visor::EdgeMessage>;
+
 class gui_notifier final : public visor::GUINotifier::Service
 {
 public:
-	gui_notifier (
-		nnet::shareable_cache<std::string,visor::NodeMessage>& node_src,
-		nnet::shareable_cache<std::string,visor::EdgeMessage>& edge_src);
+	gui_notifier (nodecache_t& node_src, edgecache_t& edge_src);
 
 	grpc::Status SubscribeNode (grpc::ServerContext* context,
 		const visor::ClientId* client,
@@ -44,18 +46,20 @@ public:
 	grpc::Status EndSubscription (grpc::ServerContext* context,
 		const visor::ClientId* client, visor::Empty* out) override;
 
+	// called on server-side
+	void clear_subscriptions (void);
+
 private:
 	// shared with graph_vis_record
-	nnet::shareable_cache<std::string,visor::NodeMessage>* node_src_;
-	nnet::shareable_cache<std::string,visor::EdgeMessage>* edge_src_;
+	nodecache_t* node_src_;
+
+	edgecache_t* edge_src_;
 
 	// own
 	std::unordered_set<std::string> subscriptions_;
 };
 
-void spawn_server (std::string addr,
-	nnet::shareable_cache<std::string,visor::NodeMessage>& node_src,
-	nnet::shareable_cache<std::string,visor::EdgeMessage>& edge_src);
+void spawn_server (std::string addr, nodecache_t& node_src, edgecache_t& edge_src);
 
 }
 

@@ -92,45 +92,36 @@ shareable_cache<K, T>::shareable_cache (std::function<K(const T&)> hasher) :
 	hasher_(hasher) {}
 
 template <typename K, typename T>
-T shareable_cache<K, T>::get_latest (std::shared_ptr<cache_node<T> >& iter) const
+optional<T> shareable_cache<K, T>::get_latest (std::shared_ptr<cache_node<T> >& iter) const
 {
 	std::unique_lock<std::mutex> locker(mutex_);
 
-	bool data_retrieved = false;
-	T value;
-	while (!data_retrieved)
+	optional<T> value;
+	if (nullptr == iter)
 	{
-		if (nullptr == iter)
+		// check head of content_
+		if (iter = content_.begin())
 		{
-			// check head of content_
-			if (iter = content_.begin())
-			{
-				value = iter->data_;
-				data_retrieved = true;
-			}
-		}
-		// ensure iter is not broken
-		else if (content_.grab_truth(iter) &&
-			nullptr != iter)
-		{
-			// iter was broken, we grab data from iter instead,
-			// since we've never visited it before
 			value = iter->data_;
-			data_retrieved = true;
-			// we don't increment since we just read iter
 		}
-		else if (iter->next_)
-		{
-			value = iter->next_->data_;
-			data_retrieved = true;
-			iter = iter->next_;
-		}
-
-		if (!data_retrieved)
-		{
-			// ensures value is retrieved and loop to prevent spurious wait
-			cond_.wait(locker);
-		}
+	}
+	// ensure iter is not broken
+	else if (content_.grab_truth(iter) &&
+		nullptr != iter)
+	{
+		// iter was broken, we grab data from iter instead,
+		// since we've never visited it before
+		value = iter->data_;
+		// we don't increment since we just read iter
+	}
+	else if (iter->next_)
+	{
+		value = iter->next_->data_;
+		iter = iter->next_;
+	}
+	if (!value)
+	{
+		cond_.wait(locker); // no current wait to check for spurious wait
 	}
 	return value;
 }
@@ -147,6 +138,12 @@ void shareable_cache<K, T>::add_latest (T data)
 		content_.unlink(iter->second);
 	}
 	umap_[key] = content_.push_back(data);
+	cond_.notify_one();
+}
+
+template <typename K, typename T>
+void shareable_cache<K, T>::escape_wait (void)
+{
 	cond_.notify_one();
 }
 

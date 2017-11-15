@@ -29,7 +29,13 @@ rpc_record::rpc_record (std::string host, size_t port) :
 	})
 {
 	std::string address = nnutils::formatter() << host << ":" << port;
-	server_ = std::thread(spawn_server, address, std::ref(node_cache_), std::ref(edge_cache_));
+	server_ = nnet::stoppable_thread(spawn_server, address,
+		std::ref(node_cache_), std::ref(edge_cache_));
+}
+
+rpc_record::~rpc_record (void)
+{
+	server_.stop();
 }
 
 void rpc_record::node_release (const nnet::subject* sub)

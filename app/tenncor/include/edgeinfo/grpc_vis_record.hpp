@@ -9,14 +9,13 @@
 #pragma once
 #ifdef EDGE_RCD
 
-#include <thread>
-
 #include <grpc++/grpc++.h>
 #include <grpc/support/log.h>
 #include "proto/grpc_gui.grpc.pb.h"
 
 #include "edgeinfo/igraph_record.hpp"
 #include "edgeinfo/grpc_vis/gui_notifier.hpp"
+#include "thread/stoppable_thread.hpp"
 
 #ifndef GRPC_VIS_RECORD_HPP
 #define GRPC_VIS_RECORD_HPP
@@ -29,6 +28,8 @@ class rpc_record final : public igraph_record
 public:
 	rpc_record (std::string host, size_t port);
 
+	~rpc_record (void);
+
 	virtual void node_release (const nnet::subject* sub);
 
 	void data_update (const nnet::subject* sub);
@@ -40,11 +41,11 @@ public:
 		const nnet::subject* sub, size_t obs_idx);
 
 private:
-	nnet::shareable_cache<std::string, visor::NodeMessage> node_cache_;
+	nodecache_t node_cache_;
 
-	nnet::shareable_cache<std::string, visor::EdgeMessage> edge_cache_;
+	edgecache_t edge_cache_;
 
-	std::thread server_;
+	nnet::stoppable_thread server_;
 };
 
 }

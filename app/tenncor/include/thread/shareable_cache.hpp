@@ -9,6 +9,9 @@
 #include <mutex>
 #include <memory>
 #include <unordered_map>
+#include <experimental/optional>
+
+using namespace std::experimental;
 
 #pragma once
 #ifndef SHAREABLE_HPP
@@ -49,10 +52,14 @@ public:
 
 	// assert that iter's data has been read
 	// grab data from iter->next_ and increment iter if possible
-	T get_latest (std::shared_ptr<cache_node<T> >& iter) const;
+	// if value is unavailable wait until the next value is available and return unset optional
+	optional<T> get_latest (std::shared_ptr<cache_node<T> >& iter) const;
 
 	// add data mapped by key remove previous iterators mapped by it if necessary
 	void add_latest (T data);
+
+	// escape get_latest's wait by forceable notifying cond_
+	void escape_wait (void);
 
 private:
 	class cache_list;
