@@ -104,9 +104,9 @@ public:
 		ofile.close();
 	}
 
-    void setVerbose (bool verbosity);
+	void setVerbose (bool verbosity);
 
-    void setDisplayShape (bool display);
+	void setDisplayShape (bool display);
 
 private:
 	bool verbose_ = false;

@@ -9,7 +9,7 @@ COPY . $RBUILD_DIR
 
 # build rocnnet
 RUN mkdir app/build && cd app/build && \
-    cmake -DTENNCOR_TEST=ON .. && \
-    cmake --build .;
+	cmake -DTENNCOR_TEST=ON .. && \
+	cmake --build .;
 
 CMD [ "bash", "./app/scripts/test/tests.sh", "|", "tee" ]

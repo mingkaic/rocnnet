@@ -15,6 +15,6 @@ RUN bash ./ubuntu_setup.sh
 
 # setup analysis tools IF we're testing
 RUN if [ "$TEST_ENV" -eq "1" ]; \
-    then \
-        bash ./ubuntu_analysis.sh; \
-    fi
+	then \
+		bash ./ubuntu_analysis.sh; \
+	fi

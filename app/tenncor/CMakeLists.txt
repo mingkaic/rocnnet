@@ -47,10 +47,6 @@ add_subdirectory(proto)
 file(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
 file(GLOB_RECURSE DB_DECLARE declare/*.cpp)
 
-if (${RPC_RCD})
-	add_subdirectory(graph_gui)
-endif()
-
 #>>>>>>>>>>>>>>>>>>>> MAKE TENNCOR LIB <<<<<<<<<<<<<<<<<<<<
 # static version
 include_directories(${TENNCOR_INCLUDE})

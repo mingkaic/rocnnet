@@ -10,8 +10,8 @@
 #include "utils/utils.hpp"
 
 #pragma once
-#ifndef gui_consumer_hpp
-#define gui_consumer_hpp
+#ifndef GUI_CONSUMER_HPP
+#define GUI_CONSUMER_HPP
 
 namespace tenncor_graph
 {
@@ -35,4 +35,4 @@ private:
 
 }
 
-#endif /* gui_consumer_hpp */
+#endif /* GUI_CONSUMER_HPP */

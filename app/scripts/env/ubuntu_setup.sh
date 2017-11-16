@@ -29,19 +29,19 @@ apt-get autoremove -y;
 apt-get clean;
 apt-get -y dist-upgrade;
 apt-get install -y \
-    software-properties-common \
-    python-software-properties \
-    python-setuptools \
-    build-essential \
-    python-dev \
-    python-tk \
-    zip unzip \
-    apt-utils \
-    rubygems \
-    swig \
-    curl \
-    wget \
-    git;
+	software-properties-common \
+	python-software-properties \
+	python-setuptools \
+	build-essential \
+	python-dev \
+	python-tk \
+	zip unzip \
+	apt-utils \
+	rubygems \
+	swig \
+	curl \
+	wget \
+	git;
 add-apt-repository -y ppa:ubuntu-toolchain-r/test;
 add-apt-repository -y ppa:george-edison55/cmake-3.x;
 apt-get update;
@@ -61,6 +61,7 @@ easy_install pip;
 bash $THIS_DIR/protobuf_setup.sh 3.4.0;
 bash $THIS_DIR/grpc_setup.sh 1.7.1;
 bash $THIS_DIR/boost_setup.sh;
+bash $THIS_DIR/qt_setup.sh;
 
 # install pip requirements
 pip install -r $THIS_DIR/../../requirements.txt;

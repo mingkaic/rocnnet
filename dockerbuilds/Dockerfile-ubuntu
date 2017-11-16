@@ -9,5 +9,5 @@ COPY ./app $RBUILD_DIR
 
 # build rocnnet
 RUN mkdir build && cd build && \
-    cmake -DTENNCOR_TEST=OFF -DLCOVERAGE=OFF .. && \
-    cmake --build .;
+	cmake -DTENNCOR_TEST=OFF -DLCOVERAGE=OFF .. && \
+	cmake --build .;

@@ -16,7 +16,7 @@ gui_notifier::gui_notifier (nodecache_t& node_src, edgecache_t& edge_src) :
 	node_src_(&node_src), edge_src_(&edge_src) {}
 
 grpc::Status gui_notifier::SubscribeNode (grpc::ServerContext*,
-	const visor::ClientId* client,
+	const visor::StringId* client,
 	grpc::ServerWriter<visor::NodeMessage>* writer)
 {
 	std::string cli_id = client->id();
@@ -35,7 +35,7 @@ grpc::Status gui_notifier::SubscribeNode (grpc::ServerContext*,
 }
 
 grpc::Status gui_notifier::SubscribeEdge (grpc::ServerContext*,
-	const visor::ClientId* client,
+	const visor::StringId* client,
 	grpc::ServerWriter<visor::EdgeMessage>* writer)
 {
 	std::string cli_id = client->id();
@@ -54,9 +54,17 @@ grpc::Status gui_notifier::SubscribeEdge (grpc::ServerContext*,
 }
 
 grpc::Status gui_notifier::EndSubscription (grpc::ServerContext*,
-	const visor::ClientId* client, visor::Empty*)
+	const visor::StringId* client, visor::Empty*)
 {
 	subscriptions_.erase(client->id());
+	return grpc::Status::OK;
+}
+
+
+grpc::Status gui_notifier::GetNodeData (grpc::ServerContext* context,
+	const visor::StringId* node, visor::NodeData* out)
+{
+	std::string node_id = node->id();
 	return grpc::Status::OK;
 }
 

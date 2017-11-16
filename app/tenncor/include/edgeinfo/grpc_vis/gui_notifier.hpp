@@ -36,15 +36,18 @@ public:
 	gui_notifier (nodecache_t& node_src, edgecache_t& edge_src);
 
 	grpc::Status SubscribeNode (grpc::ServerContext* context,
-		const visor::ClientId* client,
+		const visor::StringId* client,
 		grpc::ServerWriter<visor::NodeMessage>* writer) override;
 
 	grpc::Status SubscribeEdge (grpc::ServerContext* context,
-		const visor::ClientId* client,
+		const visor::StringId* client,
 		grpc::ServerWriter<visor::EdgeMessage>* writer) override;
 
 	grpc::Status EndSubscription (grpc::ServerContext* context,
-		const visor::ClientId* client, visor::Empty* out) override;
+		const visor::StringId* client, visor::Empty* out) override;
+
+	grpc::Status GetNodeData (grpc::ServerContext* context,
+		const visor::StringId* node, visor::NodeData* out) override;
 
 	// called on server-side
 	void clear_subscriptions (void);

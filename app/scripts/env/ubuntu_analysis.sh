@@ -23,12 +23,12 @@ tar xf $GTEST_TAR;
 pushd $GTEST_DIR;
 cmake -DBUILD_SHARED_LIBS=ON . && make;
 cp -a googlemock/include/gmock \
-    googletest/include/gtest \
-    /usr/include;
+	googletest/include/gtest \
+	/usr/include;
 cp -a googlemock/libgmock_main.so \
-    googlemock/libgmock.so \
-    googlemock/gtest/libgtest_main.so \
-    googlemock/gtest/libgtest.so /usr/lib/;
+	googlemock/libgmock.so \
+	googlemock/gtest/libgtest_main.so \
+	googlemock/gtest/libgtest.so /usr/lib/;
 popd;
 rm -rf $GTEST_DIR;
 rm -rf $GTEST_TAR;

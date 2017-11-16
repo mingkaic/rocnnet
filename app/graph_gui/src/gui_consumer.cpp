@@ -2,12 +2,9 @@
 // Created by Ming Kai Chen on 2017-11-11.
 //
 
-#include <thread>
-#include <sstream>
+#include "../include/gui_consumer.hpp"
 
-#include "gui_consumer.hpp"
-
-#ifdef gui_consumer_hpp
+#ifdef GUI_CONSUMER_HPP
 
 namespace tenncor_graph
 {
@@ -17,7 +14,7 @@ gui_consumer::gui_consumer (std::shared_ptr<grpc::Channel> channel) :
 
 void gui_consumer::SubscribeNode (void)
 {
-	visor::ClientId client;
+	visor::StringId client;
 	visor::NodeMessage res;
 	grpc::ClientContext context;
 
@@ -51,7 +48,7 @@ void gui_consumer::SubscribeNode (void)
 
 void gui_consumer::SubscribeEdge (void)
 {
-	visor::ClientId client;
+	visor::StringId client;
 	visor::EdgeMessage res;
 	grpc::ClientContext context;
 
@@ -87,7 +84,7 @@ void gui_consumer::SubscribeEdge (void)
 
 void gui_consumer::EndSubscription (void)
 {
-	visor::ClientId client;
+	visor::StringId client;
 	visor::Empty res;
 	grpc::ClientContext context;
 
@@ -103,33 +100,6 @@ void gui_consumer::EndSubscription (void)
 	}
 }
 
-}
-
-int main(int argc, char** argv)
-{
-	using namespace std::chrono_literals;
-
-	std::stringstream addr;
-	addr << "localhost:" << 50981;
-	tenncor_graph::gui_consumer consumer(grpc::CreateChannel(addr.str(), grpc::InsecureChannelCredentials()));
-
-	std::thread nodeHandler([](tenncor_graph::gui_consumer& consumer)
-	{
-		consumer.SubscribeNode();
-	}, std::ref(consumer));
-
-	std::thread edgeHandler([](tenncor_graph::gui_consumer& consumer)
-	{
-		consumer.SubscribeEdge();
-	}, std::ref(consumer));
-
-//	std::this_thread::sleep_for(30s);
-//	consumer.EndSubscription();
-
-	nodeHandler.join();
-	edgeHandler.join();
-
-	return 0;
 }
 
 #endif

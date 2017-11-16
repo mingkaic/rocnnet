@@ -50,7 +50,7 @@ if(BUILD_DOC)
 endif(BUILD_DOC)
 
 #>>>>>>>>>>>>>>>>>>>> VISUALIZATION OPTIONS <<<<<<<<<<<<<<<<<<<<
-if (${CSV_RCD} OR ${RPC_RCD})
+if ("${CSV_RCD}" STREQUAL "ON" OR "${RPC_RCD}" STREQUAL "ON" )
 	# visualize tenncor edges
 	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
 	add_definitions(-DEDGE_RCD)
@@ -129,4 +129,10 @@ target_link_libraries(dbn_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${P
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig
 	add_subdirectory(${ROCNNET_DIR}/ipython)
+endif()
+
+#>>>>>>>>>>>>>>>>>>>> GRAPH VISUALIZATION TOOLS <<<<<<<<<<<<<<<<<<<<
+
+if (${RPC_RCD})
+	add_subdirectory(graph_gui)
 endif()

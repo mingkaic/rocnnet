@@ -4,19 +4,19 @@ A001 - any operation on constants applies operation at build-time and return the
 A002 - both unary and binary elementary operations output shape is the same as input shape
 A003 - binary elementary operations with 2 nodal input having different shapes throw error during evaluation
 A004 - addition accepting 0 as a scalar or node constant returns the non-zero node,
-        adding constants with a scalar returns a constant sum of constants and scalar
+		adding constants with a scalar returns a constant sum of constants and scalar
 A005 - subtraction accepting 0 as a scalar or node constant
 		returns first node if 0 is subtrahend (operand 2)
 		return negative of first node if 0 is minuend (operand 1)
-        subtracting constants with a scalar returns a constant difference between constants and scalar
+		subtracting constants with a scalar returns a constant difference between constants and scalar
 A006 - multiplication accepting 0 as scalar or node constant returns 0 constant
 A007 - multiplication accepting 1 as scalar or node constant return non-one node
-        multiplying constants with a scalar returns a constant product of constants and scalar
+		multiplying constants with a scalar returns a constant product of constants and scalar
 A008 - division accepting 0 as s scalar or node constant
 		returns 0 constant if 0 is dividend (operand 1)
 		throws error if 0 is divisor (operand 2)
 A009 - division accepting 1 as a scalar or node constant returns non-one, if 1 is divisor (operand 2)
-        dividing constants with a scalar returns a constant quotient of constants and scalar
+		dividing constants with a scalar returns a constant quotient of constants and scalar
 (UNTESTED) A010 - powers of accepting 0 as the scalar exponent returns a 1 constant, powers of accepting 1 as the input node
 A011 - a inode is equal (using operator ==) to a primitive value if it is scalar shape ({1})
 		and its value is equivalent to the primitive value
@@ -24,12 +24,12 @@ A011 - a inode is equal (using operator ==) to a primitive value if it is scalar
 		equality and inequality fails assertion if input node has bad status
 A012 - binary elementary operations on varptrs of n_elem=1 the output shape is the non-one elem
 (UNTESTED) A013 - F_axial_J considers the J argument as lacking the specified dimension that the non-J argument has
-        perform F operation for all values along slices along the dimension.
-        For example: A<3, 4, 5, 6> operates with B<3, 5, 6> with dimension 1 being missing for B
-        for all valid <x, z, w>, output[x, 0..3, z, w] = F(A[x, 0..3, z, w], B[x, z, w])
+		perform F operation for all values along slices along the dimension.
+		For example: A<3, 4, 5, 6> operates with B<3, 5, 6> with dimension 1 being missing for B
+		for all valid <x, z, w>, output[x, 0..3, z, w] = F(A[x, 0..3, z, w], B[x, z, w])
 (UNTESTED) A014 - F_axial_J fails for shapes that do not match while accommodating for the missing shape.
-        For example: A<3, 4, 5, 6> fails with B<2, 4, 5> since shapes don't match
-        even if B has dimension 4 of 6
+		For example: A<3, 4, 5, 6> fails with B<2, 4, 5> since shapes don't match
+		even if B has dimension 4 of 6
 (UNTESTED) binomial_sample...
 
 // TRANSFORM BEHAVIORS
