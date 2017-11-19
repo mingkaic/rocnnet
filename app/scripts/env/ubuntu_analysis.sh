@@ -6,7 +6,7 @@
 
 set -e
 
-GTEST_TAR=release-1.8.0.tar.gz
+GTEST_TAR=release-1.8.0.tar.gz;
 GTEST_DIR=googletest-release-1.8.0;
 
 VALG_TAR=valgrind-3.12.0.tar.bz2;

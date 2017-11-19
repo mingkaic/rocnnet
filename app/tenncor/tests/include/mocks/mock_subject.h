@@ -19,9 +19,11 @@ class mock_subject : public subject, public mocker
 {
 public:
 	mock_subject (void) {}
+
 	~mock_subject (void) {}
 
 	mock_subject (const mock_subject& other) : subject(other) {}
+
 	mock_subject (mock_subject&& other) : subject(std::move(other)) {}
 
 	mock_subject& operator = (const mock_subject& other)
@@ -29,6 +31,7 @@ public:
 		subject::operator = (other);
 		return *this;
 	}
+
 	mock_subject& operator = (mock_subject&& other)
 	{
 		subject::operator = (std::move(other));
@@ -61,11 +64,23 @@ public:
 	{
 		label_incr("detach2");
 	}
+
+	virtual std::string get_label (void) const
+	{
+		return "mock_title";
+	}
 };
 
 
 // mock sub to expose subject constructor (which is protected by default)
-class mock_subject2 : public subject {};
+class mock_subject2 : public subject
+{
+public:
+	virtual std::string get_label (void) const
+	{
+		return "mock_title";
+	}
+};
 
 
 #endif //TENNCOR_MOCK_SUBJECT_H

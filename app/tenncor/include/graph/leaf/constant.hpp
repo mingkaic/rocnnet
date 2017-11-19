@@ -86,12 +86,6 @@ protected:
 	virtual inode<T>* get_gradient (variable<T>* leaf);
 
 private:
-	//! commonly used constant: 0
-	static constant<T> shared_zero;
-
-	//! commonly used constant: 1
-	static constant<T> shared_one;
-
 	//! if constant is managed by some node,
 	//! that node is responsible for this node's life cycle
 	bool is_managed_ = false;

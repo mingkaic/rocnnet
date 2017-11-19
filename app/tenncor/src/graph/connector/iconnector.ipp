@@ -87,12 +87,19 @@ std::string iconnector<T>::get_name (void) const
 	}
 	while (it != et)
 	{
-		if (nullptr != (arg = dynamic_cast<const inode<T>*>(*it))) {
+		if (nullptr != (arg = dynamic_cast<const inode<T>*>(*it)))
+		{
 			args += "," + arg->get_label();
 		}
 		it++;
 	}
 	return inode<T>::get_name() + "(" + args + ")";
+}
+
+template <typename T>
+size_t iconnector<T>::get_depth (void) const
+{
+	return depth_;
 }
 
 template <typename T>
@@ -113,7 +120,10 @@ size_t iconnector<T>::n_arguments (void) const
 template <typename T>
 const tensor<T>* iconnector<T>::eval (void)
 {
-	if (this->g_man_ && false == this->g_man_->freeze_) this->g_man_->update();
+	if (this->g_man_ && false == this->g_man_->freeze_)
+	{
+		this->g_man_->update();
+	}
 	return this->get_eval();
 }
 
@@ -175,6 +185,18 @@ iconnector<T>::iconnector (std::vector<inode<T>*> dependencies, std::string labe
 	inode<T>(label),
 	iobserver(std::vector<subject*>(dependencies.begin(), dependencies.end()))
 {
+	size_t n = dependencies.size();
+	if (n > 0)
+	{
+		std::vector<size_t> depths(n, 0);
+		std::transform(dependencies.begin(), dependencies.end(), depths.begin(),
+		[](inode<T>* n)
+		{
+			return n->get_depth();
+		});
+		depth_ = *(std::max_element(depths.begin(), depths.end())) + 1;
+	}
+
 	std::unordered_set<inode<T>*> deps;
 	// todo: test for jacobian, and leaf transfer
 	// if we have more than 1 jacobian, separate the operators for each branch
@@ -334,7 +356,7 @@ struct small_leafset
 {
 	bool operator() (const iconnector<T>* c1, const iconnector<T>* c2) const
 	{
-		return c1->get_leaves().size() > c2->get_leaves().size();
+		return c1->get_depth() > c2->get_depth();
 	}
 };
 
@@ -391,15 +413,16 @@ struct iconnector<T>::graph_manager
 
 	void update (void)
 	{
+		// todo: add multithreading
 		while (false == updates_.empty())
 		{
 			iconnector<T>* iconn = updates_.top();
 			auto updater = update_map_[iconn];
 			updates_.pop();
-			update_map_.erase(iconn);
 			updater();
 			iconn->notify(UPDATE);
 		}
+		update_map_.clear();
 	}
 
 	bool freeze_ = false;

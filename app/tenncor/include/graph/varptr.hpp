@@ -30,12 +30,12 @@ public:
 	void* operator new (size_t) = delete;
 
 	//! nullptr construction
-	varptr (void) {}
+	varptr (void);
 
 	//! wrap ptr construction
 	varptr (inode<T>* ptr);
 
-	virtual ~varptr (void) {}
+	virtual ~varptr (void);
 
 	//! assign ptr
 	varptr<T>& operator = (inode<T>* other);
@@ -55,6 +55,11 @@ public:
 	virtual void update (std::unordered_set<size_t>);
 
 	void clear (void);
+
+	virtual std::string get_label (void) const
+	{
+		return get()->get_label();
+	}
 	
 protected:
 	virtual void death_on_broken (void);

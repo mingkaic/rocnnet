@@ -6,13 +6,9 @@ services:
     build:
       context: .
       dockerfile: dockerbuilds/Dockerfile-ubuntu
-    volumes:
-      - /usr/src/rocapp
 
   ubuntu-test:
     image: mkaichen/rocnnet-test:latest
     build:
       context: .
       dockerfile: dockerbuilds/Dockerfile-test
-    volumes:
-      - /usr/src/rocapp

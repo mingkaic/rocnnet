@@ -17,7 +17,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 find_package(Threads REQUIRED)
 
 option(TENNCOR_TEST "Test" OFF)
-option(VIS_EDGE "Visualize Graph Edges" OFF)
+option(CSV_RCD "Access Graph Through CSV Format" OFF)
+option(RPC_RCD "Visualize Graph Edges via GRPC" OFF)
 option(LCOVERAGE "Evaluate Coverage" ON)
 
 # enable modern c++
@@ -28,24 +29,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # enable warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
-#>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
-include(FindProtobuf)
-add_subdirectory(proto)
-
-FILE(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
-FILE(GLOB_RECURSE DB_DECLARE declare/*.cpp)
-
-#>>>>>>>>>>>>>>>>>>>> MAKE TENNCOR LIB <<<<<<<<<<<<<<<<<<<<
-if (VIS_EDGE)
+#>>>>>>>>>>>>>>>>>>>> VISUALIZATION OPTIONS <<<<<<<<<<<<<<<<<<<<
+if (${CSV_RCD} OR ${RPC_RCD})
 	# visualize tenncor edges
 	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
-	add_definitions(-DEDGE_RCD="op-profile.csv")
+	add_definitions(-DEDGE_RCD)
+endif()
+if (${CSV_RCD})
+	add_definitions(-DCSV_RCD)
+elseif (${RPC_RCD})
+	add_definitions(-DRPC_RCD)
 endif()
 
+#>>>>>>>>>>>>>>>>>>>> TENNCOR SPECIFIC <<<<<<<<<<<<<<<<<<<<
+add_subdirectory(proto)
+
+file(GLOB_RECURSE TENNCOR_SRC src/*.cpp)
+file(GLOB_RECURSE DB_DECLARE declare/*.cpp)
+
+if (${RPC_RCD})
+	add_subdirectory(graph_gui)
+endif()
+
+#>>>>>>>>>>>>>>>>>>>> MAKE TENNCOR LIB <<<<<<<<<<<<<<<<<<<<
 # static version
 include_directories(${TENNCOR_INCLUDE})
 add_library(${TENNCOR_LIB} STATIC ${TENNCOR_SRC})
-target_link_libraries(${TENNCOR_LIB} proto ${PROTOBUF_LIBRARY})
+target_link_libraries(${TENNCOR_LIB} proto_grpc)
 
 #>>>>>>>>>>>>>>>>>>>> GOOGLE TEST <<<<<<<<<<<<<<<<<<<<
 if (TENNCOR_TEST)
@@ -64,7 +74,7 @@ if (TENNCOR_TEST)
 	set(TENNCOR_LIB_TEST tenncor-inst)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_STRASSEN")
 	add_library(${TENNCOR_LIB_TEST} STATIC ${TENNCOR_SRC} ${DB_DECLARE})
-	target_link_libraries(${TENNCOR_LIB_TEST} proto ${PROTOBUF_LIBRARY})
+	target_link_libraries(${TENNCOR_LIB_TEST} proto_grpc)
 
 	add_subdirectory(ext/gtest)
 	add_subdirectory(tests)

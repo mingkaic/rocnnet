@@ -54,6 +54,12 @@ ileaf<T>& ileaf<T>::operator = (ileaf<T>&& other)
 }
 
 template <typename T>
+size_t ileaf<T>::get_depth (void) const
+{
+	return 0; // leaves are 0 distance from the furthest dependent leaf
+}
+
+template <typename T>
 std::vector<inode<T>*> ileaf<T>::get_arguments (void) const
 {
 	return {};

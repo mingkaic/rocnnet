@@ -30,9 +30,6 @@ template <typename T>
 using UNARY_VAR = std::function<varptr<double>(varptr<double>,T)>;
 
 
-static const double epi = std::numeric_limits<double>::epsilon();
-
-
 template <typename T>
 T no_param (tensorshape) { return (T)0; }
 

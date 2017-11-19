@@ -13,9 +13,6 @@ COPY ./app/requirements.txt $ENV_DIR
 # standard setup
 RUN bash ./ubuntu_setup.sh
 
-# boost setup
-RUN bash ./boost_setup.sh
-
 # setup analysis tools IF we're testing
 RUN if [ "$TEST_ENV" -eq "1" ]; \
     then \

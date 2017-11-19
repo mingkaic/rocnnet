@@ -39,13 +39,13 @@ public:
 	// PLACEHOLDER CONNECTION
 	// input are expected to have shape n_input by batch_size
 	// outputs are expected to have shape output by batch_size
-	nnet::varptr<double> operator () (nnet::inode<double>* input);
+	virtual nnet::varptr<double> prop_up (nnet::inode<double>* input);
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
-	size_t get_ninput (void) const { return n_input_; }
+	virtual size_t get_ninput (void) const { return n_input_; }
 
-	size_t get_noutput (void) const { return n_output_; }
+	virtual size_t get_noutput (void) const { return n_output_; }
 
 protected:
 	mlp (const mlp& other, std::string& scope);

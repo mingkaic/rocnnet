@@ -22,10 +22,10 @@ TEST(CONNECTOR, Copy_H000)
 {
 	mocker::usage_.clear();
 	FUZZ::reset_logger();
-	mock_connector* assign = new mock_connector({}, "");
-	mock_connector* assign2 = new mock_connector({}, "");
-	mock_connector* assign3 = new mock_connector({}, "");
-	mock_connector* assign4 = new mock_connector({}, "");
+	mock_connector* assign = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign2 = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign3 = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign4 = new mock_connector(std::vector<inode<double>*>{}, "");
 
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");
@@ -123,10 +123,10 @@ TEST(CONNECTOR, Move_H000)
 {
 	mocker::usage_.clear();
 	FUZZ::reset_logger();
-	mock_connector* assign = new mock_connector({}, "");
-	mock_connector* assign2 = new mock_connector({}, "");
-	mock_connector* assign3 = new mock_connector({}, "");
-	mock_connector* assign4 = new mock_connector({}, "");
+	mock_connector* assign = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign2 = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign3 = new mock_connector(std::vector<inode<double>*>{}, "");
+	mock_connector* assign4 = new mock_connector(std::vector<inode<double>*>{}, "");
 
 	std::string conname = FUZZ::getString(FUZZ::getInt(1, "conname.size", {14, 29})[0], "conname");
 	std::string conname2 = FUZZ::getString(FUZZ::getInt(1, "conname2.size", {14, 29})[0], "conname2");

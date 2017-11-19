@@ -18,7 +18,7 @@ class dummy_observer : public iobserver, public mocker
 {
 public:
 	dummy_observer (void) : iobserver() {}
-	dummy_observer (subject* arg) : iobserver({arg})  {}
+	dummy_observer (subject* arg) : iobserver(std::vector<subject*>{arg})  {}
 	dummy_observer (subject* a, subject* b) : iobserver({a, b})  {}
 	dummy_observer (std::vector<subject*> args) : iobserver(args)  {}
 	~dummy_observer (void) {}
@@ -48,6 +48,11 @@ public:
 	virtual void death_on_broken (void)
 	{
 		label_incr("death_on_broken");
+	}
+
+	virtual std::string get_label (void) const
+	{
+		return "mock_title";
 	}
 
 protected:

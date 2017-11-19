@@ -76,6 +76,9 @@ public:
 	//! get unique label with arguments
 	virtual std::string get_name (void) const;
 
+	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
+	virtual size_t get_depth (void) const;
+
 	// >>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables
 	virtual std::vector<inode<T>*> get_arguments (void) const;
@@ -147,6 +150,9 @@ private:
 	void move_helper (iconnector<T>&& other);
 
 	void jacobian_correction (const inode<T>* other);
+
+	//! the distance between this node and the furthest dependent leaf (maximum spanning tree height)
+	size_t depth_ = 0;
 };
 
 }
