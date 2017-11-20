@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.6)
 set(PROJECT_NAME rocboostpy)
 project(rboostpy)
 

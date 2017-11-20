@@ -1,11 +1,11 @@
 FROM mkaichen/rocnnet-ubuntu-env:latest
 
-ENV RBUILD_DIR /usr/src/rocapp
+ENV APP_DIR /usr/src/rocnnet
 
-RUN mkdir -p $RBUILD_DIR
-WORKDIR $RBUILD_DIR
+RUN mkdir -p $APP_DIR
+WORKDIR $APP_DIR
 
-COPY ./app $RBUILD_DIR
+COPY ./app $APP_DIR
 
 # build rocnnet
 RUN mkdir build && cd build && \

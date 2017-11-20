@@ -55,7 +55,8 @@ int main(int argc, char** argv)
 
 	QApplication app(argc, argv);
 	setStyle();
-	QWidget mainWidget;auto menuBar    = new QMenuBar();
+	QWidget mainWidget;
+	auto menuBar = new QMenuBar();
 	auto saveAction = menuBar->addAction("Save..");
 	auto loadAction = menuBar->addAction("Load..");
 

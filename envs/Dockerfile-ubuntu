@@ -2,13 +2,12 @@ FROM ubuntu:latest
 
 ARG TEST_ENV=0
 
-ENV ENV_DIR /usr/src/rocenv
+ENV SETUP_DIR /usr/src/rocnnet_setup
 
-RUN mkdir -p $ENV_DIR
-WORKDIR $ENV_DIR
+RUN mkdir -p $SETUP_DIR
+WORKDIR $SETUP_DIR
 
-COPY ./app/scripts/env $ENV_DIR
-COPY ./app/requirements.txt $ENV_DIR
+COPY ./app/scripts/env $SETUP_DIR
 
 # standard setup
 RUN bash ./ubuntu_setup.sh

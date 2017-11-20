@@ -8,7 +8,7 @@ ROCNNet is a neural net library implemented in C++ using [Tenncor](https://githu
 
 ## Build
 
-CMake 2.8 is required.
+CMake 3.6 is required.
 
 Download cmake: https://cmake.org/download/
 
@@ -25,7 +25,8 @@ Flags include the following:
 
 - TENNCOR_TEST=<ON/OFF> (build tests)
 - LCOVERAGE=(ON/OFF) (build with coverage)
-- VIS_EDGE=(ON/OFF) (enable graph structure recording)
+- CSV_RCD=(ON/OFF) (enable graph structure recording to csv file)
+- RPC_RCD=(ON/OFF) (enable graph realtime inspection via grpc)
 - SWIG_DQN=<ON/OFF> (build python wrapper for dqn_agent)
 
 ## Visualization
@@ -38,6 +39,10 @@ then run
 
 	bash /path/to/script/dir/imgify.sh
 	
+To run realtime graph inspection gui, install qt5 and update submodule. Included as a utility, run
+
+	bash /path/to/script/env/qt_setup.sh
+
 ## Demos
 
 DQN Demos taken from https://github.com/siemanko/tensorflow-deepq

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.6)
 project(graph_gui C CXX)
 
 set(BUILD_EXAMPLES OFF)

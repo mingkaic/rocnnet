@@ -17,6 +17,8 @@ LCOV_DIR=lcov-1.13;
 
 # ===== Install Tests and Analysis Tools =====
 
+echo "";
+echo "============ Installing googletest ============";
 # install gtest, gmock, valgrind sources
 wget https://github.com/google/googletest/archive/$GTEST_TAR;
 tar xf $GTEST_TAR;
@@ -33,6 +35,8 @@ popd;
 rm -rf $GTEST_DIR;
 rm -rf $GTEST_TAR;
 
+echo "";
+echo "============ Installing Valgrind ============";
 # install valgrind
 wget http://valgrind.org/downloads/$VALG_TAR;
 tar xvf $VALG_TAR;
@@ -48,6 +52,8 @@ rm -rf $VALG_TAR;
 apt-get -qq update;
 apt-get install -y libgtest-dev libc6-dbg;
 
+echo "";
+echo "============ Installing lcov ============";
 # download lcov for coverage analysis
 wget http://ftp.de.debian.org/debian/pool/main/l/lcov/lcov_1.13.orig.tar.gz;
 tar xf $LCOV_TAR;
@@ -58,6 +64,8 @@ rm -rf $LCOV_TAR;
 # download coverall-lcov (ruby)
 gem install coveralls-lcov;
 
+echo "";
+echo "============ Installing open-ai gym ============";
 # download open-ai gym
 if [ ! -e "gym" ];
 then
