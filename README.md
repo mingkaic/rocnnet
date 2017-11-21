@@ -37,11 +37,11 @@ recording all nodes and connections.
 To visualize the graph, install [graphviz (and its dependencies)](https://pygraphviz.github.io/documentation/pygraphviz-1.3rc1/install.html),
 then run 
 
-	bash /path/to/script/dir/imgify.sh
+	bash /path/to/app/scripts/imgify.sh
 	
 To run realtime graph inspection gui, install qt5 and update submodule. Included as a utility, run
 
-	bash /path/to/script/env/qt_setup.sh
+	bash /path/to/app/scripts/qt_setup.sh
 
 ## Demos
 

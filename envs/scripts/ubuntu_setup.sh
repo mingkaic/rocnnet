@@ -65,6 +65,9 @@ easy_install pip;
 
 # ===== Other Dependencies =====
 
+# install pip requirements
+pip install -r $THIS_DIR/requirements.txt;
+
 # use local setup script for protobuf and boost
 echo "";
 echo "============ Installing protobuf 3 ============";
@@ -77,9 +80,6 @@ bash $THIS_DIR/grpc_setup.sh 1.7.1;
 echo "";
 echo "============ Installing boost ============";
 bash $THIS_DIR/boost_setup.sh;
-
-# install pip requirements
-pip install -r $THIS_DIR/requirements.txt;
 
 echo ""
 echo "============ UBUNTU SETUP SUCCESS ============";

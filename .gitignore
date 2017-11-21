@@ -69,3 +69,4 @@ CMakeFiles
 !.travis.yml
 !.dockerignore
 !app/prebuilt_models/*.pbx
+!.gitmodules

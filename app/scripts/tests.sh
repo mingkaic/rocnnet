@@ -12,7 +12,7 @@ THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 FUZZLOG=fuzz.out;
 TIMEOUT=720; # 12 minute limit
 
-BASEDIR=$THIS_DIR/../..;
+BASEDIR=$THIS_DIR/..;
 BINDIR=$BASEDIR/bin/bin;
 
 # ===== Define Functions =====

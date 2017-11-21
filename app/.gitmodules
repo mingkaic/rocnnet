@@ -1,0 +1,3 @@
+[submodule "ext/nodeeditor"]
+	path = ext/nodeeditor
+	url = https://github.com/mingkaic/nodeeditor.git

@@ -81,16 +81,16 @@ add_library(${ROCNNET_DLIB} SHARED ${ROCNNET_SRC})
 target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD BOOST-PYTHON INTERFACE <<<<<<<<<<<<<<<<<<<<
-set(RBP_LIB rboostpy_lib)
-set(RBP_INCLUDE ${BOOSTPY_DIR}/include)
-add_subdirectory(${BOOSTPY_DIR})
-
-find_package(PythonLibs REQUIRED)
 
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost COMPONENTS python numpy)
+find_package(PythonLibs REQUIRED)
+find_package(Boost COMPONENTS python numpy REQUIRED)
+
+set(RBP_LIB rboostpy_lib)
+set(RBP_INCLUDE ${BOOSTPY_DIR}/include)
+add_subdirectory(${BOOSTPY_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
 set(DEMODIR ${PROJECT_SOURCE_DIR}/demo)

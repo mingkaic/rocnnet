@@ -7,7 +7,7 @@ ENV SETUP_DIR /usr/src/rocnnet_setup
 RUN mkdir -p $SETUP_DIR
 WORKDIR $SETUP_DIR
 
-COPY ./app/scripts/env $SETUP_DIR
+COPY ./scripts $SETUP_DIR
 
 # standard setup
 RUN bash ./ubuntu_setup.sh

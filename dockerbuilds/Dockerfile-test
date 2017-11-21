@@ -12,4 +12,4 @@ RUN mkdir build && cd build && \
 	cmake -DTENNCOR_TEST=ON .. && \
 	cmake --build .;
 
-CMD [ "bash", "./app/scripts/test/tests.sh", "|", "tee" ]
+CMD [ "bash", "./app/scripts/tests.sh", "|", "tee" ]
