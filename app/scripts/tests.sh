@@ -84,7 +84,6 @@ lcov --list coverage.info # debug < see coverage here
 
 if ! [ -z "$COVERALLS_TOKEN" ];
 then
-	echo "branched from $TRAVIS_BRANCH";
 	git rev-parse --abbrev-ref HEAD;
 	coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
 fi
