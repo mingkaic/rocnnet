@@ -90,7 +90,7 @@ void base_immutable<T>::temporary_eval (const iconnector<T>* target, inode<T>*& 
 	out = temp_eval_helper(target, base);
 	if (iconnector<T>* outcon = dynamic_cast<iconnector<T>*>(out))
 	{
-		outcon->update({});
+		outcon->update(std::unordered_set<size_t>{});
 	}
 }
 
@@ -158,7 +158,11 @@ void base_immutable<T>::update (std::unordered_set<size_t>)
 		if (this->g_man_->freeze_ || 1 < this->dependencies_.size())
 		// n-aries are pull update
 		{
-			this->g_man_->add_update(this, [this](){ forward_pass(); });
+			this->g_man_->add_update(this,
+			[this]
+			{
+				forward_pass();
+			});
 		}
 		else
 		// unaries are push update

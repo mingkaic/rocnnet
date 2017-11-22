@@ -8,7 +8,7 @@ ROCNNet is a neural net library implemented in C++ using [Tenncor](https://githu
 
 ## Build
 
-CMake 2.8 is required.
+CMake 3.6 is required.
 
 Download cmake: https://cmake.org/download/
 
@@ -25,19 +25,24 @@ Flags include the following:
 
 - TENNCOR_TEST=<ON/OFF> (build tests)
 - LCOVERAGE=(ON/OFF) (build with coverage)
-- VIS_EDGE=(ON/OFF) (enable graph structure recording)
+- CSV_RCD=(ON/OFF) (enable graph structure recording to csv file)
+- RPC_RCD=(ON/OFF) (enable graph realtime inspection via grpc)
 - SWIG_DQN=<ON/OFF> (build python wrapper for dqn_agent)
 
 ## Visualization
 
-During executation, call `rocnnet_record::erec::rec.to_csv<double>()` to print all nodes out to a csv file, `op-profile.csv`,
+During executation, call `static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->to_csv<double>()` to print all nodes out to a csv file, `op-profile.csv`,
 recording all nodes and connections.
 
 To visualize the graph, install [graphviz (and its dependencies)](https://pygraphviz.github.io/documentation/pygraphviz-1.3rc1/install.html),
 then run 
 
-	pushd scripts && bash imgify.sh
+	bash /path/to/app/scripts/imgify.sh
 	
+To run realtime graph inspection gui, install qt5 and update submodule. Included as a utility, run
+
+	bash /path/to/app/scripts/qt_setup.sh
+
 ## Demos
 
 DQN Demos taken from https://github.com/siemanko/tensorflow-deepq

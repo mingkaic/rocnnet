@@ -12,7 +12,7 @@
  *
  */
 
-#include "subject.hpp"
+#include "graph/react/subject.hpp"
 
 #pragma once
 #ifndef TENNCOR_IOBSERVER_HPP
@@ -25,7 +25,7 @@
 namespace nnet
 {
 
-class iobserver
+class iobserver : public virtual identifiable
 {
 public:
 	virtual ~iobserver (void);
@@ -46,13 +46,15 @@ public:
 	//! publicly available to allow explicit updates
 	virtual void update (std::unordered_set<size_t> argidx) = 0;
 
+	bool is_recordable (void) const;
+
 protected:
 	// >>>> CONSTRUCTORS <<<<
 	//! default constructor
-	iobserver (void);
+	iobserver (bool recordable = true);
 
 	//! subscribe to subjects on construction (mostly non-mutable observers)
-	iobserver (std::vector<subject*> dependencies);
+	iobserver (std::vector<subject*> dependencies, bool recordable = true);
 
 	//! copy over dependencies
 	iobserver (const iobserver& other);
@@ -95,6 +97,8 @@ private:
 
 	//! a series of dependent subjects that will die when this dies
 	std::unordered_set<subject*> ondeath_deps_;
+
+	bool recordable_;
 
 	friend class subject;
 };

@@ -1,0 +1,51 @@
+// grpc_gui.proto
+// rocnnet
+//
+// purpose:
+// define service where rocnnet app acts as client
+
+syntax = "proto3";
+
+package visor;
+
+message Empty {}
+
+message StringId {
+	string id = 1;
+}
+
+message NodeMessage {
+	enum NodeStatus {
+		REMOVE = 0;
+		UPDATE = 1;
+	}
+
+	string id = 1;
+	NodeStatus status = 2;
+}
+
+message EdgeMessage {
+	enum EdgeStatus {
+		ADD = 0;
+		REMOVE = 1;
+	}
+
+	string obsId = 1;
+	string subId = 2;
+	uint64 idx = 3;
+	EdgeStatus status = 4;
+}
+
+message NodeData {
+
+}
+
+service GUINotifier {
+	rpc SubscribeNode (StringId) returns (stream NodeMessage);
+
+	rpc SubscribeEdge (StringId) returns (stream EdgeMessage);
+
+	rpc EndSubscription (StringId) returns (Empty);
+
+	rpc GetNodeData (StringId) returns (NodeData);
+}

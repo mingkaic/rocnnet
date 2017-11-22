@@ -1,15 +1,15 @@
 FROM mkaichen/rocnnet-test-env:latest
 
-ENV RBUILD_DIR /usr/src/rocapp
+ENV APP_DIR /usr/src/rocnnet
 
-RUN mkdir -p $RBUILD_DIR
-WORKDIR $RBUILD_DIR
+RUN mkdir -p $APP_DIR
+WORKDIR $APP_DIR
 
-COPY . $RBUILD_DIR
+COPY . $APP_DIR
 
 # build rocnnet
-RUN mkdir app/build && cd app/build && \
-    cmake -DTENNCOR_TEST=ON .. && \
-    cmake --build .;
+RUN mkdir build && cd build && \
+	cmake -DTENNCOR_TEST=ON .. && \
+	cmake --build .;
 
-CMD [ "bash", "./app/scripts/test/tests.sh", "./app", "|", "tee" ]
+CMD [ "bash", "./app/scripts/tests.sh", "|", "tee" ]

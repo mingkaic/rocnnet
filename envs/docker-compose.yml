@@ -4,16 +4,16 @@ services:
   ubuntu-env:
     image: mkaichen/rocnnet-ubuntu-env:latest
     build:
-      context: ..
-      dockerfile: ./envs/Dockerfile-ubuntu
+      context: .
+      dockerfile: ./Dockerfile-ubuntu
     volumes:
       - /usr/src/rocenv
 
   ubuntu-test-env:
     image: mkaichen/rocnnet-test-env:latest
     build:
-      context: ..
-      dockerfile: ./envs/Dockerfile-ubuntu
+      context: .
+      dockerfile: ./Dockerfile-ubuntu
       args:
         TEST_ENV: 1
     volumes:

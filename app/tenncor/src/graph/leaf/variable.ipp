@@ -90,6 +90,20 @@ template <typename T>
 variable_updater<T> variable<T>::assign (inode<T>* input) const
 {
 	assert(input);
+	if (constant<T>* con = dynamic_cast<constant<T>*>(input))
+	{
+		std::vector<T> data = expose<T>(con);
+		return [this, data](bool notify)
+		{
+			tensor<T>* out_tens = this->data_;
+			this->assigner_(*out_tens, data);
+			if (notify)
+			{
+				this->notify(notification::UPDATE);
+			}
+		};
+	}
+
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
@@ -107,13 +121,32 @@ template <typename T>
 variable_updater<T> variable<T>::assign_add (inode<T>* input) const
 {
 	assert(input);
+	if (constant<T>* con = dynamic_cast<constant<T>*>(input))
+	{
+		if (*con == (T)0)
+		{
+			return [](bool) {};
+		}
+		std::vector<T> data = expose<T>(con);
+		return [this, data](bool notify)
+		{
+			tensor<T>* out_tens = this->data_;
+			this->assigner_(*out_tens, data,
+			[](const T& e1, const T& e2) { return e1 + e2; });
+			if (notify)
+			{
+				this->notify(notification::UPDATE);
+			}
+		};
+	}
+
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
 		this->assigner_(*out_tens, *in_tens,
-			[](const T& e1, const T& e2) { return e1 + e2; });
+		[](const T& e1, const T& e2) { return e1 + e2; });
 		if (notify)
 		{
 			this->notify(notification::UPDATE);
@@ -125,13 +158,32 @@ template <typename T>
 variable_updater<T> variable<T>::assign_sub (inode<T>* input) const
 {
 	assert(input);
+	if (constant<T>* con = dynamic_cast<constant<T>*>(input))
+	{
+		if (*con == (T)0)
+		{
+			return [](bool) {};
+		}
+		std::vector<T> data = expose<T>(con);
+		return [this, data](bool notify)
+		{
+			tensor<T>* out_tens = this->data_;
+			this->assigner_(*out_tens, data,
+			[](const T& e1, const T& e2) { return e1 - e2; });
+			if (notify)
+			{
+				this->notify(notification::UPDATE);
+			}
+		};
+	}
+
 	return [this, input](bool notify)
 	{
 		tensor<T>* out_tens = this->data_;
 		const tensor<T>* in_tens = input->eval();
 		assert(in_tens);
 		this->assigner_(*out_tens, *in_tens,
-			[](const T& e1, const T& e2) { return e1 - e2; });
+		[](const T& e1, const T& e2) { return e1 - e2; });
 		if (notify)
 		{
 			this->notify(notification::UPDATE);

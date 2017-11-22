@@ -60,7 +60,7 @@ public:
 	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const
 	{
 		label_incr("get_leaves1");
-		return {};
+		return std::unordered_set<ileaf<double>*>{};
 	}
 
 protected:

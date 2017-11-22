@@ -12,7 +12,7 @@
 #endif
 
 #include "models/gd_net.hpp"
-#include "edgeinfo/comm_record.hpp"
+#include "edgeinfo/csv_record.hpp"
 
 static std::default_random_engine rnd_device(std::time(NULL));
 
@@ -106,7 +106,7 @@ int main (int argc, char** argv)
 	std::string serialpath = outdir + "/" + serialname;
 
 	size_t n_in = 10;
-	size_t n_out = 5;
+	size_t n_out = n_in / 2;
 	size_t n_batch = 3;
 	size_t show_every_n = 500;
 	std::vector<rocnnet::IN_PAIR> hiddens = {
@@ -184,10 +184,13 @@ int main (int argc, char** argv)
 		trained_gdn.save(serialpath, "gd_demo");
 	}
 
-#ifdef EDGE_RCD
-if (rocnnet_record::erec::rec_good)
-	rocnnet_record::erec::rec.to_csv<double>(trained_gdn.get_error());
-#endif /* EDGE_RCD */
+#ifdef CSV_RCD
+if (rocnnet_record::record_status::rec_good)
+{
+	static_cast<rocnnet_record::csv_record*>(rocnnet_record::record_status::rec.get())->
+		to_csv<double>(trained_gdn.get_error());
+}
+#endif /* CSV_RCD */
 
 	google::protobuf::ShutdownProtobufLibrary();
 

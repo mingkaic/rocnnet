@@ -52,8 +52,8 @@ static bool bottom_up (std::vector<iconnector<double>*> ordering)
 TEST(IMMUTABLE, Copy_I000)
 {
 	FUZZ::reset_logger();
-	immutable<double>* assign  = new mock_immutable({}, "");
-	immutable<double>* central = new mock_immutable({}, "");
+	immutable<double>* assign  = new mock_immutable(std::vector<inode<double>*>{}, "");
+	immutable<double>* central = new mock_immutable(std::vector<inode<double>*>{}, "");
 	const tensor<double>* res = central->eval();
 
 	immutable<double>* cpy = central->clone();
@@ -81,8 +81,8 @@ TEST(IMMUTABLE, Copy_I000)
 TEST(IMMUTABLE, Move_I000)
 {
 	FUZZ::reset_logger();
-	immutable<double>* assign  = new mock_immutable({}, "");
-	immutable<double>* central = new mock_immutable({}, "");
+	immutable<double>* assign  = new mock_immutable(std::vector<inode<double>*>{}, "");
+	immutable<double>* central = new mock_immutable(std::vector<inode<double>*>{}, "");
 	const tensor<double>* res = central->eval();
 	std::vector<double> data = expose(central);
 	tensorshape rs = res->get_shape();
@@ -416,7 +416,7 @@ TEST(IMMUTABLE, ImmutableDeath_I005)
 	[&leaves](void)
 	{
 		std::string llabel = FUZZ::getString(FUZZ::getInt(1, "llabel.size", {14, 29})[0], "llabel");
-		immutable<double>* im = new mock_immutable({}, llabel);
+		immutable<double>* im = new mock_immutable(std::vector<inode<double>*>{}, llabel);
 		leaves.emplace(im);
 		return im;
 	},
@@ -808,7 +808,7 @@ TEST(IMMUTABLE, Update_I010)
 	immutable<double>* conn = new mock_immutable({n1}, conname, grabs, asis);
 	std::vector<double> init = expose(conn);
 	mutate = true;
-	conn->update({});
+	conn->update(std::unordered_set<size_t>{});
 	std::vector<double> next = expose(conn);
 	ASSERT_EQ(init.size(), next.size());
 	for (size_t i = 0, n = init.size(); i < n; i++)

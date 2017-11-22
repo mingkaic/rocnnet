@@ -24,7 +24,7 @@ namespace rocnnet
 class gd_net
 {
 public:
-	gd_net (mlp* brain, nnet::gd_updater& updater,
+	gd_net (icompound* brain, nnet::gd_updater& updater,
 		std::string scope = "GDN");
 
 	~gd_net (void);
@@ -59,7 +59,7 @@ private:
 
 	nnet::updates_t updates_;
 
-	mlp* brain_ = nullptr;
+	icompound* brain_ = nullptr;
 
 	nnet::placeholder<double>* test_in_ = nullptr;
 

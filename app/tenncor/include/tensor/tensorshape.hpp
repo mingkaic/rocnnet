@@ -11,6 +11,7 @@
  *
  */
 
+#include <functional>
 #include "utils/utils.hpp"
 
 #pragma once

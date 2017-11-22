@@ -8,10 +8,6 @@
 
 #include "graph/react/iobserver.hpp"
 
-#ifdef EDGE_RCD
-#include "edgeinfo/comm_record.hpp"
-#endif /* EDGE_RCD */
-
 #ifdef TENNCOR_IOBSERVER_HPP
 
 namespace nnet
@@ -31,13 +27,6 @@ iobserver::~iobserver (void)
 	{
 		delete dep;
 	}
-
-#ifdef EDGE_RCD
-
-// record subject-object edge
-if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.node_release(this);
-
-#endif /* EDGE_RCD */
 }
 
 iobserver& iobserver::operator = (const iobserver& other)
@@ -64,9 +53,13 @@ bool iobserver::has_subject (subject* sub) const
 	return et != std::find(dependencies_.begin(), et, sub);
 }
 
-iobserver::iobserver (void) {}
+iobserver::iobserver (bool recordable) :
+	recordable_(recordable) {}
 
-iobserver::iobserver (std::vector<subject*> dependencies)
+iobserver::iobserver (
+	std::vector<subject*> dependencies,
+	bool recordable) :
+recordable_(recordable)
 {
 	for (subject* dep : dependencies)
 	{
@@ -170,8 +163,14 @@ void iobserver::update (std::unordered_set<size_t> dep_indices, notification msg
 	}
 }
 
+bool iobserver::is_recordable (void) const
+{
+	return recordable_;
+}
+
 void iobserver::copy_helper (const iobserver& other)
 {
+	recordable_ = other.recordable_;
 	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
 		if (dependencies_[i]) dependencies_[i]->detach(this, i);
@@ -185,6 +184,7 @@ void iobserver::copy_helper (const iobserver& other)
 
 void iobserver::move_helper (iobserver&& other)
 {
+	recordable_ = std::move(other.recordable_);
 	for (size_t i = 0, n = dependencies_.size(); i < n; i++)
 	{
 		if (dependencies_[i]) dependencies_[i]->detach(this, i);

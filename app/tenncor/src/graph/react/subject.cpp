@@ -8,11 +8,13 @@
 
 #include "graph/react/iobserver.hpp"
 
-#ifdef EDGE_RCD
-#include "edgeinfo/comm_record.hpp"
-#endif /* EDGE_RCD */
-
 #ifdef TENNCOR_SUBJECT_HPP
+
+#ifdef EDGE_RCD
+
+#include "edgeinfo/grpc_vis_record.hpp"
+
+#endif /* EDGE_RCD */
 
 namespace nnet
 {
@@ -30,7 +32,10 @@ subject::~subject (void)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.node_release(this);
+if (rocnnet_record::record_status::rec_good)
+{
+	rocnnet_record::record_status::rec->node_release(this);
+}
 
 #endif /* EDGE_RCD */
 }
@@ -57,6 +62,17 @@ subject& subject::operator = (subject&& other)
 
 void subject::notify (notification msg) const
 {
+#ifdef RPC_RCD
+if (rocnnet_record::record_status::rec_good && UPDATE == msg)
+{
+	if (rocnnet_record::rpc_record* grpc =
+		dynamic_cast<rocnnet_record::rpc_record*>(
+		rocnnet_record::record_status::rec.get()))
+	{
+		grpc->data_update(this);
+	}
+}
+#endif /* RPC_RCD */
 	std::vector<iobserver*> obs;
 	for (auto it = audience_.begin(), et = audience_.end(); it != et; it++)
 	{
@@ -136,7 +152,10 @@ void subject::attach (iobserver* viewer, size_t idx)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_capture(viewer, this, idx);
+if (rocnnet_record::record_status::rec_good)
+{
+	rocnnet_record::record_status::rec->edge_capture(viewer, this, idx);
+}
 
 #endif /* EDGE_RCD */
 
@@ -147,12 +166,12 @@ void subject::detach (iobserver* viewer)
 {
 #ifdef EDGE_RCD
 
-if (rocnnet_record::erec::rec_good)
+if (rocnnet_record::record_status::rec_good)
 {
 	// record subject-object edge
 	for (size_t idx : audience_[viewer])
 	{
-		rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+		rocnnet_record::record_status::rec->edge_release(viewer, this, idx);
 	}
 }
 
@@ -170,7 +189,10 @@ void subject::detach (iobserver* viewer, size_t idx)
 #ifdef EDGE_RCD
 
 // record subject-object edge
-if (rocnnet_record::erec::rec_good) rocnnet_record::erec::rec.edge_release(viewer, this, idx);
+if (rocnnet_record::record_status::rec_good)
+{
+	rocnnet_record::record_status::rec->edge_release(viewer, this, idx);
+}
 
 #endif /* EDGE_RCD */
 

@@ -52,11 +52,8 @@ public:
 	virtual inode<T>& operator = (inode<T>&& other);
 
 	// >>>> IDENTIFICATION <<<<
-	//! get the unique hash value
-	std::string get_uid (void) const;
-
 	//! get the non-unique label set by user, denoting node purpose
-	std::string get_label (void) const;
+	virtual std::string get_label (void) const;
 
 	//! get beautified summary of name and uid, structure varies for inheritors
 	virtual std::string get_name (void) const;
@@ -66,6 +63,9 @@ public:
 
 	//! modify label to better describe node purpose
 	void set_label (std::string label);
+
+	//! get the distance between this node and the furthest dependent leaf (maximum spanning tree height)
+	virtual size_t get_depth (void) const = 0;
 
 	//>>>> OBSERVER & OBSERVABLE INFO <<<<
 	//! get all observerables
@@ -135,15 +135,13 @@ protected:
 	//! adds to internal caches if need be
 	virtual inode<T>* get_gradient (variable<T>* leaf) = 0;
 
+	//! obtain tensor data from source
 	const tensor<T>* take_eval (inode<T>* source) const;
 
 	//! allow inheritants to access source's get_gradient with parameter leaf
 	inode<T>* take_gradient (inode<T>* source, variable<T>* leaf) const;
 
 private:
-	//! uniquely identifier for this node
-	const std::string id_ = nnutils::uuid(this);
-
 	//! describes this node's purpose
 	std::string label_;
 

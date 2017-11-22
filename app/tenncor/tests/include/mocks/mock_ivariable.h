@@ -19,7 +19,10 @@ public:
 	mock_ivariable (const tensorshape& shape,
 		initializer<double>* init,
 		std::string name) : ivariable<double>(shape, init, name) {}
-	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const { return {}; }
+	virtual std::unordered_set<ileaf<double>*> get_leaves (void) const
+	{
+		return std::unordered_set<ileaf<double>*>{};
+	}
 	initializer<double>* get_initializer (void) { return static_cast<initializer<double>*>(this->init_); }
 
 protected:

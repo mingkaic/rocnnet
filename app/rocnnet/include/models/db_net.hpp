@@ -35,7 +35,7 @@ public:
 
 	db_net& operator = (db_net&& other);
 
-	nnet::varptr<double> operator () (nnet::placeholder<double>& input);
+	virtual nnet::varptr<double> prop_up (nnet::inode<double>* input);
 
 	pretrain_t pretraining_functions (
 		nnet::placeholder<double>& input,
@@ -49,9 +49,9 @@ public:
 
 	virtual std::vector<nnet::variable<double>*> get_variables (void) const;
 
-	size_t get_ninput (void) const;
+	virtual size_t get_ninput (void) const;
 
-	size_t get_noutput (void) const;
+	virtual size_t get_noutput (void) const;
 
 protected:
 	db_net (const db_net& other, std::string& scope);

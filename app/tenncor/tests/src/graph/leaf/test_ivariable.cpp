@@ -40,8 +40,8 @@ TEST(IVARIABLE, Copy_E000)
 	EXPECT_EQ(noi, assign.get_initializer());
 	EXPECT_EQ(nullptr, noi);
 
-	tensor<double> ct({1});
-	tensor<double> ct2({1});
+	tensor<double> ct(std::vector<size_t>{1});
+	tensor<double> ct2(std::vector<size_t>{1});
 	initializer<double>* ci = cpy2->get_initializer();
 	initializer<double>* ai = assign2.get_initializer();
 	tensor<double>* ctptr = &ct;
@@ -79,7 +79,7 @@ TEST(IVARIABLE, Move_E000)
 	mock_ivariable* mv2 = static_cast<mock_ivariable*>(inited.move());
 
 	EXPECT_EQ(noi, mv->get_initializer());
-	tensor<double> ct({1});
+	tensor<double> ct(std::vector<size_t>{1});
 	initializer<double>* mi = mv2->get_initializer();
 	tensor<double>* ctptr = &ct;
 	(*mi)(*ctptr);
@@ -92,7 +92,7 @@ TEST(IVARIABLE, Move_E000)
 	assign2 = std::move(*mv2);
 
 	EXPECT_EQ(noi, assign.get_initializer());
-	tensor<double> ct2({1});
+	tensor<double> ct2(std::vector<size_t>{1});
 	initializer<double>* ai = assign2.get_initializer();
 	tensor<double>* ct2ptr = &ct2;
 	(*ai)(*ct2ptr);

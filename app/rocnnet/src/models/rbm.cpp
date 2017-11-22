@@ -15,7 +15,8 @@ namespace rocnnet
 
 rbm::rbm (size_t n_input, size_t n_hidden, std::string scope) :
 	icompound(scope),
-	n_input_(n_input)
+	n_input_(n_input),
+	n_hidden_(n_hidden)
 {
 	nnet::const_init<double> zinit(0);
 

@@ -2,22 +2,18 @@ FROM ubuntu:latest
 
 ARG TEST_ENV=0
 
-ENV ENV_DIR /usr/src/rocenv
+ENV SETUP_DIR /usr/src/rocnnet_setup
 
-RUN mkdir -p $ENV_DIR
-WORKDIR $ENV_DIR
+RUN mkdir -p $SETUP_DIR
+WORKDIR $SETUP_DIR
 
-COPY ./app/scripts/env $ENV_DIR
-COPY ./app/requirements.txt $ENV_DIR
+COPY ./scripts $SETUP_DIR
 
 # standard setup
 RUN bash ./ubuntu_setup.sh
 
-# boost setup
-RUN bash ./boost_setup.sh
-
 # setup analysis tools IF we're testing
 RUN if [ "$TEST_ENV" -eq "1" ]; \
-    then \
-        bash ./ubuntu_analysis.sh; \
-    fi
+	then \
+		bash ./ubuntu_analysis.sh; \
+	fi

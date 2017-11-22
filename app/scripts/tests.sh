@@ -5,13 +5,15 @@
 # through gtest and demos
 #
 
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
 # ===== Define Installation Variables =====
 
-FUZZLOG=fuzz.out
-TIMEOUT=600
+FUZZLOG=fuzz.out;
+TIMEOUT=720; # 12 minute limit
 
-BASEDIR=$1
-BINDIR=$BASEDIR/bin/bin
+BASEDIR=$THIS_DIR/..;
+BINDIR=$BASEDIR/bin/bin;
 
 # ===== Define Functions =====
 
@@ -67,6 +69,11 @@ assert_cmd "valgrind --tool=memcheck $BINDIR/rbm_demo"
 assert_cmd "$BINDIR/rbm_demo"
 echo "rbm_demo complete"
 
+#echo "running dbn_demo"
+#assert_cmd "valgrind --tool=memcheck $BINDIR/dbn_demo -k 1 -n 30"
+#assert_cmd "$BINDIR/dbn_demo -k 1"
+#echo "dbn_demo complete"
+
 # ===== Coverage Analysis ======
 lcov --version
 gcov --version
@@ -77,8 +84,8 @@ lcov --list coverage.info # debug < see coverage here
 
 if ! [ -z "$COVERALLS_TOKEN" ];
 then
-    echo "branched from $TRAVIS_BRANCH"
-    coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
+	git rev-parse --abbrev-ref HEAD;
+	coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info # uploads to coveralls
 fi
 
 echo "";

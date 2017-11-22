@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 project(gtest_builder C CXX)
 include(ExternalProject)
 
@@ -17,6 +17,8 @@ ExternalProject_Add(googletest
 		-Dgtest_force_shared_crt=${GTEST_FORCE_SHARED_CRT}
 		-Dgtest_disable_pthreads=${GTEST_DISABLE_PTHREADS}
 		-DBUILD_GTEST=ON
+		-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
 		# Disable install step
 		INSTALL_COMMAND "")

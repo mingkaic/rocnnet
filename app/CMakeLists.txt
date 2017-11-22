@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 project(rocnnet C CXX)
 
 find_package(Threads REQUIRED)
@@ -49,19 +49,26 @@ if(BUILD_DOC)
 	endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
+#>>>>>>>>>>>>>>>>>>>> VISUALIZATION OPTIONS <<<<<<<<<<<<<<<<<<<<
+if ("${CSV_RCD}" STREQUAL "ON" OR "${RPC_RCD}" STREQUAL "ON" )
+	# visualize tenncor edges
+	message("ALLOWING VISUALIZATION OF GRAPH: WARNING (additional overhead)")
+	add_definitions(-DEDGE_RCD)
+endif()
+if (${CSV_RCD})
+	add_definitions(-DCSV_RCD)
+elseif (${RPC_RCD})
+	add_definitions(-DRPC_RCD)
+endif()
+
 #>>>>>>>>>>>>>>>>>>>> BUILD TENNCOR LIBRARY <<<<<<<<<<<<<<<<<<<<
 set(TENNCOR_LIB tenncor)
 set(TENNCOR_INCLUDE ${TENNCOR_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/tenncor)
 add_subdirectory(${TENNCOR_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD ROCNNET LIBRARY <<<<<<<<<<<<<<<<<<<<
-if (VIS_EDGE)
-	# visualize tenncor edges
-	ADD_DEFINITIONS(-DEDGE_RCD="op-profile.csv")
-endif(VIS_EDGE)
-
 set(ROCNNET_INCLUDE ${ROCNNET_DIR}/include)
-FILE(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
+file(GLOB_RECURSE ROCNNET_SRC ${ROCNNET_DIR}/src/*.cpp)
 
 set(ROCNNET_SLIB rocnnet_static)
 include_directories(${ROCNNET_INCLUDE} ${TENNCOR_INCLUDE})
@@ -75,16 +82,15 @@ target_link_libraries(${ROCNNET_DLIB} ${TENNCOR_LIB})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD BOOST-PYTHON INTERFACE <<<<<<<<<<<<<<<<<<<<
 
-set(RBP_LIB rboostpy_lib)
-set(RBP_INCLUDE ${BOOSTPY_DIR}/include)
-add_subdirectory(${BOOSTPY_DIR})
-
-find_package(PythonLibs REQUIRED)
-
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost COMPONENTS python numpy)
+find_package(PythonLibs REQUIRED)
+find_package(Boost COMPONENTS python numpy REQUIRED)
+
+set(RBP_LIB rboostpy_lib)
+set(RBP_INCLUDE ${BOOSTPY_DIR}/include)
+add_subdirectory(${BOOSTPY_DIR})
 
 #>>>>>>>>>>>>>>>>>>>> BUILD DEMOS <<<<<<<<<<<<<<<<<<<<
 set(DEMODIR ${PROJECT_SOURCE_DIR}/demo)
@@ -110,7 +116,7 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 add_executable(rbm_demo ${DEMODIR}/rbm_demo.cpp)
-target_link_libraries(rbm_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(rbm_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
 
 # DEMO 4: dqn
 if (LCOVERAGE)
@@ -118,9 +124,15 @@ if (LCOVERAGE)
 endif(LCOVERAGE)
 include_directories(${ROCNNET_INCLUDE} ${RBP_INCLUDE} ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 add_executable(dbn_demo ${DEMODIR}/dbn_demo.cpp)
-target_link_libraries(dbn_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(dbn_demo ${ROCNNET_SLIB} ${RBP_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
 
 if (SWIG_DQN)
 	# DEMO 2.1: pythonize deep q network with swig
 	add_subdirectory(${ROCNNET_DIR}/ipython)
+endif()
+
+#>>>>>>>>>>>>>>>>>>>> GRAPH VISUALIZATION TOOLS <<<<<<<<<<<<<<<<<<<<
+
+if (${RPC_RCD})
+	add_subdirectory(graph_gui)
 endif()
