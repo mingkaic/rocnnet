@@ -4,4 +4,4 @@
 
 ## Synopsis
 
-Rocnnet is a collection machine learning experiments using [Tenncor libraries](https://github.com/mingkaic/tenncor)
+Rocnnet is a collection of machine learning experiments using [Tenncor libraries](https://github.com/mingkaic/tenncor)
