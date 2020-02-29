@@ -1,0 +1,3 @@
+
+build:clang_eigen_optimal --copt="-march=native" --copt="-openmp" --copt="-O3"
+build:gcc_eigen_optimal --copt="-march=native" --copt="-fopenmp" --copt="-O3"
