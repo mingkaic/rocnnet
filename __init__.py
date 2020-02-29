@@ -1,1 +1,1 @@
-import bin.tenncor
+import tenncor
