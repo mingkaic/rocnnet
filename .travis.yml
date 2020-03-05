@@ -1,33 +1,32 @@
-language: generic
 sudo: required
-dist: xenial
 
-install:
-  - gem install coveralls-lcov
-  - sudo apt-get install lcov
+services:
+  - docker
 
 jobs:
   include:
     - stage: build docker image
       script:
         - git checkout ${TRAVIS_BRANCH}
-        - git rev-parse --abbrev-ref HEAD
         - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-        - docker-compose build
+        - make IMAGE_REPO=${DOCKER_USERNAME} IMAGE_TAG=travis-${TRAVIS_COMMIT} build_test_image
         - docker images
-        - docker-compose push
-    - stage: test
-      script:
-        - docker run -e COVERALLS_TOKEN=${COVERALLS_TOKEN}
-          --rm ${DOCKER_USERNAME}/rocnnet-test
+        - make IMAGE_REPO=${DOCKER_USERNAME} IMAGE_TAG=travis-${TRAVIS_COMMIT} push_test_image
+    # - stage: test everything
+    #   script:
+    #     - docker run -e COVERALLS_TOKEN=${COVERALLS_TOKEN}
+    #       --rm ${DOCKER_USERNAME}/rocnnet-test:travis-${TRAVIS_COMMIT}
+
+notifications:
+  email: false
+
+branches:
+  except:
+  - legacy
 
 # safelist
 branches:
   only:
   - master
+  - /experimental(-.*)?/
   - stable
-  - experimental
-
-# no need to pollute inboxes
-notifications:
-  email: false

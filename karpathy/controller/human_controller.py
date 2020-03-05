@@ -1,4 +1,4 @@
-from tf_rl.utils.getch import getch
+from karpathy.utils.getch import getch
 from redis import StrictRedis
 
 
