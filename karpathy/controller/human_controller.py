@@ -15,7 +15,7 @@ class HumanController(object):
     def store(self, observation, action, reward, newobservation):
         pass
 
-    def training_step(self):
+    def train(self):
         pass
 
 

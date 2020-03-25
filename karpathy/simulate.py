@@ -44,7 +44,7 @@ def simulate(simulation,
         whether to intentionally slow down the simulation
         to appear real time.
     disable_training: bool
-        if true training_step is never called.
+        if true train is never called.
     save_path: str
         save svg visualization (only tl_rl.utils.svg
         supported for the moment)
@@ -93,7 +93,7 @@ def simulate(simulation,
 
             #train
             if not disable_training:
-                controller.training_step()
+                controller.train()
 
             # update current state as last state.
             last_action = new_action

@@ -1,45 +1,83 @@
 import os.path
 
-import numpy as np
-
 import tenncor as tc
 
-cache_dir = '/tmp'
+_default_cachedir = '/tmp'
 
-def get_rand_seed(rng):
-    seed = 0
-    seed_options = dir(rng)
-    if 'get_state' in seed_options:
-        seed = rng.get_state()
-    elif 'random' in seed_options:
-        seed = rng.random()
-    else:
+_sess_prefix = 'session_'
+_sess_ext = '.onnx'
+_sess_nprefix = len(_sess_prefix)
+
+_env_prefix = 'env_'
+_env_ext = '.txt'
+
+def _id_cachefile(fpath, prefix, ext):
+    fname = os.path.basename(fpath)
+    if os.path.isfile(fpath) and fname.startswith(prefix) and fname.endswith(ext):
         try:
-            seed = rng()
+            return int(fname[_sess_nprefix:_sess_nprefix + len(ext)], 16)
         except:
-            print('warning: no state option in {}'.format(rng))
-    pass
+            print('ignoring invalid file {}'.format(fpath))
+    return None
 
-def recover_np_seed(rng, state):
-    seed_options = dir(rng)
-    if 'seed' in seed_options:
-        rng.seed(state.seed)
-    else:
+class SessCache:
+    @staticmethod
+    def _format_cachefile(id):
+        return _sess_prefix + hex(id)[2:] + _sess_ext
+
+    def __init__(self, cache_dir=_default_cachedir):
+        self.cache_dir = cache_dir
+        dirs = os.listdir(self.cache_dir)
+        self.cur_id = 0
+        for el in dirs:
+            fileid = _id_cachefile(os.path.join(self.cache_dir, el),
+                _sess_prefix, _sess_ext)
+            if fileid is not None:
+                self.cur_id = max(fileid)
+
+    def store(self, session):
+        cache_fpath = os.path.join(self.cache_dir,
+            SessCache._format_cachefile(self.cur_id + 1))
         try:
-            rng(state.seed)
-        except:
-            print('warning: no seed option in {}'.format(rng))
+            print('saving model "{}"'.format(cache_fpath))
+            if tc.save_session_file(cache_fpath, session):
+                print('successfully stored session to "{}"'.format(cache_fpath))
+                self.cur_id += 1
+        except Exception as e:
+            print(e)
+            print('failed storage to "{}"'.format(cache_fpath))
 
-def cache(session, env):
-    model_target = os.path.join(cache_dir, 'session.onnx')
-    try:
-        print('caching model')
-        if tc.save_session_file(model_target, session):
-            print('successfully cached to {}'.format(model_target))
-    except Exception as e:
-        print(e)
-        print('failed to cache to "{}"'.format(model_target))
+    def recover(self, session):
+        cache_fpath = os.path.join(self.cache_dir,
+            SessCache._format_cachefile(self.cur_id))
+        try:
+            print('loading model "{}'.format(cache_fpath))
+            if tc.load_session_file(cache_fpath, session):
+                print('successfully recovered session from "{}"'.format(cache_fpath))
+        except Exception as e:
+            print(e)
+            print('failed recover from "{}"'.format(cache_fpath))
 
+class EnvCache:
+    def __init__(self, cache_dir=_default_cachedir):
+        self.cache_dir = cache_dir
+        dirs = os.listdir(self.cache_dir)
+        self.cur_id = 0
+        for el in dirs:
+            fileid = _id_cachefile(os.path.join(self.cache_dir, el),
+                _env_prefix, _env_ext)
+            if fileid is not None:
+                self.cur_id = max(fileid)
 
-def recover(model, env):
-    pass
+class CacheManager:
+    _std_cachedir = _default_cachedir
+
+    # if clean is set to True, do not recover from existing cache
+    def __init__(self, name, sess, clean = False):
+        self.sesscache = SessCache(os.path.join(CacheManager._std_cachedir, name))
+        self.sess = sess
+        if not clean:
+            self.sesscache.recover(self.sess)
+
+    def backup(self):
+        self.sesscache.store(self.sess)

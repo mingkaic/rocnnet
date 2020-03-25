@@ -5,7 +5,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 git_repository(
     name = "com_github_mingkaic_tenncor",
     remote = "https://github.com/mingkaic/tenncor",
-    commit = "d29e13a343d356fe66961fbbec2bf19f1aa7db98",
+    commit = "4a27e6ead3cd11c37ff7d786b7bed775945011dc",
 )
 
 # ===== load all tenncor build dependencies ===

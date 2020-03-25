@@ -1,9 +1,9 @@
 import math
-import matplotlib.pyplot as plt
-import numpy as np
 import random
 import time
 
+import numpy as np
+import matplotlib.pyplot as plt
 from collections import defaultdict
 from euclid import Circle, Point2, Vector2, LineSegment2
 
