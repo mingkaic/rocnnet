@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package dqn;
+
+message ExpBatch {
+    int32 act_idx = 1;
+    float reward = 2;
+    repeated float obs = 3;
+    repeated float new_obs = 4;
+}
+
+message DqnEnv {
+    int32 actions_executed = 1;
+    int32 ntrain_called = 2;
+    int32 nstore_called = 3;
+    repeated ExpBatch experiences = 4;
+}

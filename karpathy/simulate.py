@@ -17,7 +17,9 @@ def simulate(simulation,
              simulation_resolution=None,
              wait=False,
              disable_training=False,
-             save_path=None):
+             save_path=None,
+             disable_backup=False,
+             backup_every=100000):
     """Start the simulation. Performs three tasks
 
         - visualizes simulation in iPython notebook
@@ -69,6 +71,7 @@ def simulate(simulation,
     # state transition bookkeeping
     last_observation = None
     last_action      = None
+    action_no = 0
 
     simulation_started_time = time.time()
 
@@ -94,6 +97,10 @@ def simulate(simulation,
             #train
             if not disable_training:
                 controller.train()
+
+            action_no += 1
+            if not disable_backup and action_no % backup_every == 0:
+                controller.backup()
 
             # update current state as last state.
             last_action = new_action

@@ -6,10 +6,7 @@ P4 = "nice to have/need investigating"
 P5 = "get to it eventually"
 
 >>>>>>> inprogress >>>>>>>
-   - implement reliable training harness
-      - periodically caching data
-      - save environment state + historic record
-      - recover environment state + model
+   - train cnn on cifar using training harness
    - upgrade layr to allow restructuring recurrent structure sequence length
    - fix gru demo to run optimally
    - improve grader/optimization rule according to rnn, lstm, gru
