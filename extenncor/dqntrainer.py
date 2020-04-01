@@ -12,8 +12,7 @@ _get_random = tc.unif_gen(0, 1)
 # generalize as feedback class
 @ecache.EnvManager.register
 class DQNEnv(ecache.EnvManager):
-    def __init__(self, src_model, sess,
-        update_fn, gradprocess_fn = None,
+    def __init__(self, src_model, sess, update_fn,
         optimize_cfg = "", max_exp = 30000,
         train_interval = 5, store_interval = 5,
         explore_period = 1000, action_prob = 0.05,
@@ -66,14 +65,7 @@ class DQNEnv(ecache.EnvManager):
             target_vars = nxt_model.get_storage()
             assert(len(source_vars) == len(target_vars))
 
-            source_errs = dict()
-            for source_var in source_vars:
-                error = tc.derive(prediction_err, source_var)
-                if gradprocess_fn is not None:
-                    error = gradprocess_fn(error)
-                source_errs[source_var] = error
-
-            src_updates = dict(update_fn(source_errs))
+            src_updates = dict(update_fn(prediction_err, source_vars))
 
             updates = [prediction_err, src_act, self.act_idx]
             for target_var, source_var in zip(target_vars, source_vars):
