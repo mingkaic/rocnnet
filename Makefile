@@ -7,24 +7,20 @@ IMAGE_TAG := latest
 print_vars:
 	@echo "CC: " $(CC)
 
-.PHONY: rocnnet_py_build
-rocnnet_py_build:
+.PHONY: tenncor_py_build
+tenncor_py_build:
 	bazel build --config $(CC)_eigen_optimal @com_github_mingkaic_tenncor//:tenncor_py
+	bazel build --config $(CC)_eigen_optimal @com_github_mingkaic_tenncor//:extenncor
 
-.PHONY: rocnnet_py_export
-rocnnet_py_export: rocnnet_py_build
+.PHONY: tenncor_py_export
+tenncor_py_export: tenncor_py_build
 	cp -f bazel-bin/external/com_github_mingkaic_tenncor/*.so .
+	cp bazel-out/external/com_github_mingkaic_tenncor/extenncor .
 	cp bazel-rocnnet/external/com_github_mingkaic_tenncor/cfg/optimizations.json cfg/.
 
-.PHONY: protoc
-protoc:
-	mkdir -p ./build
-	bazel build @com_google_protobuf_custom//:protoc
-	cp bazel-bin/external/com_google_protobuf_custom/protoc ./build
-
-.PHONY: proto_build
-proto_build: protoc
-	./build/protoc --python_out=. -I=. extenncor/dqntrainer.proto
+.PHONY: proto_clean
+proto_clean:
+	rm -rf ./build
 
 .PHONY: build_test_image
 build_test_image:
