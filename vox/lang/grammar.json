@@ -1,0 +1,23 @@
+{
+    "class":{
+        "noun": ["i"],
+        "verb": ["am", "smash"],
+        "adjective": ["groovy", "mad"],
+        "preposition": ["because"],
+        "break": ["."]
+    },
+    "top_level": "sentence",
+    "structure": {
+        "clause": [
+            ["noun", "verb", "noun"],
+            ["noun", "verb", "adjective"],
+            ["verb", "noun"],
+            ["noun", "verb"],
+            ["adjective", "noun"]
+        ],
+        "sentence": [
+            ["clause", "break"],
+            ["clause", "preposition", "clause", "break"]
+        ]
+    }
+}

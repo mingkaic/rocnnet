@@ -1,0 +1,15 @@
+**** LEGEND ****
+P1 = "blocker/fail to build"
+P2 = "todo"
+P3 = "want to have"
+P4 = "nice to have/need investigating"
+P5 = "get to it eventually"
+
+>>>>>>> inprogress >>>>>>>
+   - train cnn on cifar using training harness
+   - upgrade layr to allow restructuring recurrent structure sequence length
+   - fix gru demo to run optimally
+   - improve grader/optimization rule according to rnn, lstm, gru
+   - implement and verify correctness of deep speech finetuning layers
+      (outlined in https://arxiv.org/pdf/1412.5567.pdf)
+      (or GRU veriants in https://arxiv.org/pdf/1901.03860.pdf)

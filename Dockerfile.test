@@ -1,0 +1,6 @@
+FROM mkaichen/tenncor:latest
+
+ENV APP_DIR /usr/src/rocnnet
+
+RUN mkdir -p $APP_DIR
+COPY . $APP_DIR
