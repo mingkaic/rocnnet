@@ -67,6 +67,9 @@ CMakeFiles
 
 html/
 
+# project specific
+extenncor/
+
 # whitelist
 !.gitignore
 !.travis.yml

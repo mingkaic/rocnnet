@@ -15,7 +15,7 @@ tenncor_py_build:
 .PHONY: tenncor_py_export
 tenncor_py_export: tenncor_py_build
 	cp -f bazel-bin/external/com_github_mingkaic_tenncor/*.so .
-	cp bazel-out/external/com_github_mingkaic_tenncor/extenncor .
+	cp -r bazel-rocnnet/external/com_github_mingkaic_tenncor/extenncor ./extenncor
 	cp bazel-rocnnet/external/com_github_mingkaic_tenncor/cfg/optimizations.json cfg/.
 
 .PHONY: proto_clean
