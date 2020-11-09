@@ -69,6 +69,8 @@ html/
 
 # project specific
 extenncor/
+onnxds/
+onnx/
 
 # whitelist
 !.gitignore
@@ -77,5 +79,3 @@ extenncor/
 !.gitmodules
 !.astylerc
 !.bazelrc
-!models/*.onnx
-!models/**/*.onnx

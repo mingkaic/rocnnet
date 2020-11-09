@@ -1,0 +1,36 @@
+licenses(["notice"])
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+######### COMPARISONS #########
+
+py_binary(
+    name = "comparison_matmul",
+    srcs = ["comparison_matmul.py"],
+    deps = ["@com_github_mingkaic_tenncor//:tenncor_py"],
+)
+
+py_binary(
+    name = "comparison_mlp",
+    srcs = ["comparison_mlp.py"],
+    deps = ["@com_github_mingkaic_tenncor//:tenncor_py"],
+)
+
+py_binary(
+    name = "comparison_mlp_grad",
+    srcs = ["comparison_mlp_grad.py"],
+    deps = ["@com_github_mingkaic_tenncor//:tenncor_py"],
+    data = ["@com_github_mingkaic_tenncor//cfg:optimizations"],
+)
+
+# py_binary(
+#     name = "comparison_mlp_grad_pll",
+#     srcs = ["comparison_mlp_grad_pll.py"],
+#     deps = [
+#         "@com_github_mingkaic_tenncor//:tenncor_py",
+#         "@com_github_mingkaic_tenncor//ccur:ccur_py",
+#     ],
+#     data = ["@com_github_mingkaic_tenncor//cfg:optimizations"],
+# )

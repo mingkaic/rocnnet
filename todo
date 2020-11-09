@@ -5,10 +5,15 @@ P3 = "want to have"
 P4 = "nice to have/need investigating"
 P5 = "get to it eventually"
 
+>>>>>>> long term goal >>>>>>>
+   - develop and train model to recognize images, and commentate on the image in some way
+      the idea is for the model to:
+      - build internal representations of objects and physical and metaphysical properties in the image
+      - relate those representations to natural language and build a human-understandable description
+
 >>>>>>> inprogress >>>>>>>
    - train cnn on cifar using training harness
    - upgrade layr to allow restructuring recurrent structure sequence length
-   - fix gru demo to run optimally
    - improve grader/optimization rule according to rnn, lstm, gru
    - implement and verify correctness of deep speech finetuning layers
       (outlined in https://arxiv.org/pdf/1412.5567.pdf)
